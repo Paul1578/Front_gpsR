@@ -1,0 +1,384 @@
+'use client'
+
+import { useState, FormEvent } from 'react'
+import { useAuth, UserRole, UserPermissions } from '@/context/AuthContext'
+import { Users, Shield, Check, ArrowLeft, Plus } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+
+interface TeamManagementProps {
+  onBack?: () => void
+}
+
+export default function TeamManagement({ onBack }: TeamManagementProps = {}) {
+  const {
+    user: currentUser,
+    getTeamUsers,
+    updateUserRole,
+    updateUserPermissions,
+    createUser,
+    isSuperAdmin,
+  } = useAuth()
+
+  const [editingUser, setEditingUser] = useState<any | null>(null)
+  const [showPermissions, setShowPermissions] = useState(false)
+  const [showCreateUser, setShowCreateUser] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+
+  const users = getTeamUsers()
+
+  const [permissionsForm, setPermissionsForm] = useState<UserPermissions>({
+    canViewMap: false,
+    canCreateRoutes: false,
+    canManageVehicles: false,
+    canManageTeam: false,
+    canViewOwnRoute: false,
+  })
+
+  const [createUserForm, setCreateUserForm] = useState({
+    nombres: '',
+    apellidos: '',
+    identificacion: '',
+    usuario: '',
+    password: '',
+    role: 'chofer' as UserRole,
+  })
+
+  const handleRoleChange = (userId: string, newRole: UserRole) => {
+    updateUserRole(userId, newRole)
+    toast.success('Rol actualizado exitosamente')
+  }
+
+  const handleEditPermissions = (user: any) => {
+    setEditingUser(user)
+    setPermissionsForm(user.permissions)
+    setShowPermissions(true)
+  }
+
+  const handleSavePermissions = () => {
+    if (editingUser) {
+      updateUserPermissions(editingUser.id, permissionsForm)
+      toast.success('Permisos actualizados exitosamente')
+      setShowPermissions(false)
+      setEditingUser(null)
+    }
+  }
+
+  const handleCreateUser = async (e: FormEvent) => {
+    e.preventDefault()
+
+    if (
+      !createUserForm.nombres ||
+      !createUserForm.apellidos ||
+      !createUserForm.usuario ||
+      !createUserForm.password
+    ) {
+      toast.error('Por favor completa todos los campos requeridos')
+      return
+    }
+
+    setIsCreating(true)
+    const success = await createUser(createUserForm)
+    setIsCreating(false)
+
+    if (success) {
+      toast.success('Usuario creado exitosamente')
+      setShowCreateUser(false)
+      setCreateUserForm({
+        nombres: '',
+        apellidos: '',
+        identificacion: '',
+        usuario: '',
+        password: '',
+        role: 'chofer',
+      })
+    } else {
+      toast.error('El nombre de usuario ya existe')
+    }
+  }
+
+  const getRoleBadge = (role: UserRole) => {
+    const styles: Record<UserRole, string> = {
+      superadmin: 'bg-red-100 text-red-700',
+      gerente: 'bg-purple-100 text-purple-700',
+      logistica: 'bg-blue-100 text-blue-700',
+      chofer: 'bg-green-100 text-green-700',
+    }
+
+    const labels: Record<UserRole, string> = {
+      superadmin: 'Super Admin',
+      gerente: 'Gerente',
+      logistica: 'Logística',
+      chofer: 'Chofer',
+    }
+
+    return (
+      <span className={`px-2 py-1 rounded text-xs ${styles[role]}`}>{labels[role]}</span>
+    )
+  }
+
+  const permissionLabels: Record<keyof UserPermissions, string> = {
+    canViewMap: 'Ver Mapa en Tiempo Real',
+    canCreateRoutes: 'Crear y Gestionar Rutas',
+    canManageVehicles: 'Gestionar Vehículos',
+    canManageTeam: 'Gestionar Equipo',
+    canViewOwnRoute: 'Ver Su Propia Ruta',
+  }
+
+  return (
+    <>
+      <div className="h-full flex flex-col bg-white">
+        {/* Header */}
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ArrowLeft size={20} className="text-gray-600" />
+                </button>
+              )}
+              <div>
+                <h2 className="text-xl md:text-2xl text-gray-900">Gestión de Equipo</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Administra roles y permisos de tu equipo
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCreateUser(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] transition-colors text-sm"
+            >
+              <Plus size={16} />
+              Crear Usuario
+            </button>
+          </div>
+        </div>
+
+        {/* Team List */}
+        <div className="flex-1 overflow-auto p-4 md:p-6">
+          {users.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Users size={48} className="text-gray-300 mb-3" />
+              <p className="text-gray-500 text-sm">No hay otros miembros en el equipo</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#3271a4] to-[#4384d8] rounded-full flex items-center justify-center text-white flex-shrink-0 text-sm">
+                        {user.nombres.charAt(0)}
+                        {user.apellidos.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base text-gray-900">
+                          {user.nombres} {user.apellidos}
+                        </h3>
+                        <p className="text-xs text-gray-500">@{user.usuario}</p>
+                        {user.identificacion && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            ID: {user.identificacion}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {getRoleBadge(user.role)}
+                  </div>
+
+                  {/* Roles */}
+                  <div className="mb-4">
+                    <label className="block text-xs text-gray-500 mb-2">Rol</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {(isSuperAdmin()
+                        ? (['superadmin', 'gerente', 'logistica', 'chofer'] as UserRole[])
+                        : (['gerente', 'logistica', 'chofer'] as UserRole[])
+                      ).map((role) => (
+                        <button
+                          key={role}
+                          onClick={() => handleRoleChange(user.id, role)}
+                          className={`px-3 py-2 rounded-lg border-2 transition-all text-xs ${
+                            user.role === role
+                              ? role === 'superadmin'
+                                ? 'border-red-600 bg-red-600 text-white'
+                                : 'border-[#3271a4] bg-[#3271a4] text-white'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          {role === 'superadmin'
+                            ? 'Super Admin'
+                            : role.charAt(0).toUpperCase() + role.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Permisos */}
+                  <div className="mb-4">
+                    <label className="block text-xs text-gray-500 mb-2">Permisos Activos</label>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(user.permissions)
+                        .filter(([_, value]) => value)
+                        .map(([key]) => (
+                          <span
+                            key={key}
+                            className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs flex items-center gap-1"
+                          >
+                            <Check size={12} />
+                            {permissionLabels[key as keyof UserPermissions]}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleEditPermissions(user)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                  >
+                    <Shield size={14} />
+                    Editar Permisos
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modales */}
+      <Dialog open={showPermissions} onOpenChange={setShowPermissions}>
+        <DialogContent className="sm:max-w-md max-w-[90%]">
+          <DialogHeader>
+            <DialogTitle className="text-lg md:text-xl">
+              Editar Permisos - {editingUser?.nombres} {editingUser?.apellidos}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {Object.entries(permissionLabels).map(([key, label]) => (
+              <label
+                key={key}
+                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={permissionsForm[key as keyof UserPermissions]}
+                  onChange={(e) =>
+                    setPermissionsForm({
+                      ...permissionsForm,
+                      [key]: e.target.checked,
+                    })
+                  }
+                  className="mt-0.5 w-4 h-4 text-[#3271a4] border-gray-300 rounded focus:ring-[#3271a4]"
+                />
+                <p className="text-sm text-gray-900">{label}</p>
+              </label>
+            ))}
+
+            <div className="flex gap-2 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowPermissions(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSavePermissions}
+                className="flex-1 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] text-sm"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Crear usuario */}
+      <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
+        <DialogContent className="sm:max-w-md max-w-[90%]">
+          <DialogHeader>
+            <DialogTitle className="text-lg md:text-xl">Crear Nuevo Usuario</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Nombres</label>
+              <input
+                type="text"
+                value={createUserForm.nombres}
+                onChange={(e) =>
+                  setCreateUserForm({ ...createUserForm, nombres: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] text-sm"
+                placeholder="Juan"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Apellidos</label>
+              <input
+                type="text"
+                value={createUserForm.apellidos}
+                onChange={(e) =>
+                  setCreateUserForm({ ...createUserForm, apellidos: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] text-sm"
+                placeholder="Pérez"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Usuario</label>
+              <input
+                type="text"
+                value={createUserForm.usuario}
+                onChange={(e) =>
+                  setCreateUserForm({ ...createUserForm, usuario: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] text-sm"
+                placeholder="jperez"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Contraseña</label>
+              <input
+                type="password"
+                value={createUserForm.password}
+                onChange={(e) =>
+                  setCreateUserForm({ ...createUserForm, password: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] text-sm"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowCreateUser(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="flex-1 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] text-sm disabled:opacity-50"
+              >
+                {isCreating ? 'Creando...' : 'Crear Usuario'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
