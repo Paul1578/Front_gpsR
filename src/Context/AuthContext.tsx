@@ -100,6 +100,7 @@ interface AuthContextType {
   getTeamUsers: () => User[];
   getManagers: () => User[];
   isSuperAdmin: () => boolean;
+  apiFetch: <T>(path: string, options?: ApiRequestOptions) => Promise<T>;
 }
 
 interface RegisterData {
@@ -168,7 +169,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
   },
 };
 
-type ApiRequestOptions = RequestInit & {
+export type ApiRequestOptions = RequestInit & {
   skipAuth?: boolean;
   retry?: boolean;
   tokensOverride?: AuthTokens | null;
@@ -685,6 +686,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getTeamUsers,
         getManagers,
         isSuperAdmin,
+        apiFetch,
       }}
     >
       {children}

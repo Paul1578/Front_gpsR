@@ -2,6 +2,7 @@ import "../Styles/globals.css";
 import { AuthProvider } from "../Context/AuthContext";
 import { FleetProvider } from "../Context/FleetContext";
 import { Toaster } from "sonner";
+import "leaflet/dist/leaflet.css"
 
 export const metadata = {
   title: "App",
