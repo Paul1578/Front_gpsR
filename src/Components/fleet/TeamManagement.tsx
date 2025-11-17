@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
-import { Users, Shield, Check, ArrowLeft, Plus } from "lucide-react";
+import { Users, Shield, Check, ArrowLeft, Plus, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -34,6 +34,17 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     password: "",
     role: "chofer" as UserRole,
   });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+
+  const openCreateUserDialog = () => {
+    setShowCreatePassword(false);
+    setShowCreateUser(true);
+  };
+
+  const closeCreateUserDialog = () => {
+    setShowCreatePassword(false);
+    setShowCreateUser(false);
+  };
 
   const handleRoleChange = (userId: string, newRole: UserRole) => {
     updateUserRole(userId, newRole);
@@ -71,7 +82,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     
     if (success) {
       toast.success("Usuario creado exitosamente");
-      setShowCreateUser(false);
+      closeCreateUserDialog();
       setCreateUserForm({
         nombres: "",
         apellidos: "",
@@ -140,7 +151,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               </div>
             </div>
             <button
-              onClick={() => setShowCreateUser(true)}
+              onClick={openCreateUserDialog}
               className="flex items-center gap-2 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] transition-colors text-sm"
             >
               <Plus size={16} />
@@ -306,7 +317,12 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       </Dialog>
 
       {/* Create User Dialog */}
-      <Dialog open={showCreateUser} onOpenChange={() => setShowCreateUser(false)}>
+      <Dialog
+        open={showCreateUser}
+        onOpenChange={(open) => {
+          if (!open) closeCreateUserDialog();
+        }}
+      >
         <DialogContent className="sm:max-w-md max-w-[90%]" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="text-lg md:text-xl">Crear Nuevo Usuario</DialogTitle>
@@ -361,13 +377,23 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
             <div>
               <label className="block text-sm text-gray-700 mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={createUserForm.password}
-                onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showCreatePassword ? "text" : "password"}
+                  value={createUserForm.password}
+                  onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-2 flex items-center text-[#3271a4] hover:text-[#244f73]"
+                  aria-label={showCreatePassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -398,7 +424,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             <div className="flex gap-2 pt-4">
               <button
                 type="button"
-                onClick={() => setShowCreateUser(false)}
+                onClick={closeCreateUserDialog}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
               >
                 Cancelar

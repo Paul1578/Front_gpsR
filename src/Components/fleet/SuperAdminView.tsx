@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, Users, Database, Activity, Download, Upload, AlertTriangle, BarChart3, Building2 } from "lucide-react";
+import { ArrowLeft, Shield, Users, Database, Activity, Download, Upload, AlertTriangle, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
 import { useAuth, UserRole } from "../../Context/AuthContext";
 import { toast } from "sonner";
 import { TeamDetailsView } from "./TeamDetailsView";
@@ -23,6 +23,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     role: "gerente" as UserRole,
     teamId: "",
   });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const users = getAllUsers();
   const managers = getManagers();
@@ -82,6 +83,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
         role: "gerente",
         teamId: "",
       });
+      setShowCreatePassword(false);
     } else {
       toast.error("Error al crear usuario. El nombre de usuario podría estar en uso.");
     }
@@ -581,15 +583,25 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                     </div>
                     <div>
                       <label className="block text-sm text-gray-700 mb-2">Contraseña</label>
-                      <input
-                        type="password"
-                        value={createUserForm.password}
-                        onChange={(e) =>
-                          setCreateUserForm({ ...createUserForm, password: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm"
-                        placeholder="••••••••"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showCreatePassword ? "text" : "password"}
+                          value={createUserForm.password}
+                          onChange={(e) =>
+                            setCreateUserForm({ ...createUserForm, password: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm pr-10"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCreatePassword((prev) => !prev)}
+                          className="absolute inset-y-0 right-2 flex items-center text-red-600/80 hover:text-red-700"
+                          aria-label={showCreatePassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        >
+                          {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

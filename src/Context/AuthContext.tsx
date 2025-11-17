@@ -14,7 +14,7 @@ const API_BASE_URL =
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
 
-type ApiRole = "Admin" | "FleetManager" | "Driver";
+type ApiRole = "Admin" | "Driver" | "Manager" | "User";
 
 interface ApiUser {
   id: string;
@@ -113,10 +113,13 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const roleMap: Record<ApiRole, UserRole> = {
-  Admin: "superadmin",
-  FleetManager: "gerente",
+  Admin: "gerente",
   Driver: "chofer",
+  Manager: "logistica",
+  User: "logistica",
 };
+
+const DEFAULT_REGISTER_ROLE: ApiRole = "Admin";
 
 const defaultPermissions: Record<UserRole, UserPermissions> = {
   superadmin: {
@@ -493,15 +496,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const buildRegisterUsername = (data: RegisterData) => {
+    const candidate = data.usuario.includes("@")
+      ? data.usuario.split("@")[0] ?? data.usuario
+      : data.usuario;
+    const sanitized = candidate.replace(/[^a-zA-Z0-9._-]/g, "");
+    if (sanitized) return sanitized;
+    return `user${Date.now()}`;
+  };
+
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
       const payload = {
+        username: buildRegisterUsername(data),
         email: data.usuario,
         password: data.password,
-        firstName: data.nombres,
-        lastName: data.apellidos,
+        roleName: DEFAULT_REGISTER_ROLE,
       };
-      const response = await apiFetch<AuthResponseDto>("/auth/register", {
+      const response = await apiFetch<AuthResponseDto>("/Auth/register", {
         method: "POST",
         body: JSON.stringify(payload),
         skipAuth: true,
