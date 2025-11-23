@@ -23,10 +23,8 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-4xl">
-        <WelcomeScreen onGetStarted={handleGetStarted} />
-      </div>
+    <div className="bg-white">
+      <WelcomeScreen onGetStarted={handleGetStarted} />
     </div>
   );
 }

@@ -29,12 +29,12 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
     }
 
     if (password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres");
+      toast.error("La contrasena debe tener al menos 6 caracteres");
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Las contraseñas no coinciden");
+      toast.error("Las contrasenas no coinciden");
       return;
     }
 
@@ -43,7 +43,8 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
     setIsLoading(false);
 
     if (success) {
-      toast.success("¡Cuenta creada exitosamente! Bienvenido");
+      toast.success("Cuenta creada exitosamente! Bienvenido");
+      onSwitchToLogin();
     } else {
       toast.error("Este correo ya existe. Intenta con otro correo");
     }
@@ -51,45 +52,34 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-lg px-6 py-8 sm:px-8 sm:py-10 flex flex-col gap-6 ${className ?? ""}`}
+      className={`w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-50 px-6 py-8 sm:px-8 sm:py-10 flex flex-col gap-6 ${className ?? ""}`}
       data-name="RegisterForm"
     >
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center justify-center rounded-full p-2 text-[#3271a4] hover:bg-blue-50 transition-colors"
-          type="button"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <p className="text-2xl font-bold text-gray-900 leading-tight">Registro</p>
-          <p className="text-sm text-gray-600 leading-tight">Registra tu equipo como Gerente</p>
-        </div>
+      <button
+        onClick={onBack}
+        className="flex items-center justify-center w-10 h-10 rounded-full text-[#3271a4] hover:bg-blue-50 transition-colors"
+        type="button"
+        aria-label="Volver"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
+
+      <div className="space-y-1">
+        <p className="text-3xl font-semibold text-gray-900 leading-tight">Registro</p>
+        <p className="text-sm text-gray-600 leading-tight">Registra tu equipo como Gerente</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <InputField label="Nombres" value={nombres} onChange={setNombres} />
         <InputField label="Apellidos" value={apellidos} onChange={setApellidos} />
-        <InputField
-          label="Correo electrónico"
-          value={usuario}
-          onChange={setUsuario}
-          type="email"
-        />
-        <InputField label="Contraseña" value={password} onChange={setPassword} type="password" />
-        <InputField
-          label="Confirmar contraseña"
-          value={confirmPassword}
-          onChange={setConfirmPassword}
-          type="password"
-        />
+        <InputField label="Correo electronico" value={usuario} onChange={setUsuario} type="email" />
+        <InputField label="Contrasena" value={password} onChange={setPassword} type="password" />
+        <InputField label="Confirmar contrasena" value={confirmPassword} onChange={setConfirmPassword} type="password" />
 
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-2 w-full bg-[#3271a4] text-white font-semibold py-3 rounded-lg hover:bg-[#2a5f8c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-2 w-full bg-gradient-to-r from-[#3271a4] to-[#4384d8] text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Creando..." : "Crear cuenta"}
         </button>
@@ -97,10 +87,10 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
 
       <button
         onClick={onSwitchToLogin}
-        className="text-sm font-semibold text-[#3271a4] hover:underline"
+        className="text-sm font-semibold text-[#3271a4] hover:text-[#275b84] hover:underline transition-colors"
         type="button"
       >
-        ¿Ya tienes cuenta? Inicia sesión
+        Ya tienes cuenta? Inicia sesion
       </button>
     </div>
   );
@@ -119,21 +109,21 @@ function InputField({ label, value, onChange, type = "text" }: InputFieldProps) 
   const inputType = isPassword && isVisible ? "text" : type;
 
   return (
-    <label className="flex flex-col gap-1 text-sm text-gray-700">
-      <span>{label}</span>
+    <label className="flex flex-col gap-2 text-sm text-gray-700">
+      <span className="font-medium">{label}</span>
       <div className="relative">
         <input
           type={inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`border border-[#958dbc] rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-[#3271a4]/40 focus:border-[#3271a4] ${isPassword ? "pr-10" : ""}`}
+          className={`w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] ${isPassword ? "pr-12" : ""}`}
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setIsVisible((prev) => !prev)}
-            className="absolute inset-y-0 right-2 flex items-center text-[#3271a4] hover:text-[#244f73]"
-            aria-label={isVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            className="absolute inset-y-0 right-3 flex items-center text-[#3271a4] hover:text-[#244f73]"
+            aria-label={isVisible ? "Ocultar contrasena" : "Mostrar contrasena"}
           >
             {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>

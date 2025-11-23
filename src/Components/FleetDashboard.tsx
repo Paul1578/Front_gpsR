@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield } from "lucide-react";
+import dynamic from "next/dynamic";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MainDashboard } from "./fleet/MainDashboard";
-import { MapView } from "./fleet/MapView";
 import { VehiclesManagement } from "./fleet/VehiclesManagement";
 import { RoutesManagement } from "./fleet/RoutesManagement";
 import { TeamManagement } from "./fleet/TeamManagement";
@@ -13,6 +13,18 @@ import { RouteHistory } from "./fleet/RouteHistory";
 import { ProfileView } from "./fleet/ProfileView";
 import { SuperAdminView } from "./fleet/SuperAdminView";
 import { useAuth } from "@/Context/AuthContext";
+
+const MapView = dynamic(
+  () => import("./fleet/MapView").then((mod) => mod.MapView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center text-gray-500">
+        Cargando mapa...
+      </div>
+    ),
+  }
+);
 
 export type ViewType = "home" | "map" | "vehicles" | "routes" | "team" | "driver" | "history" | "profile" | "superadmin";
 

@@ -19,6 +19,7 @@ type ApiRole = "Admin" | "Driver" | "Manager" | "User";
 interface ApiUser {
   id: string;
   email: string;
+  username?: string;
   firstName: string;
   lastName: string;
   isActive: boolean;
@@ -324,11 +325,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const mapApiUser = (apiUser: ApiUser): User => {
     const mappedRole = determineRole(apiUser.roles);
+    const username = apiUser.username || apiUser.email;
+    const displayName = apiUser.firstName || username || apiUser.id;
     return {
       id: apiUser.id,
-      nombres: apiUser.firstName,
-      apellidos: apiUser.lastName,
-      usuario: apiUser.email,
+      nombres: displayName,
+      apellidos: apiUser.lastName || "",
+      usuario: username,
       email: apiUser.email,
       identificacion: undefined,
       role: mappedRole,
@@ -403,6 +406,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
       ]) ?? "";
 
+    const usernameClaim = getClaimValue(payload, ["username", "preferred_username", "unique_name", "upn"]);
+
     const firstName =
       getClaimValue(payload, [
         "given_name",
@@ -433,9 +438,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return {
       id,
-      nombres: firstName || email || id,
+      nombres: firstName || usernameClaim || email || id,
       apellidos: lastName,
-      usuario: email || id,
+      usuario: usernameClaim || email || id,
       email,
       role: mappedRole,
       permissions: defaultPermissions[mappedRole],

@@ -31,48 +31,50 @@ export function LoginForm({ className, onForgotPassword, onSwitchToRegister, onB
     setIsLoading(false);
 
     if (success) {
-      toast.success("¡Bienvenido!");
+      toast.success("Bienvenido!");
     } else {
-      toast.error("Correo o contraseña incorrectos");
+      toast.error("Correo o contrasena incorrectos");
     }
   };
 
   return (
-    <div className={`max-w-md w-full mx-auto mt-20 p-6 bg-white rounded-xl shadow-md ${className}`}>
-      {/* Back Button */}
+    <div
+      className={`w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-50 px-6 py-8 sm:px-8 sm:py-10 flex flex-col gap-6 ${className ?? ""}`}
+    >
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-2 mb-4 text-blue-600 hover:text-blue-800"
+        className="flex items-center justify-center w-10 h-10 rounded-full text-[#3271a4] hover:bg-blue-50 transition-colors"
+        aria-label="Volver"
       >
         <ArrowLeft className="w-5 h-5" />
-        Volver
       </button>
 
-      {/* Title */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Login</h1>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold text-gray-900">Iniciar sesion</h1>
+        <p className="text-sm text-gray-500 leading-relaxed">
+          Accede a tu cuenta y continua gestionando tu flota con seguridad.
+        </p>
+      </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Correo */}
-        <div className="flex flex-col">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1">
-            Correo electrónico
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="text-sm font-medium text-gray-700">
+            Correo electronico
           </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4]"
             placeholder="nombre@empresa.com"
           />
         </div>
 
-        {/* Contraseña */}
-        <div className="flex flex-col">
-          <label htmlFor="password" className="text-sm font-medium text-gray-700 mb-1">
-            Contraseña
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="text-sm font-medium text-gray-700">
+            Contrasena
           </label>
           <div className="relative">
             <input
@@ -80,47 +82,45 @@ export function LoginForm({ className, onForgotPassword, onSwitchToRegister, onB
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-              placeholder="Ingresa tu contraseña"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] pr-12"
+              placeholder="Ingresa tu contrasena"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700"
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="self-end text-sm font-semibold text-[#3271a4] hover:text-[#275b84] hover:underline transition-colors"
+          >
+            Olvidaste tu contrasena?
+          </button>
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-[#3271a4] to-[#4384d8] text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Cargando..." : "Iniciar Sesión"}
+          {isLoading ? "Cargando..." : "Iniciar sesion"}
         </button>
       </form>
 
-      {/* Forgot Password */}
-      <button
-        type="button"
-        onClick={onForgotPassword}
-        className="mt-4 text-sm text-blue-600 hover:underline"
-      >
-        ¿Olvidaste tu usuario o contraseña?
-      </button>
-
-      {/* Switch to Register */}
-      <button
-        type="button"
-        onClick={onSwitchToRegister}
-        className="mt-2 text-sm text-blue-600 hover:underline"
-      >
-        ¿Aún no tienes cuenta? Regístrate
-      </button>
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={onSwitchToRegister}
+          className="text-sm font-semibold text-[#3271a4] hover:text-[#275b84] hover:underline transition-colors"
+        >
+          Aun no tienes cuenta? Registrate
+        </button>
+      </div>
     </div>
   );
 }

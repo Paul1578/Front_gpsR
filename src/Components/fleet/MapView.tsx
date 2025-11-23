@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, CircleMarker } from "react-leaflet";
-import type { LatLngExpression } from "leaflet";
+import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 import L from "leaflet";
 import { toast } from "sonner";
 import { ArrowLeft, MapPin, RefreshCw } from "lucide-react";
@@ -85,8 +85,8 @@ const latLngFromValues = (lat?: unknown, lng?: unknown): LatLngTuple | null => {
   return [parsedLat, parsedLng];
 };
 
-const getStatusMeta = (status: string) => {
-  const key = (status || "").toLowerCase();
+const getStatusMeta = (status: unknown): { label: string; className: string } => {
+  const key = String(status ?? "").toLowerCase();
   if (key.includes("progress") || key.includes("curso")) {
     return { label: "En curso", className: "bg-green-100 text-green-700" };
   }
@@ -99,7 +99,7 @@ const getStatusMeta = (status: string) => {
   if (key.includes("cancel")) {
     return { label: "Cancelada", className: "bg-red-100 text-red-700" };
   }
-  return { label: status || "Desconocido", className: "bg-gray-100 text-gray-600" };
+  return { label: String(status || "Desconocido"), className: "bg-gray-100 text-gray-600" };
 };
 
 const normalizeRoute = (route: RouteDto, vehiclesMap: Map<string, string>): RouteCardData => {
@@ -169,7 +169,7 @@ const normalizeVehicleMarkers = (vehicles: VehicleDto[]): VehicleMarkerData[] =>
 };
 
 export function MapView({ onBack }: MapViewProps = {}) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, isAuthenticated } = useAuth();
   const { routes: localRoutes, vehicles: localVehicles } = useFleet();
   const [routes, setRoutes] = useState<RouteCardData[]>([]);
   const [routePaths, setRoutePaths] = useState<RoutePathData[]>([]);
@@ -179,11 +179,15 @@ export function MapView({ onBack }: MapViewProps = {}) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
   const hasCenteredRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     setIsClient(true);
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const applyFallbackData = useCallback(() => {
@@ -221,6 +225,8 @@ export function MapView({ onBack }: MapViewProps = {}) {
       };
     });
 
+    if (!isMountedRef.current) return;
+
     setVehicleMarkers(fallbackVehicles);
     setRoutes(fallbackRoutes);
     setRoutePaths(fallbackPaths);
@@ -234,10 +240,17 @@ export function MapView({ onBack }: MapViewProps = {}) {
 
   const loadData = useCallback(async () => {
     if (!apiFetch) return;
+    if (!isMountedRef.current) return;
     setIsRefreshing(true);
     setError(null);
 
     try {
+      if (!isAuthenticated) {
+        applyFallbackData();
+        setLastUpdated(new Date());
+        return;
+      }
+
       const [routesResponse, vehiclesResponse] = await Promise.all([
         fetchRoutes(apiFetch, { status: "InProgress" }),
         fetchVehicles(apiFetch),
@@ -268,6 +281,8 @@ export function MapView({ onBack }: MapViewProps = {}) {
         })
       );
 
+      if (!isMountedRef.current) return;
+
       setRoutes(normalizedRoutes);
       setVehicleMarkers(enrichedVehicles);
       setRoutePaths(positionsResults);
@@ -277,14 +292,37 @@ export function MapView({ onBack }: MapViewProps = {}) {
       });
       hasCenteredRef.current = false;
       setLastUpdated(new Date());
-    } catch (err) {
-      console.error("Error cargando datos del mapa en tiempo real:", err);
-      toast.error("No se pudo cargar el mapa en tiempo real. Mostrando datos locales.");
+    } catch (err: any) {
+      const status = err?.status;
+      const message =
+        status === 401
+          ? "Sesión no autorizada o expirada. Mostrando datos locales."
+          : "No se pudo cargar el mapa en tiempo real. Mostrando datos locales.";
+
+      if (status === 401) {
+        console.warn(message);
+      } else {
+        console.error("Error cargando datos del mapa en tiempo real:", err);
+      }
+
+      toast.error(message);
       applyFallbackData();
     } finally {
-      setIsRefreshing(false);
+      if (isMountedRef.current) {
+        setIsRefreshing(false);
+      }
     }
-  }, [apiFetch, applyFallbackData]);
+  }, [apiFetch, applyFallbackData, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setRoutes([]);
+      setRoutePaths([]);
+      setVehicleMarkers([]);
+      setSelectedRouteId(null);
+      setLastUpdated(null);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -390,7 +428,7 @@ export function MapView({ onBack }: MapViewProps = {}) {
               center={mapCenter}
               zoom={12}
               className="h-[420px] lg:h-full w-full"
-              whenCreated={(map) => {
+              whenCreated={(map: LeafletMap) => {
                 mapInstanceRef.current = map;
               }}
             >

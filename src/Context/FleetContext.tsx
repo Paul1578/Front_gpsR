@@ -1,18 +1,21 @@
-'use client';
+"use client";
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useAuth } from "./AuthContext";
 
 export interface Vehicle {
   id: string;
   placa: string;
   marca: string;
   modelo: string;
-  año: number;
+  anio: number;
   estado: "disponible" | "en_ruta" | "mantenimiento";
   ubicacionActual?: {
     lat: number;
     lng: number;
   };
   teamId?: string;
+  descripcion?: string;
 }
 
 export interface RouteEvidence {
@@ -42,9 +45,9 @@ export interface Route {
 interface FleetContextType {
   vehicles: Vehicle[];
   routes: Route[];
-  addVehicle: (vehicle: Omit<Vehicle, "id">) => void;
-  updateVehicle: (id: string, vehicle: Partial<Vehicle>) => void;
-  deleteVehicle: (id: string) => void;
+  addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<boolean>;
+  updateVehicle: (id: string, vehicle: Partial<Vehicle>) => Promise<boolean>;
+  deleteVehicle: (id: string) => Promise<boolean>;
   addRoute: (route: Omit<Route, "id" | "fechaCreacion">) => void;
   updateRoute: (id: string, route: Partial<Route>) => void;
   deleteRoute: (id: string) => void;
@@ -57,11 +60,48 @@ interface FleetContextType {
 
 const FleetContext = createContext<FleetContextType | undefined>(undefined);
 
+type ApiVehicle = {
+  id: string;
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  description?: string;
+  status?: number;
+};
+
+const statusNumberToState = (status?: number): Vehicle["estado"] => {
+  switch (status) {
+    case 1:
+      return "en_ruta";
+    case 2:
+      return "mantenimiento";
+    default:
+      return "disponible";
+  }
+};
+
+const stateToStatusNumber = (estado: Vehicle["estado"]): number => {
+  if (estado === "en_ruta") return 1;
+  if (estado === "mantenimiento") return 2;
+  return 0;
+};
+
+const mapApiVehicle = (apiVehicle: ApiVehicle): Vehicle => ({
+  id: apiVehicle.id,
+  placa: apiVehicle.plate,
+  marca: apiVehicle.brand,
+  modelo: apiVehicle.model,
+  anio: apiVehicle.year,
+  descripcion: apiVehicle.description,
+  estado: statusNumberToState(apiVehicle.status),
+});
+
 export function FleetProvider({ children }: { children: ReactNode }) {
+  const { apiFetch } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
 
-  // Helper seguro para SSR
   const getCurrentUserTeamId = (): string | undefined => {
     if (typeof window === "undefined") return undefined;
     const currentUser = localStorage.getItem("currentUser");
@@ -73,63 +113,115 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     return undefined;
   };
 
-  // Cargar datos desde localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const savedVehicles = localStorage.getItem("vehicles");
     const savedRoutes = localStorage.getItem("routes");
-
-    if (savedVehicles) {
-      setVehicles(JSON.parse(savedVehicles));
-    } else {
-      const initialVehicles: Vehicle[] = [
-        {
-          id: "1",
-          placa: "ABC-123",
-          marca: "Toyota",
-          modelo: "Hilux",
-          año: 2022,
-          estado: "disponible",
-          ubicacionActual: { lat: -12.0464, lng: -77.0428 },
-        },
-        {
-          id: "2",
-          placa: "XYZ-789",
-          marca: "Nissan",
-          modelo: "Frontier",
-          año: 2021,
-          estado: "disponible",
-          ubicacionActual: { lat: -12.0564, lng: -77.0528 },
-        },
-      ];
-      setVehicles(initialVehicles);
-      localStorage.setItem("vehicles", JSON.stringify(initialVehicles));
-    }
-
     if (savedRoutes) {
       setRoutes(JSON.parse(savedRoutes));
     }
   }, []);
 
-  const addVehicle = (vehicle: Omit<Vehicle, "id">) => {
-    const teamId = getCurrentUserTeamId();
-    const newVehicle: Vehicle = { ...vehicle, id: Date.now().toString(), teamId };
-    const updatedVehicles = [...vehicles, newVehicle];
-    setVehicles(updatedVehicles);
-    if (typeof window !== "undefined") localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+  useEffect(() => {
+    const loadVehicles = async () => {
+      if (!apiFetch) return;
+      try {
+        const data = await apiFetch<ApiVehicle[]>("/Vehicles");
+        setVehicles(data.map(mapApiVehicle));
+      } catch (error) {
+        console.error("Error cargando vehículos desde API, usando localStorage si existe", error);
+        const savedVehicles = typeof window !== "undefined" ? localStorage.getItem("vehicles") : null;
+        if (savedVehicles) {
+          setVehicles(JSON.parse(savedVehicles));
+        }
+      }
+    };
+    void loadVehicles();
+  }, [apiFetch]);
+
+  const persistLocalVehicles = (items: Vehicle[]) => {
+    if (typeof window !== "undefined") localStorage.setItem("vehicles", JSON.stringify(items));
   };
 
-  const updateVehicle = (id: string, vehicleData: Partial<Vehicle>) => {
-    const updatedVehicles = vehicles.map(v => (v.id === id ? { ...v, ...vehicleData } : v));
-    setVehicles(updatedVehicles);
-    if (typeof window !== "undefined") localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+  const addVehicle = async (vehicle: Omit<Vehicle, "id">): Promise<boolean> => {
+    try {
+      const payload = {
+        plate: vehicle.placa,
+        brand: vehicle.marca,
+        model: vehicle.modelo,
+        year: vehicle.anio,
+        description: vehicle.descripcion ?? "",
+      };
+      if (apiFetch) {
+        const created = await apiFetch<ApiVehicle>("/Vehicles", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        const mapped = mapApiVehicle(created);
+        const updated = [...vehicles, mapped];
+        setVehicles(updated);
+        persistLocalVehicles(updated);
+        return true;
+      }
+    } catch (error) {
+      console.error("Error al crear vehículo:", error);
+    }
+    return false;
   };
 
-  const deleteVehicle = (id: string) => {
-    const updatedVehicles = vehicles.filter(v => v.id !== id);
-    setVehicles(updatedVehicles);
-    if (typeof window !== "undefined") localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+  const updateVehicle = async (id: string, vehicleData: Partial<Vehicle>): Promise<boolean> => {
+    try {
+      const current = vehicles.find((v) => v.id === id);
+      const nextEstado = vehicleData.estado ?? current?.estado;
+
+      if (apiFetch) {
+        if (
+          vehicleData.placa ||
+          vehicleData.marca ||
+          vehicleData.modelo ||
+          vehicleData.anio ||
+          vehicleData.descripcion
+        ) {
+          const payload = {
+            plate: vehicleData.placa ?? current?.placa ?? "",
+            brand: vehicleData.marca ?? current?.marca ?? "",
+            model: vehicleData.modelo ?? current?.modelo ?? "",
+            year: vehicleData.anio ?? current?.anio ?? new Date().getFullYear(),
+            description: vehicleData.descripcion ?? current?.descripcion ?? "",
+          };
+          await apiFetch(`/Vehicles/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+        }
+
+        if (nextEstado && current?.estado !== nextEstado) {
+          await apiFetch(`/Vehicles/${id}/status`, {
+            method: "PUT",
+            body: JSON.stringify({ status: stateToStatusNumber(nextEstado) }),
+          });
+        }
+      }
+
+      const updatedVehicles = vehicles.map((v) => (v.id === id ? { ...v, ...vehicleData } : v));
+      setVehicles(updatedVehicles);
+      persistLocalVehicles(updatedVehicles);
+      return true;
+    } catch (error) {
+      console.error("Error al actualizar vehículo:", error);
+      return false;
+    }
+  };
+
+  const deleteVehicle = async (id: string): Promise<boolean> => {
+    try {
+      if (apiFetch) {
+        await apiFetch(`/Vehicles/${id}`, { method: "DELETE" });
+      }
+      const updatedVehicles = vehicles.filter((v) => v.id !== id);
+      setVehicles(updatedVehicles);
+      persistLocalVehicles(updatedVehicles);
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar vehículo:", error);
+      return false;
+    }
   };
 
   const addRoute = (route: Omit<Route, "id" | "fechaCreacion">) => {
@@ -144,32 +236,32 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setRoutes(updatedRoutes);
     if (typeof window !== "undefined") localStorage.setItem("routes", JSON.stringify(updatedRoutes));
 
-    updateVehicle(route.vehiculoId, { estado: "en_ruta" });
+    void updateVehicle(route.vehiculoId, { estado: "en_ruta" });
   };
 
   const updateRoute = (id: string, routeData: Partial<Route>) => {
-    const updatedRoutes = routes.map(r => (r.id === id ? { ...r, ...routeData } : r));
+    const updatedRoutes = routes.map((r) => (r.id === id ? { ...r, ...routeData } : r));
     setRoutes(updatedRoutes);
     if (typeof window !== "undefined") localStorage.setItem("routes", JSON.stringify(updatedRoutes));
   };
 
   const deleteRoute = (id: string) => {
-    const route = routes.find(r => r.id === id);
-    if (route) updateVehicle(route.vehiculoId, { estado: "disponible" });
+    const route = routes.find((r) => r.id === id);
+    if (route) void updateVehicle(route.vehiculoId, { estado: "disponible" });
 
-    const updatedRoutes = routes.filter(r => r.id !== id);
+    const updatedRoutes = routes.filter((r) => r.id !== id);
     setRoutes(updatedRoutes);
     if (typeof window !== "undefined") localStorage.setItem("routes", JSON.stringify(updatedRoutes));
   };
 
   const updateVehicleLocation = (vehicleId: string, location: { lat: number; lng: number }) => {
-    updateVehicle(vehicleId, { ubicacionActual: location });
+    void updateVehicle(vehicleId, { ubicacionActual: location });
   };
 
-  const getRoutesByDriver = (driverId: string): Route[] => routes.filter(r => r.conductorId === driverId);
+  const getRoutesByDriver = (driverId: string): Route[] => routes.filter((r) => r.conductorId === driverId);
 
   const addRouteEvidence = (routeId: string, evidence: Omit<RouteEvidence, "id" | "timestamp">) => {
-    const route = routes.find(r => r.id === routeId);
+    const route = routes.find((r) => r.id === routeId);
     if (route) {
       const newEvidence: RouteEvidence = {
         ...evidence,
@@ -183,14 +275,15 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const getTeamVehicles = (): Vehicle[] => {
     const teamId = getCurrentUserTeamId();
-    if (!teamId) return [];
-    return vehicles.filter(v => v.teamId === teamId);
+    if (!teamId) return vehicles;
+    // Incluir vehículos sin teamId (provenientes del backend) además de los del equipo
+    return vehicles.filter((v) => !v.teamId || v.teamId === teamId);
   };
 
   const getTeamRoutes = (): Route[] => {
     const teamId = getCurrentUserTeamId();
-    if (!teamId) return [];
-    return routes.filter(r => r.teamId === teamId);
+    if (!teamId) return routes;
+    return routes.filter((r) => r.teamId === teamId);
   };
 
   return (

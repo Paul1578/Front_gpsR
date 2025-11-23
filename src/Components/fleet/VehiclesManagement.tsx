@@ -20,27 +20,37 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
     placa: "",
     marca: "",
     modelo: "",
-    año: new Date().getFullYear(),
+    anio: new Date().getFullYear(),
     estado: "disponible" as Vehicle["estado"],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.placa || !formData.marca || !formData.modelo) {
       toast.error("Por favor completa todos los campos obligatorios");
       return;
     }
 
     if (editingVehicle) {
-      updateVehicle(editingVehicle.id, formData);
-      toast.success("Vehículo actualizado exitosamente");
+      const ok = await updateVehicle(editingVehicle.id, formData);
+      if (ok) {
+        toast.success("Vehículo actualizado exitosamente");
+      } else {
+        toast.error("No se pudo actualizar el vehículo");
+        return;
+      }
     } else {
-      addVehicle({
+      const ok = await addVehicle({
         ...formData,
         ubicacionActual: { lat: -12.0464, lng: -77.0428 },
       });
-      toast.success("Vehículo agregado exitosamente");
+      if (ok) {
+        toast.success("Vehículo agregado exitosamente");
+      } else {
+        toast.error("No se pudo crear el vehículo");
+        return;
+      }
     }
 
     resetForm();
@@ -52,15 +62,19 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       placa: vehicle.placa,
       marca: vehicle.marca,
       modelo: vehicle.modelo,
-      año: vehicle.año,
+      anio: vehicle.anio,
       estado: vehicle.estado,
     });
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteVehicle(id);
-    toast.success("Vehículo eliminado exitosamente");
+  const handleDelete = async (id: string) => {
+    const ok = await deleteVehicle(id);
+    if (ok) {
+      toast.success("Vehículo eliminado exitosamente");
+    } else {
+      toast.error("No se pudo eliminar el vehículo");
+    }
     setDeleteConfirm(null);
   };
 
@@ -69,17 +83,18 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       placa: "",
       marca: "",
       modelo: "",
-      año: new Date().getFullYear(),
+      anio: new Date().getFullYear(),
       estado: "disponible",
     });
     setEditingVehicle(null);
     setShowForm(false);
   };
 
-  const filteredVehicles = vehicles.filter(v =>
-    v.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.modelo.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVehicles = vehicles.filter(
+    (v) =>
+      v.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.modelo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getEstadoBadge = (estado: Vehicle["estado"]) => {
@@ -93,33 +108,23 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       en_ruta: "En Ruta",
       mantenimiento: "Mantenimiento",
     };
-    return (
-      <span className={`px-2 py-1 rounded text-xs ${styles[estado]}`}>
-        {labels[estado]}
-      </span>
-    );
+    return <span className={`px-2 py-1 rounded text-xs ${styles[estado]}`}>{labels[estado]}</span>;
   };
 
   return (
     <>
       <div className="h-full flex flex-col bg-white">
-        {/* Header */}
         <div className="p-4 md:p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               {onBack && (
-                <button
-                  onClick={onBack}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
+                <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <ArrowLeft size={20} className="text-gray-600" />
                 </button>
               )}
               <div>
                 <h2 className="text-xl md:text-2xl text-gray-900">Gestión de Vehículos</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Administra tu flota de vehículos
-                </p>
+                <p className="text-sm text-gray-500 mt-1">Administra tu flota de vehículos</p>
               </div>
             </div>
             <button
@@ -132,10 +137,9 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
           </div>
         </div>
 
-        {/* Search */}
         <div className="p-4 md:p-6 border-b border-gray-200">
           <div className="relative max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar por placa, marca o modelo..."
@@ -146,7 +150,6 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
           </div>
         </div>
 
-        {/* Vehicles List */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {filteredVehicles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -179,7 +182,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-500">Año:</span>
-                      <span className="text-gray-900">{vehicle.año}</span>
+                      <span className="text-gray-900">{vehicle.anio}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-500">Estado:</span>
@@ -209,7 +212,6 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
         </div>
       </div>
 
-      {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={resetForm}>
         <DialogContent className="sm:max-w-md max-w-[90%]" aria-describedby={undefined}>
           <DialogHeader>
@@ -259,8 +261,8 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
               <label className="block text-sm mb-1 text-gray-700">Año *</label>
               <input
                 type="number"
-                value={formData.año}
-                onChange={(e) => setFormData({ ...formData, año: parseInt(e.target.value) })}
+                value={formData.anio}
+                onChange={(e) => setFormData({ ...formData, anio: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
                 min="1990"
                 max={new Date().getFullYear() + 1}
@@ -300,7 +302,6 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
