@@ -227,10 +227,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const parsedTokens = JSON.parse(storedTokens) as AuthTokens;
       setTokens(parsedTokens);
       if (!storedUser) {
-        const derived = deriveUserFromToken(parsedTokens.accessToken);
-        if (derived) {
-          persistUser(derived);
-        }
+        void (async () => {
+          const fetched = await fetchMeUser();
+          if (fetched) {
+            persistUser(fetched);
+          } else {
+            const derived = deriveUserFromToken(parsedTokens.accessToken);
+            if (derived) {
+              persistUser(derived);
+            }
+          }
+        })();
       }
     }
 
@@ -447,6 +454,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const fetchMeUser = async (): Promise<User | null> => {
+    if (!tokensRef.current?.accessToken) return null;
+    try {
+      const me = await apiFetch<ApiUser>("/Auth/me");
+      return mapApiUser(me);
+    } catch (error) {
+      console.error("Error obteniendo usuario actual:", error);
+      return null;
+    }
+  };
+
   // 👇 AQUÍ ESTÁ EL CAMBIO IMPORTANTE
   const applyAuthResponse = async (data: AuthResponseDto) => {
     // Usar accessToken si viene, si no usar token (del backend C#)
@@ -468,6 +486,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data.user) {
       persistUser(mapApiUser(data.user));
+      setIsLoadingUser(false);
+      return;
+    }
+
+    const fetched = await fetchMeUser();
+    if (fetched) {
+      persistUser(fetched);
       setIsLoadingUser(false);
       return;
     }
