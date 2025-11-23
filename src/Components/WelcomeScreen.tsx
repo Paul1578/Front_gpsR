@@ -23,24 +23,24 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             </div>
           </div>
           <h1 className="text-gray-900 text-3xl md:text-4xl font-bold">
-            Bienvenido a la aplicacion
+            Bienvenido a la aplicación
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
-            Una plataforma segura y facil de usar para gestionar tu cuenta y acceder a todas tus funcionalidades.
+            Una plataforma segura y fácil de usar para gestionar tu cuenta y acceder a todas tus funcionalidades.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full">
           <FeatureCard
             icon={<Users className="text-[#3271a4]" size={24} />}
-            title="Facil de usar"
-            description="Interfaz intuitiva disenada para una experiencia de usuario fluida y agradable."
+            title="Fácil de usar"
+            description="Interfaz intuitiva diseñada para una experiencia de usuario fluida y agradable."
             bgColor="bg-blue-100"
           />
           <FeatureCard
             icon={<Lock className="text-purple-600" size={24} />}
             title="Seguro"
-            description="Tus datos estan protegidos con las mejores practicas de seguridad."
+            description="Tus datos están protegidos con las mejores prácticas de seguridad."
             bgColor="bg-purple-100"
           />
           <FeatureCard
@@ -66,7 +66,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             Comenzar ahora
           </button>
           <p className="text-gray-500 text-sm">
-            Ya tienes una cuenta? Inicia sesion para continuar
+            ¿Ya tienes una cuenta? Inicia sesión para continuar
           </p>
         </motion.div>
       </div>

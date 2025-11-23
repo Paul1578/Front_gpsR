@@ -10,34 +10,39 @@ interface RecoverPasswordProps {
 }
 
 export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
-  const [usuario, setUsuario] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!usuario.trim()) {
-      toast.error("Por favor ingresa tu usuario");
+    if (!email.trim()) {
+      toast.error("Por favor ingresa tu correo");
       return;
     }
 
     setIsLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/backend/Auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const userExists = users.some((u: any) => u.usuario === usuario);
+      const data = await response.json().catch(() => null);
 
-    setIsLoading(false);
-
-    if (userExists) {
-      toast.success("Se ha enviado una contrasena temporal al correo electronico registrado");
-      setTimeout(() => {
-        setUsuario("");
-        onBack();
-      }, 3000);
-    } else {
-      toast.error("Usuario no encontrado");
+      if (response.ok) {
+        toast.success((data && data.message) || "Si el email existe, se envio un token.");
+        setEmail("");
+        setTimeout(() => onBack(), 2500);
+      } else {
+        toast.error((data && data.message) || "No pudimos procesar tu solicitud. Intentalo nuevamente.");
+      }
+    } catch (err) {
+      toast.error("Hubo un problema de conexion. Verifica tu red e intentalo otra vez.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,20 +61,20 @@ export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
       </button>
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Recuperemos tu contrasena</h1>
+        <h1 className="text-3xl font-semibold text-gray-900">Recuperemos tu contraseña</h1>
         <p className="text-sm text-gray-500 leading-relaxed">
-          Ingresa tu usuario y enviaremos una contrasena temporal al correo electronico registrado.
+          Ingresa tu correo y te enviaremos un token de restablecimiento.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <label className="flex flex-col gap-2 text-sm text-gray-700">
-          <span className="font-medium">*Nombre de usuario</span>
+          <span className="font-medium">*Correo electrónico</span>
           <input
-            type="text"
-            value={usuario}
-            onChange={(e) => setUsuario(e.target.value)}
-            placeholder="Ingresa tu usuario"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Ingresa tu correo"
             disabled={isLoading}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] disabled:opacity-60"
           />

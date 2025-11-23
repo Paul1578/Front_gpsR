@@ -29,12 +29,12 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
     }
 
     if (password.length < 6) {
-      toast.error("La contrasena debe tener al menos 6 caracteres");
+      toast.error("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Las contrasenas no coinciden");
+      toast.error("Las contraseñas no coinciden");
       return;
     }
 
@@ -72,9 +72,9 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <InputField label="Nombres" value={nombres} onChange={setNombres} />
         <InputField label="Apellidos" value={apellidos} onChange={setApellidos} />
-        <InputField label="Correo electronico" value={usuario} onChange={setUsuario} type="email" />
-        <InputField label="Contrasena" value={password} onChange={setPassword} type="password" />
-        <InputField label="Confirmar contrasena" value={confirmPassword} onChange={setConfirmPassword} type="password" />
+        <InputField label="Correo electrónico" value={usuario} onChange={setUsuario} type="email" />
+        <InputField label="Contraseña" value={password} onChange={setPassword} type="password" />
+        <InputField label="Confirmar contraseña" value={confirmPassword} onChange={setConfirmPassword} type="password" />
 
         <button
           type="submit"
@@ -90,7 +90,7 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
         className="text-sm font-semibold text-[#3271a4] hover:text-[#275b84] hover:underline transition-colors"
         type="button"
       >
-        Ya tienes cuenta? Inicia sesion
+        ¿Ya tienes cuenta? Inicia sesión
       </button>
     </div>
   );
@@ -123,7 +123,7 @@ function InputField({ label, value, onChange, type = "text" }: InputFieldProps) 
             type="button"
             onClick={() => setIsVisible((prev) => !prev)}
             className="absolute inset-y-0 right-3 flex items-center text-[#3271a4] hover:text-[#244f73]"
-            aria-label={isVisible ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={isVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
             {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
