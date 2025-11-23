@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
-import { Users, Shield, Check, ArrowLeft, Plus, Eye, EyeOff } from "lucide-react";
+import { Users, Shield, Check, ArrowLeft, Plus, Eye, EyeOff, ToggleLeft, ToggleRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -9,14 +9,32 @@ interface TeamManagementProps {
 }
 
 export function TeamManagement({ onBack }: TeamManagementProps = {}) {
-  const { user: currentUser, getTeamUsers, updateUserRole, updateUserPermissions, createUser, isSuperAdmin } = useAuth();
+  const {
+    getTeamUsers,
+    refreshTeamUsers,
+    updateUserRole,
+    updateUserPermissions,
+    updateUserStatus,
+    createUser,
+    isSuperAdmin,
+  } = useAuth();
+
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(false);
 
-  // Obtener solo usuarios del equipo actual
   const users = getTeamUsers();
+
+  useEffect(() => {
+    setIsLoadingTeam(true);
+    void (async () => {
+      await refreshTeamUsers();
+      setIsLoadingTeam(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [permissionsForm, setPermissionsForm] = useState<UserPermissions>({
     canViewMap: false,
@@ -27,10 +45,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   });
 
   const [createUserForm, setCreateUserForm] = useState({
-    nombres: "",
-    apellidos: "",
-    identificacion: "",
     usuario: "",
+    email: "",
     password: "",
     role: "chofer" as UserRole,
   });
@@ -46,8 +62,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     setShowCreateUser(false);
   };
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
-    updateUserRole(userId, newRole);
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    await updateUserRole(userId, newRole);
     toast.success("Rol actualizado exitosamente");
   };
 
@@ -68,26 +84,38 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!createUserForm.nombres || !createUserForm.apellidos || !createUserForm.usuario || !createUserForm.password) {
-      toast.error("Por favor completa todos los campos requeridos");
+
+    if (!createUserForm.usuario || !createUserForm.email || !createUserForm.password) {
+      toast.error("Por favor completa usuario, correo y contraseña");
+      return;
+    }
+
+    if (createUserForm.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
     setIsCreating(true);
-    
-    const success = await createUser(createUserForm);
-    
+
+    const success = await createUser({
+      nombres: "",
+      apellidos: "",
+      identificacion: "",
+      usuario: createUserForm.usuario,
+      email: createUserForm.email,
+      password: createUserForm.password,
+      role: createUserForm.role,
+      teamId: undefined,
+    });
+
     setIsCreating(false);
-    
+
     if (success) {
       toast.success("Usuario creado exitosamente");
       closeCreateUserDialog();
       setCreateUserForm({
-        nombres: "",
-        apellidos: "",
-        identificacion: "",
         usuario: "",
+        email: "",
         password: "",
         role: "chofer",
       });
@@ -162,7 +190,11 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
         {/* Team List */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
-          {users.length === 0 ? (
+          {isLoadingTeam ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              Cargando equipo...
+            </div>
+          ) : users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Users size={48} className="text-gray-300 mb-3" />
               <p className="text-gray-500 text-sm">No hay otros miembros en el equipo</p>
@@ -189,14 +221,31 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                         )}
                       </div>
                     </div>
-                    {getRoleBadge(user.role)}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const next = !user.isActive;
+                          void updateUserStatus(user.id, next);
+                          toast.success(`Usuario ${next ? "activado" : "desactivado"}`);
+                        }}
+                        className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900"
+                      >
+                        {user.isActive ? (
+                          <ToggleRight className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <ToggleLeft className="w-4 h-4 text-gray-400" />
+                        )}
+                        {user.isActive ? "Activo" : "Inactivo"}
+                      </button>
+                      {getRoleBadge(user.role)}
+                    </div>
                   </div>
 
                   {/* Role Selection */}
                   <div className="mb-4">
                     <label className="block text-xs text-gray-500 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(isSuperAdmin() 
+                      {(isSuperAdmin()
                         ? (["superadmin", "gerente", "logistica", "chofer"] as UserRole[])
                         : (["gerente", "logistica", "chofer"] as UserRole[])
                       ).map((role) => (
@@ -330,41 +379,6 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
           <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Nombres</label>
-              <input
-                type="text"
-                value={createUserForm.nombres}
-                onChange={(e) => setCreateUserForm({ ...createUserForm, nombres: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
-                placeholder="Juan"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Apellidos</label>
-              <input
-                type="text"
-                value={createUserForm.apellidos}
-                onChange={(e) => setCreateUserForm({ ...createUserForm, apellidos: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
-                placeholder="Pérez"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">
-                Número de Identificación <span className="text-gray-400 text-xs">(opcional - se generará automáticamente)</span>
-              </label>
-              <input
-                type="text"
-                value={createUserForm.identificacion}
-                onChange={(e) => setCreateUserForm({ ...createUserForm, identificacion: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
-                placeholder="Se generará automáticamente si se deja vacío"
-              />
-            </div>
-
-            <div>
               <label className="block text-sm text-gray-700 mb-1">Usuario</label>
               <input
                 type="text"
@@ -376,6 +390,17 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             </div>
 
             <div>
+              <label className="block text-sm text-gray-700 mb-1">Correo</label>
+              <input
+                type="email"
+                value={createUserForm.email}
+                onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
+                placeholder="jperez@empresa.com"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm text-gray-700 mb-1">Contraseña</label>
               <div className="relative">
                 <input
@@ -383,7 +408,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   value={createUserForm.password}
                   onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm pr-10"
-                  placeholder="••••••••"
+                  placeholder="Mínimo 6 caracteres"
                 />
                 <button
                   type="button"

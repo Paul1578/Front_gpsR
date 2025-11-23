@@ -13,16 +13,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
 
-type ApiRole = "Admin" | "Driver" | "Manager" | "User";
+type ApiRole = "Admin" | "Driver" | "Manager" | "User" | "Logistics";
 
 interface ApiUser {
   id: string;
   email: string;
   username?: string;
-  firstName: string;
-  lastName: string;
-  isActive: boolean;
-  roles: ApiRole[];
+  firstName?: string;
+  lastName?: string;
+  isActive?: boolean;
+  roles: ApiRole[] | string[];
 }
 
 // 👇 ADAPTADO para soportar lo que devuelve tu backend actual
@@ -78,6 +78,7 @@ interface User {
   permissions: UserPermissions;
   teamId?: string;
   teamName?: string;
+   isActive?: boolean;
 }
 
 interface AuthContextType {
@@ -85,8 +86,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   createUser: (
-    data: RegisterData & { role: UserRole; teamId?: string }
+    data: RegisterData & { role: UserRole; teamId?: string; email?: string }
   ) => Promise<boolean>;
+  refreshTeamUsers: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoadingUser: boolean;
@@ -94,7 +96,8 @@ interface AuthContextType {
     userId: string,
     permissions: Partial<UserPermissions>
   ) => void;
-  updateUserRole: (userId: string, role: UserRole) => void;
+  updateUserRole: (userId: string, role: UserRole) => Promise<void>;
+  updateUserStatus: (userId: string, isActive: boolean) => Promise<void>;
   updateTeamName: (teamName: string) => void;
   getAllUsers: () => User[];
   getTeamUsers: () => User[];
@@ -118,6 +121,14 @@ const roleMap: Record<ApiRole, UserRole> = {
   Driver: "chofer",
   Manager: "logistica",
   User: "logistica",
+  Logistics: "logistica",
+};
+
+const uiRoleToBackendRole: Record<UserRole, ApiRole> = {
+  superadmin: "Admin",
+  gerente: "Admin",
+  logistica: "Logistics",
+  chofer: "Driver",
 };
 
 const DEFAULT_REGISTER_ROLE: ApiRole = "Admin";
@@ -192,6 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const tokensRef = useRef<AuthTokens | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [teamUsers, setTeamUsers] = useState<User[]>([]);
+  const isAuthenticated = !!user;
 
   const setTokens = (tokens: AuthTokens | null) => {
     tokensRef.current = tokens;
@@ -243,6 +256,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoadingUser(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void refreshTeamUsers();
+    } else {
+      setTeamUsers([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const buildApiError = async (response: Response) => {
     let data: ApiErrorPayload | null = null;
@@ -330,7 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const mapApiUser = (apiUser: ApiUser): User => {
-    const mappedRole = determineRole(apiUser.roles);
+    const mappedRole = determineRole(apiUser.roles as ApiRole[]);
     const username = apiUser.username || apiUser.email;
     const displayName = apiUser.firstName || username || apiUser.id;
     return {
@@ -342,6 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       identificacion: undefined,
       role: mappedRole,
       permissions: defaultPermissions[mappedRole],
+      isActive: apiUser.isActive,
     };
   };
 
@@ -585,32 +608,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const createUser = async (
-    data: RegisterData & { role: UserRole; teamId?: string }
+    data: RegisterData & { role: UserRole; teamId?: string; email?: string }
   ): Promise<boolean> => {
     try {
-      const users = getStoredUsers();
-      if (users.some((u) => u.usuario === data.usuario)) return false;
-
-      const identificacion = data.identificacion || generateIdentificacion();
-      let teamId = data.teamId;
-
-      if (user?.role === "gerente" && !teamId) teamId = user.id;
-      if (["gerente", "superadmin"].includes(data.role)) teamId = undefined;
-
-      const newUser: StoredUser = {
-        id: Date.now().toString(),
-        nombres: data.nombres,
-        apellidos: data.apellidos,
-        usuario: data.usuario,
-        identificacion,
+      const payload = {
+        username: data.usuario,
+        email: data.email ?? data.usuario,
         password: data.password,
-        role: data.role,
-        permissions: defaultPermissions[data.role],
-        teamId,
+        roleName: uiRoleToBackendRole[data.role],
       };
 
-      users.push(newUser);
-      saveStoredUsers(users);
+      await apiFetch<ApiUser>("/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      await refreshTeamUsers();
       return true;
     } catch (error) {
       console.error("Error al crear usuario:", error);
@@ -619,68 +632,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const getAllUsers = (): User[] => {
-    const users = getStoredUsers();
-    return users.map(({ password: _password, ...rest }) => {
-      void _password;
-      return rest;
-    });
+    return teamUsers;
+  };
+
+  const refreshTeamUsers = async () => {
+    try {
+      const data = await apiFetch<ApiUser[]>("/users/my-team");
+      setTeamUsers(data.map(mapApiUser));
+    } catch (error) {
+      console.error("Error obteniendo equipo:", error);
+    }
   };
 
   const getTeamUsers = (): User[] => {
-    const users = getStoredUsers();
-    if (user?.role === "superadmin") return [];
-    if (user?.role === "gerente") {
-      return users.filter((u) => u.teamId === user.id && u.id !== user.id);
-    }
-    if (user?.teamId) {
-      return users.filter(
-        (u) =>
-          (u.teamId === user.teamId || u.id === user.teamId) &&
-          u.id !== user.id
-      );
-    }
-    return [];
+    return teamUsers;
   };
 
   const getManagers = (): User[] => {
-    const users = getStoredUsers();
-    return users.filter((u) => u.role === "gerente");
+    return teamUsers.filter((u) => u.role === "gerente");
   };
 
   const updateUserPermissions = (
     userId: string,
     permissions: Partial<UserPermissions>
   ) => {
-    const users = getStoredUsers();
-    const userIndex = users.findIndex((stored) => stored.id === userId);
-    if (userIndex !== -1) {
-      users[userIndex].permissions = {
-        ...users[userIndex].permissions,
-        ...permissions,
-      };
-      saveStoredUsers(users);
-      if (user?.id === userId) {
-        const updatedUser = {
-          ...user,
-          permissions: users[userIndex].permissions,
-        };
-        persistUser(updatedUser);
-      }
+    setTeamUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, permissions: { ...u.permissions, ...permissions } } : u
+      )
+    );
+    if (user?.id === userId) {
+      persistUser({ ...(user as User), permissions: { ...user.permissions, ...permissions } });
     }
   };
 
-  const updateUserRole = (userId: string, newRole: UserRole) => {
-    const users = getStoredUsers();
-    const userIndex = users.findIndex((stored) => stored.id === userId);
-    if (userIndex !== -1) {
-      users[userIndex].role = newRole;
-      users[userIndex].permissions = defaultPermissions[newRole];
-      saveStoredUsers(users);
-      if (user?.id === userId) {
-        const { password: _password, ...updatedUser } = users[userIndex];
-        void _password;
-        persistUser(updatedUser as User);
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
+    const targetRole = uiRoleToBackendRole[newRole];
+    const backendRoles: ApiRole[] = ["Admin", "Driver", "Logistics"];
+
+    try {
+      for (const role of backendRoles) {
+        if (role !== targetRole) {
+          try {
+            await apiFetch(`/users/${userId}/roles/${role}`, { method: "DELETE" });
+          } catch {
+            // ignore missing role
+          }
+        }
       }
+      await apiFetch(`/users/${userId}/roles/${targetRole}`, { method: "POST" });
+
+      setTeamUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, role: newRole, permissions: defaultPermissions[newRole] } : u
+        )
+      );
+      if (user?.id === userId) {
+        persistUser({ ...(user as User), role: newRole, permissions: defaultPermissions[newRole] });
+      }
+    } catch (error) {
+      console.error("Error actualizando rol:", error);
+    }
+  };
+
+  const updateUserStatus = async (userId: string, isActive: boolean) => {
+    try {
+      await apiFetch(`/users/${userId}/status?isActive=${isActive}`, { method: "PUT" });
+      setTeamUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive } : u)));
+    } catch (error) {
+      console.error("Error actualizando estado de usuario:", error);
     }
   };
 
@@ -710,9 +730,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoadingUser,
         updateUserPermissions,
         updateUserRole,
+        updateUserStatus,
         updateTeamName,
         getAllUsers,
         getTeamUsers,
+        refreshTeamUsers,
         getManagers,
         isSuperAdmin,
         apiFetch,
