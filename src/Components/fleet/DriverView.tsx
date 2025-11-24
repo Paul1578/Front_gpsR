@@ -185,7 +185,9 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
 
-  const myRoutes = routes.filter(r => r.conductorId === user?.id);
+  const myRoutes = routes.filter(
+    (r) => r.conductorId === (user?.driverId || user?.id)
+  );
   const activeRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
 
   useEffect(() => {

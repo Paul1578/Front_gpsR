@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Dashboard from "@/Components/Dashboard";
 import { useAuth } from "@/Context/AuthContext";
 
+
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, isLoadingUser } = useAuth();

@@ -8,8 +8,10 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { toast } from "sonner";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5046/api";
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
 
@@ -23,6 +25,7 @@ interface ApiUser {
   lastName?: string;
   isActive?: boolean;
   roles: ApiRole[] | string[];
+  driverId?: string;
 }
 
 // 👇 ADAPTADO para soportar lo que devuelve tu backend actual
@@ -78,7 +81,8 @@ interface User {
   permissions: UserPermissions;
   teamId?: string;
   teamName?: string;
-   isActive?: boolean;
+  isActive?: boolean;
+  driverId?: string;
 }
 
 interface AuthContextType {
@@ -319,7 +323,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers.set("Content-Type", "application/json");
     }
     if (!skipAuth) {
-      const tokenSource = tokensOverride ?? tokensRef.current;
+      let tokenSource = tokensOverride ?? tokensRef.current;
+      // fallback: si el ref no está poblado aún, intenta leer del storage
+      if (!tokenSource && typeof window !== "undefined") {
+        const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+        if (stored) {
+          tokenSource = JSON.parse(stored) as AuthTokens;
+          tokensRef.current = tokenSource;
+        }
+      }
       if (tokenSource?.accessToken) {
         headers.set("Authorization", `Bearer ${tokenSource.accessToken}`);
       }
@@ -368,6 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: mappedRole,
       permissions: defaultPermissions[mappedRole],
       isActive: apiUser.isActive,
+      driverId: apiUser.driverId,
     };
   };
 
@@ -598,7 +611,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      if ((error as any)?.status !== 401) {
+        console.error("Error al cerrar sesión:", error);
+      }
     } finally {
       clearAuthState();
     }
@@ -620,14 +635,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: RegisterData & { role: UserRole; teamId?: string; email?: string }
   ): Promise<boolean> => {
     try {
+      const safePassword =
+        data.password && data.password.trim().length >= 6
+          ? data.password
+          : "123456";
       const payload = {
         username: data.usuario,
         email: data.email ?? data.usuario,
+        password: safePassword,
         roleName: uiRoleToBackendRole[data.role],
         teamId: data.teamId,
       };
 
-      await apiFetch<ApiUser>("/users", {
+      await apiFetch<ApiUser>("/Users", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -635,7 +655,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshTeamUsers();
       return true;
     } catch (error) {
+      const errData = (error as any)?.data;
+      const message =
+        errData?.message ||
+        (Array.isArray(errData) ? errData.join(", ") : "") ||
+        (error as any)?.message ||
+        "Error al crear usuario";
       console.error("Error al crear usuario:", error);
+      toast?.error?.(message);
       return false;
     }
   };
@@ -646,7 +673,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshTeamUsers = async () => {
     try {
-      const data = await apiFetch<ApiUser[]>("/Users/myteam");
+      const data = await apiFetch<ApiUser[]>("/Users/my-team");
       setTeamUsers(data.map(mapApiUser));
     } catch (error) {
       console.error("Error obteniendo equipo:", error);
@@ -683,13 +710,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (const role of backendRoles) {
         if (role !== targetRole) {
           try {
-            await apiFetch(`/users/${userId}/roles/${role}`, { method: "DELETE" });
+            await apiFetch(`/Users/${userId}/roles/${role}`, { method: "DELETE" });
           } catch {
             // ignore missing role
           }
         }
       }
-      await apiFetch(`/users/${userId}/roles/${targetRole}`, { method: "POST" });
+      await apiFetch(`/Users/${userId}/roles/${targetRole}`, { method: "POST" });
 
       setTeamUsers((prev) =>
         prev.map((u) =>
@@ -706,7 +733,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserStatus = async (userId: string, isActive: boolean) => {
     try {
-      await apiFetch(`/users/${userId}/status?isActive=${isActive}`, { method: "PUT" });
+      await apiFetch(`/Users/${userId}/status?isActive=${isActive}`, { method: "PUT" });
       setTeamUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive } : u)));
     } catch (error) {
       console.error("Error actualizando estado de usuario:", error);

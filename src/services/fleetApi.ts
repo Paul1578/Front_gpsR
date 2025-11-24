@@ -1,87 +1,197 @@
+// src/services/fleetApi.ts
 import type { ApiRequestOptions } from "@/Context/AuthContext";
 
-type ApiFetcher = <T>(path: string, options?: ApiRequestOptions) => Promise<T>;
+/**
+ * ApiFetcher genérico que ya usas en tu AuthContext
+ */
+export type ApiFetcher = <T>(
+  path: string,
+  options?: ApiRequestOptions
+) => Promise<T>;
 
-export interface RouteDto {
+/* ============================================================
+ *  DTOs 1:1 CON LA API (lo que devuelve tu backend)
+ * ========================================================== */
+
+/**
+ * Coincide con el JSON real de /api/Routes
+ */
+export interface RouteApiDto {
   id: string;
-  name?: string;
-  nombre?: string;
-  description?: string;
-  descripcion?: string;
-  status?: string;
-  estado?: string;
-  vehicleId?: string;
-  vehiculoId?: string;
-  driverId?: string;
-  conductorId?: string;
-  driverName?: string;
-  driverFullName?: string;
-  cargo?: string;
-  stops?: Array<Record<string, unknown>>;
-  puntos?: Array<Record<string, unknown>>;
-  originLatitude?: number | string;
-  originLongitude?: number | string;
-  destinationLatitude?: number | string;
-  destinationLongitude?: number | string;
+  vehicleId: string;
+  driverId: string;
+  name: string;
+  origin: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+  };
+  destination: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+  };
+  points: Array<{
+    latitude: number;
+    longitude: number;
+    name?: string;
+  }>;
+  cargoDescription?: string | null;
+  plannedStart: string; // ISO
+  plannedEnd: string;   // ISO
+  status: number;       // RouteStatus en el backend
+  isActive: boolean;
 }
 
-export interface RoutePositionDto {
-  id?: string;
-  latitude?: number | string;
-  longitude?: number | string;
-  latitud?: number | string;
-  longitud?: number | string;
-  lat?: number | string;
-  lng?: number | string;
-  recordedAt?: string;
-  timestamp?: string;
-}
-
-export interface VehicleDto {
+/**
+ * Coincide con GET /api/Routes/{routeId}/positions
+ */
+export interface RoutePositionApiDto {
   id: string;
-  name?: string;
-  nombre?: string;
-  description?: string;
-  placa?: string;
-  plateNumber?: string;
-  licensePlate?: string;
-  lastLatitude?: number | string;
-  lastLongitude?: number | string;
-  latitude?: number | string;
-  longitude?: number | string;
-  driverId?: string;
-  driverName?: string;
-  driverFullName?: string;
-  status?: string;
+  routeId: string;
+  latitude: number;
+  longitude: number;
+  recordedAt: string;
+  speedKmh: number;
+  heading: number;
 }
+
+/**
+ * Ajusta esto si tu backend devuelve campos extra en /api/Vehicles
+ */
+export interface VehicleApiDto {
+  id: string;
+  name: string;
+  description?: string | null;
+  plate: string;        // o plateNumber / licensePlate según tu API real
+  status: number;       // VehicleStatus
+  isActive: boolean;
+}
+
+/* ============================================================
+ *  QUERY PARAMS Y HELPERS
+ * ========================================================== */
 
 export interface RouteQueryParams {
-  status?: string;
+  status?: string;   // si luego quieres filtrar por status numérico, cambia a number
   vehicleId?: string;
   driverId?: string;
+  onlyActive?: boolean;
 }
 
 const buildQueryString = (params: Record<string, string | undefined>) => {
   const entries = Object.entries(params).filter(
     ([, value]) => typeof value === "string" && value.length > 0
   ) as Array<[string, string]>;
+
   if (entries.length === 0) return "";
   return `?${new URLSearchParams(Object.fromEntries(entries)).toString()}`;
 };
 
-export const fetchRoutes = (apiFetch: ApiFetcher, params: RouteQueryParams = {}) => {
+/* ============================================================
+ *  LLAMADAS A LA API
+ * ========================================================== */
+
+/**
+ * GET /api/Routes
+ */
+export const fetchRoutes = (
+  apiFetch: ApiFetcher,
+  params: RouteQueryParams = {}
+): Promise<RouteApiDto[]> => {
   const query = buildQueryString({
     status: params.status,
     vehicleId: params.vehicleId,
     driverId: params.driverId,
+    onlyActive: params.onlyActive ? "true" : undefined,
   });
-  return apiFetch<RouteDto[]>(`/routes${query}`);
+
+  return apiFetch<RouteApiDto[]>(`/Routes${query}`);
 };
 
-export const fetchRoutePositions = (apiFetch: ApiFetcher, routeId: string) => {
-  return apiFetch<RoutePositionDto[]>(`/routes/${routeId}/positions`);
+/**
+ * GET /api/Routes/{routeId}/positions?from=&to=
+ * from/to opcionales en ISO-8601
+ */
+export const fetchRoutePositions = (
+  apiFetch: ApiFetcher,
+  routeId: string,
+  from?: string,
+  to?: string
+): Promise<RoutePositionApiDto[]> => {
+  const query = buildQueryString({
+    from,
+    to,
+  });
+
+  return apiFetch<RoutePositionApiDto[]>(
+    `/Routes/${routeId}/positions${query}`
+  );
 };
 
-export const fetchVehicles = (apiFetch: ApiFetcher) => {
-  return apiFetch<VehicleDto[]>(`/vehicles`);
+/**
+ * GET /api/Vehicles
+ */
+export const fetchVehicles = (
+  apiFetch: ApiFetcher
+): Promise<VehicleApiDto[]> => {
+  return apiFetch<VehicleApiDto[]>(`/Vehicles`);
 };
+
+/* ============================================================
+ *  MODELO NORMALIZADO PARA EL MAPA
+ *  (lo que consume directamente el MapView)
+ * ========================================================== */
+
+/**
+ * Tipo fuerte y sencillo para el MapView.
+ */
+export interface RouteForMap {
+  id: string;
+  name: string;
+  vehicleId: string;
+  driverId: string;
+  status: number;
+  isActive: boolean;
+  origin: { latitude: number; longitude: number; name?: string };
+  destination: { latitude: number; longitude: number; name?: string };
+  points: Array<{ latitude: number; longitude: number; name?: string }>;
+}
+
+/**
+ * Mapeador: API -> modelo para mapa
+ */
+export const mapRouteApiToRouteForMap = (dto: RouteApiDto): RouteForMap => ({
+  id: dto.id,
+  name: dto.name,
+  vehicleId: dto.vehicleId,
+  driverId: dto.driverId,
+  status: dto.status,
+  isActive: dto.isActive,
+  origin: {
+    latitude: dto.origin.latitude,
+    longitude: dto.origin.longitude,
+    name: dto.origin.name,
+  },
+  destination: {
+    latitude: dto.destination.latitude,
+    longitude: dto.destination.longitude,
+    name: dto.destination.name,
+  },
+  points: dto.points ?? [],
+});
+
+/**
+ * Helper para listas
+ */
+export const mapRoutesApiToRoutesForMap = (
+  dtos: RouteApiDto[]
+): RouteForMap[] => dtos.map(mapRouteApiToRouteForMap);
+
+/* ============================================================
+ *  ALIAS PARA COMPATIBILIDAD (si en el front usabas RouteDto, etc.)
+ * ========================================================== */
+
+export type RouteDto = RouteApiDto;
+export type RoutePositionDto = RoutePositionApiDto;
+export type VehicleDto = VehicleApiDto;
