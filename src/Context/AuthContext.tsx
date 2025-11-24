@@ -83,7 +83,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; message?: string }>;
   register: (data: RegisterData) => Promise<boolean>;
   createUser: (
     data: RegisterData & { role: UserRole; teamId?: string; email?: string }
@@ -534,7 +537,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoadingUser(false);
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ ok: boolean; message?: string }> => {
     try {
       const data = await apiFetch<AuthResponseDto>("/auth/login", {
         method: "POST",
@@ -542,10 +548,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         skipAuth: true,
       });
       await applyAuthResponse(data);
-      return true;
+      return { ok: true };
     } catch (error) {
       console.error("Error en login:", error);
-      return false;
+      const message =
+        (error as Error)?.message ??
+        "No pudimos iniciar sesión. Verifica tus credenciales.";
+      return { ok: false, message };
     }
   };
 
@@ -614,8 +623,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload = {
         username: data.usuario,
         email: data.email ?? data.usuario,
-        password: data.password,
         roleName: uiRoleToBackendRole[data.role],
+        teamId: data.teamId,
       };
 
       await apiFetch<ApiUser>("/users", {
@@ -637,7 +646,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshTeamUsers = async () => {
     try {
-      const data = await apiFetch<ApiUser[]>("/users/my-team");
+      const data = await apiFetch<ApiUser[]>("/Users/myteam");
       setTeamUsers(data.map(mapApiUser));
     } catch (error) {
       console.error("Error obteniendo equipo:", error);

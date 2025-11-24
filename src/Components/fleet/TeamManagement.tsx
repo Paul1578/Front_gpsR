@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
-import { Users, Shield, Check, ArrowLeft, Plus, Eye, EyeOff, ToggleLeft, ToggleRight } from "lucide-react";
+import { Users, Shield, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -47,18 +47,14 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const [createUserForm, setCreateUserForm] = useState({
     usuario: "",
     email: "",
-    password: "",
     role: "chofer" as UserRole,
   });
-  const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const openCreateUserDialog = () => {
-    setShowCreatePassword(false);
     setShowCreateUser(true);
   };
 
   const closeCreateUserDialog = () => {
-    setShowCreatePassword(false);
     setShowCreateUser(false);
   };
 
@@ -85,13 +81,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!createUserForm.usuario || !createUserForm.email || !createUserForm.password) {
-      toast.error("Por favor completa usuario, correo y contraseña");
-      return;
-    }
-
-    if (createUserForm.password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres");
+    if (!createUserForm.usuario || !createUserForm.email) {
+      toast.error("Por favor completa usuario y correo");
       return;
     }
 
@@ -103,7 +94,6 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       identificacion: "",
       usuario: createUserForm.usuario,
       email: createUserForm.email,
-      password: createUserForm.password,
       role: createUserForm.role,
       teamId: undefined,
     });
@@ -113,10 +103,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     if (success) {
       toast.success("Usuario creado exitosamente");
       closeCreateUserDialog();
+      await refreshTeamUsers();
       setCreateUserForm({
         usuario: "",
         email: "",
-        password: "",
         role: "chofer",
       });
     } else {
@@ -400,49 +390,49 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Contraseña</label>
-              <div className="relative">
-                <input
-                  type={showCreatePassword ? "text" : "password"}
-                  value={createUserForm.password}
-                  onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm pr-10"
-                  placeholder="Mínimo 6 caracteres"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-2 flex items-center text-[#3271a4] hover:text-[#244f73]"
-                  aria-label={showCreatePassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+            <div className="rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-sm px-3 py-2">
+              El usuario recibirá un correo con un enlace para activar su cuenta.
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">Rol</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm text-gray-700">Rol</label>
+                <span className="text-xs text-gray-500">Selecciona el rol para el nuevo usuario</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(isSuperAdmin()
                   ? (["superadmin", "gerente", "logistica", "chofer"] as UserRole[])
                   : (["gerente", "logistica", "chofer"] as UserRole[])
-                ).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setCreateUserForm({ ...createUserForm, role })}
-                    className={`px-3 py-2 rounded-lg border-2 transition-all text-xs ${
-                      createUserForm.role === role
-                        ? role === "superadmin"
-                          ? "border-red-600 bg-red-600 text-white"
-                          : "border-[#3271a4] bg-[#3271a4] text-white"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    {role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
-                  </button>
-                ))}
+                ).map((role) => {
+                  const active = createUserForm.role === role;
+                  const roleLabel =
+                    role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1);
+                  const roleInfo =
+                    role === "superadmin"
+                      ? "Control total del sistema"
+                      : role === "gerente"
+                      ? "Administra equipos y rutas"
+                      : role === "logistica"
+                      ? "Gestiona operaciones diarias"
+                      : "Conduce y reporta";
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => setCreateUserForm({ ...createUserForm, role })}
+                      className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left shadow-sm transition-all ${
+                        active
+                          ? "border-[#3271a4] bg-gradient-to-r from-[#3271a4] to-[#4384d8] text-white shadow-md"
+                          : "border-gray-200 bg-white hover:border-[#3271a4]/50 hover:shadow"
+                      }`}
+                    >
+                      <span className={`text-sm font-semibold ${active ? "text-white" : "text-gray-900"}`}>
+                        {roleLabel}
+                      </span>
+                      <span className={`text-xs ${active ? "text-white/80" : "text-gray-500"}`}>{roleInfo}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

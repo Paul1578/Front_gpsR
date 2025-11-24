@@ -27,13 +27,18 @@ export function LoginForm({ className, onForgotPassword, onSwitchToRegister, onB
     }
 
     setIsLoading(true);
-    const success = await login(email, password);
+    const result = await login(email, password);
     setIsLoading(false);
 
-    if (success) {
+    if (result.ok) {
       toast.success("¡Bienvenido!");
     } else {
-      toast.error("Correo o contraseña incorrectos");
+      const message = result.message || "";
+      if (message.toLowerCase().includes("activar su cuenta")) {
+        toast.error("Debes activar tu cuenta. Revisa el correo enviado por tu administrador.");
+      } else {
+        toast.error("Correo o contraseña incorrectos");
+      }
     }
   };
 
