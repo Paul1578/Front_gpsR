@@ -21,10 +21,9 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 
   // Si es Super Admin, mostrar dashboard especial
   if (user?.role === "superadmin") {
-    // Obtener todas las estadísticas del sistema
     const allUsers = getAllUsers();
-    const allRoutes = JSON.parse(localStorage.getItem("routes") || "[]");
-    const allVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    const allRoutes = routes;
+    const allVehicles = vehicles;
     
     return (
       <div className="h-full flex flex-col bg-gradient-to-br from-red-50 via-white to-orange-50">

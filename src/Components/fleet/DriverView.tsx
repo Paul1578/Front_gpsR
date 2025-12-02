@@ -225,43 +225,55 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
 
   useEffect(() => {
     if (!activeRoute?.vehiculoId || !currentLocation) return;
-    updateVehicleLocation(activeRoute.vehiculoId, {
+    void updateVehicleLocation(activeRoute.vehiculoId, {
       lat: currentLocation[0],
       lng: currentLocation[1],
     });
   }, [activeRoute?.vehiculoId, currentLocation, updateVehicleLocation]);
 
-  const handleStartRoute = () => {
+  const handleStartRoute = async () => {
     if (activeRoute && activeRoute.estado === "pendiente") {
-      updateRoute(activeRoute.id, {
+      const result = await updateRoute(activeRoute.id, {
         estado: "en_progreso",
         fechaInicio: new Date().toISOString(),
       });
-      toast.success("Ruta iniciada exitosamente");
+      if (result.ok) {
+        toast.success(result.message ?? "Ruta iniciada");
+      } else {
+        toast.error(result.message ?? "No se pudo iniciar la ruta");
+      }
     }
   };
 
-  const handlePauseRoute = () => {
+  const handlePauseRoute = async () => {
     if (activeRoute && activeRoute.estado === "en_progreso") {
-      updateRoute(activeRoute.id, {
+      const result = await updateRoute(activeRoute.id, {
         estado: "pendiente",
       });
-      toast.success("Ruta pausada");
+      if (result.ok) {
+        toast.success(result.message ?? "Ruta pausada");
+      } else {
+        toast.error(result.message ?? "No se pudo pausar la ruta");
+      }
     }
   };
 
-  const handleCompleteRoute = () => {
+  const handleCompleteRoute = async () => {
     if (activeRoute) {
       if (!activeRoute.evidencias || activeRoute.evidencias.length === 0) {
         toast.error("Por favor adjunta al menos una evidencia antes de completar la ruta");
         return;
       }
-      
-      updateRoute(activeRoute.id, {
+
+      const result = await updateRoute(activeRoute.id, {
         estado: "completada",
         fechaFin: new Date().toISOString(),
       });
-      toast.success("¡Ruta completada exitosamente!");
+      if (result.ok) {
+        toast.success(result.message ?? "Ruta completada exitosamente");
+      } else {
+        toast.error(result.message ?? "No se pudo completar la ruta");
+      }
     }
   };
 

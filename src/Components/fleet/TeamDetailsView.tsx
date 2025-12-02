@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Users, Truck, Route, History, Edit2, Check, X } from "lucide-react";
 import { useAuth } from "../../Context/AuthContext";
+import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
 
 interface TeamDetailsViewProps {
@@ -10,6 +11,7 @@ interface TeamDetailsViewProps {
 
 export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const { getAllUsers, updateUserRole, updateUserPermissions } = useAuth();
+  const { vehicles, routes } = useFleet();
   const [activeTab, setActiveTab] = useState<"team" | "vehicles" | "routes" | "history">("team");
   const [editingTeamName, setEditingTeamName] = useState(false);
   const [tempTeamName, setTempTeamName] = useState("");
@@ -19,10 +21,10 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const manager = allUsers.find(u => u.id === teamId);
   const teamMembers = allUsers.filter(u => u.teamId === teamId);
   
-  const allVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+  const allVehicles = vehicles;
   const teamVehicles = allVehicles.filter((v: any) => v.teamId === teamId);
   
-  const allRoutes = JSON.parse(localStorage.getItem("routes") || "[]");
+  const allRoutes = routes;
   const teamRoutes = allRoutes.filter((r: any) => r.teamId === teamId);
   const activeRoutes = teamRoutes.filter((r: any) => r.estado === "en_progreso");
   const completedRoutes = teamRoutes.filter((r: any) => r.estado === "completada");
@@ -41,15 +43,8 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   };
 
   const handleSaveTeamName = () => {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const managerIndex = users.findIndex((u: any) => u.id === teamId);
-    
-    if (managerIndex !== -1) {
-      users[managerIndex].teamName = tempTeamName;
-      localStorage.setItem("users", JSON.stringify(users));
-      setEditingTeamName(false);
-      toast.success("Nombre del equipo actualizado");
-    }
+    toast.info("Actualiza el nombre del equipo desde el backend");
+    setEditingTeamName(false);
   };
 
   const getRoleColor = (role: string) => {

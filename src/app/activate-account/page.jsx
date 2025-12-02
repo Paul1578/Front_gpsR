@@ -60,7 +60,7 @@ export default function ActivateAccountPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/backend/auth/activate-account", {
+      const response = await fetch("/api/backend/Auth/activate-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

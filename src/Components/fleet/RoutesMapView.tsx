@@ -56,30 +56,20 @@ const DEFAULT_ZOOM = 7;
  * origen -> puntos intermedios -> destino
  */
 function buildRoutePolyline(route: RouteForMap): LatLngTuple[] {
-  const result: LatLngTuple[] = [];
+  // Si el backend devuelve un array de points completo (incluyendo origen/destino),
+  // úsalo tal cual. Si no, construye con origen y destino.
+  if (Array.isArray(route.points) && route.points.length > 0) {
+    return route.points.map((p) => [p.latitude, p.longitude] as LatLngTuple);
+  }
 
-  const pushUnique = (lat: number, lng: number) => {
-    const last = result[result.length - 1];
-    if (!last || last[0] !== lat || last[1] !== lng) {
-      result.push([lat, lng]);
-    }
-  };
-
+  const fallback: LatLngTuple[] = [];
   if (route.origin) {
-    pushUnique(route.origin.latitude, route.origin.longitude);
+    fallback.push([route.origin.latitude, route.origin.longitude]);
   }
-
-  if (Array.isArray(route.points)) {
-    for (const p of route.points) {
-      pushUnique(p.latitude, p.longitude);
-    }
-  }
-
   if (route.destination) {
-    pushUnique(route.destination.latitude, route.destination.longitude);
+    fallback.push([route.destination.latitude, route.destination.longitude]);
   }
-
-  return result;
+  return fallback;
 }
 
 /**
@@ -258,6 +248,22 @@ export function RoutesMapView({
 
           return (
             <Fragment key={route.id}>
+              {route.points?.map((p, idx) => {
+                const pos: LatLngTuple = [p.latitude, p.longitude];
+                return (
+                  <Marker key={`${route.id}-stop-${idx}`} position={pos}>
+                    <Popup>
+                      <div className="text-sm">
+                        <p className="font-semibold">{route.name}</p>
+                        <p className="text-xs text-gray-500">
+                          Parada: {p.name ?? `Punto ${idx + 1}`}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+
               {/* Línea planificada (snapeada a carretera si OSRM respondió) */}
               <Polyline
                 positions={polyline}

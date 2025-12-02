@@ -22,6 +22,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
     modelo: "",
     anio: new Date().getFullYear(),
     estado: "disponible" as Vehicle["estado"],
+    descripcion: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,27 +34,27 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
     }
 
     if (editingVehicle) {
-      const ok = await updateVehicle(editingVehicle.id, formData);
-      if (ok) {
-        toast.success("Vehículo actualizado exitosamente");
+      const result = await updateVehicle(editingVehicle.id, formData);
+      if (result.ok) {
+        toast.success(result.message ?? "Vehiculo actualizado exitosamente");
+        resetForm();
       } else {
-        toast.error("No se pudo actualizar el vehículo");
-        return;
+        toast.error(result.message ?? "No se pudo actualizar el vehiculo");
       }
-    } else {
-      const ok = await addVehicle({
-        ...formData,
-        ubicacionActual: { lat: -12.0464, lng: -77.0428 },
-      });
-      if (ok) {
-        toast.success("Vehículo agregado exitosamente");
-      } else {
-        toast.error("No se pudo crear el vehículo");
-        return;
-      }
+      return;
     }
 
-    resetForm();
+    const result = await addVehicle({
+      ...formData,
+      ubicacionActual: { lat: -12.0464, lng: -77.0428 },
+    });
+
+    if (result.ok) {
+      toast.success(result.message ?? "Vehiculo agregado exitosamente");
+      resetForm();
+    } else {
+      toast.error(result.message ?? "No se pudo crear el vehiculo");
+    }
   };
 
   const handleEdit = (vehicle: Vehicle) => {
@@ -64,16 +65,17 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       modelo: vehicle.modelo,
       anio: vehicle.anio,
       estado: vehicle.estado,
+      descripcion: vehicle.descripcion ?? "",
     });
     setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
-    const ok = await deleteVehicle(id);
-    if (ok) {
-      toast.success("Vehículo eliminado exitosamente");
+    const result = await deleteVehicle(id);
+    if (result.ok) {
+      toast.success(result.message ?? "Vehiculo eliminado exitosamente");
     } else {
-      toast.error("No se pudo eliminar el vehículo");
+      toast.error(result.message ?? "No se pudo eliminar el vehiculo");
     }
     setDeleteConfirm(null);
   };
@@ -85,6 +87,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       modelo: "",
       anio: new Date().getFullYear(),
       estado: "disponible",
+      descripcion: "",
     });
     setEditingVehicle(null);
     setShowForm(false);
@@ -184,6 +187,12 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
                       <span className="text-gray-500">Año:</span>
                       <span className="text-gray-900">{vehicle.anio}</span>
                     </div>
+                    {vehicle.descripcion ? (
+                      <div className="text-xs text-gray-600">
+                        <span className="text-gray-500">Descripción: </span>
+                        <span className="text-gray-900">{vehicle.descripcion}</span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-500">Estado:</span>
                       {getEstadoBadge(vehicle.estado)}
@@ -213,7 +222,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       </div>
 
       <Dialog open={showForm} onOpenChange={resetForm}>
-        <DialogContent className="sm:max-w-md max-w-[90%]" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-md max-w-[95%] max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="text-lg md:text-xl">
               {editingVehicle ? "Editar Vehículo" : "Agregar Vehículo"}
@@ -281,6 +290,17 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
                 <option value="en_ruta">En Ruta</option>
                 <option value="mantenimiento">Mantenimiento</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1 text-gray-700">Descripción (opcional)</label>
+              <textarea
+                value={formData.descripcion}
+                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
+                rows={3}
+                placeholder="Detalles del vehículo (opcional)"
+              />
             </div>
 
             <div className="flex gap-2 pt-4">

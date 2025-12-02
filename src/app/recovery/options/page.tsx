@@ -11,7 +11,8 @@ export default function RecoveryOptionsPage() {
       <div className="w-full max-w-[340px] aspect-[340/768] relative">
         <RecoveryOptions
           className="relative size-full"
-          onSelectUsername={() => router.push("/recovery/username")}
+          usernameEnabled={false}
+          onSelectUsername={() => {}}
           onSelectPassword={() => router.push("/recovery/password")}
           onBack={() => router.push("/login")}
         />

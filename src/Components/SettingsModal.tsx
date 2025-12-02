@@ -17,12 +17,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
 
-  const handleDeleteAccount = () => {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const updatedUsers = users.filter((u: any) => u.id !== user?.id);
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    logout();
-    toast.success("Cuenta eliminada exitosamente");
+  const handleDeleteAccount = async () => {
+    await logout();
+    toast.info("La eliminacion de cuentas se realiza desde el backend. Hemos cerrado tu sesion.");
     setShowDeleteConfirm(false);
     onClose();
   };

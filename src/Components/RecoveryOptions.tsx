@@ -7,6 +7,7 @@ interface RecoveryOptionsProps {
   onSelectUsername: () => void;
   onSelectPassword: () => void;
   onBack: () => void;
+  usernameEnabled?: boolean;
 }
 
 export function RecoveryOptions({
@@ -14,6 +15,7 @@ export function RecoveryOptions({
   onSelectUsername,
   onSelectPassword,
   onBack,
+  usernameEnabled = true,
 }: RecoveryOptionsProps) {
   return (
     <div className={className} data-name="Recovery Options">
@@ -41,16 +43,21 @@ export function RecoveryOptions({
 
       {/* Botón Recuperar Usuario */}
       <button
-        onClick={onSelectUsername}
-        className="absolute bg-[#3271a4] inset-[48%_11.73%_46.5%_11.44%] rounded-[6px] hover:bg-[#2a5f8c] transition-colors cursor-pointer"
+        onClick={usernameEnabled ? onSelectUsername : undefined}
+        className={`absolute inset-[48%_11.73%_46.5%_11.44%] rounded-[6px] transition-colors cursor-pointer ${
+          usernameEnabled
+            ? "bg-[#3271a4] hover:bg-[#2a5f8c]"
+            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+        }`}
         type="button"
+        disabled={!usernameEnabled}
       >
         <div
           aria-hidden="true"
           className="absolute border-[#4384d8] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[6px]"
         />
-        <p className="absolute font-['Inter:Semi_Bold',sans-serif] font-semibold inset-[20%_10%_20%_10%] leading-[normal] not-italic text-[13px] sm:text-[14px] md:text-[16px] text-white text-center flex items-center justify-center">
-          Recuperar Usuario
+        <p className="absolute font-['Inter:Semi_Bold',sans-serif] font-semibold inset-[20%_10%_20%_10%] leading-[normal] not-italic text-[13px] sm:text-[14px] md:text-[16px] text-center flex items-center justify-center">
+          {usernameEnabled ? "Recuperar Usuario" : "No disponible"}
         </p>
       </button>
 

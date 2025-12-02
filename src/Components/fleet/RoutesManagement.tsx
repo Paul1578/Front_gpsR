@@ -98,7 +98,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       Math.abs(formData.origin.lat) < 0.000001 ||
       Math.abs(formData.origin.lng) < 0.000001
     ) {
-      toast.error("Coordenadas de origen inválidas");
+      toast.error("Coordenadas de origen invalidas");
       return;
     }
     if (
@@ -107,7 +107,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       Math.abs(formData.destination.lat) < 0.000001 ||
       Math.abs(formData.destination.lng) < 0.000001
     ) {
-      toast.error("Coordenadas de destino inválidas");
+      toast.error("Coordenadas de destino invalidas");
       return;
     }
 
@@ -153,17 +153,24 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       teamId: undefined,
     };
 
-    let success = false;
     if (editingRoute) {
-      success = await updateRoute(editingRoute.id, payload);
-      if (success) toast.success("Ruta actualizada exitosamente");
-    } else {
-      success = await addRoute(payload);
-      if (success) toast.success("Ruta creada exitosamente");
+      const result = await updateRoute(editingRoute.id, payload);
+      if (result.ok) {
+        toast.success(result.message ?? "Ruta actualizada exitosamente");
+        resetForm();
+      } else {
+        toast.error(result.message ?? "No se pudo guardar la ruta");
+      }
+      return;
     }
 
-    if (success) resetForm();
-    else toast.error("No se pudo guardar la ruta");
+    const result = await addRoute(payload);
+    if (result.ok) {
+      toast.success(result.message ?? "Ruta creada exitosamente");
+      resetForm();
+    } else {
+      toast.error(result.message ?? "No se pudo guardar la ruta");
+    }
   };
 
   const handleEdit = (route: Route) => {
@@ -184,9 +191,9 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   };
 
   const handleDelete = async (id: string) => {
-    const ok = await deleteRoute(id);
-    if (ok) toast.success("Ruta eliminada exitosamente");
-    else toast.error("No se pudo eliminar la ruta");
+    const result = await deleteRoute(id);
+    if (result.ok) toast.success(result.message ?? "Ruta eliminada exitosamente");
+    else toast.error(result.message ?? "No se pudo eliminar la ruta");
     setDeleteConfirm(null);
   };
 

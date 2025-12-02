@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Shield, Users, Database, Activity, Download, Upload, AlertTriangle, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
 import { useAuth, UserRole } from "../../Context/AuthContext";
+import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
 import { TeamDetailsView } from "./TeamDetailsView";
 
@@ -10,6 +11,7 @@ interface SuperAdminViewProps {
 
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const { getAllUsers, updateUserRole, getManagers, createUser } = useAuth();
+  const { vehicles, routes } = useFleet();
   const [activeTab, setActiveTab] = useState<"overview" | "teams" | "users" | "create" | "data" | "logs">("overview");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -29,8 +31,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const managers = getManagers();
 
   // Obtener todas las rutas y vehículos del sistema (sin filtro de equipo)
-  const allRoutes = JSON.parse(localStorage.getItem("routes") || "[]");
-  const allVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+  const allRoutes = routes;
+  const allVehicles = vehicles;
 
   // Estadísticas del sistema para uso/actividad
   const stats = {
@@ -91,9 +93,9 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
   const handleExportData = () => {
     const data = {
-      users: localStorage.getItem("users"),
-      routes: localStorage.getItem("routes"),
-      vehicles: localStorage.getItem("vehicles"),
+      users,
+      routes: allRoutes,
+      vehicles: allVehicles,
       exportDate: new Date().toISOString(),
     };
 
@@ -110,40 +112,13 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     toast.success("Datos exportados exitosamente");
   };
 
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        
-        if (data.users) localStorage.setItem("users", data.users);
-        if (data.routes) localStorage.setItem("routes", data.routes);
-        if (data.vehicles) localStorage.setItem("vehicles", data.vehicles);
-
-        toast.success("Datos importados exitosamente. Recarga la página.");
-      } catch (error) {
-        toast.error("Error al importar datos. Verifica el archivo.");
-      }
-    };
-    reader.readAsText(file);
+  const handleImportData = () => {
+    toast.info("La importacion de datos se gestiona desde el backend");
   };
 
   const handleResetSystem = () => {
-    if (!showResetConfirm) {
-      setShowResetConfirm(true);
-      return;
-    }
-
-    localStorage.removeItem("users");
-    localStorage.removeItem("routes");
-    localStorage.removeItem("vehicles");
-    localStorage.removeItem("currentUser");
-    
-    toast.success("Sistema reiniciado. Recargando...");
-    setTimeout(() => window.location.reload(), 1500);
+    toast.info("El reseteo del sistema se realiza desde el backend");
+    setShowResetConfirm(false);
   };
 
   const getRoleColor = (role: string) => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
-import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileViewProps {
@@ -8,9 +8,14 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ onBack }: ProfileViewProps = {}) {
-  const { user, updateTeamName } = useAuth();
+  const { user, updateTeamName, changePassword, logoutAll, logout } = useAuth();
   const [editingTeamName, setEditingTeamName] = useState(false);
   const [tempTeamName, setTempTeamName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   if (!user) {
     return (
@@ -50,6 +55,44 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     canManageAllOrganizations: "Gestionar Todas las Organizaciones",
     canViewSystemLogs: "Ver Logs del Sistema",
     canExportData: "Exportar Datos del Sistema",
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      toast.error("Completa todos los campos de contrasena");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("La nueva contrasena debe tener al menos 8 caracteres");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Las contrasenas no coinciden");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      toast.error("La nueva contrasena no puede ser igual a la actual");
+      return;
+    }
+    setIsUpdatingPassword(true);
+    const result = await changePassword(currentPassword, newPassword, confirmNewPassword);
+    setIsUpdatingPassword(false);
+    if (result.ok) {
+      toast.success("Contrasena actualizada. Cerrando sesion por seguridad...");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setShowPasswordForm(false);
+      await logout();
+    } else {
+      toast.error(result.message ?? "No se pudo cambiar la contrasena");
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    await logoutAll();
+    toast.success("Cerraste sesión en todos los dispositivos");
   };
 
   return (
@@ -99,6 +142,68 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
 
         {/* Profile Information */}
         <div className="p-6 space-y-4">
+          {/* Seguridad: cambio de contraseña al inicio */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock size={18} className="text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Seguridad</p>
+                  <p className="text-xs text-gray-500">Actualiza tu contraseña con el token actual</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPasswordForm((prev) => !prev)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-white transition"
+              >
+                {showPasswordForm ? "Ocultar" : "Cambiar contraseña"}
+              </button>
+            </div>
+            {showPasswordForm && (
+              <form onSubmit={handleChangePassword} className="mt-4 flex flex-col gap-3">
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Contraseña actual"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                />
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Nueva contraseña"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                />
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirmar nueva contraseña"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                />
+                <div className="md:col-span-3 flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="px-4 py-2 bg-[#3271a4] text-white rounded-lg text-sm hover:bg-[#2a5f8c] disabled:opacity-60"
+                  >
+                    {isUpdatingPassword ? "Actualizando..." : "Cambiar contraseña"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogoutAll}
+                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 flex items-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    Cerrar sesión en todos los dispositivos
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
           {/* Identification */}
           <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
             <IdCard size={20} className="text-gray-400 mt-0.5" />

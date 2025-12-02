@@ -62,6 +62,8 @@ export interface RoutePositionApiDto {
 export interface VehicleApiDto {
   id: string;
   name: string;
+  model: string;
+  brand: string;
   description?: string | null;
   plate: string;        // o plateNumber / licensePlate según tu API real
   status: number;       // VehicleStatus
@@ -158,6 +160,37 @@ export interface RouteForMap {
   points: Array<{ latitude: number; longitude: number; name?: string }>;
 }
 
+const normalizePoint = (
+  raw: Record<string, unknown>,
+  fallbackName: string
+): { latitude: number; longitude: number; name?: string } => ({
+  latitude:
+    (raw as any).latitude ?? (raw as any).lat ?? (raw as any).Latitude ?? 0,
+  longitude:
+    (raw as any).longitude ?? (raw as any).lng ?? (raw as any).Longitude ?? 0,
+  name: (raw as any).name ?? fallbackName,
+});
+
+const parsePoints = (
+  dto: RouteApiDto | (RouteApiDto & { pointsJson?: string; PointsJson?: string })
+) => {
+  if (Array.isArray(dto.points)) {
+    return dto.points.map((p, idx) => normalizePoint(p as any, `Punto ${idx + 1}`));
+  }
+  const raw = (dto as any).pointsJson ?? (dto as any).PointsJson;
+  if (typeof raw === "string" && raw.length > 0) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((p, idx) => normalizePoint(p as any, `Punto ${idx + 1}`));
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return [];
+};
+
 /**
  * Mapeador: API -> modelo para mapa
  */
@@ -169,16 +202,32 @@ export const mapRouteApiToRouteForMap = (dto: RouteApiDto): RouteForMap => ({
   status: dto.status,
   isActive: dto.isActive,
   origin: {
-    latitude: dto.origin.latitude,
-    longitude: dto.origin.longitude,
+    latitude:
+      dto.origin.latitude ??
+      (dto as any).origin?.lat ??
+      (dto as any).origin?.Latitude ??
+      0,
+    longitude:
+      dto.origin.longitude ??
+      (dto as any).origin?.lng ??
+      (dto as any).origin?.Longitude ??
+      0,
     name: dto.origin.name,
   },
   destination: {
-    latitude: dto.destination.latitude,
-    longitude: dto.destination.longitude,
+    latitude:
+      dto.destination.latitude ??
+      (dto as any).destination?.lat ??
+      (dto as any).destination?.Latitude ??
+      0,
+    longitude:
+      dto.destination.longitude ??
+      (dto as any).destination?.lng ??
+      (dto as any).destination?.Longitude ??
+      0,
     name: dto.destination.name,
   },
-  points: dto.points ?? [],
+  points: parsePoints(dto),
 });
 
 /**

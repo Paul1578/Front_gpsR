@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
-import { Users, Shield, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight } from "lucide-react";
+import { useFleet } from "../../Context/FleetContext";
+import { Users, Shield, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -18,12 +19,22 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     createUser,
     isSuperAdmin,
   } = useAuth();
+  const {
+    drivers,
+    vehicles,
+    refreshDrivers,
+    addDriver,
+    assignVehicleToDriver,
+    unassignVehicleFromDriver,
+  } = useFleet();
 
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [showDriversSection, setShowDriversSection] = useState(false);
 
   const users = getTeamUsers();
 
@@ -32,6 +43,15 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     void (async () => {
       await refreshTeamUsers();
       setIsLoadingTeam(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setIsLoadingDrivers(true);
+    void (async () => {
+      await refreshDrivers();
+      setIsLoadingDrivers(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -45,10 +65,24 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   });
 
   const [createUserForm, setCreateUserForm] = useState({
+    nombres: "",
+    apellidos: "",
     usuario: "",
     email: "",
     role: "chofer" as UserRole,
+    documentNumber: "",
+    phoneNumber: "",
   });
+
+  const [createDriverForm, setCreateDriverForm] = useState({
+    userId: "",
+    firstName: "",
+    lastName: "",
+    documentNumber: "",
+    phoneNumber: "",
+  });
+
+  const [assignSelection, setAssignSelection] = useState<Record<string, string>>({});
 
   const openCreateUserDialog = () => {
     setShowCreateUser(true);
@@ -81,17 +115,22 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!createUserForm.usuario || !createUserForm.email) {
-      toast.error("Por favor completa usuario y correo");
+    if (!createUserForm.usuario || !createUserForm.email || !createUserForm.nombres || !createUserForm.apellidos) {
+      toast.error("Por favor completa nombres, apellidos, usuario y correo");
+      return;
+    }
+
+    if (createUserForm.role === "chofer" && (!createUserForm.documentNumber || !createUserForm.phoneNumber)) {
+      toast.error("Para chofer indica documento y teléfono");
       return;
     }
 
     setIsCreating(true);
 
     const success = await createUser({
-      nombres: "",
-      apellidos: "",
-      identificacion: "",
+      nombres: createUserForm.nombres,
+      apellidos: createUserForm.apellidos,
+      identificacion: createUserForm.documentNumber,
       usuario: createUserForm.usuario,
       email: createUserForm.email,
       role: createUserForm.role,
@@ -101,13 +140,40 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     setIsCreating(false);
 
     if (success) {
+      await refreshTeamUsers();
+
+      // Si es chofer, crea también el Driver vinculado al usuario recién creado
+      if (createUserForm.role === "chofer") {
+        const usersUpdated = getTeamUsers();
+        const createdUser = usersUpdated.find((u) => u.usuario === createUserForm.usuario);
+        if (createdUser) {
+          const driverResult = await addDriver({
+            userId: createdUser.id,
+            firstName: createUserForm.nombres,
+            lastName: createUserForm.apellidos,
+            documentNumber: createUserForm.documentNumber,
+            phoneNumber: createUserForm.phoneNumber,
+          });
+          if (driverResult.ok) {
+            await refreshDrivers();
+          } else {
+            toast.error(driverResult.message ?? "No se pudo crear el chofer");
+          }
+        } else {
+          toast.error("No se pudo localizar el usuario creado para vincular chofer");
+        }
+      }
+
       toast.success("Usuario creado exitosamente");
       closeCreateUserDialog();
-      await refreshTeamUsers();
       setCreateUserForm({
+        nombres: "",
+        apellidos: "",
         usuario: "",
         email: "",
         role: "chofer",
+        documentNumber: "",
+        phoneNumber: "",
       });
     } else {
       toast.error("El nombre de usuario ya existe");
@@ -146,6 +212,48 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     canExportData: "Exportar Datos del Sistema",
   };
 
+  const handleCreateDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { userId, firstName, lastName, documentNumber, phoneNumber } = createDriverForm;
+    if (!userId || !firstName || !lastName || !documentNumber || !phoneNumber) {
+      toast.error("Completa todos los campos del chofer");
+      return;
+    }
+    const result = await addDriver({ userId, firstName, lastName, documentNumber, phoneNumber });
+    if (result.ok) {
+      toast.success(result.message ?? "Chofer creado");
+      await refreshDrivers();
+      setCreateDriverForm({ userId: "", firstName: "", lastName: "", documentNumber: "", phoneNumber: "" });
+    } else {
+      toast.error(result.message ?? "No se pudo crear el chofer");
+    }
+  };
+
+  const handleAssignVehicle = async (driverId: string) => {
+    const vehicleId = assignSelection[driverId];
+    if (!vehicleId) {
+      toast.error("Selecciona un vehículo");
+      return;
+    }
+    const result = await assignVehicleToDriver(driverId, vehicleId);
+    if (result.ok) {
+      toast.success(result.message ?? "Vehículo asignado");
+      await refreshDrivers();
+    } else {
+      toast.error(result.message ?? "No se pudo asignar el vehículo");
+    }
+  };
+
+  const handleUnassignVehicle = async (driverId: string) => {
+    const result = await unassignVehicleFromDriver(driverId);
+    if (result.ok) {
+      toast.success(result.message ?? "Vehículo desasignado");
+      await refreshDrivers();
+    } else {
+      toast.error(result.message ?? "No se pudo desasignar el vehículo");
+    }
+  };
+
   return (
     <>
       <div className="h-full flex flex-col bg-white">
@@ -180,6 +288,154 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
         {/* Team List */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
+          <div className="flex items-center justify-end mb-4">
+            <button
+              onClick={() => setShowDriversSection((prev) => !prev)}
+              className="text-sm px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+            >
+              {showDriversSection ? "Ocultar choferes" : "Gestionar choferes"}
+            </button>
+          </div>
+
+          {showDriversSection && (
+            <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg text-gray-900">Choferes</h3>
+                  <p className="text-sm text-gray-500">Gestiona conductores y asigna vehículos</p>
+                </div>
+                <button
+                  onClick={() => void refreshDrivers()}
+                  className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                >
+                  Recargar
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateDriver} className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                <select
+                  value={createDriverForm.userId}
+                  onChange={(e) =>
+                    setCreateDriverForm({
+                      ...createDriverForm,
+                      userId: e.target.value,
+                      firstName:
+                        users.find((u) => u.id === e.target.value)?.nombres || createDriverForm.firstName,
+                      lastName: users.find((u) => u.id === e.target.value)?.apellidos || createDriverForm.lastName,
+                    })
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Selecciona usuario</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nombres} {u.apellidos} (@{u.usuario})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={createDriverForm.firstName}
+                  onChange={(e) => setCreateDriverForm({ ...createDriverForm, firstName: e.target.value })}
+                  placeholder="Nombres"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  value={createDriverForm.lastName}
+                  onChange={(e) => setCreateDriverForm({ ...createDriverForm, lastName: e.target.value })}
+                  placeholder="Apellidos"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  value={createDriverForm.documentNumber}
+                  onChange={(e) => setCreateDriverForm({ ...createDriverForm, documentNumber: e.target.value })}
+                  placeholder="Documento"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  value={createDriverForm.phoneNumber}
+                  onChange={(e) => setCreateDriverForm({ ...createDriverForm, phoneNumber: e.target.value })}
+                  placeholder="Teléfono"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <div className="md:col-span-5 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#3271a4] text-white rounded-lg text-sm hover:bg-[#2a5f8c]"
+                  >
+                    Crear Chofer
+                  </button>
+                </div>
+              </form>
+
+              {isLoadingDrivers ? (
+                <p className="text-sm text-gray-500">Cargando choferes...</p>
+              ) : drivers.length === 0 ? (
+                <p className="text-sm text-gray-500">No hay choferes registrados</p>
+              ) : (
+                <div className="space-y-3">
+                  {drivers.map((driver) => {
+                    const vehicle = vehicles.find((v) => v.id === driver.vehicleId);
+                    const user = users.find((u) => u.id === driver.userId);
+                    return (
+                      <div
+                        key={driver.id}
+                        className="p-3 border border-gray-200 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {driver.firstName} {driver.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Doc: {driver.documentNumber} · Tel: {driver.phoneNumber}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Usuario: {user ? `@${user.usuario}` : driver.userId.slice(0, 6)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <select
+                            value={assignSelection[driver.id] ?? ""}
+                            onChange={(e) =>
+                              setAssignSelection((prev) => ({ ...prev, [driver.id]: e.target.value }))
+                            }
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="">Selecciona vehículo</option>
+                            {vehicles.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.placa} - {v.marca} {v.modelo}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleAssignVehicle(driver.id)}
+                            className="px-3 py-2 bg-[#3271a4] text-white rounded-lg text-xs hover:bg-[#2a5f8c]"
+                          >
+                            Asignar
+                          </button>
+                          <button
+                            onClick={() => handleUnassignVehicle(driver.id)}
+                            className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100"
+                          >
+                            Quitar
+                          </button>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <Truck size={14} />
+                            <span>{vehicle ? `${vehicle.placa} (${vehicle.marca})` : "Sin vehículo"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {isLoadingTeam ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
               Cargando equipo...
@@ -362,12 +618,34 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
           if (!open) closeCreateUserDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md max-w-[90%]" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-md max-w-[95%] max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="text-lg md:text-xl">Crear Nuevo Usuario</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Nombres</label>
+                <input
+                  type="text"
+                  value={createUserForm.nombres}
+                  onChange={(e) => setCreateUserForm({ ...createUserForm, nombres: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
+                  placeholder="Juan"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Apellidos</label>
+                <input
+                  type="text"
+                  value={createUserForm.apellidos}
+                  onChange={(e) => setCreateUserForm({ ...createUserForm, apellidos: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
+                  placeholder="Pérez"
+                />
+              </div>
+            </div>
             <div>
               <label className="block text-sm text-gray-700 mb-1">Usuario</label>
               <input
@@ -393,6 +671,31 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             <div className="rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-sm px-3 py-2">
               El usuario recibirá un correo con un enlace para activar su cuenta.
             </div>
+
+            {createUserForm.role === "chofer" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Documento</label>
+                  <input
+                    type="text"
+                    value={createUserForm.documentNumber}
+                    onChange={(e) => setCreateUserForm({ ...createUserForm, documentNumber: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
+                    placeholder="DNI / ID"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Teléfono</label>
+                  <input
+                    type="text"
+                    value={createUserForm.phoneNumber}
+                    onChange={(e) => setCreateUserForm({ ...createUserForm, phoneNumber: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
+                    placeholder="999999999"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">

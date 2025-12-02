@@ -1,5 +1,8 @@
 "use client";
 
+// Nota: flujo deshabilitado porque el backend no expone /Auth/forgot-username.
+// Se deja el componente comentado por si en el futuro se habilita el endpoint.
+
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -16,30 +19,8 @@ export function RecoverUsername({ className, onBack }: RecoverUsernameProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!identificacion.trim()) {
-      toast.error("Por favor ingresa tu número de identificación");
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulación de envío de email
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find((u: any) => u.identificacion === identificacion);
-
+    toast.info("Recuperar usuario no está disponible. Consulta a un administrador.");
     setIsLoading(false);
-
-    if (user) {
-      toast.success(`Tu usuario es: ${user.usuario}. Se ha enviado también a tu correo electrónico.`);
-      setTimeout(() => {
-        setIdentificacion("");
-        onBack();
-      }, 3000);
-    } else {
-      toast.error("No se encontró ningún usuario con ese número de identificación");
-    }
   };
 
   return (

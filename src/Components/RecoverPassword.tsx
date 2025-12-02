@@ -24,7 +24,7 @@ export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/backend/Auth/forgot-password", {
+      const response = await fetch("/api/backend/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

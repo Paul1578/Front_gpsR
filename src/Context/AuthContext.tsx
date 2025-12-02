@@ -11,7 +11,7 @@ import {
 import { toast } from "sonner";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5046/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
 
@@ -92,6 +92,12 @@ interface AuthContextType {
     password: string
   ) => Promise<{ ok: boolean; message?: string }>;
   register: (data: RegisterData) => Promise<boolean>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+    confirmNewPassword: string
+  ) => Promise<{ ok: boolean; message?: string }>;
+  logoutAll: () => Promise<void>;
   createUser: (
     data: RegisterData & { role: UserRole; teamId?: string; email?: string }
   ) => Promise<boolean>;
@@ -293,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refreshToken = tokensRef.current?.refreshToken;
     if (!refreshToken) return false;
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/Auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -555,7 +561,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
   ): Promise<{ ok: boolean; message?: string }> => {
     try {
-      const data = await apiFetch<AuthResponseDto>("/auth/login", {
+      const data = await apiFetch<AuthResponseDto>("/Auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
         skipAuth: true,
@@ -604,7 +610,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       if (tokensRef.current?.refreshToken) {
-        await apiFetch("/auth/logout", {
+        await apiFetch("/Auth/logout", {
           method: "POST",
           body: JSON.stringify({ refreshToken: tokensRef.current.refreshToken }),
           skipAuth: true,
@@ -674,7 +680,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTeamUsers = async () => {
     try {
       const data = await apiFetch<ApiUser[]>("/Users/my-team");
-      setTeamUsers(data.map(mapApiUser));
+      const active = data.filter((u) => (u as any).isActive !== false);
+      setTeamUsers(active.map(mapApiUser));
     } catch (error) {
       console.error("Error obteniendo equipo:", error);
     }
@@ -740,6 +747,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmNewPassword: string
+  ): Promise<{ ok: boolean; message?: string }> => {
+    try {
+      await apiFetch("/Auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword }),
+      });
+      return { ok: true };
+    } catch (error) {
+      const errData = (error as any)?.data;
+      const message =
+        errData?.message ||
+        (Array.isArray(errData?.errors) ? errData.errors.join(", ") : "") ||
+        (error as Error)?.message ||
+        "No se pudo cambiar la contraseña";
+      return { ok: false, message };
+    }
+  };
+
+  const logoutAll = async () => {
+    try {
+      await apiFetch("/Auth/logout-all", { method: "POST" });
+    } catch (error) {
+      console.error("Error al cerrar sesión en todos los dispositivos:", error);
+    } finally {
+      await logout();
+    }
+  };
+
   const isSuperAdmin = () => user?.role === "superadmin";
 
   const updateTeamName = (teamName: string) => {
@@ -760,6 +799,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         login,
         register,
+        changePassword,
+        logoutAll,
         createUser,
         logout,
         isAuthenticated: !!user,
