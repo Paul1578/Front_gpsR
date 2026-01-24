@@ -135,6 +135,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       email: createUserForm.email,
       role: createUserForm.role,
       teamId: undefined,
+      password: "",
     });
 
     setIsCreating(false);
