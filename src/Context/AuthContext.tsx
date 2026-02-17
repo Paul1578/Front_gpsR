@@ -219,6 +219,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const isAuthenticated = !!user;
 
+  const isAuthError = (error: unknown) => {
+    const status = (error as { status?: number } | null)?.status;
+    return status === 401 || status === 403;
+  };
+
   const setTokens = (tokens: AuthTokens | null) => {
     tokensRef.current = tokens;
     if (typeof window === "undefined") return;
@@ -244,8 +249,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
     const storedUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
 
+    let parsedUser: User | null = null;
     if (storedUser) {
-      setUser(JSON.parse(storedUser) as User);
+      parsedUser = JSON.parse(storedUser) as User;
+      setUser(parsedUser);
     }
 
     if (storedTokens) {
@@ -263,6 +270,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         })();
+      } else if (parsedUser?.role === "chofer" && !parsedUser.driverId) {
+        void (async () => {
+          const fetched = await fetchMeUser();
+          if (fetched) {
+            persistUser(fetched);
+          }
+        })();
       }
     }
 
@@ -271,11 +285,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.role !== "chofer") {
       void refreshTeamUsers();
     } else {
       setTeamUsers([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.role]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isAuthenticated) return;
+
+    let mounted = true;
+    const verifySession = async () => {
+      if (!mounted) return;
+      await refreshAccessToken();
+    };
+
+    const intervalId = window.setInterval(verifySession, 60 * 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void verifySession();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
@@ -305,7 +345,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        clearAuthState();
+        if (user) {
+          toast?.error?.("Sesión cerrada en otro dispositivo.");
+        }
+        await clearAuthState();
         return false;
       }
       const data = (await response.json()) as AuthResponseDto;
@@ -313,7 +356,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error("Error al refrescar token:", error);
-      clearAuthState();
+      if (user) {
+        toast?.error?.("Sesión expirada. Inicia sesión nuevamente.");
+      }
+      await clearAuthState();
       return false;
     }
   };
@@ -683,6 +729,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const active = data.filter((u) => (u as any).isActive !== false);
       setTeamUsers(active.map(mapApiUser));
     } catch (error) {
+      if (isAuthError(error)) return;
       console.error("Error obteniendo equipo:", error);
     }
   };
@@ -771,7 +818,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutAll = async () => {
     try {
-      await apiFetch("/Auth/logout-all", { method: "POST" });
+      await apiFetch("/Auth/logout-all", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
     } catch (error) {
       console.error("Error al cerrar sesión en todos los dispositivos:", error);
     } finally {

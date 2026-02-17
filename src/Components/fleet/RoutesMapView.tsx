@@ -12,7 +12,6 @@ import {
 import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
 import type { RouteForMap } from "@/services/fleetApi";
 
 // Iconos de Leaflet como StaticImageData (Next)
@@ -46,6 +45,8 @@ interface RoutesMapViewProps {
   initialZoom?: number;
   /** Tracking de la ruta seleccionada (si existe) */
   trackingPositions?: LatLngTuple[];
+  /** Dispara el re-encuadre del mapa aunque la ruta no cambie */
+  fitSignal?: number;
 }
 
 const DEFAULT_CENTER: LatLngTuple = [-0.180653, -78.467834]; // Quito aprox
@@ -129,8 +130,11 @@ export function RoutesMapView({
   initialCenter,
   initialZoom = DEFAULT_ZOOM,
   trackingPositions,
+  fitSignal,
 }: RoutesMapViewProps) {
   const mapRef = useRef<LeafletMap | null>(null);
+  const hasFitRef = useRef(false);
+  const userMovedRef = useRef(false);
 
   const [snappedByRoute, setSnappedByRoute] = useState<
     Record<string, LatLngTuple[]>
@@ -140,6 +144,37 @@ export function RoutesMapView({
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
     [routes, selectedRouteId]
   );
+
+  const trackingLatest = useMemo(() => {
+    if (!trackingPositions || trackingPositions.length === 0) return null;
+    return trackingPositions[trackingPositions.length - 1];
+  }, [trackingPositions]);
+
+  const trackingIcon = useMemo(() => {
+    if (typeof window === "undefined") return undefined;
+    return L.divIcon({
+      className: "",
+      html: `
+        <div style="width:28px;height:28px;border-radius:14px;background:#7c3aed;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(124,58,237,0.35);border:2px solid #fff;">
+          <span style="font-size:14px;line-height:1;color:#fff;">🚚</span>
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+  }, []);
+
+  useEffect(() => {
+    hasFitRef.current = false;
+    userMovedRef.current = false;
+  }, [selectedRouteId]);
+
+  useEffect(() => {
+    if (fitSignal === undefined) return;
+    hasFitRef.current = false;
+    userMovedRef.current = false;
+  }, [fitSignal]);
+
 
   const mapInitialCenter: LatLngExpression = useMemo(() => {
     if (initialCenter) return initialCenter;
@@ -190,6 +225,7 @@ export function RoutesMapView({
   // Ajustar zoom a la ruta seleccionada (incluyendo tracking si existe)
   useEffect(() => {
     if (!selectedRoute || !mapRef.current) return;
+    if (userMovedRef.current || hasFitRef.current) return;
 
     const snapped = snappedByRoute[selectedRoute.id];
     const fallbackPlanned = buildRoutePolyline(selectedRoute);
@@ -198,6 +234,8 @@ export function RoutesMapView({
 
     if (trackingPositions && trackingPositions.length >= 2) {
       boundsCoords = boundsCoords.concat(trackingPositions);
+    } else if (trackingLatest) {
+      boundsCoords = boundsCoords.concat([trackingLatest]);
     }
 
     if (boundsCoords.length === 0) return;
@@ -207,7 +245,8 @@ export function RoutesMapView({
     );
 
     mapRef.current.fitBounds(bounds, { padding: [40, 40] });
-  }, [selectedRoute, snappedByRoute, trackingPositions]);
+    hasFitRef.current = true;
+  }, [selectedRoute, snappedByRoute, trackingPositions, trackingLatest, fitSignal]);
 
   return (
     <div className="w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
@@ -218,6 +257,11 @@ export function RoutesMapView({
         className="w-full h-full"
         whenCreated={(mapInstance: LeafletMap) => {
           mapRef.current = mapInstance;
+          const markMoved = () => {
+            userMovedRef.current = true;
+          };
+          mapInstance.on("dragstart", markMoved);
+          mapInstance.on("zoomstart", markMoved);
         }}
       >
         <TileLayer
@@ -290,6 +334,12 @@ export function RoutesMapView({
                     }}
                   />
                 )}
+
+              {isSelected && trackingLatest && (
+                <Marker position={trackingLatest} icon={trackingIcon}>
+                  <Popup>Ubicación actual</Popup>
+                </Marker>
+              )}
 
               {/* Origen */}
               <Marker position={origin}>

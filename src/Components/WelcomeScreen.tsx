@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import Image from "next/image";
 import { Users, Lock, Sparkles } from "lucide-react";
 
 interface WelcomeScreenProps {
@@ -9,7 +10,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-5xl flex flex-col items-center text-center gap-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -17,15 +18,19 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           transition={{ duration: 0.6 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="inline-block">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#3271a4] to-[#4384d8] flex items-center justify-center text-white shadow-xl">
-              <Sparkles size={40} />
-            </div>
+          <div className="relative w-[70vw] max-w-[720px] h-20 md:h-24">
+            <Image
+              src="/brand/logo-wide.png"
+              alt="FleetFlow"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-          <h1 className="text-gray-900 text-3xl md:text-4xl font-bold">
+          <h1 className="text-gray-900 dark:text-white text-3xl md:text-4xl font-bold">
             Bienvenido a la aplicación
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+          <p className="text-gray-600 dark:text-slate-300 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
             Una plataforma segura y fácil de usar para gestionar tu cuenta y acceder a todas tus funcionalidades.
           </p>
         </motion.div>
@@ -65,7 +70,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           >
             Comenzar ahora
           </button>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-slate-400 text-sm">
             ¿Ya tienes una cuenta? Inicia sesión para continuar
           </p>
         </motion.div>
@@ -90,13 +95,13 @@ function FeatureCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100"
+      className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-800"
     >
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${bgColor}`}>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${bgColor} dark:bg-slate-800/70`}>
         {icon}
       </div>
-      <h3 className="text-gray-900 mb-2 text-base md:text-lg font-semibold">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <h3 className="text-gray-900 dark:text-slate-100 mb-2 text-base md:text-lg font-semibold">{title}</h3>
+      <p className="text-gray-600 dark:text-slate-300 text-sm">{description}</p>
     </motion.div>
   );
 }

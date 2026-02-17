@@ -1,181 +1,31 @@
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useFleet, RouteEvidence } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
 import { MapPin, Package, Navigation, CheckCircle, ArrowLeft, Camera, FileText, Upload, X, Play, Pause, Compass, Truck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
+const DriverRouteMap = dynamic(() => import("./DriverRouteMap"), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-gray-100" />,
+});
 
 interface DriverViewProps {
   onBack?: () => void;
 }
 
-interface MapViewerProps {
-  currentLocation: [number, number] | null;
-  routePoints: Array<{ lat: number; lng: number; nombre: string }>;
-  vehiclePlate?: string;
-}
-
-function MapViewer({ currentLocation, routePoints, vehiclePlate }: MapViewerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < rect.width; i += 40) {
-      ctx.beginPath();
-      ctx.moveTo(i, 0);
-      ctx.lineTo(i, rect.height);
-      ctx.stroke();
-    }
-    for (let i = 0; i < rect.height; i += 40) {
-      ctx.beginPath();
-      ctx.moveTo(0, i);
-      ctx.lineTo(rect.width, i);
-      ctx.stroke();
-    }
-    
-    const allPoints = [...routePoints];
-    if (currentLocation) {
-      allPoints.push({ lat: currentLocation[0], lng: currentLocation[1], nombre: 'Current' });
-    }
-    
-    if (allPoints.length === 0) return;
-    
-    const minLat = Math.min(...allPoints.map(p => p.lat));
-    const maxLat = Math.max(...allPoints.map(p => p.lat));
-    const minLng = Math.min(...allPoints.map(p => p.lng));
-    const maxLng = Math.max(...allPoints.map(p => p.lng));
-    
-    const padding = 60;
-    const latRange = maxLat - minLat || 0.01;
-    const lngRange = maxLng - minLng || 0.01;
-    
-    const toX = (lng: number) => ((lng - minLng) / lngRange) * (rect.width - padding * 2) + padding;
-    const toY = (lat: number) => rect.height - (((lat - minLat) / latRange) * (rect.height - padding * 2) + padding);
-    
-    if (routePoints.length > 1) {
-      ctx.strokeStyle = '#3271a4';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 5]);
-      ctx.beginPath();
-      ctx.moveTo(toX(routePoints[0].lng), toY(routePoints[0].lat));
-      routePoints.forEach((point, i) => {
-        if (i > 0) {
-          ctx.lineTo(toX(point.lng), toY(point.lat));
-        }
-      });
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    
-    routePoints.forEach((point, index) => {
-      const x = toX(point.lng);
-      const y = toY(point.lat);
-      
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(x, y, 14, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText((index + 1).toString(), x, y);
-    });
-    
-    if (currentLocation) {
-      const x = toX(currentLocation[1]);
-      const y = toY(currentLocation[0]);
-      
-      ctx.fillStyle = 'rgba(50, 113, 164, 0.2)';
-      ctx.beginPath();
-      ctx.arc(x, y, 24, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.fillStyle = '#3271a4';
-      ctx.beginPath();
-      ctx.arc(x, y, 16, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      
-      ctx.fillStyle = 'white';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 6);
-      ctx.lineTo(x - 5, y + 4);
-      ctx.lineTo(x + 5, y + 4);
-      ctx.closePath();
-      ctx.fill();
-    }
-    
-  }, [currentLocation, routePoints, vehiclePlate]);
-  
-  return (
-    <div className="relative w-full h-full bg-gradient-to-br from-blue-50 to-gray-100">
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{ display: 'block' }}
-      />
-      
-      {routePoints.map((point, index) => {
-        const allPoints = [...routePoints];
-        if (currentLocation) {
-          allPoints.push({ lat: currentLocation[0], lng: currentLocation[1], nombre: 'Current' });
-        }
-        
-        const minLat = Math.min(...allPoints.map(p => p.lat));
-        const maxLat = Math.max(...allPoints.map(p => p.lat));
-        const minLng = Math.min(...allPoints.map(p => p.lng));
-        const maxLng = Math.max(...allPoints.map(p => p.lng));
-        
-        const latRange = maxLat - minLat || 0.01;
-        const lngRange = maxLng - minLng || 0.01;
-        const padding = 60;
-        
-        const x = ((point.lng - minLng) / lngRange) * 100;
-        const y = 100 - (((point.lat - minLat) / latRange) * 100);
-        
-        return (
-          <div
-            key={index}
-            className="absolute bg-white px-2 py-1 rounded shadow-md text-xs pointer-events-none"
-            style={{
-              left: `calc(${x}% + 20px)`,
-              top: `calc(${y}%)`,
-              transform: 'translateY(-50%)',
-            }}
-          >
-            {point.nombre}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function DriverView({ onBack }: DriverViewProps = {}) {
-  const { routes, vehicles, updateRoute, addRouteEvidence, updateVehicleLocation } = useFleet();
+  const {
+    routes,
+    vehicles,
+    drivers,
+    refreshDrivers,
+    updateRoute,
+    addRouteEvidence,
+    updateVehicleLocation,
+    registerRoutePosition,
+  } = useFleet();
   const { user } = useAuth();
   const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
   const [evidenceType, setEvidenceType] = useState<"image" | "note">("image");
@@ -184,10 +34,21 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
+  const lastLocationSentRef = useRef(0);
+  const [isUsingGeolocation, setIsUsingGeolocation] = useState(false);
 
-  const myRoutes = routes.filter(
-    (r) => r.conductorId === (user?.driverId || user?.id)
-  );
+  const driverId =
+    user?.driverId ?? drivers.find((driver) => driver.userId === user?.id)?.id;
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "chofer") return;
+    if (driverId) return;
+    if (drivers.length) return;
+    void refreshDrivers();
+  }, [driverId, drivers.length, refreshDrivers, user]);
+
+  const myRoutes = routes.filter((r) => r.conductorId === driverId);
   const activeRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
 
   useEffect(() => {
@@ -202,6 +63,43 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     } else if (!currentLocation && activeRoute.puntos.length > 0) {
       setCurrentLocation([activeRoute.puntos[0].lat, activeRoute.puntos[0].lng]);
     }
+  }, [activeRoute?.id, activeRoute?.estado, activeRoute?.puntos, activeRoute?.vehiculoId]);
+
+  useEffect(() => {
+    if (!activeRoute) return;
+    if (typeof window === "undefined") return;
+    if (!navigator.geolocation) return;
+
+    const id = navigator.geolocation.watchPosition(
+      (position) => {
+        setIsUsingGeolocation(true);
+        setCurrentLocation([position.coords.latitude, position.coords.longitude]);
+      },
+      () => {
+        setIsUsingGeolocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000,
+      }
+    );
+
+    setWatchId(id);
+
+    return () => {
+      navigator.geolocation.clearWatch(id);
+      setWatchId(null);
+      setIsUsingGeolocation(false);
+    };
+  }, [activeRoute?.id]);
+
+  useEffect(() => {
+    if (!activeRoute) {
+      setCurrentLocation(null);
+      return;
+    }
+    if (isUsingGeolocation) return;
 
     const interval = setInterval(() => {
       if (activeRoute.estado === "en_progreso" && activeRoute.puntos.length > 0) {
@@ -221,15 +119,34 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [activeRoute?.id, activeRoute?.estado, activeRoute?.puntos, activeRoute?.vehiculoId]);
+  }, [activeRoute?.id, activeRoute?.estado, activeRoute?.puntos, activeRoute?.vehiculoId, isUsingGeolocation]);
 
   useEffect(() => {
     if (!activeRoute?.vehiculoId || !currentLocation) return;
-    void updateVehicleLocation(activeRoute.vehiculoId, {
-      lat: currentLocation[0],
-      lng: currentLocation[1],
-    });
-  }, [activeRoute?.vehiculoId, currentLocation, updateVehicleLocation]);
+    const now = Date.now();
+    if (now - lastLocationSentRef.current < 20000) return;
+    lastLocationSentRef.current = now;
+    if (user?.role !== "chofer") {
+      void updateVehicleLocation(activeRoute.vehiculoId, {
+        lat: currentLocation[0],
+        lng: currentLocation[1],
+      });
+    }
+    if (activeRoute.estado === "en_progreso") {
+      void registerRoutePosition(activeRoute.id, {
+        lat: currentLocation[0],
+        lng: currentLocation[1],
+      }, { recordedAt: new Date().toISOString() });
+    }
+  }, [
+    activeRoute?.vehiculoId,
+    activeRoute?.estado,
+    activeRoute?.id,
+    currentLocation,
+    registerRoutePosition,
+    updateVehicleLocation,
+    user?.role,
+  ]);
 
   const handleStartRoute = async () => {
     if (activeRoute && activeRoute.estado === "pendiente") {
@@ -322,6 +239,14 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     return vehicle || null;
   };
 
+  if (user && !driverId && drivers.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white p-4">
+        <p className="text-sm text-gray-500">Cargando ruta asignada...</p>
+      </div>
+    );
+  }
+
   if (!activeRoute) {
     return (
       <div className="h-full flex items-center justify-center bg-white p-4">
@@ -364,6 +289,8 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   }
 
   const vehicle = getVehicleInfo(activeRoute.vehiculoId);
+  const nextPoint =
+    activeRoute.puntos[0] ?? activeRoute.destino ?? activeRoute.origen ?? null;
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -397,10 +324,11 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
 
       <div className="flex-1 overflow-auto">
         <div className="relative h-[300px] md:h-[400px] bg-gray-100">
-          <MapViewer
+          <DriverRouteMap
             currentLocation={currentLocation}
-            routePoints={activeRoute.puntos}
-            vehiclePlate={vehicle?.placa}
+            origin={activeRoute.origen}
+            stops={activeRoute.puntos}
+            destination={activeRoute.destino}
           />
 
           <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg px-3 py-2 flex items-center gap-2 z-10">
@@ -411,7 +339,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
           <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg px-3 py-2 z-10">
             <p className="text-xs text-gray-500">Siguiente punto</p>
             <p className="text-sm text-gray-900">
-              {activeRoute.puntos[0]?.nombre || "No disponible"}
+              {nextPoint?.nombre || "No disponible"}
             </p>
           </div>
 
@@ -436,7 +364,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
                 <div>
                   <p className="text-base text-gray-900">{vehicle.placa}</p>
                   <p className="text-sm text-gray-500">
-                    {vehicle.marca} {vehicle.modelo} ({vehicle.año})
+                    {vehicle.marca} {vehicle.modelo} ({vehicle.anio})
                   </p>
                 </div>
               </div>

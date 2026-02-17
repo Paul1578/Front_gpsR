@@ -28,16 +28,16 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
     return (
       <div className="h-full flex flex-col bg-gradient-to-br from-red-50 via-white to-orange-50">
         <div className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="app-container">
             {/* Header */}
             <div className="mb-8 text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-red-600 to-red-700 mb-4">
                 <Shield size={40} className="text-white" />
               </div>
-              <h1 className="text-2xl md:text-3xl text-gray-900 mb-2">
+              <h1 className="text-2xl md:text-3xl text-gray-900 dark:text-white mb-2">
                 Bienvenido Super Admin, {user?.nombres} 👋
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-slate-300">
                 Panel de administración del sistema FleetTrack
               </p>
             </div>
@@ -210,19 +210,19 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 
   // Para choferes, mostrar su dashboard específico
   if (user?.role === "chofer" && user?.permissions.canViewOwnRoute && !user?.permissions.canViewMap) {
-    const myRoutes = routes.filter(r => r.conductorId === user?.id);
+    const myRoutes = routes;
     const myActiveRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
 
     return (
       <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="app-container">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl text-gray-900 mb-2">
+              <h1 className="text-2xl md:text-3xl text-gray-900 dark:text-white mb-2">
                 Bienvenido, {user?.nombres} 👋
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-slate-300">
                 Panel de control del conductor
                 {user?.teamId && users.find(u => u.id === user.teamId)?.teamName && 
                   ` · ${users.find(u => u.id === user.teamId)?.teamName}`}
@@ -297,14 +297,14 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="flex-1 overflow-auto p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="flex-1 overflow-auto">
+        <div className="app-container py-4 md:py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl text-gray-900 mb-2">
+            <h1 className="text-2xl md:text-3xl text-gray-900 dark:text-white mb-2">
               Bienvenido, {user?.nombres} 👋
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-300">
               {user?.role === "gerente" && user?.teamName 
                 ? `${user.teamName} · Administra tu flota de vehículos y rutas`
                 : "Administra tu flota de vehículos y rutas desde un solo lugar"}

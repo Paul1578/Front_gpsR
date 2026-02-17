@@ -145,7 +145,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6">
-        <div className="max-w-7xl mx-auto">
+          <div className="app-container">
           <div className="flex items-center gap-4 mb-6">
             {onBack && (
               <button
@@ -190,7 +190,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
+          <div className="app-container">
           <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveTab("overview")}
@@ -264,7 +264,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        <div className="max-w-7xl mx-auto">
+          <div className="app-container">
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

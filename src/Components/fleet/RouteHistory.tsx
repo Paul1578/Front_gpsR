@@ -148,10 +148,10 @@ const filteredRoutes = useMemo(() => {
   const getStatusBadge = (status?: number | string) => {
     const estado = mapStatus(status);
     const styles = {
-      completada: "bg-green-100 text-green-700",
-      en_progreso: "bg-blue-100 text-blue-700",
-      pendiente: "bg-yellow-100 text-yellow-700",
-      cancelada: "bg-red-100 text-red-700",
+      completada: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
+      en_progreso: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+      pendiente: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200",
+      cancelada: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
     };
     const labels = {
       completada: "Completada",

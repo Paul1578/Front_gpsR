@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -33,6 +34,34 @@ export function FleetDashboard() {
   const [currentView, setCurrentView] = useState<ViewType>("home");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("geolocation" in navigator)) return;
+
+    const requestLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        () => undefined,
+        () => undefined,
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    };
+
+    const permissionsApi = (navigator as any).permissions;
+    if (permissionsApi?.query) {
+      permissionsApi
+        .query({ name: "geolocation" })
+        .then((status: PermissionStatus) => {
+          if (status.state !== "granted") requestLocation();
+          status.onchange = () => {
+            if (status.state !== "granted") requestLocation();
+          };
+        })
+        .catch(() => requestLocation());
+    } else {
+      requestLocation();
+    }
+  }, []);
 
   const handleLogoutConfirm = () => {
     logout();
@@ -90,14 +119,24 @@ export function FleetDashboard() {
     <>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 ${
+          className={`fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <div>
-              <p className="text-sm text-gray-500">Panel</p>
-              <p className="text-lg font-semibold text-gray-900">FleetTrack</p>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/brand/logo-mark.png"
+                alt="FleetFlow"
+                width={48}
+                height={48}
+                className="h-10 w-10"
+                priority
+              />
+              <div>
+                <p className="text-sm text-gray-500">Panel</p>
+                <p className="text-lg font-semibold text-gray-900">FleetFlow</p>
+              </div>
             </div>
             <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100"
@@ -108,7 +147,7 @@ export function FleetDashboard() {
             </button>
           </div>
 
-          <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100%-120px)]">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {menuItems.map((item) => {
               const isActive = currentView === item.id;
               const Icon = item.icon;
@@ -118,8 +157,8 @@ export function FleetDashboard() {
                   onClick={() => handleNavigation(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                     isActive
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/70"
                   }`}
                 >
                   <Icon className="size-4" />
@@ -129,7 +168,7 @@ export function FleetDashboard() {
             })}
           </nav>
 
-          <div className="p-4 border-t border-gray-100">
+          <div className="p-4 border-t border-gray-100 mt-auto">
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
@@ -164,8 +203,8 @@ export function FleetDashboard() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-8">
-            <div className="max-w-6xl mx-auto h-full">{renderView()}</div>
+          <main className="flex-1 overflow-auto">
+            {renderView()}
           </main>
         </div>
       </div>

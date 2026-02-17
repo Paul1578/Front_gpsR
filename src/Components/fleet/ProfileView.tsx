@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
-import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut } from "lucide-react";
+import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut, Moon } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "../ui/switch";
+import { useThemePreference } from "../../Context/ThemeContext";
 
 interface ProfileViewProps {
   onBack?: () => void;
@@ -9,6 +11,7 @@ interface ProfileViewProps {
 
 export function ProfileView({ onBack }: ProfileViewProps = {}) {
   const { user, updateTeamName, changePassword, logoutAll, logout } = useAuth();
+  const { scheme, setPreference } = useThemePreference();
   const [editingTeamName, setEditingTeamName] = useState(false);
   const [tempTeamName, setTempTeamName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -95,8 +98,10 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     toast.success("Cerraste sesión en todos los dispositivos");
   };
 
+  const isDark = scheme === "dark";
+
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 lg:p-8 app-container">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
@@ -142,6 +147,25 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
 
         {/* Profile Information */}
         <div className="p-6 space-y-4">
+          {/* Tema */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Moon size={18} className="text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Modo oscuro</p>
+                  <p className="text-xs text-gray-500">
+                    Cambia el tema de la app. Se guarda en este dispositivo.
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={isDark}
+                onCheckedChange={(checked) => setPreference(checked ? "dark" : "light")}
+              />
+            </div>
+          </div>
+
           {/* Seguridad: cambio de contraseña al inicio */}
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
             <div className="flex items-center justify-between">

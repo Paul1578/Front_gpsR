@@ -25,10 +25,12 @@ export function MapView({ onBack }: MapViewProps) {
 
   const [routes, setRoutes] = useState<RouteForMap[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [fitSignal, setFitSignal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [trackingPositions, setTrackingPositions] = useState<LatLngTuple[]>([]);
+  const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
   const [isLoadingTracking, setIsLoadingTracking] = useState(false);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
@@ -93,6 +95,32 @@ export function MapView({ onBack }: MapViewProps) {
       .filter((v): v is LatLngTuple => v !== null);
   };
 
+  const fetchSnappedGeometry = async (
+    planned: LatLngTuple[]
+  ): Promise<LatLngTuple[] | null> => {
+    if (planned.length < 2) return null;
+
+    const coordsParam = planned
+      .map(([lat, lng]) => `${lng},${lat}`)
+      .join(";");
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`OSRM ${res.status}`);
+      const data = (await res.json()) as any;
+      const geometry = data?.routes?.[0]?.geometry?.coordinates as
+        | Array<[number, number]>
+        | undefined;
+
+      if (!geometry || geometry.length < 2) return null;
+      return geometry.map(([lng, lat]) => [lat, lng] as LatLngTuple);
+    } catch {
+      return null;
+    }
+  };
+
   // --------- CARGA DE TRACKING PARA LA RUTA SELECCIONADA ---------
   useEffect(() => {
     if (!apiFetch || !selectedRouteId) {
@@ -117,10 +145,31 @@ export function MapView({ onBack }: MapViewProps) {
     };
 
     void loadTracking();
+    const intervalId = setInterval(loadTracking, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [apiFetch, selectedRouteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (trackingPositions.length < 2) {
+      setTrackingDisplay(trackingPositions);
+      return;
+    }
+    const tail = trackingPositions.slice(-8);
+    const snap = async () => {
+      const snapped = await fetchSnappedGeometry(tail);
+      if (!cancelled) {
+        setTrackingDisplay(snapped ?? tail);
+      }
+    };
+    void snap();
     return () => {
       cancelled = true;
     };
-  }, [apiFetch, selectedRouteId]);
+  }, [trackingPositions]);
 
   // --------- DERIVADOS PARA UI ---------
   const selectedRoute = useMemo(
@@ -139,13 +188,13 @@ export function MapView({ onBack }: MapViewProps) {
   const getStatusMeta = (status?: number) => {
     switch (status) {
       case 1:
-        return { label: "En curso", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+        return { label: "En curso", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-900/50" };
       case 2:
-        return { label: "Completada", className: "bg-blue-50 text-blue-700 border-blue-200" };
+        return { label: "Completada", className: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-900/50" };
       case 3:
-        return { label: "Cancelada", className: "bg-red-50 text-red-700 border-red-200" };
+        return { label: "Cancelada", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-200 dark:border-red-900/50" };
       default:
-        return { label: "Planificada", className: "bg-amber-50 text-amber-700 border-amber-200" };
+        return { label: "Planificada", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-900/50" };
     }
   };
 
@@ -155,7 +204,7 @@ export function MapView({ onBack }: MapViewProps) {
   return (
     <div className="flex flex-col h-full w-full bg-white border border-gray-200 rounded-2xl shadow-sm">
       {/* HEADER */}
-      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50">
+      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
@@ -242,24 +291,34 @@ export function MapView({ onBack }: MapViewProps) {
             </div>
           )}
 
-          <div className="h-[360px] lg:h-full rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+          <div className="relative h-[360px] lg:h-full rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+            <RoutesMapView
+              routes={routes}
+              selectedRouteId={selectedRouteId}
+              onRouteClick={(routeId) => {
+                setSelectedRouteId(routeId);
+                setFitSignal((prev) => prev + 1);
+              }}
+              fitSignal={fitSignal}
+              trackingPositions={trackingDisplay}
+            />
+
             {isLoading && (
-              <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                Cargando rutas...
+              <div className="absolute right-3 top-3 z-[500] rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] text-blue-700 shadow-sm">
+                Actualizando rutas...
               </div>
             )}
-            {!isLoading && error && (
-              <div className="flex items-center justify-center h-full text-sm text-red-500">
+
+            {!isLoading && error && routes.length === 0 && (
+              <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/80 text-sm text-red-500">
                 {error}
               </div>
             )}
-            {!isLoading && !error && (
-              <RoutesMapView
-                routes={routes}
-                selectedRouteId={selectedRouteId}
-                onRouteClick={setSelectedRouteId}
-                trackingPositions={trackingPositions}
-              />
+
+            {!isLoading && error && routes.length > 0 && (
+              <div className="absolute left-3 bottom-3 z-[500] rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] text-red-700 shadow-sm">
+                {error}
+              </div>
             )}
           </div>
         </div>
@@ -290,7 +349,10 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   key={route.id}
                   type="button"
-                  onClick={() => setSelectedRouteId(route.id)}
+                  onClick={() => {
+                    setSelectedRouteId(route.id);
+                    setFitSignal((prev) => prev + 1);
+                  }}
                   className={`w-full text-left px-3 py-2.5 rounded-xl border transition text-xs md:text-sm ${
                     isSelected
                       ? "border-blue-300 bg-blue-50 text-blue-900 shadow-xs"

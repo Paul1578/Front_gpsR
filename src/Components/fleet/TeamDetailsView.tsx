@@ -69,7 +69,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="app-container">
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={onBack}
@@ -155,7 +155,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
+        <div className="app-container">
           <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveTab("team")}
@@ -207,7 +207,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="app-container">
           {activeTab === "team" && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">

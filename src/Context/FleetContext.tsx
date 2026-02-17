@@ -32,6 +32,12 @@ export type RouteEvidence =
     }
   | { id: string; type: "note"; content: string; timestamp: string };
 
+type NewRouteEvidence = RouteEvidence extends infer Evidence
+  ? Evidence extends RouteEvidence
+    ? Omit<Evidence, "id" | "timestamp">
+    : never
+  : never;
+
 export interface Route {
   id: string;
   nombre: string;
@@ -80,9 +86,14 @@ interface FleetContextType {
     vehicleId: string,
     location: { lat: number; lng: number }
   ) => Promise<ActionResult>;
+  registerRoutePosition: (
+    routeId: string,
+    location: { lat: number; lng: number },
+    meta?: { recordedAt?: string; speedKmh?: number; heading?: number }
+  ) => Promise<ActionResult>;
   addRouteEvidence: (
     routeId: string,
-    evidence: Omit<RouteEvidence, "id" | "timestamp">
+    evidence: NewRouteEvidence
   ) => void;
 
   getRoutesByDriver: (driverId: string) => Route[];
@@ -321,25 +332,32 @@ const toApiRoutePayload = (route: Partial<Route>) => {
 };
 
 export function FleetProvider({ children }: { children: ReactNode }) {
-  const { apiFetch, isAuthenticated, isLoadingUser } = useAuth();
+  const { apiFetch, isAuthenticated, isLoadingUser, user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+
+  const isAuthError = (error: unknown) => {
+    const status = (error as { status?: number } | null)?.status;
+    return status === 401 || status === 403;
+  };
 
   // ---------------- VEHICLES ----------------
   useEffect(() => {
     const loadVehicles = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
+      if (user?.role === "chofer") return;
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
         const active = data.filter((v) => (v as any).isActive !== false);
         setVehicles(active.map(mapApiVehicle));
       } catch (error) {
+        if (isAuthError(error)) return;
         console.error("Error cargando vehículos desde API", error);
       }
     };
     void loadVehicles();
-  }, [apiFetch, isAuthenticated, isLoadingUser]);
+  }, [apiFetch, isAuthenticated, isLoadingUser, user?.role]);
 
   const addVehicle = async (
     vehicle: Omit<Vehicle, "id">
@@ -472,6 +490,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       try {
         await refreshRoutes();
       } catch (error) {
+        if (isAuthError(error)) return;
         console.error("Error cargando rutas desde API", error);
       }
     };
@@ -482,15 +501,17 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadDrivers = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
+      if (user?.role === "chofer") return;
       try {
         await refreshDrivers();
       } catch (error) {
+        if (isAuthError(error)) return;
         console.error("Error cargando drivers desde API", error);
       }
     };
 
     void loadDrivers();
-  }, [apiFetch, isAuthenticated, isLoadingUser]);
+  }, [apiFetch, isAuthenticated, isLoadingUser, user?.role]);
 
   const addRoute = async (
     route: Omit<Route, "id" | "fechaCreacion">
@@ -647,10 +668,13 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       await updateVehicle(vehicleId, { ubicacionActual: location });
       return { ok: true };
     } catch (error) {
-      console.warn(
-        "No se pudo persistir ubicacion en backend, usando estado local:",
-        error
-      );
+      const status = (error as { status?: number } | null)?.status;
+      if (status !== 429) {
+        console.warn(
+          "No se pudo persistir ubicacion en backend, usando estado local:",
+          error
+        );
+      }
       await updateVehicle(vehicleId, { ubicacionActual: location });
       return {
         ok: false,
@@ -662,9 +686,41 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const registerRoutePosition = async (
+    routeId: string,
+    location: { lat: number; lng: number },
+    meta?: { recordedAt?: string; speedKmh?: number; heading?: number }
+  ): Promise<ActionResult> => {
+    try {
+      await apiFetch(`/Routes/${routeId}/positions`, {
+        method: "POST",
+        body: JSON.stringify({
+          latitude: location.lat,
+          longitude: location.lng,
+          recordedAt: meta?.recordedAt,
+          speedKmh: meta?.speedKmh,
+          heading: meta?.heading,
+        }),
+      });
+      return { ok: true };
+    } catch (error) {
+      const status = (error as { status?: number } | null)?.status;
+      if (status !== 429) {
+        console.warn("No se pudo registrar tracking en backend:", error);
+      }
+      return {
+        ok: false,
+        message: resolveApiMessage(
+          error,
+          "No se pudo registrar el tracking de la ruta"
+        ),
+      };
+    }
+  };
+
   const addRouteEvidence = (
     routeId: string,
-    evidence: Omit<RouteEvidence, "id" | "timestamp">
+    evidence: NewRouteEvidence
   ) => {
     const newEvidence: RouteEvidence = {
       ...evidence,
@@ -690,10 +746,16 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const refreshDrivers = async (onlyActive = true) => {
     if (!apiFetch) return;
+    if (user?.role === "chofer") return;
     const query = onlyActive ? "?onlyActive=true" : "";
-    const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
-    const active = data.filter((d) => (d as any).isActive !== false);
-    setDrivers(active.map(mapApiDriver));
+    try {
+      const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
+      const active = data.filter((d) => (d as any).isActive !== false);
+      setDrivers(active.map(mapApiDriver));
+    } catch (error) {
+      if (isAuthError(error)) return;
+      throw error;
+    }
   };
 
   const addDriver = async (
@@ -780,6 +842,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         updateRoute,
         deleteRoute,
         updateVehicleLocation,
+        registerRoutePosition,
         addRouteEvidence,
         getRoutesByDriver,
         getTeamVehicles,
