@@ -2,9 +2,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Crosshair,
+  LocateFixed,
+  Maximize2,
+  Minimize2,
+  Route as RoutePath,
+  Truck,
+} from "lucide-react";
 
 import { useAuth } from "@/Context/AuthContext";
+import { useFleet } from "@/Context/FleetContext";
 import {
   fetchRoutes,
   fetchRoutePositions,
@@ -21,7 +30,8 @@ export interface MapViewProps {
 type LatLngTuple = [number, number];
 
 export function MapView({ onBack }: MapViewProps) {
-  const { apiFetch } = useAuth();
+  const { apiFetch, getAllUsers } = useAuth();
+  const { vehicles, drivers } = useFleet();
 
   const [routes, setRoutes] = useState<RouteForMap[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
@@ -32,6 +42,13 @@ export function MapView({ onBack }: MapViewProps) {
   const [trackingPositions, setTrackingPositions] = useState<LatLngTuple[]>([]);
   const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
   const [isLoadingTracking, setIsLoadingTracking] = useState(false);
+  const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
+  const [focusUserSignal, setFocusUserSignal] = useState(0);
+  const [focusTrackingSignal, setFocusTrackingSignal] = useState(0);
+  const [isLocatingUser, setIsLocatingUser] = useState(false);
+  const [followTruck, setFollowTruck] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
   useEffect(() => {
@@ -176,6 +193,44 @@ export function MapView({ onBack }: MapViewProps) {
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
     [routes, selectedRouteId]
   );
+  const trackingLatest = useMemo(
+    () => (trackingDisplay.length ? trackingDisplay[trackingDisplay.length - 1] : null),
+    [trackingDisplay]
+  );
+
+  const vehicleById = useMemo(
+    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
+    [vehicles]
+  );
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers]
+  );
+  const users = getAllUsers();
+
+  const formatVehicleLabel = (vehicleId?: string) => {
+    if (!vehicleId) return "Vehículo no asignado";
+    const vehicle = vehicleById.get(vehicleId);
+    if (!vehicle) return "Vehículo no disponible";
+    const name = [vehicle.modelo, vehicle.marca].filter(Boolean).join(" ").trim();
+    if (name && vehicle.placa) return `${name} (${vehicle.placa})`;
+    return name || vehicle.placa || "Vehículo no disponible";
+  };
+
+  const formatDriverLabel = (driverId?: string) => {
+    if (!driverId) return "Conductor no asignado";
+    const driver = driverById.get(driverId);
+    if (driver) {
+      const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(" ").trim();
+      if (fullName) return fullName;
+    }
+    const user = users.find((item) => item.driverId === driverId || item.id === driverId);
+    if (user) {
+      const fullName = [user.nombres, user.apellidos].filter(Boolean).join(" ").trim();
+      return fullName || user.usuario || "Conductor no disponible";
+    }
+    return "Conductor no disponible";
+  };
 
   const stopsCount = useMemo(() => {
     if (!selectedRoute || !Array.isArray(selectedRoute.points)) return 0;
@@ -199,6 +254,76 @@ export function MapView({ onBack }: MapViewProps) {
   };
 
   const statusMeta = getStatusMeta(selectedRoute?.status);
+  const loadingBadgeTopClass = selectedRoute ? "top-[124px]" : "top-3";
+  const trackingBadgeTopClass = selectedRoute ? "top-[160px]" : "top-12";
+
+  const handleRecenterRoute = () => {
+    if (!selectedRouteId) return;
+    setFitSignal((prev) => prev + 1);
+  };
+
+  const handleFocusMyLocation = () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setLocationError("Geolocalización no disponible en este navegador.");
+      return;
+    }
+
+    setIsLocatingUser(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+        setFocusUserSignal((prev) => prev + 1);
+        setIsLocatingUser(false);
+      },
+      () => {
+        setLocationError("No se pudo obtener tu ubicación.");
+        setIsLocatingUser(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000,
+      }
+    );
+  };
+
+  const handleFocusTruck = () => {
+    if (!selectedRoute) return;
+    setFocusTrackingSignal((prev) => prev + 1);
+  };
+
+  const handleToggleFollowTruck = () => {
+    setFollowTruck((prev) => !prev);
+  };
+
+  const handleToggleFullscreen = async () => {
+    const mapCard = document.getElementById("routes-map-card");
+    if (!mapCard) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await mapCard.requestFullscreen();
+        return;
+      }
+      await document.exitFullscreen();
+    } catch {
+      // no-op
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      const element = document.fullscreenElement;
+      setIsFullscreen(!!element && element.id === "routes-map-card");
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, []);
 
   // --------- UI ---------
   return (
@@ -249,7 +374,7 @@ export function MapView({ onBack }: MapViewProps) {
         <div className="relative flex-1">
           {/* Panel flotante con info de la ruta seleccionada */}
           {selectedRoute && (
-            <div className="absolute z-[400] top-3 left-3 right-3 md:left-4 md:right-auto max-w-sm">
+            <div className="absolute z-[1200] top-3 left-3 right-3 md:left-4 md:right-auto max-w-sm pointer-events-none">
               <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100 shadow-sm px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div>
@@ -262,11 +387,11 @@ export function MapView({ onBack }: MapViewProps) {
                     <p className="text-[11px] text-gray-500">
                       Vehículo:{" "}
                       <span className="font-medium">
-                        {selectedRoute.vehicleId.slice(0, 8)}…
+                        {formatVehicleLabel(selectedRoute.vehicleId)}
                       </span>{" "}
                       · Conductor:{" "}
                       <span className="font-medium">
-                        {selectedRoute.driverId.slice(0, 8)}…
+                        {formatDriverLabel(selectedRoute.driverId)}
                       </span>
                     </p>
                   </div>
@@ -291,7 +416,10 @@ export function MapView({ onBack }: MapViewProps) {
             </div>
           )}
 
-          <div className="relative h-[360px] lg:h-full rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+          <div
+            id="routes-map-card"
+            className="relative z-0 h-[360px] lg:h-full rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white"
+          >
             <RoutesMapView
               routes={routes}
               selectedRouteId={selectedRouteId}
@@ -301,11 +429,116 @@ export function MapView({ onBack }: MapViewProps) {
               }}
               fitSignal={fitSignal}
               trackingPositions={trackingDisplay}
+              userLocation={userLocation}
+              focusUserSignal={focusUserSignal}
+              focusTrackingSignal={focusTrackingSignal}
+              followTracking={followTruck}
             />
 
+            <div className="absolute left-3 bottom-14 z-[500] flex flex-col gap-2 items-start">
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={handleRecenterRoute}
+                  disabled={!selectedRouteId}
+                  title="Recentrar ruta"
+                  aria-label="Recentrar ruta"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RoutePath className="h-4 w-4" />
+                </button>
+                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                  Recentrar ruta
+                </span>
+              </div>
+
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={handleFocusTruck}
+                  disabled={!selectedRoute}
+                  title="Centrar camión"
+                  aria-label="Centrar camión"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Truck className="h-4 w-4" />
+                </button>
+                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                  Centrar camión
+                </span>
+              </div>
+
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={handleFocusMyLocation}
+                  disabled={isLocatingUser}
+                  title={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
+                  aria-label={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <LocateFixed className="h-4 w-4" />
+                </button>
+                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                  {isLocatingUser ? "Ubicando..." : "Mi ubicación"}
+                </span>
+              </div>
+
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={handleToggleFollowTruck}
+                  disabled={!trackingLatest}
+                  title={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
+                  aria-label={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    followTruck
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-gray-200 bg-white/95 text-gray-700 hover:bg-white"
+                  }`}
+                >
+                  <Crosshair className="h-4 w-4" />
+                </button>
+                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                  {`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
+                </span>
+              </div>
+
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={handleToggleFullscreen}
+                  title={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
+                  aria-label={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white"
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                  {isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
+                </span>
+              </div>
+            </div>
+
             {isLoading && (
-              <div className="absolute right-3 top-3 z-[500] rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] text-blue-700 shadow-sm">
+              <div
+                className={`absolute left-3 z-[500] rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] text-blue-700 shadow-sm ${loadingBadgeTopClass}`}
+              >
                 Actualizando rutas...
+              </div>
+            )}
+
+            {isLoadingTracking && (
+              <div
+                className={`absolute left-3 z-[500] rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] text-emerald-700 shadow-sm ${trackingBadgeTopClass}`}
+              >
+                Actualizando tracking...
+              </div>
+            )}
+
+            {locationError && (
+              <div className="absolute left-3 bottom-[256px] z-[500] max-w-xs rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 shadow-sm">
+                {locationError}
               </div>
             )}
 
@@ -367,11 +600,11 @@ export function MapView({ onBack }: MapViewProps) {
                       <p className="text-[11px] text-gray-500 truncate">
                         Vehículo:{" "}
                         <span className="font-medium">
-                          {route.vehicleId.slice(0, 8)}…
+                          {formatVehicleLabel(route.vehicleId)}
                         </span>{" "}
                         · Conductor:{" "}
                         <span className="font-medium">
-                          {route.driverId.slice(0, 8)}…
+                          {formatDriverLabel(route.driverId)}
                         </span>
                       </p>
                     </div>

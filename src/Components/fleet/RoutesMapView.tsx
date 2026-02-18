@@ -1,13 +1,16 @@
 // src/Components/fleet/RoutesMapView.tsx
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
   Polyline,
   Popup,
+  ScaleControl,
   TileLayer,
+  ZoomControl,
+  useMapEvents,
 } from "react-leaflet";
 import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 import L from "leaflet";
@@ -47,6 +50,33 @@ interface RoutesMapViewProps {
   trackingPositions?: LatLngTuple[];
   /** Dispara el re-encuadre del mapa aunque la ruta no cambie */
   fitSignal?: number;
+  /** Ubicación del usuario para centrar mapa bajo demanda */
+  userLocation?: LatLngTuple | null;
+  /** Señal para recentrar en la ubicación del usuario */
+  focusUserSignal?: number;
+  /** Señal para recentrar en la última posición del camión */
+  focusTrackingSignal?: number;
+  /** Seguir automáticamente al camión cuando llegan posiciones nuevas */
+  followTracking?: boolean;
+}
+
+function MapInteractionBridge({
+  onMapReady,
+  onUserMove,
+}: {
+  onMapReady: (map: LeafletMap) => void;
+  onUserMove: () => void;
+}) {
+  const map = useMapEvents({
+    dragstart: onUserMove,
+    zoomstart: onUserMove,
+  });
+
+  useEffect(() => {
+    onMapReady(map);
+  }, [map, onMapReady]);
+
+  return null;
 }
 
 const DEFAULT_CENTER: LatLngTuple = [-0.180653, -78.467834]; // Quito aprox
@@ -131,14 +161,27 @@ export function RoutesMapView({
   initialZoom = DEFAULT_ZOOM,
   trackingPositions,
   fitSignal,
+  userLocation = null,
+  focusUserSignal,
+  focusTrackingSignal,
+  followTracking = false,
 }: RoutesMapViewProps) {
   const mapRef = useRef<LeafletMap | null>(null);
   const hasFitRef = useRef(false);
   const userMovedRef = useRef(false);
+  const lastFitSignalRef = useRef<number | undefined>(undefined);
 
   const [snappedByRoute, setSnappedByRoute] = useState<
     Record<string, LatLngTuple[]>
   >({});
+
+  const handleMapReady = useCallback((map: LeafletMap) => {
+    mapRef.current = map;
+  }, []);
+
+  const handleMapUserMove = useCallback(() => {
+    userMovedRef.current = true;
+  }, []);
 
   const selectedRoute = useMemo(
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
@@ -164,17 +207,24 @@ export function RoutesMapView({
     });
   }, []);
 
+  const userLocationIcon = useMemo(() => {
+    if (typeof window === "undefined") return undefined;
+    return L.divIcon({
+      className: "",
+      html: `
+        <div style="width:20px;height:20px;border-radius:10px;background:#1d4ed8;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(29,78,216,0.35);border:2px solid #fff;">
+          <div style="width:6px;height:6px;border-radius:3px;background:#fff;"></div>
+        </div>
+      `,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+  }, []);
+
   useEffect(() => {
     hasFitRef.current = false;
     userMovedRef.current = false;
   }, [selectedRouteId]);
-
-  useEffect(() => {
-    if (fitSignal === undefined) return;
-    hasFitRef.current = false;
-    userMovedRef.current = false;
-  }, [fitSignal]);
-
 
   const mapInitialCenter: LatLngExpression = useMemo(() => {
     if (initialCenter) return initialCenter;
@@ -225,7 +275,9 @@ export function RoutesMapView({
   // Ajustar zoom a la ruta seleccionada (incluyendo tracking si existe)
   useEffect(() => {
     if (!selectedRoute || !mapRef.current) return;
-    if (userMovedRef.current || hasFitRef.current) return;
+    const isForcedFit =
+      fitSignal !== undefined && fitSignal !== lastFitSignalRef.current;
+    if (!isForcedFit && (userMovedRef.current || hasFitRef.current)) return;
 
     const snapped = snappedByRoute[selectedRoute.id];
     const fallbackPlanned = buildRoutePolyline(selectedRoute);
@@ -246,24 +298,71 @@ export function RoutesMapView({
 
     mapRef.current.fitBounds(bounds, { padding: [40, 40] });
     hasFitRef.current = true;
+    if (fitSignal !== undefined) {
+      lastFitSignalRef.current = fitSignal;
+    }
   }, [selectedRoute, snappedByRoute, trackingPositions, trackingLatest, fitSignal]);
 
+  useEffect(() => {
+    if (focusUserSignal === undefined) return;
+    if (!mapRef.current || !userLocation) return;
+
+    const nextZoom = Math.max(mapRef.current.getZoom(), 14);
+    mapRef.current.flyTo(userLocation, nextZoom, {
+      animate: true,
+      duration: 0.8,
+    });
+    userMovedRef.current = true;
+  }, [focusUserSignal, userLocation]);
+
+  useEffect(() => {
+    if (focusTrackingSignal === undefined) return;
+    if (!mapRef.current) return;
+
+    const fallbackTarget = selectedRoute
+      ? (() => {
+          const routePoints = buildRoutePolyline(selectedRoute);
+          if (!routePoints.length) return null;
+          return routePoints[routePoints.length - 1];
+        })()
+      : null;
+    const target = trackingLatest ?? fallbackTarget;
+    if (!target) return;
+
+    const nextZoom = Math.max(mapRef.current.getZoom(), 15);
+    mapRef.current.flyTo(target, nextZoom, {
+      animate: true,
+      duration: 0.8,
+    });
+    userMovedRef.current = true;
+  }, [focusTrackingSignal, trackingLatest, selectedRoute]);
+
+  useEffect(() => {
+    if (!followTracking) return;
+    if (!mapRef.current || !trackingLatest) return;
+
+    const nextZoom = Math.max(mapRef.current.getZoom(), 15);
+    mapRef.current.flyTo(trackingLatest, nextZoom, {
+      animate: true,
+      duration: 0.6,
+    });
+  }, [followTracking, trackingLatest]);
+
   return (
-    <div className="w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
+    <div className="routes-map-view w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
       <MapContainer
         center={mapInitialCenter}
         zoom={initialZoom}
         scrollWheelZoom
+        zoomControl={false}
         className="w-full h-full"
-        whenCreated={(mapInstance: LeafletMap) => {
-          mapRef.current = mapInstance;
-          const markMoved = () => {
-            userMovedRef.current = true;
-          };
-          mapInstance.on("dragstart", markMoved);
-          mapInstance.on("zoomstart", markMoved);
-        }}
       >
+        <MapInteractionBridge
+          onMapReady={handleMapReady}
+          onUserMove={handleMapUserMove}
+        />
+        <ZoomControl position="bottomright" />
+        <ScaleControl position="topright" imperial={false} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -338,6 +437,12 @@ export function RoutesMapView({
               {isSelected && trackingLatest && (
                 <Marker position={trackingLatest} icon={trackingIcon}>
                   <Popup>Ubicación actual</Popup>
+                </Marker>
+              )}
+
+              {isSelected && userLocation && (
+                <Marker position={userLocation} icon={userLocationIcon}>
+                  <Popup>Mi ubicación</Popup>
                 </Marker>
               )}
 
