@@ -47,7 +47,13 @@ export function FleetDashboard() {
       );
     };
 
-    const permissionsApi = (navigator as any).permissions;
+    const permissionsApi = (
+      navigator as Navigator & {
+        permissions?: {
+          query: (permissionDesc: PermissionDescriptor) => Promise<PermissionStatus>;
+        };
+      }
+    ).permissions;
     if (permissionsApi?.query) {
       permissionsApi
         .query({ name: "geolocation" })
@@ -118,12 +124,21 @@ export function FleetDashboard() {
   return (
     <>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
+        {sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Cerrar menú lateral"
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-[1900] bg-slate-950/45 backdrop-blur-[1px] md:hidden"
+          />
+        )}
+
         <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
+          className={`fixed md:static inset-y-0 left-0 w-64 max-w-[85vw] bg-white border-r border-gray-200 shadow-lg z-[2000] transform transition-transform duration-300 flex flex-col ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex h-20 items-center justify-between px-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <Image
                 src="/brand/logo-mark.png"
@@ -179,8 +194,8 @@ export function FleetDashboard() {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
-          <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="flex h-20 items-center justify-between gap-4 px-4 md:px-8 bg-white border-b border-gray-100 shadow-sm">
             <div className="flex items-center gap-3">
               <button
                 className="md:hidden p-2 rounded-lg hover:bg-gray-100"
@@ -203,7 +218,7 @@ export function FleetDashboard() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto min-w-0">
             {renderView()}
           </main>
         </div>

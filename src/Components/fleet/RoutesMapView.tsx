@@ -65,6 +65,14 @@ interface RoutesMapViewProps {
   focusTrackingSignal?: number;
   /** Seguir automáticamente al camión cuando llegan posiciones nuevas */
   followTracking?: boolean;
+  /** Mostrar solo la ruta activa */
+  showOnlySelectedRoute?: boolean;
+  /** Mostrar marcadores de origen, destino y paradas */
+  showStops?: boolean;
+  /** Mostrar la línea de la ruta planificada */
+  showPlannedLine?: boolean;
+  /** Mostrar línea y punto de tracking real */
+  showTrackingLine?: boolean;
   /** Callback cuando el usuario mueve/zoomea el mapa manualmente */
   onUserInteraction?: () => void;
   /** Señal para invalidar tamaño del mapa (fullscreen/layout) */
@@ -187,6 +195,10 @@ export function RoutesMapView({
   focusUserSignal,
   focusTrackingSignal,
   followTracking = false,
+  showOnlySelectedRoute = false,
+  showStops = true,
+  showPlannedLine = true,
+  showTrackingLine = true,
   onUserInteraction,
   resizeSignal,
 }: RoutesMapViewProps) {
@@ -216,6 +228,10 @@ export function RoutesMapView({
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
     [routes, selectedRouteId]
   );
+  const renderedRoutes = useMemo(() => {
+    if (!showOnlySelectedRoute || !selectedRouteId) return routes;
+    return routes.filter((route) => route.id === selectedRouteId);
+  }, [routes, selectedRouteId, showOnlySelectedRoute]);
 
   const trackingLatest = useMemo(() => {
     if (!trackingPositions || trackingPositions.length === 0) return null;
@@ -390,7 +406,7 @@ export function RoutesMapView({
   }, [resizeSignal]);
 
   return (
-    <div className="routes-map-view w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
+    <div className="routes-map-view w-full h-full min-h-0 rounded-xl overflow-hidden shadow-md bg-white">
       <MapContainer
         center={mapInitialCenter}
         zoom={initialZoom}
@@ -414,7 +430,7 @@ export function RoutesMapView({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {routes.map((route) => {
+        {renderedRoutes.map((route) => {
           const planned = buildRoutePolyline(route);
           const snapped = snappedByRoute[route.id];
           const polyline =
@@ -437,37 +453,41 @@ export function RoutesMapView({
 
           return (
             <Fragment key={route.id}>
-              {route.points?.map((p, idx) => {
-                const pos: LatLngTuple = [p.latitude, p.longitude];
-                return (
-                  <Marker key={`${route.id}-stop-${idx}`} position={pos}>
-                    <Popup>
-                      <div className="text-sm">
-                        <p className="font-semibold">{route.name}</p>
-                        <p className="text-xs text-gray-500">
-                          Parada: {p.name ?? `Punto ${idx + 1}`}
-                        </p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
+              {showStops &&
+                route.points?.map((p, idx) => {
+                  const pos: LatLngTuple = [p.latitude, p.longitude];
+                  return (
+                    <Marker key={`${route.id}-stop-${idx}`} position={pos}>
+                      <Popup>
+                        <div className="text-sm">
+                          <p className="font-semibold">{route.name}</p>
+                          <p className="text-xs text-gray-500">
+                            Parada: {p.name ?? `Punto ${idx + 1}`}
+                          </p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
 
               {/* Línea planificada (snapeada a carretera si OSRM respondió) */}
-              <Polyline
-                positions={polyline}
-                pathOptions={{
-                  color,
-                  weight: isSelected ? 6 : 4,
-                  opacity: isSelected ? 0.9 : 0.7,
-                }}
-                eventHandlers={{
-                  click: () => onRouteClick?.(route.id),
-                }}
-              />
+              {showPlannedLine && (
+                <Polyline
+                  positions={polyline}
+                  pathOptions={{
+                    color,
+                    weight: isSelected ? 6 : 4,
+                    opacity: isSelected ? 0.9 : 0.7,
+                  }}
+                  eventHandlers={{
+                    click: () => onRouteClick?.(route.id),
+                  }}
+                />
+              )}
 
               {/* Tracking solo para la ruta seleccionada */}
               {isSelected &&
+                showTrackingLine &&
                 trackingPositions &&
                 trackingPositions.length >= 2 && (
                   <Polyline
@@ -480,7 +500,7 @@ export function RoutesMapView({
                   />
                 )}
 
-              {isSelected && trackingLatest && (
+              {isSelected && showTrackingLine && trackingLatest && (
                 <Marker position={trackingLatest} icon={trackingIcon}>
                   <Popup>Ubicación actual</Popup>
                 </Marker>
@@ -492,29 +512,33 @@ export function RoutesMapView({
                 </Marker>
               )}
 
-              {/* Origen */}
-              <Marker position={origin}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-semibold">{route.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Origen: {route.origin.name ?? "Sin nombre"}
-                    </p>
-                  </div>
-                </Popup>
-              </Marker>
+              {showStops && (
+                <>
+                  {/* Origen */}
+                  <Marker position={origin}>
+                    <Popup>
+                      <div className="text-sm">
+                        <p className="font-semibold">{route.name}</p>
+                        <p className="text-xs text-gray-500">
+                          Origen: {route.origin.name ?? "Sin nombre"}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
 
-              {/* Destino */}
-              <Marker position={destination}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-semibold">{route.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Destino: {route.destination.name ?? "Sin nombre"}
-                    </p>
-                  </div>
-                </Popup>
-              </Marker>
+                  {/* Destino */}
+                  <Marker position={destination}>
+                    <Popup>
+                      <div className="text-sm">
+                        <p className="font-semibold">{route.name}</p>
+                        <p className="text-xs text-gray-500">
+                          Destino: {route.destination.name ?? "Sin nombre"}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                </>
+              )}
             </Fragment>
           );
         })}
