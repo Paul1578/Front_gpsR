@@ -1,7 +1,7 @@
 // src/Components/fleet/MapView.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Crosshair,
@@ -48,7 +48,9 @@ export function MapView({ onBack }: MapViewProps) {
   const [isLocatingUser, setIsLocatingUser] = useState(false);
   const [followTruck, setFollowTruck] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeControlHint, setActiveControlHint] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
   useEffect(() => {
@@ -314,6 +316,23 @@ export function MapView({ onBack }: MapViewProps) {
     }
   };
 
+  const startLongPressHint = (hint: string) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+    longPressTimerRef.current = setTimeout(() => {
+      setActiveControlHint(hint);
+    }, 450);
+  };
+
+  const clearLongPressHint = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setActiveControlHint(null);
+  };
+
   useEffect(() => {
     const onFullscreenChange = () => {
       const element = document.fullscreenElement;
@@ -322,6 +341,14 @@ export function MapView({ onBack }: MapViewProps) {
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
     };
   }, []);
 
@@ -440,6 +467,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleRecenterRoute}
+                  onTouchStart={() => startLongPressHint("recenter")}
+                  onTouchEnd={clearLongPressHint}
+                  onTouchCancel={clearLongPressHint}
+                  onTouchMove={clearLongPressHint}
+                  onBlur={clearLongPressHint}
                   disabled={!selectedRouteId}
                   title="Recentrar ruta"
                   aria-label="Recentrar ruta"
@@ -447,7 +479,11 @@ export function MapView({ onBack }: MapViewProps) {
                 >
                   <RoutePath className="h-4 w-4" />
                 </button>
-                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                <span
+                  className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm transition-opacity duration-150 group-hover:opacity-100 ${
+                    activeControlHint === "recenter" ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   Recentrar ruta
                 </span>
               </div>
@@ -456,6 +492,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleFocusTruck}
+                  onTouchStart={() => startLongPressHint("truck")}
+                  onTouchEnd={clearLongPressHint}
+                  onTouchCancel={clearLongPressHint}
+                  onTouchMove={clearLongPressHint}
+                  onBlur={clearLongPressHint}
                   disabled={!selectedRoute}
                   title="Centrar camión"
                   aria-label="Centrar camión"
@@ -463,7 +504,11 @@ export function MapView({ onBack }: MapViewProps) {
                 >
                   <Truck className="h-4 w-4" />
                 </button>
-                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                <span
+                  className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm transition-opacity duration-150 group-hover:opacity-100 ${
+                    activeControlHint === "truck" ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   Centrar camión
                 </span>
               </div>
@@ -472,6 +517,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleFocusMyLocation}
+                  onTouchStart={() => startLongPressHint("location")}
+                  onTouchEnd={clearLongPressHint}
+                  onTouchCancel={clearLongPressHint}
+                  onTouchMove={clearLongPressHint}
+                  onBlur={clearLongPressHint}
                   disabled={isLocatingUser}
                   title={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
                   aria-label={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
@@ -479,7 +529,11 @@ export function MapView({ onBack }: MapViewProps) {
                 >
                   <LocateFixed className="h-4 w-4" />
                 </button>
-                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                <span
+                  className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm transition-opacity duration-150 group-hover:opacity-100 ${
+                    activeControlHint === "location" ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   {isLocatingUser ? "Ubicando..." : "Mi ubicación"}
                 </span>
               </div>
@@ -488,6 +542,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleToggleFollowTruck}
+                  onTouchStart={() => startLongPressHint("follow")}
+                  onTouchEnd={clearLongPressHint}
+                  onTouchCancel={clearLongPressHint}
+                  onTouchMove={clearLongPressHint}
+                  onBlur={clearLongPressHint}
                   disabled={!trackingLatest}
                   title={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
                   aria-label={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
@@ -499,7 +558,11 @@ export function MapView({ onBack }: MapViewProps) {
                 >
                   <Crosshair className="h-4 w-4" />
                 </button>
-                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                <span
+                  className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm transition-opacity duration-150 group-hover:opacity-100 ${
+                    activeControlHint === "follow" ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   {`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
                 </span>
               </div>
@@ -508,13 +571,22 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleToggleFullscreen}
+                  onTouchStart={() => startLongPressHint("fullscreen")}
+                  onTouchEnd={clearLongPressHint}
+                  onTouchCancel={clearLongPressHint}
+                  onTouchMove={clearLongPressHint}
+                  onBlur={clearLongPressHint}
                   title={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
                   aria-label={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white"
                 >
                   {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </button>
-                <span className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                <span
+                  className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-gray-200 bg-white/95 px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm transition-opacity duration-150 group-hover:opacity-100 ${
+                    activeControlHint === "fullscreen" ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   {isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
                 </span>
               </div>
