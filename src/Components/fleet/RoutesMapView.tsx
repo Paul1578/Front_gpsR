@@ -12,7 +12,7 @@ import {
   ZoomControl,
   useMapEvents,
 } from "react-leaflet";
-import type { LatLngExpression, Map as LeafletMap } from "leaflet";
+import type { LatLngExpression, LeafletEvent, Map as LeafletMap } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RouteForMap } from "@/services/fleetApi";
@@ -39,6 +39,13 @@ L.Icon.Default.mergeOptions({
 });
 
 type LatLngTuple = [number, number];
+type OsrmRouteResponse = {
+  routes?: Array<{
+    geometry?: {
+      coordinates?: Array<[number, number]>;
+    };
+  }>;
+};
 
 interface RoutesMapViewProps {
   routes: RouteForMap[];
@@ -58,7 +65,16 @@ interface RoutesMapViewProps {
   focusTrackingSignal?: number;
   /** Seguir automáticamente al camión cuando llegan posiciones nuevas */
   followTracking?: boolean;
+  /** Callback cuando el usuario mueve/zoomea el mapa manualmente */
+  onUserInteraction?: () => void;
+  /** Señal para invalidar tamaño del mapa (fullscreen/layout) */
+  resizeSignal?: number;
 }
+
+const isUserDrivenMapEvent = (event: LeafletEvent) => {
+  const eventWithOriginal = event as LeafletEvent & { originalEvent?: Event };
+  return Boolean(eventWithOriginal.originalEvent);
+};
 
 function MapInteractionBridge({
   onMapReady,
@@ -68,8 +84,16 @@ function MapInteractionBridge({
   onUserMove: () => void;
 }) {
   const map = useMapEvents({
-    dragstart: onUserMove,
-    zoomstart: onUserMove,
+    dragstart: (event) => {
+      if (isUserDrivenMapEvent(event)) {
+        onUserMove();
+      }
+    },
+    zoomstart: (event) => {
+      if (isUserDrivenMapEvent(event)) {
+        onUserMove();
+      }
+    },
   });
 
   useEffect(() => {
@@ -120,10 +144,8 @@ async function fetchSnappedGeometry(
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`OSRM ${res.status}`);
-    const data = (await res.json()) as any;
-    const geometry = data?.routes?.[0]?.geometry?.coordinates as
-      | Array<[number, number]>
-      | undefined;
+    const data = (await res.json()) as OsrmRouteResponse;
+    const geometry = data.routes?.[0]?.geometry?.coordinates;
 
     if (!geometry || geometry.length < 2) {
       throw new Error("OSRM sin geometría");
@@ -165,11 +187,14 @@ export function RoutesMapView({
   focusUserSignal,
   focusTrackingSignal,
   followTracking = false,
+  onUserInteraction,
+  resizeSignal,
 }: RoutesMapViewProps) {
   const mapRef = useRef<LeafletMap | null>(null);
   const hasFitRef = useRef(false);
   const userMovedRef = useRef(false);
   const lastFitSignalRef = useRef<number | undefined>(undefined);
+  const lastFocusTrackingSignalRef = useRef<number | undefined>(focusTrackingSignal);
 
   const [snappedByRoute, setSnappedByRoute] = useState<
     Record<string, LatLngTuple[]>
@@ -177,11 +202,15 @@ export function RoutesMapView({
 
   const handleMapReady = useCallback((map: LeafletMap) => {
     mapRef.current = map;
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
   }, []);
 
   const handleMapUserMove = useCallback(() => {
     userMovedRef.current = true;
-  }, []);
+    onUserInteraction?.();
+  }, [onUserInteraction]);
 
   const selectedRoute = useMemo(
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
@@ -317,6 +346,9 @@ export function RoutesMapView({
 
   useEffect(() => {
     if (focusTrackingSignal === undefined) return;
+    const isTriggeredFocus =
+      focusTrackingSignal !== lastFocusTrackingSignalRef.current;
+    if (!isTriggeredFocus) return;
     if (!mapRef.current) return;
 
     const fallbackTarget = selectedRoute
@@ -335,6 +367,7 @@ export function RoutesMapView({
       duration: 0.8,
     });
     userMovedRef.current = true;
+    lastFocusTrackingSignalRef.current = focusTrackingSignal;
   }, [focusTrackingSignal, trackingLatest, selectedRoute]);
 
   useEffect(() => {
@@ -348,12 +381,25 @@ export function RoutesMapView({
     });
   }, [followTracking, trackingLatest]);
 
+  useEffect(() => {
+    if (resizeSignal === undefined) return;
+    if (!mapRef.current) return;
+    setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 0);
+  }, [resizeSignal]);
+
   return (
     <div className="routes-map-view w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
       <MapContainer
         center={mapInitialCenter}
         zoom={initialZoom}
-        scrollWheelZoom
+        dragging={!followTracking}
+        scrollWheelZoom={!followTracking}
+        doubleClickZoom={!followTracking}
+        touchZoom={!followTracking}
+        boxZoom={!followTracking}
+        keyboard={!followTracking}
         zoomControl={false}
         className="w-full h-full"
       >
@@ -361,7 +407,7 @@ export function RoutesMapView({
           onMapReady={handleMapReady}
           onUserMove={handleMapUserMove}
         />
-        <ZoomControl position="bottomright" />
+        {!followTracking && <ZoomControl position="bottomright" />}
         <ScaleControl position="topright" imperial={false} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors'

@@ -1,7 +1,7 @@
 // src/Components/fleet/MapView.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Crosshair,
@@ -28,6 +28,66 @@ export interface MapViewProps {
 }
 
 type LatLngTuple = [number, number];
+type OsrmRouteResponse = {
+  routes?: Array<{
+    geometry?: {
+      coordinates?: Array<[number, number]>;
+    };
+  }>;
+};
+type TrackingPositionSource = Partial<Pick<RoutePositionDto, "recordedAt">> & {
+  latitude?: number | string;
+  longitude?: number | string;
+  lat?: number | string;
+  lng?: number | string;
+};
+
+const parseCoord = (value?: number | string): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[] => {
+  const sorted = [...positions].sort((a, b) => {
+    const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+    const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+    return aTime - bTime;
+  });
+
+  return sorted
+    .map((p) => {
+      const candidate = p as TrackingPositionSource;
+      const lat = parseCoord(candidate.latitude ?? candidate.lat);
+      const lng = parseCoord(candidate.longitude ?? candidate.lng);
+      if (lat == null || lng == null) return null;
+      return [lat, lng] as LatLngTuple;
+    })
+    .filter((v): v is LatLngTuple => v !== null);
+};
+
+const fetchSnappedGeometry = async (
+  planned: LatLngTuple[]
+): Promise<LatLngTuple[] | null> => {
+  if (planned.length < 2) return null;
+
+  const coordsParam = planned.map(([lat, lng]) => `${lng},${lat}`).join(";");
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`OSRM ${res.status}`);
+    const data = (await res.json()) as OsrmRouteResponse;
+    const geometry = data.routes?.[0]?.geometry?.coordinates;
+    if (!geometry || geometry.length < 2) return null;
+    return geometry.map(([lng, lat]) => [lat, lng] as LatLngTuple);
+  } catch {
+    return null;
+  }
+};
 
 export function MapView({ onBack }: MapViewProps) {
   const { apiFetch, getAllUsers } = useAuth();
@@ -50,6 +110,7 @@ export function MapView({ onBack }: MapViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeControlHint, setActiveControlHint] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [resizeSignal, setResizeSignal] = useState(0);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
@@ -65,7 +126,7 @@ export function MapView({ onBack }: MapViewProps) {
         const apiRoutes = await fetchRoutes(apiFetch);
         if (cancelled) return;
 
-        const filtered = apiRoutes.filter((r) => (r as any).isActive !== false);
+        const filtered = apiRoutes.filter((r) => r.isActive !== false);
         const mapped = mapRoutesApiToRoutesForMap(filtered);
         setRoutes(mapped);
 
@@ -86,59 +147,6 @@ export function MapView({ onBack }: MapViewProps) {
       cancelled = true;
     };
   }, [apiFetch]);
-
-  // --------- HELPERS PARA TRACKING ---------
-  const parseCoord = (value?: number | string): number | null => {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string") {
-      const parsed = parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  };
-
-  const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[] => {
-    const sorted = [...positions].sort((a, b) => {
-      const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
-      const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
-      return aTime - bTime;
-    });
-
-    return sorted
-      .map((p) => {
-        const lat = parseCoord((p as any).latitude);
-        const lng = parseCoord((p as any).longitude);
-        if (lat == null || lng == null) return null;
-        return [lat, lng] as LatLngTuple;
-      })
-      .filter((v): v is LatLngTuple => v !== null);
-  };
-
-  const fetchSnappedGeometry = async (
-    planned: LatLngTuple[]
-  ): Promise<LatLngTuple[] | null> => {
-    if (planned.length < 2) return null;
-
-    const coordsParam = planned
-      .map(([lat, lng]) => `${lng},${lat}`)
-      .join(";");
-
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
-
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = (await res.json()) as any;
-      const geometry = data?.routes?.[0]?.geometry?.coordinates as
-        | Array<[number, number]>
-        | undefined;
-
-      if (!geometry || geometry.length < 2) return null;
-      return geometry.map(([lng, lat]) => [lat, lng] as LatLngTuple);
-    } catch {
-      return null;
-    }
-  };
 
   // --------- CARGA DE TRACKING PARA LA RUTA SELECCIONADA ---------
   useEffect(() => {
@@ -333,16 +341,27 @@ export function MapView({ onBack }: MapViewProps) {
     setActiveControlHint(null);
   };
 
+  const bumpResizeSignal = useCallback(() => {
+    setResizeSignal((prev) => prev + 1);
+  }, []);
+
   useEffect(() => {
     const onFullscreenChange = () => {
       const element = document.fullscreenElement;
       setIsFullscreen(!!element && element.id === "routes-map-card");
+      bumpResizeSignal();
+      setTimeout(() => bumpResizeSignal(), 220);
+    };
+    const onWindowResize = () => {
+      bumpResizeSignal();
     };
     document.addEventListener("fullscreenchange", onFullscreenChange);
+    window.addEventListener("resize", onWindowResize);
     return () => {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
+      window.removeEventListener("resize", onWindowResize);
     };
-  }, []);
+  }, [bumpResizeSignal]);
 
   useEffect(() => {
     return () => {
@@ -460,9 +479,10 @@ export function MapView({ onBack }: MapViewProps) {
               focusUserSignal={focusUserSignal}
               focusTrackingSignal={focusTrackingSignal}
               followTracking={followTruck}
+              resizeSignal={resizeSignal}
             />
 
-            <div className="absolute left-3 bottom-14 z-[500] flex flex-col gap-2 items-start">
+            <div className="absolute left-3 bottom-8 z-[500] flex flex-col gap-2 items-start">
               <div className="group relative">
                 <button
                   type="button"
