@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
           (data && data.message) || "No pudimos actualizar tu contraseña. Inténtalo de nuevo en unos minutos."
         );
       }
-    } catch (err) {
+    } catch {
       setError("Hubo un problema de conexión. Por favor, inténtalo nuevamente.");
     } finally {
       setIsLoading(false);

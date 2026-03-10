@@ -42,10 +42,10 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     logistics: users.filter(u => u.role === "logistica").length,
     drivers: users.filter(u => u.role === "chofer").length,
     totalRoutes: allRoutes.length,
-    activeRoutes: allRoutes.filter((r: any) => r.estado === "en_progreso").length,
-    completedRoutes: allRoutes.filter((r: any) => r.estado === "completada").length,
+    activeRoutes: allRoutes.filter((r) => r.estado === "en_progreso").length,
+    completedRoutes: allRoutes.filter((r) => r.estado === "completada").length,
     totalVehicles: allVehicles.length,
-    activeVehicles: allVehicles.filter((v: any) => v.estado === "en_ruta").length,
+    activeVehicles: allVehicles.filter((v) => v.estado === "en_ruta").length,
     totalTeams: managers.length,
   };
 
@@ -103,7 +103,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fleettrack-backup-${Date.now()}.json`;
+    a.download = `fleettrack-backup-${data.exportDate.replace(/[:.]/g, "-")}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -400,8 +400,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {managers.map((manager) => {
                       const teamMembers = users.filter(u => u.teamId === manager.id);
-                      const teamVehicles = allVehicles.filter((v: any) => v.teamId === manager.id);
-                      const teamRoutes = allRoutes.filter((r: any) => r.teamId === manager.id);
+                      const teamVehicles = allVehicles.filter((v) => v.teamId === manager.id);
+                      const teamRoutes = allRoutes.filter((r) => r.teamId === manager.id);
                       
                       return (
                         <button

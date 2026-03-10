@@ -6,8 +6,14 @@ import { Toaster } from "sonner";
 import "leaflet/dist/leaflet.css"
 
 export const metadata = {
-  title: "App",
+  title: "FleetFlow",
   description: "Proyecto generado desde Figma adaptado a Next.js",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

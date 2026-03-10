@@ -84,7 +84,7 @@ export default function ActivateAccountPage() {
           setError(msg || "No pudimos activar tu cuenta. Inténtalo nuevamente.");
         }
       }
-    } catch (err) {
+    } catch {
       setError("Hubo un problema de conexión. Por favor, inténtalo nuevamente.");
     } finally {
       setIsLoading(false);

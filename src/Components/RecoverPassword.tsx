@@ -39,7 +39,7 @@ export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
       } else {
         toast.error((data && data.message) || "No pudimos procesar tu solicitud. Intentalo nuevamente.");
       }
-    } catch (err) {
+    } catch {
       toast.error("Hubo un problema de conexion. Verifica tu red e intentalo otra vez.");
     } finally {
       setIsLoading(false);

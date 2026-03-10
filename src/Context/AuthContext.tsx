@@ -14,6 +14,9 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
+const TOAST_DEDUPE_WINDOW_MS = 8000;
+const API_READ_RETRY_MAX_ATTEMPTS = 1;
+const API_READ_RETRY_BASE_DELAY_MS = 500;
 
 type ApiRole = "Admin" | "Driver" | "Manager" | "User" | "Logistics";
 
@@ -53,6 +56,7 @@ interface ApiErrorPayload {
   statusCode?: number;
   error?: string;
   message?: string;
+  errors?: string[];
   details?: Record<string, string[]>;
 }
 
@@ -70,7 +74,7 @@ export interface UserPermissions {
   canExportData?: boolean;
 }
 
-interface User {
+export interface User {
   id: string;
   nombres: string;
   apellidos: string;
@@ -200,6 +204,23 @@ export type ApiRequestOptions = RequestInit & {
 };
 
 type StoredUser = User & { password?: string };
+type ApiErrorLike = Error & {
+  status?: number;
+  data?: ApiErrorPayload | string[] | null;
+};
+
+const isSafeReadMethod = (method?: string) => {
+  const normalized = (method ?? "GET").toUpperCase();
+  return normalized === "GET" || normalized === "HEAD" || normalized === "OPTIONS";
+};
+
+const isRetryableStatus = (status?: number) => {
+  if (typeof status !== "number") return false;
+  return status === 408 || status === 429 || status >= 500;
+};
+
+const isAbortError = (error: unknown) =>
+  (error as { name?: string } | null)?.name === "AbortError";
 
 const getStoredUsers = (): StoredUser[] => {
   if (typeof window === "undefined") return [];
@@ -218,10 +239,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const isAuthenticated = !!user;
+  const fetchMeUserRef = useRef<(() => Promise<User | null>) | null>(null);
+  const deriveUserFromTokenRef = useRef<((token: string) => User | null) | null>(
+    null
+  );
+  const refreshTeamUsersRef = useRef<(() => Promise<void>) | null>(null);
+  const refreshAccessTokenRef = useRef<(() => Promise<boolean>) | null>(null);
+  const toastDedupRef = useRef<Map<string, number>>(new Map());
+
+  const showDedupedToast = (type: "error" | "success", key: string, message: string) => {
+    const now = Date.now();
+    const previousAt = toastDedupRef.current.get(key) ?? 0;
+    if (now - previousAt < TOAST_DEDUPE_WINDOW_MS) return;
+    toastDedupRef.current.set(key, now);
+    if (type === "error") toast?.error?.(message);
+    else toast?.success?.(message);
+  };
 
   const isAuthError = (error: unknown) => {
     const status = (error as { status?: number } | null)?.status;
     return status === 401 || status === 403;
+  };
+
+  const getApiErrorPayload = (error: unknown): ApiErrorPayload | null => {
+    const apiError = error as ApiErrorLike;
+    const data = apiError?.data;
+    if (!data || Array.isArray(data)) return null;
+    return data;
   };
 
   const setTokens = (tokens: AuthTokens | null) => {
@@ -260,11 +304,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokens(parsedTokens);
       if (!storedUser) {
         void (async () => {
-          const fetched = await fetchMeUser();
+          const fetched = await fetchMeUserRef.current?.();
           if (fetched) {
             persistUser(fetched);
           } else {
-            const derived = deriveUserFromToken(parsedTokens.accessToken);
+            const derived = deriveUserFromTokenRef.current?.(
+              parsedTokens.accessToken
+            );
             if (derived) {
               persistUser(derived);
             }
@@ -272,7 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })();
       } else if (parsedUser?.role === "chofer" && !parsedUser.driverId) {
         void (async () => {
-          const fetched = await fetchMeUser();
+          const fetched = await fetchMeUserRef.current?.();
           if (fetched) {
             persistUser(fetched);
           }
@@ -281,16 +327,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoadingUser(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (isAuthenticated && user?.role !== "chofer") {
-      void refreshTeamUsers();
+      void refreshTeamUsersRef.current?.();
     } else {
       setTeamUsers([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.role]);
 
   useEffect(() => {
@@ -300,7 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     const verifySession = async () => {
       if (!mounted) return;
-      await refreshAccessToken();
+      await refreshAccessTokenRef.current?.();
     };
 
     const intervalId = window.setInterval(verifySession, 60 * 1000);
@@ -316,7 +360,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const buildApiError = async (response: Response) => {
@@ -335,6 +378,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return enrichedError;
   };
 
+  const buildNetworkError = (error: unknown) => {
+    void error;
+    const networkError = new Error(
+      "No se pudo conectar con el servidor. Revisa tu conexión."
+    ) as ApiErrorLike;
+    networkError.status = 0;
+    networkError.data = null;
+    return networkError;
+  };
+
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
   const refreshAccessToken = async () => {
     const refreshToken = tokensRef.current?.refreshToken;
     if (!refreshToken) return false;
@@ -345,21 +403,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        if (user) {
-          toast?.error?.("Sesión cerrada en otro dispositivo.");
+        if (response.status === 401 || response.status === 403) {
+          if (user) {
+            showDedupedToast("error", "session_closed_remote", "Sesión cerrada en otro dispositivo.");
+          }
+          clearAuthState();
+          return false;
         }
-        await clearAuthState();
+        if (isRetryableStatus(response.status)) {
+          showDedupedToast(
+            "error",
+            "session_refresh_transient",
+            "No se pudo validar la sesión temporalmente. Reintentando..."
+          );
+          return false;
+        }
+        if (user) {
+          showDedupedToast("error", "session_refresh_invalid", "Sesión expirada. Inicia sesión nuevamente.");
+        }
+        clearAuthState();
         return false;
       }
       const data = (await response.json()) as AuthResponseDto;
       await applyAuthResponse(data);
       return true;
     } catch (error) {
-      console.error("Error al refrescar token:", error);
-      if (user) {
-        toast?.error?.("Sesión expirada. Inicia sesión nuevamente.");
+      if (!isAbortError(error)) {
+        console.warn("Error temporal al refrescar token:", error);
       }
-      await clearAuthState();
+      showDedupedToast(
+        "error",
+        "session_refresh_network",
+        "No se pudo validar la sesión por conexión. Reintentando..."
+      );
       return false;
     }
   };
@@ -370,52 +446,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<T> => {
     const { skipAuth = false, retry = true, tokensOverride, ...fetchOptions } =
       options;
-    const headers = new Headers(fetchOptions.headers || {});
-    if (!headers.has("Content-Type") && fetchOptions.body) {
-      headers.set("Content-Type", "application/json");
-    }
-    if (!skipAuth) {
-      let tokenSource = tokensOverride ?? tokensRef.current;
-      // fallback: si el ref no está poblado aún, intenta leer del storage
-      if (!tokenSource && typeof window !== "undefined") {
-        const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-        if (stored) {
-          tokenSource = JSON.parse(stored) as AuthTokens;
-          tokensRef.current = tokenSource;
+    const method = (fetchOptions.method ?? "GET").toUpperCase();
+    const canRetryRead = retry && isSafeReadMethod(method);
+    let authRefreshAttempted = false;
+    let readRetryAttempt = 0;
+
+    while (true) {
+      const headers = new Headers(fetchOptions.headers || {});
+      if (!headers.has("Content-Type") && fetchOptions.body) {
+        headers.set("Content-Type", "application/json");
+      }
+
+      if (!skipAuth) {
+        let tokenSource = tokensOverride ?? tokensRef.current;
+        // fallback: si el ref no está poblado aún, intenta leer del storage
+        if (!tokenSource && typeof window !== "undefined") {
+          const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+          if (stored) {
+            tokenSource = JSON.parse(stored) as AuthTokens;
+            tokensRef.current = tokenSource;
+          }
+        }
+        if (tokenSource?.accessToken) {
+          headers.set("Authorization", `Bearer ${tokenSource.accessToken}`);
         }
       }
-      if (tokenSource?.accessToken) {
-        headers.set("Authorization", `Bearer ${tokenSource.accessToken}`);
+
+      let response: Response;
+      try {
+        response = await fetch(`${API_BASE_URL}${path}`, {
+          ...fetchOptions,
+          headers,
+        });
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        if (canRetryRead && readRetryAttempt < API_READ_RETRY_MAX_ATTEMPTS) {
+          readRetryAttempt += 1;
+          await sleep(API_READ_RETRY_BASE_DELAY_MS * readRetryAttempt);
+          continue;
+        }
+        throw buildNetworkError(error);
       }
-    }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...fetchOptions,
-      headers,
-    });
-
-    if (
-      response.status === 401 &&
-      !skipAuth &&
-      retry &&
-      tokensRef.current?.refreshToken
-    ) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        return apiFetch<T>(path, { ...options, retry: false });
+      if (
+        response.status === 401 &&
+        !skipAuth &&
+        !authRefreshAttempted &&
+        tokensRef.current?.refreshToken
+      ) {
+        authRefreshAttempted = true;
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          continue;
+        }
       }
-    }
 
-    if (!response.ok) {
-      throw await buildApiError(response);
-    }
+      if (!response.ok) {
+        const apiError = await buildApiError(response);
+        if (
+          canRetryRead &&
+          readRetryAttempt < API_READ_RETRY_MAX_ATTEMPTS &&
+          isRetryableStatus(apiError.status)
+        ) {
+          readRetryAttempt += 1;
+          await sleep(API_READ_RETRY_BASE_DELAY_MS * (readRetryAttempt + 1));
+          continue;
+        }
+        throw apiError;
+      }
 
-    if (response.status === 204) {
-      return undefined as T;
-    }
+      if (response.status === 204) {
+        return undefined as T;
+      }
 
-    const text = await response.text();
-    return text ? (JSON.parse(text) as T) : (undefined as T);
+      const text = await response.text();
+      return text ? (JSON.parse(text) as T) : (undefined as T);
+    }
   };
 
   const mapApiUser = (apiUser: ApiUser): User => {
@@ -663,7 +769,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      if ((error as any)?.status !== 401) {
+      if ((error as ApiErrorLike)?.status !== 401) {
         console.error("Error al cerrar sesión:", error);
       }
     } finally {
@@ -674,14 +780,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ---------------------------------------------------------------------------
   // Funciones auxiliares locales (simulación de equipo)
   // ---------------------------------------------------------------------------
-
-  const generateIdentificacion = (): string => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 100)
-      .toString()
-      .padStart(2, "0");
-    return `ID-${timestamp}${random}`;
-  };
 
   const createUser = async (
     data: RegisterData & { role: UserRole; teamId?: string; email?: string }
@@ -707,14 +805,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshTeamUsers();
       return true;
     } catch (error) {
-      const errData = (error as any)?.data;
+      const errData = getApiErrorPayload(error);
       const message =
         errData?.message ||
-        (Array.isArray(errData) ? errData.join(", ") : "") ||
-        (error as any)?.message ||
+        (Array.isArray(errData?.errors) ? errData.errors.join(", ") : "") ||
+        (error as Error)?.message ||
         "Error al crear usuario";
       console.error("Error al crear usuario:", error);
-      toast?.error?.(message);
+      showDedupedToast("error", `create_user_${message}`, message);
       return false;
     }
   };
@@ -726,7 +824,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTeamUsers = async () => {
     try {
       const data = await apiFetch<ApiUser[]>("/Users/my-team");
-      const active = data.filter((u) => (u as any).isActive !== false);
+      const active = data.filter((u) => u.isActive !== false);
       setTeamUsers(active.map(mapApiUser));
     } catch (error) {
       if (isAuthError(error)) return;
@@ -806,7 +904,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { ok: true };
     } catch (error) {
-      const errData = (error as any)?.data;
+      const errData = getApiErrorPayload(error);
       const message =
         errData?.message ||
         (Array.isArray(errData?.errors) ? errData.errors.join(", ") : "") ||
@@ -842,6 +940,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistUser(updatedUser);
     }
   };
+
+  deriveUserFromTokenRef.current = deriveUserFromToken;
+  fetchMeUserRef.current = fetchMeUser;
+  refreshTeamUsersRef.current = refreshTeamUsers;
+  refreshAccessTokenRef.current = refreshAccessToken;
 
   return (
     <AuthContext.Provider

@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -124,6 +125,8 @@ type ApiRoutePoint = {
   longitude?: number;
   lat?: number;
   lng?: number;
+  Latitude?: number;
+  Longitude?: number;
   name?: string;
 };
 
@@ -167,19 +170,45 @@ type ApiDriver = {
 
 type ActionResult = { ok: boolean; message?: string };
 
+type ApiErrorLike = Error & {
+  status?: number;
+  data?: {
+    message?: string;
+    errors?: string[];
+  } | null;
+};
+
 const resolveApiMessage = (error: unknown, fallback: string): string => {
-  const data = (error as any)?.data;
-  const status = (error as any)?.status;
+  const apiError = error as ApiErrorLike;
+  const data = apiError?.data;
+  const status = apiError?.status;
   const explicitMessage =
     data?.message ||
     (Array.isArray(data?.errors) ? data.errors.join(", ") : undefined) ||
-    (error as Error)?.message;
+    apiError?.message;
 
   if (status === 401) {
     return "Tu sesion expiro, inicia sesion nuevamente.";
   }
+  if (status === 403) {
+    return "No tienes permisos para realizar esta accion.";
+  }
+  if (status === 429) {
+    return "Demasiadas solicitudes. Intenta de nuevo en unos segundos.";
+  }
+  if (status === 0) {
+    return "No se pudo conectar con el servidor. Revisa tu conexion.";
+  }
+  if (typeof status === "number" && status >= 500) {
+    return "El servidor esta temporalmente no disponible. Intenta nuevamente.";
+  }
 
   return explicitMessage || fallback;
+};
+
+const isTransientApiError = (error: unknown) => {
+  const status = (error as ApiErrorLike | null)?.status;
+  return status === 0 || status === 408 || status === 429 || (typeof status === "number" && status >= 500);
 };
 
 const statusNumberToState = (status?: number): Vehicle["estado"] => {
@@ -237,8 +266,8 @@ const mapApiRoute = (apiRoute: ApiRoute): Route => {
 
   const puntos =
     apiRoute.points?.map((p, idx) => ({
-      lat: p.latitude ?? (p as any).Latitude ?? p.lat ?? 0,
-      lng: p.longitude ?? (p as any).Longitude ?? p.lng ?? 0,
+      lat: p.latitude ?? p.Latitude ?? p.lat ?? 0,
+      lng: p.longitude ?? p.Longitude ?? p.lng ?? 0,
       nombre: p.name ?? `Punto ${idx + 1}`,
     })) ?? [];
 
@@ -336,10 +365,28 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const refreshRoutesRef = useRef<(() => Promise<void>) | null>(null);
+  const refreshDriversRef = useRef<((onlyActive?: boolean) => Promise<void>) | null>(
+    null
+  );
+  const backgroundLogRef = useRef<Map<string, number>>(new Map());
 
   const isAuthError = (error: unknown) => {
     const status = (error as { status?: number } | null)?.status;
     return status === 401 || status === 403;
+  };
+
+  const logBackgroundError = (scope: string, error: unknown) => {
+    const now = Date.now();
+    const key = `${scope}:${(error as { status?: number } | null)?.status ?? "unknown"}`;
+    const previousAt = backgroundLogRef.current.get(key) ?? 0;
+    if (now - previousAt < 15000) return;
+    backgroundLogRef.current.set(key, now);
+    if (isTransientApiError(error)) {
+      console.warn(scope, error);
+      return;
+    }
+    console.error(scope, error);
   };
 
   // ---------------- VEHICLES ----------------
@@ -349,11 +396,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       if (user?.role === "chofer") return;
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
-        const active = data.filter((v) => (v as any).isActive !== false);
+        const active = data.filter((v) => v.isActive !== false);
         setVehicles(active.map(mapApiVehicle));
       } catch (error) {
         if (isAuthError(error)) return;
-        console.error("Error cargando vehículos desde API", error);
+        logBackgroundError("Error cargando vehiculos desde API", error);
       }
     };
     void loadVehicles();
@@ -467,7 +514,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     if (!apiFetch) return;
 
     const data = await apiFetch<ApiRoute[]>("/Routes");
-    const active = data.filter((r) => (r as any).isActive !== false);
+    const active = data.filter((r) => r.isActive !== false);
 
     setRoutes((prev) => {
       const prevMap = new Map(prev.map((r) => [r.id, r]));
@@ -488,10 +535,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     const loadRoutes = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
       try {
-        await refreshRoutes();
+        await refreshRoutesRef.current?.();
       } catch (error) {
         if (isAuthError(error)) return;
-        console.error("Error cargando rutas desde API", error);
+        logBackgroundError("Error cargando rutas desde API", error);
       }
     };
 
@@ -503,10 +550,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
       if (user?.role === "chofer") return;
       try {
-        await refreshDrivers();
+        await refreshDriversRef.current?.();
       } catch (error) {
         if (isAuthError(error)) return;
-        console.error("Error cargando drivers desde API", error);
+        logBackgroundError("Error cargando drivers desde API", error);
       }
     };
 
@@ -750,7 +797,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     const query = onlyActive ? "?onlyActive=true" : "";
     try {
       const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
-      const active = data.filter((d) => (d as any).isActive !== false);
+      const active = data.filter((d) => d.isActive !== false);
       setDrivers(active.map(mapApiDriver));
     } catch (error) {
       if (isAuthError(error)) return;
@@ -828,6 +875,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       console.error("No se pudo asignar vehiculo al chofer al crear la ruta:", error);
     }
   };
+
+  refreshRoutesRef.current = refreshRoutes;
+  refreshDriversRef.current = refreshDrivers;
 
   return (
     <FleetContext.Provider

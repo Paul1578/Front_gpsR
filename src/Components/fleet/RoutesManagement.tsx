@@ -1,15 +1,14 @@
 ﻿"use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useFleet, Route } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
-import { Plus, Edit, Trash2, Route as RouteIcon, MapPin, ArrowLeft, MoveUp, MoveDown } from "lucide-react";
+import { Plus, Edit, Trash2, Route as RouteIcon, ArrowLeft, MoveUp, MoveDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { toast } from "sonner";
 import type { PickerPoint, SelectionMode } from "./RoutePickerMap";
-import type { LatLngExpression } from "leaflet";
 
 const RoutePickerMap = dynamic(() => import("./RoutePickerMap"), { ssr: false });
 
@@ -19,16 +18,26 @@ interface RoutesManagementProps {
 
 type RouteStatus = Route["estado"];
 
-const DEFAULT_POINT: PickerPoint = { lat: -12.0464, lng: -77.0428, nombre: "Punto" };
+type PickerPointLike = {
+  lat?: number | string;
+  latitude?: number | string;
+  latitud?: number | string;
+  lng?: number | string;
+  longitude?: number | string;
+  longitud?: number | string;
+  nombre?: string;
+  name?: string;
+};
 
-const normalizePickerPoint = (p: any): PickerPoint | null => {
-  const latRaw = p?.lat ?? p?.latitude ?? p?.latitud;
-  const lngRaw = p?.lng ?? p?.longitude ?? p?.longitud;
+const normalizePickerPoint = (p: unknown): PickerPoint | null => {
+  const point = (p ?? null) as PickerPointLike | null;
+  const latRaw = point?.lat ?? point?.latitude ?? point?.latitud;
+  const lngRaw = point?.lng ?? point?.longitude ?? point?.longitud;
   const lat = Number(latRaw);
   const lng = Number(lngRaw);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001) return null;
-  return { lat, lng, nombre: p?.nombre ?? p?.name ?? "" };
+  return { lat, lng, nombre: point?.nombre ?? point?.name ?? "" };
 };
 
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
@@ -219,14 +228,6 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     });
   };
 
-  const mapCenter: LatLngExpression = useMemo(() => {
-    const preferred = formData.origin ?? formData.stops[0] ?? formData.destination;
-    if (preferred && Number.isFinite(preferred.lat) && Number.isFinite(preferred.lng)) {
-      return [preferred.lat, preferred.lng];
-    }
-    return [DEFAULT_POINT.lat, DEFAULT_POINT.lng];
-  }, [formData.origin, formData.stops, formData.destination]);
-
   const getEstadoBadge = (estado: string | undefined) => {
     const key = typeof estado === "string" ? estado.toLowerCase() : "";
     const styles: Record<string, string> = {
@@ -368,7 +369,10 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       </div>
 
       <Dialog open={showForm} onOpenChange={resetForm}>
-        <DialogContent className="sm:max-w-5xl max-w-[98%] max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+        <DialogContent
+          className="w-[98vw] max-w-[98vw] sm:w-[95vw] sm:max-w-[95vw] md:left-[calc(50%+8rem)] md:w-[calc(100vw-18rem)] md:max-w-[calc(100vw-18rem)] xl:max-w-5xl max-h-[90vh] overflow-y-auto"
+          aria-describedby={undefined}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg md:text-xl">{editingRoute ? "Editar Ruta" : "Crear Ruta"}</DialogTitle>
           </DialogHeader>

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { useFleet, RouteEvidence } from "../../Context/FleetContext";
+import { useFleet } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
-import { MapPin, Package, Navigation, CheckCircle, ArrowLeft, Camera, FileText, Upload, X, Play, Pause, Compass, Truck } from "lucide-react";
+import { MapPin, Package, Navigation, CheckCircle, ArrowLeft, Camera, FileText, Upload, Play, Pause, Compass, Truck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 const DriverRouteMap = dynamic(() => import("./DriverRouteMap"), {
@@ -33,8 +33,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   const [evidenceDescription, setEvidenceDescription] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const [watchId, setWatchId] = useState<number | null>(null);
-  const lastLocationSentRef = useRef(0);
+  const locationSendCooldownRef = useRef(false);
   const [isUsingGeolocation, setIsUsingGeolocation] = useState(false);
 
   const driverId =
@@ -50,20 +49,18 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
 
   const myRoutes = routes.filter((r) => r.conductorId === driverId);
   const activeRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
-
-  useEffect(() => {
-    if (!activeRoute) {
-      setCurrentLocation(null);
-      return;
+  const fallbackLocation: [number, number] | null = (() => {
+    if (!activeRoute) return null;
+    const vehicle = vehicles.find((v) => v.id === activeRoute.vehiculoId);
+    if (vehicle?.ubicacionActual) {
+      return [vehicle.ubicacionActual.lat, vehicle.ubicacionActual.lng];
     }
-
-    const vehicle = vehicles.find(v => v.id === activeRoute.vehiculoId);
-    if (vehicle && vehicle.ubicacionActual && !currentLocation) {
-      setCurrentLocation([vehicle.ubicacionActual.lat, vehicle.ubicacionActual.lng]);
-    } else if (!currentLocation && activeRoute.puntos.length > 0) {
-      setCurrentLocation([activeRoute.puntos[0].lat, activeRoute.puntos[0].lng]);
+    if (activeRoute.puntos.length > 0) {
+      return [activeRoute.puntos[0].lat, activeRoute.puntos[0].lng];
     }
-  }, [activeRoute?.id, activeRoute?.estado, activeRoute?.puntos, activeRoute?.vehiculoId]);
+    return null;
+  })();
+  const effectiveCurrentLocation = currentLocation ?? fallbackLocation;
 
   useEffect(() => {
     if (!activeRoute) return;
@@ -85,18 +82,14 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
       }
     );
 
-    setWatchId(id);
-
     return () => {
       navigator.geolocation.clearWatch(id);
-      setWatchId(null);
       setIsUsingGeolocation(false);
     };
-  }, [activeRoute?.id]);
+  }, [activeRoute]);
 
   useEffect(() => {
     if (!activeRoute) {
-      setCurrentLocation(null);
       return;
     }
     if (isUsingGeolocation) return;
@@ -119,30 +112,32 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [activeRoute?.id, activeRoute?.estado, activeRoute?.puntos, activeRoute?.vehiculoId, isUsingGeolocation]);
+  }, [activeRoute, isUsingGeolocation]);
 
   useEffect(() => {
-    if (!activeRoute?.vehiculoId || !currentLocation) return;
-    const now = Date.now();
-    if (now - lastLocationSentRef.current < 20000) return;
-    lastLocationSentRef.current = now;
+    if (!activeRoute?.vehiculoId || !effectiveCurrentLocation) return;
+    if (locationSendCooldownRef.current) return;
+    locationSendCooldownRef.current = true;
+    window.setTimeout(() => {
+      locationSendCooldownRef.current = false;
+    }, 20000);
     if (user?.role !== "chofer") {
       void updateVehicleLocation(activeRoute.vehiculoId, {
-        lat: currentLocation[0],
-        lng: currentLocation[1],
+        lat: effectiveCurrentLocation[0],
+        lng: effectiveCurrentLocation[1],
       });
     }
     if (activeRoute.estado === "en_progreso") {
       void registerRoutePosition(activeRoute.id, {
-        lat: currentLocation[0],
-        lng: currentLocation[1],
+        lat: effectiveCurrentLocation[0],
+        lng: effectiveCurrentLocation[1],
       }, { recordedAt: new Date().toISOString() });
     }
   }, [
     activeRoute?.vehiculoId,
     activeRoute?.estado,
     activeRoute?.id,
-    currentLocation,
+    effectiveCurrentLocation,
     registerRoutePosition,
     updateVehicleLocation,
     user?.role,
@@ -325,7 +320,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
       <div className="flex-1 overflow-auto">
         <div className="relative h-[300px] md:h-[400px] bg-gray-100">
           <DriverRouteMap
-            currentLocation={currentLocation}
+            currentLocation={effectiveCurrentLocation}
             origin={activeRoute.origen}
             stops={activeRoute.puntos}
             destination={activeRoute.destino}
@@ -343,7 +338,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
             </p>
           </div>
 
-          {currentLocation && (
+          {effectiveCurrentLocation && (
             <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg px-3 py-2 z-10">
               <div className="flex items-center gap-2">
                 <Truck size={16} className="text-[#3271a4]" />

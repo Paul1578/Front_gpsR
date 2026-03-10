@@ -15,6 +15,14 @@ interface DriverRouteMapProps {
 
 type LatLngTuple = [number, number];
 
+type OsrmResponse = {
+  routes?: Array<{
+    geometry?: {
+      coordinates?: Array<[number, number]>;
+    };
+  }>;
+};
+
 const isValidPoint = (p?: { lat: number; lng: number } | null) => {
   if (!p) return false;
   if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return false;
@@ -36,7 +44,7 @@ const fetchSnappedGeometry = async (
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`OSRM ${res.status}`);
-    const data = (await res.json()) as any;
+    const data = (await res.json()) as OsrmResponse;
     const geometry = data?.routes?.[0]?.geometry?.coordinates as
       | Array<[number, number]>
       | undefined;
@@ -74,7 +82,6 @@ export default function DriverRouteMap({
   useEffect(() => {
     let cancelled = false;
     if (planned.length < 2) {
-      setSnappedRoute(null);
       return;
     }
 
@@ -89,16 +96,17 @@ export default function DriverRouteMap({
     return () => {
       cancelled = true;
     };
-  }, [plannedKey, planned.length]);
+  }, [planned]);
 
-  const tracking: LatLngExpression[] = [];
+  const tracking: LatLngTuple[] = [];
   if (currentLocation) {
     tracking.push([currentLocation[0], currentLocation[1]]);
   }
 
-  const routeToDisplay = (snappedRoute && snappedRoute.length >= 2
-    ? snappedRoute
-    : planned) as LatLngExpression[];
+  const routeToDisplay: LatLngTuple[] =
+    planned.length >= 2 && snappedRoute && snappedRoute.length >= 2
+      ? snappedRoute
+      : planned;
 
   const center: LatLngExpression =
     routeToDisplay[0] ?? tracking[0] ?? [-0.180653, -78.467834];
@@ -124,7 +132,7 @@ export default function DriverRouteMap({
 
   useEffect(() => {
     if (!mapRef.current || hasFitRef.current || userMovedRef.current) return;
-    const points: LatLngExpression[] = [];
+    const points: LatLngTuple[] = [];
     if (routeToDisplay.length >= 2) points.push(...routeToDisplay);
     if (currentLocation) points.push([currentLocation[0], currentLocation[1]]);
     if (points.length < 2) return;
@@ -132,20 +140,26 @@ export default function DriverRouteMap({
     hasFitRef.current = true;
   }, [routeToDisplay, currentLocation]);
 
+  const handleMapReady = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const markMoved = () => {
+      userMovedRef.current = true;
+    };
+    map.on("dragstart", markMoved);
+    map.on("zoomstart", markMoved);
+  };
+
   return (
     <div className="relative w-full h-full">
       <MapContainer
+        ref={(map) => {
+          mapRef.current = map;
+        }}
         center={center}
         zoom={12}
         className="w-full h-full"
-        whenCreated={(map) => {
-          mapRef.current = map;
-          const markMoved = () => {
-            userMovedRef.current = true;
-          };
-          map.on("dragstart", markMoved);
-          map.on("zoomstart", markMoved);
-        }}
+        whenReady={handleMapReady}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

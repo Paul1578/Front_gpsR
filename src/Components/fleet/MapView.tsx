@@ -26,6 +26,13 @@ import {
   type RoutePositionDto,
 } from "@/services/fleetApi";
 import RoutesMapView from "./RoutesMapView";
+import {
+  isMapDebugEnabled,
+  MAP_BASE_STYLE_OPTIONS,
+  MAP_STORAGE_KEYS,
+  MAP_TRACKING_CONFIG,
+  type MapBaseStyle,
+} from "./mapRuntimeConfig";
 
 export interface MapViewProps {
   onBack?: () => void;
@@ -45,22 +52,50 @@ type TrackingPositionSource = Partial<Pick<RoutePositionDto, "recordedAt">> & {
   lat?: number | string;
   lng?: number | string;
 };
+type RouteStatusFilter = "all" | "pending" | "in_progress" | "completed" | "cancelled";
+type RouteViewport = {
+  center: LatLngTuple;
+  zoom: number;
+};
 type PersistedMapOptions = {
   showOnlySelectedRoute: boolean;
   showStops: boolean;
+  showOriginDestinationMarkers: boolean;
   showPlannedLine: boolean;
   showTrackingLine: boolean;
   showRoutesPanel: boolean;
+  routeStatusFilter: RouteStatusFilter;
+  highDensityRoutes: boolean;
+  baseMapStyle: MapBaseStyle;
+};
+type TrackingDiagnostics = {
+  requests: number;
+  successes: number;
+  errors: number;
+  lastStatus: number | null;
+  lastLatencyMs: number | null;
+  avgLatencyMs: number | null;
 };
 
-const MAP_OPTIONS_STORAGE_KEY = "fleetflow:web:map-view-options";
+const MAP_OPTIONS_STORAGE_KEY = MAP_STORAGE_KEYS.options;
+const MAP_VIEWPORT_STORAGE_KEY = MAP_STORAGE_KEYS.routeViewports;
+const TRACKING_POLL_VISIBLE_MS = MAP_TRACKING_CONFIG.pollVisibleMs;
+const TRACKING_POLL_HIDDEN_MS = MAP_TRACKING_CONFIG.pollHiddenMs;
+const TRACKING_STALE_MS = MAP_TRACKING_CONFIG.staleMs;
+const OFF_ROUTE_THRESHOLD_METERS = MAP_TRACKING_CONFIG.offRouteThresholdMeters;
 const DEFAULT_MAP_OPTIONS: PersistedMapOptions = {
   showOnlySelectedRoute: false,
   showStops: true,
+  showOriginDestinationMarkers: true,
   showPlannedLine: true,
   showTrackingLine: true,
   showRoutesPanel: true,
+  routeStatusFilter: "all",
+  highDensityRoutes: false,
+  baseMapStyle: "osm_light",
 };
+const TRACKING_MAX_ERROR_BACKOFF = MAP_TRACKING_CONFIG.maxErrorBackoff;
+const DEBUG_MAP_ENABLED = isMapDebugEnabled();
 
 const readPersistedMapOptions = (): PersistedMapOptions => {
   if (typeof window === "undefined") return DEFAULT_MAP_OPTIONS;
@@ -77,6 +112,10 @@ const readPersistedMapOptions = (): PersistedMapOptions => {
         typeof parsed.showStops === "boolean"
           ? parsed.showStops
           : DEFAULT_MAP_OPTIONS.showStops,
+      showOriginDestinationMarkers:
+        typeof parsed.showOriginDestinationMarkers === "boolean"
+          ? parsed.showOriginDestinationMarkers
+          : DEFAULT_MAP_OPTIONS.showOriginDestinationMarkers,
       showPlannedLine:
         typeof parsed.showPlannedLine === "boolean"
           ? parsed.showPlannedLine
@@ -89,9 +128,55 @@ const readPersistedMapOptions = (): PersistedMapOptions => {
         typeof parsed.showRoutesPanel === "boolean"
           ? parsed.showRoutesPanel
           : DEFAULT_MAP_OPTIONS.showRoutesPanel,
+      routeStatusFilter:
+        parsed.routeStatusFilter === "all" ||
+        parsed.routeStatusFilter === "pending" ||
+        parsed.routeStatusFilter === "in_progress" ||
+        parsed.routeStatusFilter === "completed" ||
+        parsed.routeStatusFilter === "cancelled"
+          ? parsed.routeStatusFilter
+          : DEFAULT_MAP_OPTIONS.routeStatusFilter,
+      highDensityRoutes:
+        typeof parsed.highDensityRoutes === "boolean"
+          ? parsed.highDensityRoutes
+          : DEFAULT_MAP_OPTIONS.highDensityRoutes,
+      baseMapStyle:
+        parsed.baseMapStyle === "osm_light" ||
+        parsed.baseMapStyle === "osm_dark" ||
+        parsed.baseMapStyle === "osm_contrast"
+          ? parsed.baseMapStyle
+          : DEFAULT_MAP_OPTIONS.baseMapStyle,
     };
   } catch {
     return DEFAULT_MAP_OPTIONS;
+  }
+};
+
+const readPersistedRouteViewports = (): Record<string, RouteViewport> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(MAP_VIEWPORT_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, RouteViewport>;
+    if (!parsed || typeof parsed !== "object") return {};
+    const sanitized: Record<string, RouteViewport> = {};
+    Object.entries(parsed).forEach(([routeId, viewport]) => {
+      if (
+        Array.isArray(viewport?.center) &&
+        viewport.center.length === 2 &&
+        Number.isFinite(viewport.center[0]) &&
+        Number.isFinite(viewport.center[1]) &&
+        Number.isFinite(viewport.zoom)
+      ) {
+        sanitized[routeId] = {
+          center: [viewport.center[0], viewport.center[1]],
+          zoom: viewport.zoom,
+        };
+      }
+    });
+    return sanitized;
+  } catch {
+    return {};
   }
 };
 
@@ -102,6 +187,127 @@ const parseCoord = (value?: number | string): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+};
+
+const buildPlannedPolylineFromRoute = (route: RouteForMap | null): LatLngTuple[] => {
+  if (!route) return [];
+  if (Array.isArray(route.points) && route.points.length > 0) {
+    return route.points.map((point) => [point.latitude, point.longitude]);
+  }
+  const fallback: LatLngTuple[] = [];
+  if (route.origin) fallback.push([route.origin.latitude, route.origin.longitude]);
+  if (route.destination) fallback.push([route.destination.latitude, route.destination.longitude]);
+  return fallback;
+};
+
+const toRadians = (value: number) => (value * Math.PI) / 180;
+const distanceMeters = (a: LatLngTuple, b: LatLngTuple) => {
+  const earthRadius = 6371000;
+  const dLat = toRadians(b[0] - a[0]);
+  const dLng = toRadians(b[1] - a[1]);
+  const lat1 = toRadians(a[0]);
+  const lat2 = toRadians(b[0]);
+  const h =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * earthRadius * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+};
+
+const distanceToSegmentMeters = (
+  point: LatLngTuple,
+  segmentStart: LatLngTuple,
+  segmentEnd: LatLngTuple
+) => {
+  const meanLat = toRadians((segmentStart[0] + segmentEnd[0]) / 2);
+  const mPerDegLat = 111320;
+  const mPerDegLng = 111320 * Math.cos(meanLat);
+  const toMeters = (coord: LatLngTuple) => ({
+    x: coord[1] * mPerDegLng,
+    y: coord[0] * mPerDegLat,
+  });
+  const p = toMeters(point);
+  const a = toMeters(segmentStart);
+  const b = toMeters(segmentEnd);
+  const abX = b.x - a.x;
+  const abY = b.y - a.y;
+  const abLenSq = abX * abX + abY * abY;
+  if (abLenSq === 0) {
+    const dx = p.x - a.x;
+    const dy = p.y - a.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * abX + (p.y - a.y) * abY) / abLenSq));
+  const projX = a.x + t * abX;
+  const projY = a.y + t * abY;
+  const dx = p.x - projX;
+  const dy = p.y - projY;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
+const getDistanceToPolylineMeters = (point: LatLngTuple, polyline: LatLngTuple[]) => {
+  if (polyline.length === 0) return null;
+  if (polyline.length === 1) return distanceMeters(point, polyline[0]);
+  let minDistance = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < polyline.length - 1; i += 1) {
+    const distance = distanceToSegmentMeters(point, polyline[i], polyline[i + 1]);
+    if (distance < minDistance) minDistance = distance;
+  }
+  return Number.isFinite(minDistance) ? minDistance : null;
+};
+
+const formatTrackingAge = (msAgo: number) => {
+  if (msAgo < 1000) return "ahora";
+  const seconds = Math.floor(msAgo / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
+};
+
+const statusToFilter = (
+  status?: number
+): Exclude<RouteStatusFilter, "all"> => {
+  if (status === 1) return "in_progress";
+  if (status === 2) return "completed";
+  if (status === 3) return "cancelled";
+  return "pending";
+};
+
+const getTrackingPollDelay = (
+  isHidden: boolean,
+  errorCount: number,
+  lastStatus: number | null,
+  isOnline: boolean
+) => {
+  const base = isHidden ? TRACKING_POLL_HIDDEN_MS : TRACKING_POLL_VISIBLE_MS;
+  if (!isOnline) return Math.max(base * 2, 120000);
+
+  let multiplier =
+    errorCount <= 0
+      ? 1
+      : Math.min(TRACKING_MAX_ERROR_BACKOFF, 1 + errorCount * 0.75);
+  if (lastStatus === 429) multiplier = Math.max(multiplier, 3);
+  if (lastStatus === 401 || lastStatus === 403) multiplier = Math.max(multiplier, 4);
+  if (lastStatus != null && lastStatus >= 500) multiplier = Math.max(multiplier, 2.25);
+
+  // jitter leve para evitar picos sincronizados de polling
+  const jitter = 0.9 + Math.random() * 0.2;
+  return Math.round(base * multiplier * jitter);
+};
+
+const parseApiErrorMeta = (error: unknown) => {
+  const enriched = error as Error & {
+    status?: number;
+    data?: { message?: string } | null;
+  };
+  const status =
+    typeof enriched?.status === "number" ? enriched.status : null;
+  const message =
+    (typeof enriched?.data?.message === "string" && enriched.data.message) ||
+    (typeof enriched?.message === "string" && enriched.message) ||
+    "Error de red";
+  return { status, message };
 };
 
 const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[] => {
@@ -120,6 +326,14 @@ const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[
       return [lat, lng] as LatLngTuple;
     })
     .filter((v): v is LatLngTuple => v !== null);
+};
+
+const areLatLngArraysEqual = (a: LatLngTuple[], b: LatLngTuple[]) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) return false;
+  }
+  return true;
 };
 
 const fetchSnappedGeometry = async (
@@ -146,6 +360,7 @@ export function MapView({ onBack }: MapViewProps) {
   const { apiFetch, getAllUsers } = useAuth();
   const { vehicles, drivers } = useFleet();
   const initialMapOptions = useMemo(readPersistedMapOptions, []);
+  const initialRouteViewports = useMemo(readPersistedRouteViewports, []);
 
   const [routes, setRoutes] = useState<RouteForMap[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
@@ -167,6 +382,9 @@ export function MapView({ onBack }: MapViewProps) {
     initialMapOptions.showOnlySelectedRoute
   );
   const [showStops, setShowStops] = useState(initialMapOptions.showStops);
+  const [showOriginDestinationMarkers, setShowOriginDestinationMarkers] = useState(
+    initialMapOptions.showOriginDestinationMarkers
+  );
   const [showPlannedLine, setShowPlannedLine] = useState(
     initialMapOptions.showPlannedLine
   );
@@ -176,13 +394,88 @@ export function MapView({ onBack }: MapViewProps) {
   const [showRoutesPanel, setShowRoutesPanel] = useState(
     initialMapOptions.showRoutesPanel
   );
+  const [routeStatusFilter, setRouteStatusFilter] = useState<RouteStatusFilter>(
+    initialMapOptions.routeStatusFilter
+  );
+  const [highDensityRoutes, setHighDensityRoutes] = useState(
+    initialMapOptions.highDensityRoutes
+  );
+  const [baseMapStyle, setBaseMapStyle] = useState<MapBaseStyle>(
+    initialMapOptions.baseMapStyle
+  );
+  const [routeViewportsById, setRouteViewportsById] = useState<
+    Record<string, RouteViewport>
+  >(initialRouteViewports);
+  const [routeSearchQuery, setRouteSearchQuery] = useState("");
   const [canCollapseRoutesPanel, setCanCollapseRoutesPanel] = useState(false);
   const [showMapOptions, setShowMapOptions] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [resizeSignal, setResizeSignal] = useState(0);
   const [trackingRefreshSignal, setTrackingRefreshSignal] = useState(0);
   const [lastTrackingSyncAt, setLastTrackingSyncAt] = useState<number | null>(null);
+  const [trackingErrorCount, setTrackingErrorCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
+  const [trackingLastErrorStatus, setTrackingLastErrorStatus] = useState<number | null>(null);
+  const [latestTrackingSample, setLatestTrackingSample] = useState<{
+    recordedAt?: string;
+    speedKmh?: number;
+    heading?: number;
+  } | null>(null);
+  const [trackingDiagnostics, setTrackingDiagnostics] = useState<TrackingDiagnostics>({
+    requests: 0,
+    successes: 0,
+    errors: 0,
+    lastStatus: null,
+    lastLatencyMs: null,
+    avgLatencyMs: null,
+  });
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastManualRefreshSignalRef = useRef(0);
+  const trackingPositionsRef = useRef<LatLngTuple[]>([]);
+  const trackingErrorCountRef = useRef(0);
+  const trackingLastErrorStatusRef = useRef<number | null>(null);
+  const trackingRequestAbortRef = useRef<AbortController | null>(null);
+  const optionsPanelId = "map-view-options-panel";
+  const users = useMemo(() => getAllUsers(), [getAllUsers]);
+  const vehicleById = useMemo(
+    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
+    [vehicles]
+  );
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers]
+  );
+  const driverLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((user) => {
+      const label =
+        [user.nombres, user.apellidos].filter(Boolean).join(" ").trim() ||
+        user.usuario ||
+        "Conductor no disponible";
+      if (user.driverId) map.set(user.driverId, label);
+      map.set(user.id, label);
+    });
+    return map;
+  }, [users]);
+  const normalizedRouteSearch = routeSearchQuery.trim().toLowerCase();
+
+  const updateTrackingErrorCount = useCallback((next: number) => {
+    trackingErrorCountRef.current = next;
+    setTrackingErrorCount(next);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncOnlineStatus = () => setIsOnline(window.navigator.onLine);
+    window.addEventListener("online", syncOnlineStatus);
+    window.addEventListener("offline", syncOnlineStatus);
+    return () => {
+      window.removeEventListener("online", syncOnlineStatus);
+      window.removeEventListener("offline", syncOnlineStatus);
+    };
+  }, []);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
   useEffect(() => {
@@ -219,50 +512,239 @@ export function MapView({ onBack }: MapViewProps) {
     };
   }, [apiFetch]);
 
+  const filteredRoutes = useMemo(() => {
+    const byStatus =
+      routeStatusFilter === "all"
+        ? routes
+        : routes.filter((route) => statusToFilter(route.status) === routeStatusFilter);
+    if (!normalizedRouteSearch) return byStatus;
+
+    return byStatus.filter((route) => {
+      const vehicle = route.vehicleId ? vehicleById.get(route.vehicleId) : undefined;
+      const driver = route.driverId ? driverById.get(route.driverId) : undefined;
+      const fields = [
+        route.name ?? "",
+        [vehicle?.modelo, vehicle?.marca, vehicle?.placa].filter(Boolean).join(" "),
+        [driver?.firstName, driver?.lastName].filter(Boolean).join(" "),
+        route.driverId ? driverLabelById.get(route.driverId) ?? "" : "",
+      ];
+      return fields.some((field) =>
+        field.toLowerCase().includes(normalizedRouteSearch)
+      );
+    });
+  }, [
+    routeStatusFilter,
+    routes,
+    normalizedRouteSearch,
+    vehicleById,
+    driverById,
+    driverLabelById,
+  ]);
+
+  const effectiveSelectedRouteId = useMemo(() => {
+    if (filteredRoutes.length === 0) return null;
+    if (selectedRouteId && filteredRoutes.some((route) => route.id === selectedRouteId)) {
+      return selectedRouteId;
+    }
+    return filteredRoutes[0]?.id ?? null;
+  }, [filteredRoutes, selectedRouteId]);
+
+  const runTrackingFetch = useCallback(
+    async (withSpinner = false) => {
+      if (!apiFetch || !effectiveSelectedRouteId) return false;
+
+      if (!isOnline) {
+        setTrackingLastErrorStatus(null);
+        trackingLastErrorStatusRef.current = null;
+        return false;
+      }
+
+      if (withSpinner) setIsLoadingTracking(true);
+
+      trackingRequestAbortRef.current?.abort();
+      const controller = new AbortController();
+      trackingRequestAbortRef.current = controller;
+      const requestStartedAt = Date.now();
+      setTrackingDiagnostics((prev) => ({
+        ...prev,
+        requests: prev.requests + 1,
+      }));
+
+      try {
+        const apiPositions = await fetchRoutePositions(
+          apiFetch,
+          effectiveSelectedRouteId,
+          undefined,
+          undefined,
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted) return false;
+
+        const sortedByTime = [...apiPositions].sort((a, b) => {
+          const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+          const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+          return aTime - bTime;
+        });
+        const latestPosition = sortedByTime[sortedByTime.length - 1];
+        setLatestTrackingSample(
+          latestPosition
+            ? {
+                recordedAt: latestPosition.recordedAt,
+                speedKmh: latestPosition.speedKmh,
+                heading: latestPosition.heading,
+              }
+            : null
+        );
+
+        const coords = normalizeTrackingPositions(apiPositions);
+        const hasChanges = !areLatLngArraysEqual(trackingPositionsRef.current, coords);
+        if (hasChanges) {
+          trackingPositionsRef.current = coords;
+          setTrackingPositions(coords);
+        }
+        setLastTrackingSyncAt(Date.now());
+        setTrackingLastErrorStatus(null);
+        trackingLastErrorStatusRef.current = null;
+        if (trackingErrorCountRef.current !== 0) {
+          updateTrackingErrorCount(0);
+        }
+        const latencyMs = Math.max(0, Date.now() - requestStartedAt);
+        setTrackingDiagnostics((prev) => {
+          const successes = prev.successes + 1;
+          const avgLatencyMs =
+            prev.avgLatencyMs == null
+              ? latencyMs
+              : Math.round((prev.avgLatencyMs * prev.successes + latencyMs) / successes);
+          return {
+            ...prev,
+            successes,
+            lastStatus: 200,
+            lastLatencyMs: latencyMs,
+            avgLatencyMs,
+          };
+        });
+        return true;
+      } catch (errorResponse) {
+        if (controller.signal.aborted) return false;
+        const { status, message } = parseApiErrorMeta(errorResponse);
+        setTrackingLastErrorStatus(status);
+        trackingLastErrorStatusRef.current = status;
+        console.warn("Tracking polling error:", message);
+        updateTrackingErrorCount(Math.min(trackingErrorCountRef.current + 1, 6));
+        const latencyMs = Math.max(0, Date.now() - requestStartedAt);
+        setTrackingDiagnostics((prev) => ({
+          ...prev,
+          errors: prev.errors + 1,
+          lastStatus: status,
+          lastLatencyMs: latencyMs,
+        }));
+        return false;
+      } finally {
+        if (trackingRequestAbortRef.current === controller) {
+          trackingRequestAbortRef.current = null;
+        }
+        if (withSpinner) setIsLoadingTracking(false);
+      }
+    },
+    [apiFetch, effectiveSelectedRouteId, isOnline, updateTrackingErrorCount]
+  );
+
   // --------- CARGA DE TRACKING PARA LA RUTA SELECCIONADA ---------
   useEffect(() => {
-    if (!apiFetch || !selectedRouteId) {
+    if (!apiFetch || !effectiveSelectedRouteId) {
       setTrackingPositions([]);
+      trackingPositionsRef.current = [];
+      setLatestTrackingSample(null);
       setLastTrackingSyncAt(null);
+      setIsLoadingTracking(false);
+      setTrackingLastErrorStatus(null);
+      trackingLastErrorStatusRef.current = null;
+      updateTrackingErrorCount(0);
       return;
     }
-    let cancelled = false;
 
-    const loadTracking = async () => {
-      try {
-        setIsLoadingTracking(true);
-        const apiPositions = await fetchRoutePositions(apiFetch, selectedRouteId);
-        if (cancelled) return;
-        const coords = normalizeTrackingPositions(apiPositions);
-        setTrackingPositions(coords);
-        setLastTrackingSyncAt(Date.now());
-      } catch (err) {
-        console.error("Error cargando tracking de la ruta", err);
-        if (!cancelled) setTrackingPositions([]);
-      } finally {
-        if (!cancelled) setIsLoadingTracking(false);
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleNextPoll = () => {
+      if (cancelled) return;
+      const isHidden =
+        typeof document !== "undefined" && document.visibilityState !== "visible";
+      const nextDelay = getTrackingPollDelay(
+        isHidden,
+        trackingErrorCountRef.current,
+        trackingLastErrorStatusRef.current,
+        isOnline
+      );
+      timeoutId = setTimeout(async () => {
+        await runTrackingFetch(false);
+        scheduleNextPoll();
+      }, nextDelay);
+    };
+
+    const handleVisibilityChange = () => {
+      if (cancelled || typeof document === "undefined") return;
+      if (document.visibilityState === "visible") {
+        void runTrackingFetch(false);
       }
     };
 
-    void loadTracking();
-    const intervalId = setInterval(loadTracking, 20000);
+    void runTrackingFetch(true);
+    scheduleNextPoll();
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+      trackingRequestAbortRef.current?.abort();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
-  }, [apiFetch, selectedRouteId, trackingRefreshSignal]);
+  }, [
+    apiFetch,
+    effectiveSelectedRouteId,
+    isOnline,
+    runTrackingFetch,
+    updateTrackingErrorCount,
+  ]);
+
+  useEffect(() => {
+    if (!apiFetch || !effectiveSelectedRouteId) return;
+    if (trackingRefreshSignal === lastManualRefreshSignalRef.current) return;
+    lastManualRefreshSignalRef.current = trackingRefreshSignal;
+
+    const refreshNow = async () => {
+      await runTrackingFetch(true);
+    };
+
+    void refreshNow();
+  }, [apiFetch, effectiveSelectedRouteId, runTrackingFetch, trackingRefreshSignal]);
+
+  useEffect(() => {
+    if (!isOnline) return;
+    if (!apiFetch || !effectiveSelectedRouteId) return;
+    void runTrackingFetch(false);
+  }, [isOnline, apiFetch, effectiveSelectedRouteId, runTrackingFetch]);
 
   useEffect(() => {
     let cancelled = false;
     if (trackingPositions.length < 2) {
-      setTrackingDisplay(trackingPositions);
+      setTrackingDisplay((prev) =>
+        areLatLngArraysEqual(prev, trackingPositions) ? prev : trackingPositions
+      );
       return;
     }
     const tail = trackingPositions.slice(-8);
     const snap = async () => {
       const snapped = await fetchSnappedGeometry(tail);
       if (!cancelled) {
-        setTrackingDisplay(snapped ?? tail);
+        const next = snapped ?? tail;
+        setTrackingDisplay((prev) =>
+          areLatLngArraysEqual(prev, next) ? prev : next
+        );
       }
     };
     void snap();
@@ -273,23 +755,13 @@ export function MapView({ onBack }: MapViewProps) {
 
   // --------- DERIVADOS PARA UI ---------
   const selectedRoute = useMemo(
-    () => routes.find((r) => r.id === selectedRouteId) ?? null,
-    [routes, selectedRouteId]
+    () => filteredRoutes.find((r) => r.id === effectiveSelectedRouteId) ?? null,
+    [effectiveSelectedRouteId, filteredRoutes]
   );
   const trackingLatest = useMemo(
     () => (trackingDisplay.length ? trackingDisplay[trackingDisplay.length - 1] : null),
     [trackingDisplay]
   );
-
-  const vehicleById = useMemo(
-    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
-    [vehicles]
-  );
-  const driverById = useMemo(
-    () => new Map(drivers.map((driver) => [driver.id, driver])),
-    [drivers]
-  );
-  const users = getAllUsers();
 
   const formatVehicleLabel = (vehicleId?: string) => {
     if (!vehicleId) return "Vehículo no asignado";
@@ -307,12 +779,7 @@ export function MapView({ onBack }: MapViewProps) {
       const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(" ").trim();
       if (fullName) return fullName;
     }
-    const user = users.find((item) => item.driverId === driverId || item.id === driverId);
-    if (user) {
-      const fullName = [user.nombres, user.apellidos].filter(Boolean).join(" ").trim();
-      return fullName || user.usuario || "Conductor no disponible";
-    }
-    return "Conductor no disponible";
+    return driverLabelById.get(driverId) ?? "Conductor no disponible";
   };
 
   const stopsCount = useMemo(() => {
@@ -321,8 +788,73 @@ export function MapView({ onBack }: MapViewProps) {
     return Math.max(selectedRoute.points.length - 2, 0);
   }, [selectedRoute]);
 
-  const summary = { routes: routes.length, stopsCount };
+  const summary = { routes: filteredRoutes.length, totalRoutes: routes.length, stopsCount };
   const isRoutesPanelVisible = !canCollapseRoutesPanel || showRoutesPanel;
+  const statusCounts = useMemo(() => {
+    return routes.reduce(
+      (acc, route) => {
+        const key = statusToFilter(route.status);
+        acc[key] += 1;
+        return acc;
+      },
+      {
+        pending: 0,
+        in_progress: 0,
+        completed: 0,
+        cancelled: 0,
+      } as Record<Exclude<RouteStatusFilter, "all">, number>
+    );
+  }, [routes]);
+  const statusKpiItems = useMemo(
+    () => [
+      {
+        value: "all" as RouteStatusFilter,
+        label: "Todas",
+        count: summary.totalRoutes,
+        activeClass:
+          "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100",
+        inactiveClass:
+          "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200",
+      },
+      {
+        value: "pending" as RouteStatusFilter,
+        label: "Pendientes",
+        count: statusCounts.pending,
+        activeClass:
+          "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
+        inactiveClass:
+          "border-amber-200 bg-white text-amber-700 hover:border-amber-300 dark:border-amber-800 dark:bg-slate-800 dark:text-amber-200",
+      },
+      {
+        value: "in_progress" as RouteStatusFilter,
+        label: "En curso",
+        count: statusCounts.in_progress,
+        activeClass:
+          "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+        inactiveClass:
+          "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 dark:border-emerald-800 dark:bg-slate-800 dark:text-emerald-200",
+      },
+      {
+        value: "completed" as RouteStatusFilter,
+        label: "Completadas",
+        count: statusCounts.completed,
+        activeClass:
+          "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+        inactiveClass:
+          "border-blue-200 bg-white text-blue-700 hover:border-blue-300 dark:border-blue-800 dark:bg-slate-800 dark:text-blue-200",
+      },
+      {
+        value: "cancelled" as RouteStatusFilter,
+        label: "Canceladas",
+        count: statusCounts.cancelled,
+        activeClass:
+          "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200",
+        inactiveClass:
+          "border-red-200 bg-white text-red-700 hover:border-red-300 dark:border-red-800 dark:bg-slate-800 dark:text-red-200",
+      },
+    ],
+    [summary.totalRoutes, statusCounts]
+  );
 
   const getStatusMeta = (status?: number) => {
     switch (status) {
@@ -338,16 +870,149 @@ export function MapView({ onBack }: MapViewProps) {
   };
 
   const statusMeta = getStatusMeta(selectedRoute?.status);
-  const optionsPanelMobileTopClass = selectedRoute ? "top-[9.75rem]" : "top-3";
-  const selectedRouteCardTopClass =
-    canCollapseRoutesPanel && !isRoutesPanelVisible ? "top-12" : "top-3";
+  const trackingHealthMeta = useMemo(() => {
+    if (!effectiveSelectedRouteId) return null;
+    if (!isOnline) {
+      return {
+        label: "Sin conexión",
+        className:
+          "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:border-slate-900/50",
+      };
+    }
+    if (isLoadingTracking) {
+      return {
+        label: "Sincronizando",
+        className:
+          "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-900/50",
+      };
+    }
+    if (trackingErrorCount > 0) {
+      const errorLabel =
+        trackingLastErrorStatus === 429
+          ? "Límite de API"
+          : trackingLastErrorStatus === 403 || trackingLastErrorStatus === 401
+          ? "Sin permisos tracking"
+          : `Reintentando (${trackingErrorCount})`;
+      return {
+        label: errorLabel,
+        className:
+          "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-200 dark:border-red-900/50",
+      };
+    }
+    if (lastTrackingSyncAt) {
+      return {
+        label: "Tracking activo",
+        className:
+          "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-900/50",
+      };
+    }
+    return {
+      label: "Sin datos",
+      className:
+        "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:border-slate-900/50",
+    };
+  }, [
+    effectiveSelectedRouteId,
+    isOnline,
+    isLoadingTracking,
+    lastTrackingSyncAt,
+    trackingErrorCount,
+    trackingLastErrorStatus,
+  ]);
+  const selectedPlannedPolyline = useMemo(
+    () => buildPlannedPolylineFromRoute(selectedRoute),
+    [selectedRoute]
+  );
+  const trackingAgeMs = useMemo(() => {
+    if (!latestTrackingSample?.recordedAt) return null;
+    const recordedAtMs = new Date(latestTrackingSample.recordedAt).getTime();
+    if (!Number.isFinite(recordedAtMs)) return null;
+    const nowMs = lastTrackingSyncAt ?? Date.now();
+    return Math.max(0, nowMs - recordedAtMs);
+  }, [latestTrackingSample?.recordedAt, lastTrackingSyncAt]);
+  const routeDistanceDeviation = useMemo(() => {
+    if (!trackingLatest || selectedPlannedPolyline.length < 2) return null;
+    return getDistanceToPolylineMeters(trackingLatest, selectedPlannedPolyline);
+  }, [trackingLatest, selectedPlannedPolyline]);
+  const routeAlerts = useMemo(() => {
+    const alerts: Array<{ key: string; label: string; level: "warn" | "error" }> = [];
+    if (!trackingLatest) {
+      alerts.push({ key: "no_signal", label: "Sin señal de tracking", level: "warn" });
+    }
+    if (trackingAgeMs != null && trackingAgeMs > TRACKING_STALE_MS) {
+      alerts.push({
+        key: "tracking_stale",
+        label: `Tracking desactualizado (${formatTrackingAge(trackingAgeMs)})`,
+        level: "warn",
+      });
+    }
+    if (selectedPlannedPolyline.length < 2) {
+      alerts.push({ key: "no_geometry", label: "Ruta sin geometría", level: "error" });
+    }
+    if (
+      routeDistanceDeviation != null &&
+      routeDistanceDeviation > OFF_ROUTE_THRESHOLD_METERS
+    ) {
+      alerts.push({
+        key: "off_route",
+        label: `Fuera de ruta (${Math.round(routeDistanceDeviation)}m)`,
+        level: "error",
+      });
+    }
+    return alerts;
+  }, [trackingLatest, trackingAgeMs, selectedPlannedPolyline.length, routeDistanceDeviation]);
+  const trackingTelemetry = useMemo(() => {
+    return {
+      lastPingLabel:
+        trackingAgeMs == null ? "Sin datos" : `hace ${formatTrackingAge(trackingAgeMs)}`,
+      speedLabel:
+        latestTrackingSample?.speedKmh != null
+          ? `${Math.round(latestTrackingSample.speedKmh)} km/h`
+          : "Sin datos",
+      headingLabel:
+        latestTrackingSample?.heading != null
+          ? `${Math.round(latestTrackingSample.heading)}°`
+          : "Sin datos",
+    };
+  }, [latestTrackingSample?.heading, latestTrackingSample?.speedKmh, trackingAgeMs]);
+
+  const handleViewportChange = useCallback((routeId: string, viewport: RouteViewport) => {
+    setRouteViewportsById((prev) => {
+      const current = prev[routeId];
+      if (
+        current &&
+        current.zoom === viewport.zoom &&
+        Math.abs(current.center[0] - viewport.center[0]) < 1e-6 &&
+        Math.abs(current.center[1] - viewport.center[1]) < 1e-6
+      ) {
+        return prev;
+      }
+      return { ...prev, [routeId]: viewport };
+    });
+  }, []);
+  const handleRouteStatusFilterChange = useCallback(
+    (next: RouteStatusFilter) => {
+      setRouteStatusFilter(next);
+      const nextFilteredRoutes =
+        next === "all"
+          ? routes
+          : routes.filter((route) => statusToFilter(route.status) === next);
+      setSelectedRouteId((prev) => {
+        if (prev && nextFilteredRoutes.some((route) => route.id === prev)) {
+          return prev;
+        }
+        return nextFilteredRoutes[0]?.id ?? null;
+      });
+    },
+    [routes]
+  );
 
   const handleRecenterRoute = () => {
-    if (!selectedRouteId) return;
+    if (!effectiveSelectedRouteId) return;
     setFitSignal((prev) => prev + 1);
   };
 
-  const handleFocusMyLocation = () => {
+  const handleFocusMyLocation = useCallback(() => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       setLocationError("Geolocalización no disponible en este navegador.");
       return;
@@ -373,7 +1038,7 @@ export function MapView({ onBack }: MapViewProps) {
         maximumAge: 30000,
       }
     );
-  };
+  }, []);
 
   const handleFocusTruck = () => {
     if (!selectedRoute) return;
@@ -385,7 +1050,7 @@ export function MapView({ onBack }: MapViewProps) {
   };
 
   const handleRefreshTrackingNow = () => {
-    if (!selectedRouteId || isLoadingTracking) return;
+    if (!effectiveSelectedRouteId || isLoadingTracking) return;
     setTrackingRefreshSignal((prev) => prev + 1);
   };
 
@@ -433,6 +1098,17 @@ export function MapView({ onBack }: MapViewProps) {
       second: "2-digit",
     });
   }, [lastTrackingSyncAt]);
+  const estimatedPollDelayLabel = useMemo(() => {
+    const isHidden =
+      typeof document !== "undefined" && document.visibilityState !== "visible";
+    const delayMs = getTrackingPollDelay(
+      isHidden,
+      trackingErrorCount,
+      trackingLastErrorStatus,
+      isOnline
+    );
+    return `${Math.round(delayMs / 1000)}s`;
+  }, [trackingErrorCount, trackingLastErrorStatus, isOnline]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -453,8 +1129,18 @@ export function MapView({ onBack }: MapViewProps) {
   }, [bumpResizeSignal]);
 
   useEffect(() => {
+    bumpResizeSignal();
+    const timeoutId = setTimeout(() => {
+      bumpResizeSignal();
+    }, 180);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isRoutesPanelVisible, bumpResizeSignal]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
-    const media = window.matchMedia("(min-width: 1024px)");
+    const media = window.matchMedia("(min-width: 1280px)");
     const syncCollapseCapability = () => {
       setCanCollapseRoutesPanel(media.matches);
     };
@@ -482,29 +1168,108 @@ export function MapView({ onBack }: MapViewProps) {
   }, []);
 
   useEffect(() => {
+    const handleKeyboardShortcuts = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTypingContext =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if (isTypingContext) return;
+
+      const key = event.key.toLowerCase();
+      if (key === "escape") {
+        if (showMapOptions) {
+          setShowMapOptions(false);
+          event.preventDefault();
+        }
+        return;
+      }
+      if (key === "o") {
+        setShowMapOptions((prev) => !prev);
+        event.preventDefault();
+        return;
+      }
+      if (key === "f") {
+        if (trackingLatest) {
+          setFollowTruck((prev) => !prev);
+          event.preventDefault();
+        }
+        return;
+      }
+      if (key === "r") {
+        if (effectiveSelectedRouteId) {
+          setFitSignal((prev) => prev + 1);
+          event.preventDefault();
+        }
+        return;
+      }
+      if (key === "t") {
+        if (selectedRoute) {
+          setFocusTrackingSignal((prev) => prev + 1);
+          event.preventDefault();
+        }
+        return;
+      }
+      if (key === "m") {
+        handleFocusMyLocation();
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyboardShortcuts);
+    return () => {
+      window.removeEventListener("keydown", handleKeyboardShortcuts);
+    };
+  }, [
+    showMapOptions,
+    trackingLatest,
+    effectiveSelectedRouteId,
+    selectedRoute,
+    handleFocusMyLocation,
+  ]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: PersistedMapOptions = {
       showOnlySelectedRoute,
       showStops,
+      showOriginDestinationMarkers,
       showPlannedLine,
       showTrackingLine,
       showRoutesPanel,
+      routeStatusFilter,
+      highDensityRoutes,
+      baseMapStyle,
     };
     window.localStorage.setItem(MAP_OPTIONS_STORAGE_KEY, JSON.stringify(payload));
   }, [
     showOnlySelectedRoute,
     showStops,
+    showOriginDestinationMarkers,
     showPlannedLine,
     showTrackingLine,
     showRoutesPanel,
+    routeStatusFilter,
+    highDensityRoutes,
+    baseMapStyle,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      MAP_VIEWPORT_STORAGE_KEY,
+      JSON.stringify(routeViewportsById)
+    );
+  }, [routeViewportsById]);
 
   // --------- UI ---------
   return (
     <div className="flex flex-col h-full w-full bg-white border border-gray-200 rounded-2xl shadow-sm">
       {/* HEADER */}
-      <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
+        <div className="flex min-w-0 items-center gap-3">
           {onBack && (
             <button
               type="button"
@@ -525,25 +1290,37 @@ export function MapView({ onBack }: MapViewProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="ml-auto flex items-center gap-2 md:gap-3">
           <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs text-blue-700 border border-blue-100">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] font-semibold shadow-sm">
               {summary.routes}
             </span>
-            <span className="font-medium">rutas</span>
+            <span className="font-medium">
+              {summary.routes === summary.totalRoutes
+                ? "rutas"
+                : `de ${summary.totalRoutes}`}
+            </span>
           </div>
 
-          {selectedRouteId && (
+          {effectiveSelectedRouteId && (
             <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 border border-emerald-100">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
               {`Puntos: ${summary.stopsCount}`}
+            </div>
+          )}
+
+          {trackingHealthMeta && (
+            <div
+              className={`hidden md:flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${trackingHealthMeta.className}`}
+            >
+              <span className="font-medium">{trackingHealthMeta.label}</span>
             </div>
           )}
         </div>
       </header>
 
       {/* CONTENIDO */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50">
+      <div className="flex-1 flex flex-col gap-3 xl:flex-row xl:gap-4 p-3 sm:p-4 md:p-5 min-h-[440px] bg-slate-50">
         {/* MAPA */}
         <div className="relative flex-1 flex flex-col gap-2">
           {canCollapseRoutesPanel && !isRoutesPanelVisible && (
@@ -560,59 +1337,56 @@ export function MapView({ onBack }: MapViewProps) {
             </div>
           )}
 
-          {/* Panel flotante con info de la ruta seleccionada */}
-          {selectedRoute && (
-            <div
-              className={`absolute z-[1080] ${selectedRouteCardTopClass} left-3 right-3 md:left-4 md:right-auto md:max-w-sm pointer-events-none`}
-            >
-              <div className="w-full rounded-2xl bg-white/90 backdrop-blur border border-gray-100 shadow-sm px-3 py-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">
-                      Ruta seleccionada
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {selectedRoute.name || "Sin nombre"}
-                    </p>
-                    <p className="hidden sm:block text-[11px] leading-4 text-gray-500 break-words">
-                      Vehículo:{" "}
-                      <span className="font-medium">
-                        {formatVehicleLabel(selectedRoute.vehicleId)}
-                      </span>{" "}
-                      · Conductor:{" "}
-                      <span className="font-medium">
-                        {formatDriverLabel(selectedRoute.driverId)}
-                      </span>
-                    </p>
-                  </div>
-                  <span
-                    className={`ml-1 mt-0.5 inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusMeta.className}`}
+          <div className="flex flex-col gap-2 pb-1 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {statusKpiItems.map((item) => {
+                const isActive = routeStatusFilter === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => handleRouteStatusFilterChange(item.value)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                      isActive ? item.activeClass : item.inactiveClass
+                    }`}
+                    aria-pressed={isActive}
                   >
-                    {statusMeta.label}
-                  </span>
-                </div>
-
-                <div className="mt-2 hidden sm:flex items-center gap-3 text-[10px] text-gray-500">
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-1.5 rounded-full bg-blue-500" />
-                    <span>Planificada</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Tracking real</span>
-                  </div>
-                </div>
-              </div>
+                    <span>{item.label}</span>
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white/90 px-1 text-[10px] text-gray-700 dark:bg-slate-700 dark:text-slate-100">
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+
+            <div className="flex w-full items-center gap-2 lg:w-[320px]">
+              <input
+                type="text"
+                value={routeSearchQuery}
+                onChange={(event) => setRouteSearchQuery(event.target.value)}
+                placeholder="Buscar ruta, vehículo o conductor"
+                className="h-8 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              />
+              {routeSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setRouteSearchQuery("")}
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-600 transition hover:bg-gray-50"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
 
           <div
             id="routes-map-card"
-            className="relative z-0 h-[320px] sm:h-[360px] lg:h-full rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white"
+            className="relative z-0 h-[48vh] min-h-[280px] max-h-[560px] sm:h-[54vh] md:h-[58vh] xl:h-full xl:max-h-none rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white"
           >
             <RoutesMapView
-              routes={routes}
-              selectedRouteId={selectedRouteId}
+              routes={filteredRoutes}
+              selectedRouteId={effectiveSelectedRouteId}
               onRouteClick={(routeId) => {
                 setSelectedRouteId(routeId);
                 setFitSignal((prev) => prev + 1);
@@ -625,15 +1399,114 @@ export function MapView({ onBack }: MapViewProps) {
               followTracking={followTruck}
               showOnlySelectedRoute={showOnlySelectedRoute}
               showStops={showStops}
+              showOriginDestinationMarkers={showOriginDestinationMarkers}
               showPlannedLine={showPlannedLine}
               showTrackingLine={showTrackingLine}
+              baseMapStyle={baseMapStyle}
+              routeViewportByRouteId={routeViewportsById}
+              onRouteViewportChange={handleViewportChange}
               resizeSignal={resizeSignal}
             />
 
-            <div className="absolute left-3 bottom-8 z-[1100]">
-              <div className="flex items-end gap-2">
-                <div className="flex flex-col gap-2">
-                  <div className="group relative">
+            {/* Panel flotante con info de la ruta seleccionada */}
+            {selectedRoute && (
+              <div className="pointer-events-none absolute left-2.5 top-2.5 z-[1110] w-[calc(100%-1.25rem)] max-w-[430px] sm:left-3 sm:top-3 sm:w-[min(calc(100%-1.5rem),370px)]">
+                <div className="w-full overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/92 px-3 py-2 shadow-lg shadow-black/20">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-300">
+                        Ruta seleccionada
+                      </p>
+                      <p className="truncate text-sm font-semibold text-white">
+                        {selectedRoute.name || "Sin nombre"}
+                      </p>
+                      <div className="mt-1 flex flex-col gap-0.5 text-[11px] leading-4 text-slate-300">
+                        <p className="truncate">
+                          Vehículo:{" "}
+                          <span className="font-medium text-slate-100">
+                            {formatVehicleLabel(selectedRoute.vehicleId)}
+                          </span>
+                        </p>
+                        <p className="truncate">
+                          Conductor:{" "}
+                          <span className="font-medium text-slate-100">
+                            {formatDriverLabel(selectedRoute.driverId)}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`ml-1 mt-0.5 inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusMeta.className}`}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-[10px] text-slate-300">
+                    <div>
+                      <p className="text-slate-400">Último ping</p>
+                      <p className="font-medium text-slate-100">{trackingTelemetry.lastPingLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Velocidad</p>
+                      <p className="font-medium text-slate-100">{trackingTelemetry.speedLabel}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Rumbo</p>
+                      <p className="font-medium text-slate-100">{trackingTelemetry.headingLabel}</p>
+                    </div>
+                  </div>
+
+                  {routeAlerts.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                      {routeAlerts.map((alert) => (
+                        <span
+                          key={alert.key}
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 ${
+                            alert.level === "error"
+                              ? "border-red-500/40 bg-red-500/20 text-red-100"
+                              : "border-amber-500/40 bg-amber-500/20 text-amber-100"
+                          }`}
+                        >
+                          {alert.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-slate-300">
+                    {showPlannedLine && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-3 rounded-full bg-blue-500" />
+                        <span>Planificada</span>
+                      </div>
+                    )}
+                    {showTrackingLine && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-3 rounded-full bg-emerald-500" />
+                        <span>Tracking real</span>
+                      </div>
+                    )}
+                    {showStops && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-3 rounded-full bg-indigo-400" />
+                        <span>Paradas</span>
+                      </div>
+                    )}
+                    {showOriginDestinationMarkers && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-3 rounded-full bg-white/70" />
+                        <span>Origen/Destino</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="absolute left-2.5 sm:left-3 bottom-3 sm:bottom-4 z-[1100]">
+              <div className="grid grid-cols-4 grid-rows-3 gap-1">
+                  <div className="group relative col-start-1 row-start-1">
                     <button
                       type="button"
                       onClick={handleToggleFollowTruck}
@@ -645,7 +1518,8 @@ export function MapView({ onBack }: MapViewProps) {
                       disabled={!trackingLatest}
                       title={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
                       aria-label={`Seguir camión: ${followTruck ? "ON" : "OFF"}`}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      aria-pressed={followTruck}
+                      className={`inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 ${
                         followTruck
                           ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                           : "border-gray-200 bg-white/95 text-gray-700 hover:bg-white"
@@ -662,7 +1536,7 @@ export function MapView({ onBack }: MapViewProps) {
                     </span>
                   </div>
 
-                  <div className="group relative">
+                  <div className="group relative col-start-1 row-start-2">
                     <button
                       type="button"
                       onClick={handleToggleFullscreen}
@@ -673,7 +1547,7 @@ export function MapView({ onBack }: MapViewProps) {
                       onBlur={clearLongPressHint}
                       title={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
                       aria-label={isFullscreen ? "Salir pantalla completa" : "Pantalla completa"}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white"
+                      className="inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                     >
                       {isFullscreen ? (
                         <Minimize2 className="h-4 w-4" />
@@ -690,7 +1564,7 @@ export function MapView({ onBack }: MapViewProps) {
                     </span>
                   </div>
 
-                  <div className="group relative z-[1140]">
+                  <div className="group relative z-[1140] col-start-1 row-start-3">
                     <button
                       type="button"
                       onClick={() => setShowMapOptions((prev) => !prev)}
@@ -701,7 +1575,11 @@ export function MapView({ onBack }: MapViewProps) {
                       onBlur={clearLongPressHint}
                       title={`Opciones del mapa: ${showMapOptions ? "ON" : "OFF"}`}
                       aria-label={`Opciones del mapa: ${showMapOptions ? "ON" : "OFF"}`}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition ${
+                      aria-pressed={showMapOptions}
+                      aria-haspopup="dialog"
+                      aria-expanded={showMapOptions}
+                      aria-controls={optionsPanelId}
+                      className={`inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                         showMapOptions
                           ? "border-blue-300 bg-blue-50 text-blue-700"
                           : "border-gray-200 bg-white/95 text-gray-700 hover:bg-white"
@@ -717,10 +1595,8 @@ export function MapView({ onBack }: MapViewProps) {
                       Opciones del mapa
                     </span>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="group relative">
+                  <div className="group relative col-start-2 row-start-3">
                     <button
                       type="button"
                       onClick={handleRecenterRoute}
@@ -729,10 +1605,10 @@ export function MapView({ onBack }: MapViewProps) {
                       onTouchCancel={clearLongPressHint}
                       onTouchMove={clearLongPressHint}
                       onBlur={clearLongPressHint}
-                      disabled={!selectedRouteId}
+                      disabled={!effectiveSelectedRouteId}
                       title="Recentrar ruta"
                       aria-label="Recentrar ruta"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <RoutePath className="h-4 w-4" />
                     </button>
@@ -745,7 +1621,7 @@ export function MapView({ onBack }: MapViewProps) {
                     </span>
                   </div>
 
-                  <div className="group relative">
+                  <div className="group relative col-start-3 row-start-3">
                     <button
                       type="button"
                       onClick={handleFocusTruck}
@@ -757,7 +1633,7 @@ export function MapView({ onBack }: MapViewProps) {
                       disabled={!selectedRoute}
                       title="Centrar camión"
                       aria-label="Centrar camión"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Truck className="h-4 w-4" />
                     </button>
@@ -770,7 +1646,7 @@ export function MapView({ onBack }: MapViewProps) {
                     </span>
                   </div>
 
-                  <div className="group relative">
+                  <div className="group relative col-start-4 row-start-3">
                     <button
                       type="button"
                       onClick={handleFocusMyLocation}
@@ -782,7 +1658,7 @@ export function MapView({ onBack }: MapViewProps) {
                       disabled={isLocatingUser}
                       title={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
                       aria-label={isLocatingUser ? "Ubicando..." : "Mi ubicación"}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-10 w-10 max-[430px]:h-9 max-[430px]:w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/95 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <LocateFixed className="h-4 w-4" />
                     </button>
@@ -794,22 +1670,24 @@ export function MapView({ onBack }: MapViewProps) {
                       {isLocatingUser ? "Ubicando..." : "Mi ubicación"}
                     </span>
                   </div>
-                </div>
               </div>
             </div>
 
             {showMapOptions && (
               <div
-                className={`absolute left-16 right-3 ${optionsPanelMobileTopClass} bottom-16 z-[1120] overflow-y-auto rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur sm:left-16 sm:right-auto sm:top-auto sm:bottom-8 sm:max-h-[70vh] sm:w-64`}
+                id={optionsPanelId}
+                role="region"
+                aria-label="Opciones del mapa"
+                className="absolute z-[1120] overflow-y-auto rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur left-3 right-3 bottom-16 top-28 sm:left-[12rem] sm:right-auto sm:bottom-8 sm:top-32 sm:w-64 dark:border-slate-700 dark:bg-slate-800/95"
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300">
                     Opciones
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowMapOptions(false)}
-                    className="rounded-md px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100"
+                    className="rounded-md px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:text-slate-300 dark:hover:bg-slate-700"
                   >
                     Cerrar
                   </button>
@@ -817,14 +1695,30 @@ export function MapView({ onBack }: MapViewProps) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-gray-700">Solo ruta seleccionada</span>
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Mapa base</span>
+                    <select
+                      value={baseMapStyle}
+                      onChange={(event) => setBaseMapStyle(event.target.value as MapBaseStyle)}
+                      className="h-7 rounded-md border border-gray-200 bg-white px-2 text-[11px] text-gray-700 outline-none focus:border-blue-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                    >
+                      {MAP_BASE_STYLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Solo ruta seleccionada</span>
                     <button
                       type="button"
                       onClick={() => setShowOnlySelectedRoute((prev) => !prev)}
+                      aria-pressed={showOnlySelectedRoute}
                       className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
                         showOnlySelectedRoute
-                          ? "border-blue-300 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-600"
+                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                          : "border-gray-200 bg-white text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                       }`}
                     >
                       {showOnlySelectedRoute ? "ON" : "OFF"}
@@ -832,14 +1726,15 @@ export function MapView({ onBack }: MapViewProps) {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-gray-700">Mostrar paradas</span>
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Mostrar paradas</span>
                     <button
                       type="button"
                       onClick={() => setShowStops((prev) => !prev)}
+                      aria-pressed={showStops}
                       className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
                         showStops
-                          ? "border-blue-300 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-600"
+                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                          : "border-gray-200 bg-white text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                       }`}
                     >
                       {showStops ? "ON" : "OFF"}
@@ -847,14 +1742,31 @@ export function MapView({ onBack }: MapViewProps) {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-gray-700">Ruta planificada</span>
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Origen/Destino</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginDestinationMarkers((prev) => !prev)}
+                      aria-pressed={showOriginDestinationMarkers}
+                      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+                        showOriginDestinationMarkers
+                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                          : "border-gray-200 bg-white text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                      }`}
+                    >
+                      {showOriginDestinationMarkers ? "ON" : "OFF"}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Ruta planificada</span>
                     <button
                       type="button"
                       onClick={() => setShowPlannedLine((prev) => !prev)}
+                      aria-pressed={showPlannedLine}
                       className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
                         showPlannedLine
-                          ? "border-blue-300 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-600"
+                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                          : "border-gray-200 bg-white text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                       }`}
                     >
                       {showPlannedLine ? "ON" : "OFF"}
@@ -862,14 +1774,15 @@ export function MapView({ onBack }: MapViewProps) {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-gray-700">Tracking real</span>
+                    <span className="text-[12px] text-gray-700 dark:text-slate-200">Tracking real</span>
                     <button
                       type="button"
                       onClick={() => setShowTrackingLine((prev) => !prev)}
+                      aria-pressed={showTrackingLine}
                       className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
                         showTrackingLine
-                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                          : "border-gray-200 bg-white text-gray-600"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+                          : "border-gray-200 bg-white text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                       }`}
                     >
                       {showTrackingLine ? "ON" : "OFF"}
@@ -880,35 +1793,84 @@ export function MapView({ onBack }: MapViewProps) {
                 <button
                   type="button"
                   onClick={handleRefreshTrackingNow}
-                  disabled={!selectedRouteId || isLoadingTracking}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12px] font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!effectiveSelectedRouteId || isLoadingTracking}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12px] font-medium text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${isLoadingTracking ? "animate-spin" : ""}`} />
                   {isLoadingTracking ? "Actualizando..." : "Actualizar tracking ahora"}
                 </button>
 
                 {lastTrackingSyncLabel && (
-                  <p className="mt-2 text-[11px] text-gray-500">
+                  <p className="mt-2 text-[11px] text-gray-500 dark:text-slate-300">
                     Última actualización: {lastTrackingSyncLabel}
                   </p>
                 )}
+
+                {DEBUG_MAP_ENABLED && (
+                  <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/70 p-2.5 text-[11px] text-indigo-900 dark:border-indigo-700/60 dark:bg-indigo-900/30 dark:text-indigo-100">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">
+                      Observabilidad (debug)
+                    </p>
+                    <div className="grid grid-cols-1 gap-1">
+                      <p>
+                        Estado red:{" "}
+                        <span className="font-semibold">
+                          {isOnline ? "online" : "offline"}
+                        </span>
+                      </p>
+                      <p>
+                        Polling estimado:{" "}
+                        <span className="font-semibold">{estimatedPollDelayLabel}</span>
+                      </p>
+                      <p>
+                        Requests:{" "}
+                        <span className="font-semibold">{trackingDiagnostics.requests}</span>
+                        {" · "}OK:{" "}
+                        <span className="font-semibold">{trackingDiagnostics.successes}</span>
+                        {" · "}Error:{" "}
+                        <span className="font-semibold">{trackingDiagnostics.errors}</span>
+                      </p>
+                      <p>
+                        Último estado:{" "}
+                        <span className="font-semibold">
+                          {trackingDiagnostics.lastStatus ?? "n/a"}
+                        </span>
+                      </p>
+                      <p>
+                        Latencia:{" "}
+                        <span className="font-semibold">
+                          {trackingDiagnostics.lastLatencyMs == null
+                            ? "n/a"
+                            : `${trackingDiagnostics.lastLatencyMs}ms`}
+                        </span>
+                        {" · "}Promedio:{" "}
+                        <span className="font-semibold">
+                          {trackingDiagnostics.avgLatencyMs == null
+                            ? "n/a"
+                            : `${trackingDiagnostics.avgLatencyMs}ms`}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
 
             {isLoading && (
-              <div className="absolute right-3 top-3 z-[1040] rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] text-blue-700 shadow-sm">
+              <div role="status" aria-live="polite" className="absolute right-3 top-3 z-[1040] rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] text-blue-700 shadow-sm">
                 Actualizando rutas...
               </div>
             )}
 
             {isLoadingTracking && (
-              <div className="absolute right-3 top-12 z-[1040] rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] text-emerald-700 shadow-sm">
+              <div role="status" aria-live="polite" className="absolute right-3 top-12 z-[1040] rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] text-emerald-700 shadow-sm">
                 Actualizando tracking...
               </div>
             )}
 
             {locationError && (
-              <div className="absolute left-3 bottom-[256px] z-[1060] max-w-xs rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 shadow-sm">
+              <div className="absolute left-3 right-3 sm:right-auto sm:max-w-xs bottom-28 z-[1060] rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 shadow-sm">
                 {locationError}
               </div>
             )}
@@ -930,49 +1892,83 @@ export function MapView({ onBack }: MapViewProps) {
 
         {/* SIDEBAR LISTA DE RUTAS */}
         {isRoutesPanelVisible && (
-          <aside className="w-full lg:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 md:p-4 space-y-3">
+          <aside
+            className={`w-full xl:w-72 2xl:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm space-y-3 ${
+              highDensityRoutes ? "p-2.5 md:p-3" : "p-3 md:p-4"
+            }`}
+          >
             <div className="flex items-center justify-between mb-1">
               <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-gray-900">
                   Rutas planificadas
                 </h2>
                 <span className="text-[11px] text-gray-400">
-                  {routes.length} total
+                  {summary.routes} visibles · {summary.totalRoutes} total
                 </span>
               </div>
-              {canCollapseRoutesPanel && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setShowRoutesPanel(false)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700"
-                  title="Ocultar rutas planificadas"
-                  aria-label="Ocultar rutas planificadas"
+                  onClick={() => setHighDensityRoutes((prev) => !prev)}
+                  className={`inline-flex h-8 items-center gap-1 rounded-md border px-2 text-[11px] font-medium transition ${
+                    highDensityRoutes
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                  title={`Alta densidad: ${highDensityRoutes ? "ON" : "OFF"}`}
+                  aria-label={`Alta densidad: ${highDensityRoutes ? "ON" : "OFF"}`}
+                  aria-pressed={highDensityRoutes}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <Layers className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">
+                    {highDensityRoutes ? "Compacto" : "Cómodo"}
+                  </span>
                 </button>
-              )}
+                {canCollapseRoutesPanel && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRoutesPanel(false)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700"
+                    title="Ocultar rutas planificadas"
+                    aria-label="Ocultar rutas planificadas"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {routes.length === 0 && !isLoading && !error && (
+            {filteredRoutes.length === 0 && !isLoading && !error && (
               <p className="text-xs text-gray-500">
-                No hay rutas registradas aún.
+                {routeSearchQuery
+                  ? "No hay rutas que coincidan con la búsqueda."
+                  : "No hay rutas para este filtro."}
               </p>
             )}
 
-            <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
-              {routes.map((route) => {
-                const isSelected = route.id === selectedRouteId;
+            <div
+              className={`overflow-auto pr-1 ${
+                highDensityRoutes
+                  ? "space-y-1.5 max-h-[320px] sm:max-h-[420px] lg:max-h-[560px]"
+                  : "space-y-2 max-h-[260px] sm:max-h-[320px] lg:max-h-[420px]"
+              }`}
+            >
+              {filteredRoutes.map((route) => {
+                const isSelected = route.id === effectiveSelectedRouteId;
                 const meta = getStatusMeta(route.status);
 
                 return (
                   <button
                     key={route.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => {
                       setSelectedRouteId(route.id);
                       setFitSignal((prev) => prev + 1);
                     }}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl border transition text-xs md:text-sm ${
+                    className={`w-full text-left rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                      highDensityRoutes ? "px-2.5 py-2 text-[11px]" : "px-3 py-2.5 text-xs md:text-sm"
+                    } ${
                       isSelected
                         ? "border-blue-300 bg-blue-50 text-blue-900 shadow-xs"
                         : "border-gray-200 bg-white hover:border-blue-200 hover:bg-blue-50/70 text-gray-700"
@@ -980,10 +1976,10 @@ export function MapView({ onBack }: MapViewProps) {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold truncate">
+                        <p className={`truncate font-semibold ${highDensityRoutes ? "text-xs" : ""}`}>
                           {route.name || "Ruta sin nombre"}
                         </p>
-                        <p className="text-[11px] text-gray-500 truncate">
+                        <p className={`truncate text-gray-500 ${highDensityRoutes ? "text-[10px]" : "text-[11px]"}`}>
                           Vehículo:{" "}
                           <span className="font-medium">
                             {formatVehicleLabel(route.vehicleId)}
@@ -995,7 +1991,7 @@ export function MapView({ onBack }: MapViewProps) {
                         </p>
                       </div>
                       <span
-                        className={`flex-shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${meta.className}`}
+                        className={`flex-shrink-0 inline-flex items-center rounded-full border font-medium ${highDensityRoutes ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]"} ${meta.className}`}
                       >
                         {meta.label}
                       </span>

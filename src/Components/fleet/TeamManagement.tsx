@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
+import { useEffect, useRef, useState } from "react";
+import {
+  useAuth,
+  UserRole,
+  UserPermissions,
+  type User,
+} from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { Users, Shield, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -28,32 +33,38 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     unassignVehicleFromDriver,
   } = useFleet();
 
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [isLoadingTeam, setIsLoadingTeam] = useState(false);
-  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(true);
   const [showDriversSection, setShowDriversSection] = useState(false);
 
   const users = getTeamUsers();
+  const refreshTeamUsersRef = useRef(refreshTeamUsers);
+  const refreshDriversRef = useRef(refreshDrivers);
 
   useEffect(() => {
-    setIsLoadingTeam(true);
+    refreshTeamUsersRef.current = refreshTeamUsers;
+  }, [refreshTeamUsers]);
+
+  useEffect(() => {
+    refreshDriversRef.current = refreshDrivers;
+  }, [refreshDrivers]);
+
+  useEffect(() => {
     void (async () => {
-      await refreshTeamUsers();
+      await refreshTeamUsersRef.current();
       setIsLoadingTeam(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    setIsLoadingDrivers(true);
     void (async () => {
-      await refreshDrivers();
+      await refreshDriversRef.current();
       setIsLoadingDrivers(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [permissionsForm, setPermissionsForm] = useState<UserPermissions>({
@@ -97,7 +108,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     toast.success("Rol actualizado exitosamente");
   };
 
-  const handleEditPermissions = (user: any) => {
+  const handleEditPermissions = (user: User) => {
     setEditingUser(user);
     setPermissionsForm(user.permissions);
     setShowPermissions(true);
@@ -518,7 +529,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     <label className="block text-xs text-gray-500 mb-2">Permisos Activos</label>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(user.permissions)
-                        .filter(([_, value]) => value)
+                        .filter(([, value]) => value)
                         .map(([key]) => (
                           <span
                             key={key}

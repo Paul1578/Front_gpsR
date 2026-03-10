@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
-import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut, Moon } from "lucide-react";
+import { ArrowLeft, User, IdCard, Shield, Edit2, Check, X, Lock, LogOut, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import { useThemePreference } from "../../Context/ThemeContext";

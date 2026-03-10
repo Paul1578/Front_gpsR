@@ -6,12 +6,6 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -19,6 +13,54 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Build
+
+```bash
+npm run build
+```
+
+Notes:
+
+- `npm run build` usa un wrapper para limpiar ruido conocido de `baseline-browser-mapping`.
+- `npm run build:raw` ejecuta `next build` directo.
+
+## QA Responsive
+
+Checklist completo:
+
+- `docs/qa-responsive-checklist.md`
+- `docs/map-closeout-checklist.md`
+
+Smoke rápido de release:
+
+```bash
+npm run qa:smoke
+```
+
+## Mapa en Tiempo Real (operación)
+
+### Umbrales actuales
+
+- Polling visible: `20s`
+- Polling en pestaña oculta: `90s`
+- Tracking desactualizado: `> 2 min`
+- Fuera de ruta: `> 120 m`
+
+### Persistencia
+
+- Opciones de mapa: `fleetflow:web:map-view-options`
+- Viewport por ruta: `fleetflow:web:map-route-viewports`
+
+### Debug de observabilidad (solo desarrollo)
+
+Para mostrar métricas técnicas en el panel de opciones del mapa:
+
+```bash
+NEXT_PUBLIC_DEBUG_MAP=true npm run dev
+```
+
+En producción, ese bloque no se renderiza aunque la variable exista.
 
 ## Learn More
 

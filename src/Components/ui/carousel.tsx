@@ -1,18 +1,17 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel, {
-  type UseEmblaCarouselType,
-} from "embla-carousel-react";
+import useEmblaCarousel from "embla-carousel-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { cn } from "./utils";
 import { Button } from "@/Components/ui/button";
 
-type CarouselApi = UseEmblaCarouselType[1];
-type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
-type CarouselOptions = UseCarouselParameters[0];
-type CarouselPlugin = UseCarouselParameters[1];
+type UseEmblaReturn = ReturnType<typeof useEmblaCarousel>;
+type UseEmblaParameters = Parameters<typeof useEmblaCarousel>;
+type CarouselApi = UseEmblaReturn[1];
+type CarouselOptions = NonNullable<UseEmblaParameters[0]>;
+type CarouselPlugin = unknown;
 
 type CarouselProps = {
   opts?: CarouselOptions;
@@ -22,8 +21,8 @@ type CarouselProps = {
 };
 
 type CarouselContextProps = {
-  carouselRef: ReturnType<typeof useEmblaCarousel>[0];
-  api: ReturnType<typeof useEmblaCarousel>[1];
+  carouselRef: UseEmblaReturn[0];
+  api: UseEmblaReturn[1];
   scrollPrev: () => void;
   scrollNext: () => void;
   canScrollPrev: boolean;
@@ -56,7 +55,7 @@ function Carousel({
       ...opts,
       axis: orientation === "horizontal" ? "x" : "y",
     },
-    plugins,
+    plugins as UseEmblaParameters[1],
   );
 
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);

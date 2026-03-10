@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMapEvents, CircleMarker } from "react-leaflet";
-import type { LatLngExpression, Map as LeafletMap } from "leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from "react-leaflet";
+import type {
+  LatLngExpression,
+  LeafletMouseEvent,
+  Map as LeafletMap,
+} from "leaflet";
 
 export type PickerPoint = { lat: number; lng: number; nombre?: string };
 export type SelectionMode = "none" | "origin" | "stop" | "destination";
@@ -26,19 +30,6 @@ const isValidPoint = (p: PickerPoint | null) => {
   return p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180;
 };
 
-function ClickHandler({ selectionMode, onMapClick }: { selectionMode: SelectionMode; onMapClick: (p: PickerPoint) => void }) {
-  useMapEvents({
-    click: (e) => {
-      if (selectionMode === "none") return;
-      const { lat, lng } = e.latlng;
-      const point = { lat, lng };
-      if (!isValidPoint(point)) return;
-      onMapClick(point);
-    },
-  });
-  return null;
-}
-
 export default function RoutePickerMap({
   origin,
   stops,
@@ -51,6 +42,16 @@ export default function RoutePickerMap({
   isOpen,
 }: RoutePickerMapProps) {
   const mapRef = useRef<LeafletMap | null>(null);
+  const selectionModeRef = useRef<SelectionMode>(selectionMode);
+  const onMapClickRef = useRef(onMapClick);
+
+  useEffect(() => {
+    selectionModeRef.current = selectionMode;
+  }, [selectionMode]);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,17 +68,28 @@ export default function RoutePickerMap({
 
   const center: LatLngExpression = planned[0] ?? [-12.0464, -77.0428];
 
+  const handleMapReady = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.on("click", (event: LeafletMouseEvent) => {
+      if (selectionModeRef.current === "none") return;
+      const point = { lat: event.latlng.lat, lng: event.latlng.lng };
+      if (!isValidPoint(point)) return;
+      onMapClickRef.current(point);
+    });
+  };
+
   return (
     <MapContainer
+      ref={(map) => {
+        mapRef.current = map;
+      }}
       center={center}
       zoom={10}
       className="h-full w-full"
-      whenCreated={(map) => {
-        mapRef.current = map;
-      }}
+      whenReady={handleMapReady}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
-      <ClickHandler selectionMode={selectionMode} onMapClick={onMapClick} />
 
       {origin && isValidPoint(origin) && (
         <CircleMarker center={[origin.lat, origin.lng]} radius={8} pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.9 }}>

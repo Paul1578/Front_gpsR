@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Users, Truck, Route, History, Edit2, Check, X } from "lucide-react";
-import { useAuth } from "../../Context/AuthContext";
-import { useFleet } from "../../Context/FleetContext";
+import { useAuth, type User } from "../../Context/AuthContext";
+import { useFleet, type Route as FleetRoute, type Vehicle } from "../../Context/FleetContext";
 import { toast } from "sonner";
 
 interface TeamDetailsViewProps {
@@ -10,7 +10,7 @@ interface TeamDetailsViewProps {
 }
 
 export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
-  const { getAllUsers, updateUserRole, updateUserPermissions } = useAuth();
+  const { getAllUsers } = useAuth();
   const { vehicles, routes } = useFleet();
   const [activeTab, setActiveTab] = useState<"team" | "vehicles" | "routes" | "history">("team");
   const [editingTeamName, setEditingTeamName] = useState(false);
@@ -22,12 +22,18 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const teamMembers = allUsers.filter(u => u.teamId === teamId);
   
   const allVehicles = vehicles;
-  const teamVehicles = allVehicles.filter((v: any) => v.teamId === teamId);
+  const teamVehicles = allVehicles.filter((v) => v.teamId === teamId);
   
   const allRoutes = routes;
-  const teamRoutes = allRoutes.filter((r: any) => r.teamId === teamId);
-  const activeRoutes = teamRoutes.filter((r: any) => r.estado === "en_progreso");
-  const completedRoutes = teamRoutes.filter((r: any) => r.estado === "completada");
+  const teamRoutes = allRoutes.filter((r) => r.teamId === teamId);
+  const activeRoutes = teamRoutes.filter((r) => r.estado === "en_progreso");
+  const completedRoutes = teamRoutes.filter((r) => r.estado === "completada");
+
+  const findDriver = (route: FleetRoute): User | undefined =>
+    allUsers.find((u) => u.id === route.conductorId);
+
+  const findVehicle = (route: FleetRoute): Vehicle | undefined =>
+    allVehicles.find((v) => v.id === route.vehiculoId);
 
   if (!manager) {
     return (
@@ -284,7 +290,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {teamVehicles.map((vehicle: any) => (
+                  {teamVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -293,7 +299,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                         <div className="flex-1">
                           <p className="text-sm text-gray-900">{vehicle.placa}</p>
                           <p className="text-xs text-gray-600">
-                            {vehicle.marca} {vehicle.modelo} ({vehicle.año})
+                            {vehicle.marca} {vehicle.modelo} ({vehicle.anio})
                           </p>
                           <span className={`inline-block mt-2 px-2 py-1 rounded text-xs ${
                             vehicle.estado === "disponible" ? "bg-green-100 text-green-800" :
@@ -322,9 +328,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {activeRoutes.map((route: any) => {
-                    const driver = allUsers.find(u => u.id === route.conductorId);
-                    const vehicle = allVehicles.find((v: any) => v.id === route.vehiculoId);
+                  {activeRoutes.map((route) => {
+                    const driver = findDriver(route);
+                    const vehicle = findVehicle(route);
                     
                     return (
                       <div key={route.id} className="p-4 border border-gray-200 rounded-lg">
@@ -364,9 +370,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {completedRoutes.map((route: any) => {
-                    const driver = allUsers.find(u => u.id === route.conductorId);
-                    const vehicle = allVehicles.find((v: any) => v.id === route.vehiculoId);
+                  {completedRoutes.map((route) => {
+                    const driver = findDriver(route);
+                    const vehicle = findVehicle(route);
                     
                     return (
                       <div key={route.id} className="p-4 border border-gray-200 rounded-lg">

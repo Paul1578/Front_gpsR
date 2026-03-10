@@ -52,6 +52,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const users = getAllUsers();
+  type RouteEvidence = NonNullable<RouteApiDto["evidencias"]>[number];
 
   // ✅ Historial siempre desde BD (GET /api/Routes)
   useEffect(() => {
@@ -289,11 +290,10 @@ const filteredRoutes = useMemo(() => {
                         <span>{route.cargoDescription ?? "Sin carga"}</span>
                       </div>
 
-                      {(route as any).evidencias &&
-                        (route as any).evidencias.length > 0 && (
+                      {route.evidencias && route.evidencias.length > 0 && (
                           <div className="flex items-center gap-2 text-gray-600">
                             <ImageIcon size={14} />
-                            <span>{(route as any).evidencias.length} evidencia(s)</span>
+                            <span>{route.evidencias.length} evidencia(s)</span>
                           </div>
                         )}
                     </div>
@@ -416,23 +416,23 @@ const filteredRoutes = useMemo(() => {
                 </div>
               )}
 
-              {(selectedRoute as any).notas && (
+              {selectedRoute.notas && (
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Notas</label>
                   <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded">
-                    {(selectedRoute as any).notas}
+                    {selectedRoute.notas}
                   </p>
                 </div>
               )}
 
-              {(selectedRoute as any).evidencias &&
-                (selectedRoute as any).evidencias.length > 0 && (
+              {selectedRoute.evidencias &&
+                selectedRoute.evidencias.length > 0 && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-2">
                       Evidencias
                     </label>
                     <div className="space-y-3">
-                      {(selectedRoute as any).evidencias.map((evidencia: any) => (
+                      {selectedRoute.evidencias.map((evidencia: RouteEvidence) => (
                         <div key={evidencia.id} className="p-3 bg-gray-50 rounded">
                           {evidencia.type === "image" ? (
                             <div>

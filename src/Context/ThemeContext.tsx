@@ -14,17 +14,32 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+const getInitialPreference = (): ThemePreference => {
+  if (typeof window === "undefined") return "system";
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === "light" || stored === "dark" || stored === "system") {
+    return stored;
+  }
+  return "system";
+};
+
+const getInitialSystemScheme = (): "light" | "dark" => {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [systemScheme, setSystemScheme] = useState<"light" | "dark">("light");
+  const [preference, setPreferenceState] = useState<ThemePreference>(
+    getInitialPreference
+  );
+  const [systemScheme, setSystemScheme] = useState<"light" | "dark">(
+    getInitialSystemScheme
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      setPreferenceState(stored);
-    }
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const applySystem = () => setSystemScheme(media.matches ? "dark" : "light");

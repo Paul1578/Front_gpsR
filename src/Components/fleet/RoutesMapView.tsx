@@ -7,15 +7,21 @@ import {
   Marker,
   Polyline,
   Popup,
-  ScaleControl,
   TileLayer,
-  ZoomControl,
-  useMapEvents,
 } from "react-leaflet";
-import type { LatLngExpression, LeafletEvent, Map as LeafletMap } from "leaflet";
+import type {
+  LeafletEvent,
+  LatLngExpression,
+  Map as LeafletMap,
+} from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RouteForMap } from "@/services/fleetApi";
+import {
+  getBaseMapConfig,
+  MAP_LAYOUT_CONFIG,
+  type MapBaseStyle,
+} from "./mapRuntimeConfig";
 
 // Iconos de Leaflet como StaticImageData (Next)
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -39,6 +45,10 @@ L.Icon.Default.mergeOptions({
 });
 
 type LatLngTuple = [number, number];
+type RouteViewport = {
+  center: LatLngTuple;
+  zoom: number;
+};
 type OsrmRouteResponse = {
   routes?: Array<{
     geometry?: {
@@ -69,10 +79,18 @@ interface RoutesMapViewProps {
   showOnlySelectedRoute?: boolean;
   /** Mostrar marcadores de origen, destino y paradas */
   showStops?: boolean;
+  /** Mostrar marcadores de origen y destino */
+  showOriginDestinationMarkers?: boolean;
   /** Mostrar la línea de la ruta planificada */
   showPlannedLine?: boolean;
   /** Mostrar línea y punto de tracking real */
   showTrackingLine?: boolean;
+  /** Estilo del mapa base */
+  baseMapStyle?: MapBaseStyle;
+  /** Viewport persistido por ruta */
+  routeViewportByRouteId?: Record<string, RouteViewport>;
+  /** Persistir viewport por ruta */
+  onRouteViewportChange?: (routeId: string, viewport: RouteViewport) => void;
   /** Callback cuando el usuario mueve/zoomea el mapa manualmente */
   onUserInteraction?: () => void;
   /** Señal para invalidar tamaño del mapa (fullscreen/layout) */
@@ -80,39 +98,16 @@ interface RoutesMapViewProps {
 }
 
 const isUserDrivenMapEvent = (event: LeafletEvent) => {
-  const eventWithOriginal = event as LeafletEvent & { originalEvent?: Event };
-  return Boolean(eventWithOriginal.originalEvent);
+  return "originalEvent" in event && Boolean(event.originalEvent);
 };
 
-function MapInteractionBridge({
-  onMapReady,
-  onUserMove,
-}: {
-  onMapReady: (map: LeafletMap) => void;
-  onUserMove: () => void;
-}) {
-  const map = useMapEvents({
-    dragstart: (event) => {
-      if (isUserDrivenMapEvent(event)) {
-        onUserMove();
-      }
-    },
-    zoomstart: (event) => {
-      if (isUserDrivenMapEvent(event)) {
-        onUserMove();
-      }
-    },
-  });
-
-  useEffect(() => {
-    onMapReady(map);
-  }, [map, onMapReady]);
-
-  return null;
-}
-
-const DEFAULT_CENTER: LatLngTuple = [-0.180653, -78.467834]; // Quito aprox
-const DEFAULT_ZOOM = 7;
+const DEFAULT_CENTER: LatLngTuple = MAP_LAYOUT_CONFIG.defaultCenter;
+const DEFAULT_ZOOM = MAP_LAYOUT_CONFIG.defaultZoom;
+const OSRM_CACHE_TTL_MS = MAP_LAYOUT_CONFIG.osrmCacheTtlMs;
+const osrmGeometryCache = new Map<
+  string,
+  { expiresAt: number; geometry: LatLngTuple[] }
+>();
 
 /**
  * Construye la polyline planificada:
@@ -143,6 +138,12 @@ async function fetchSnappedGeometry(
 ): Promise<LatLngTuple[] | null> {
   if (planned.length < 2) return null;
 
+  const cacheKey = planned.map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`).join("|");
+  const cached = osrmGeometryCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.geometry;
+  }
+
   const coordsParam = planned
     .map(([lat, lng]) => `${lng},${lat}`) // OSRM usa lon,lat
     .join(";");
@@ -160,7 +161,12 @@ async function fetchSnappedGeometry(
     }
 
     // OSRM devuelve [lon, lat] → convertimos a [lat, lng]
-    return geometry.map(([lng, lat]) => [lat, lng] as LatLngTuple);
+    const normalized = geometry.map(([lng, lat]) => [lat, lng] as LatLngTuple);
+    osrmGeometryCache.set(cacheKey, {
+      geometry: normalized,
+      expiresAt: Date.now() + OSRM_CACHE_TTL_MS,
+    });
+    return normalized;
   } catch (err) {
     console.warn("OSRM falló, usando línea recta:", err);
     return null;
@@ -197,8 +203,12 @@ export function RoutesMapView({
   followTracking = false,
   showOnlySelectedRoute = false,
   showStops = true,
+  showOriginDestinationMarkers = true,
   showPlannedLine = true,
   showTrackingLine = true,
+  baseMapStyle = "osm_light",
+  routeViewportByRouteId,
+  onRouteViewportChange,
   onUserInteraction,
   resizeSignal,
 }: RoutesMapViewProps) {
@@ -207,22 +217,89 @@ export function RoutesMapView({
   const userMovedRef = useRef(false);
   const lastFitSignalRef = useRef<number | undefined>(undefined);
   const lastFocusTrackingSignalRef = useRef<number | undefined>(focusTrackingSignal);
+  const lastFollowTargetRef = useRef<LatLngTuple | null>(null);
+  const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomControlRef = useRef<ReturnType<typeof L.control.zoom> | null>(null);
+  const zoomControlAttachedRef = useRef(false);
+  const lastViewportEmitRef = useRef<{ routeId: string; zoom: number; center: LatLngTuple } | null>(null);
+  const lastViewportRouteIdRef = useRef<string | null>(null);
+  const selectedRouteIdRef = useRef<string | null>(selectedRouteId);
 
   const [snappedByRoute, setSnappedByRoute] = useState<
     Record<string, LatLngTuple[]>
   >({});
 
-  const handleMapReady = useCallback((map: LeafletMap) => {
-    mapRef.current = map;
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 0);
-  }, []);
+  useEffect(() => {
+    selectedRouteIdRef.current = selectedRouteId;
+  }, [selectedRouteId]);
 
   const handleMapUserMove = useCallback(() => {
     userMovedRef.current = true;
     onUserInteraction?.();
   }, [onUserInteraction]);
+
+  const emitViewportForRoute = useCallback(
+    (routeId: string) => {
+      if (!onRouteViewportChange || !mapRef.current) return;
+      const center = mapRef.current.getCenter();
+      const zoom = mapRef.current.getZoom();
+      const nextCenter: LatLngTuple = [center.lat, center.lng];
+      const prev = lastViewportEmitRef.current;
+      if (
+        prev &&
+        prev.routeId === routeId &&
+        prev.zoom === zoom &&
+        Math.abs(prev.center[0] - nextCenter[0]) < 1e-6 &&
+        Math.abs(prev.center[1] - nextCenter[1]) < 1e-6
+      ) {
+        return;
+      }
+      lastViewportEmitRef.current = { routeId, zoom, center: nextCenter };
+      onRouteViewportChange(routeId, { center: nextCenter, zoom });
+    },
+    [onRouteViewportChange]
+  );
+
+  const handleMapReady = useCallback((map: LeafletMap) => {
+    mapRef.current = map;
+    map.on("dragstart", (event) => {
+      if (isUserDrivenMapEvent(event)) {
+        handleMapUserMove();
+      }
+    });
+    map.on("zoomstart", (event) => {
+      if (isUserDrivenMapEvent(event)) {
+        handleMapUserMove();
+      }
+    });
+    const mapWithScaleFlag = map as LeafletMap & {
+      __fleetflowScaleAdded?: boolean;
+    };
+    if (!mapWithScaleFlag.__fleetflowScaleAdded) {
+      L.control.scale({ position: "topright", imperial: false }).addTo(map);
+      mapWithScaleFlag.__fleetflowScaleAdded = true;
+    }
+    if (!zoomControlRef.current) {
+      zoomControlRef.current = L.control.zoom({ position: "bottomright" });
+    }
+    if (!followTracking && zoomControlRef.current && !zoomControlAttachedRef.current) {
+      zoomControlRef.current.addTo(map);
+      zoomControlAttachedRef.current = true;
+    }
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
+    map.on("moveend", () => {
+      if (selectedRouteIdRef.current) {
+        emitViewportForRoute(selectedRouteIdRef.current);
+      }
+    });
+    map.on("zoomend", () => {
+      if (selectedRouteIdRef.current) {
+        emitViewportForRoute(selectedRouteIdRef.current);
+      }
+    });
+  }, [followTracking, handleMapUserMove, emitViewportForRoute]);
 
   const selectedRoute = useMemo(
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
@@ -232,6 +309,7 @@ export function RoutesMapView({
     if (!showOnlySelectedRoute || !selectedRouteId) return routes;
     return routes.filter((route) => route.id === selectedRouteId);
   }, [routes, selectedRouteId, showOnlySelectedRoute]);
+  const baseMapConfig = useMemo(() => getBaseMapConfig(baseMapStyle), [baseMapStyle]);
 
   const trackingLatest = useMemo(() => {
     if (!trackingPositions || trackingPositions.length === 0) return null;
@@ -284,6 +362,11 @@ export function RoutesMapView({
     return DEFAULT_CENTER;
   }, [routes, initialCenter]);
 
+  const savedViewportForSelectedRoute = useMemo(() => {
+    if (!selectedRouteId || !routeViewportByRouteId) return null;
+    return routeViewportByRouteId[selectedRouteId] ?? null;
+  }, [routeViewportByRouteId, selectedRouteId]);
+
   /**
    * Cargar geometría OSRM para cada ruta que aún no tenga snapping.
    */
@@ -322,6 +405,7 @@ export function RoutesMapView({
     if (!selectedRoute || !mapRef.current) return;
     const isForcedFit =
       fitSignal !== undefined && fitSignal !== lastFitSignalRef.current;
+    if (!isForcedFit && savedViewportForSelectedRoute) return;
     if (!isForcedFit && (userMovedRef.current || hasFitRef.current)) return;
 
     const snapped = snappedByRoute[selectedRoute.id];
@@ -346,7 +430,25 @@ export function RoutesMapView({
     if (fitSignal !== undefined) {
       lastFitSignalRef.current = fitSignal;
     }
-  }, [selectedRoute, snappedByRoute, trackingPositions, trackingLatest, fitSignal]);
+  }, [
+    selectedRoute,
+    snappedByRoute,
+    trackingPositions,
+    trackingLatest,
+    fitSignal,
+    savedViewportForSelectedRoute,
+  ]);
+
+  useEffect(() => {
+    if (!selectedRouteId || !mapRef.current) return;
+    if (!savedViewportForSelectedRoute) return;
+    if (lastViewportRouteIdRef.current === selectedRouteId) return;
+    const { center, zoom } = savedViewportForSelectedRoute;
+    mapRef.current.setView(center, zoom, { animate: false });
+    hasFitRef.current = true;
+    userMovedRef.current = true;
+    lastViewportRouteIdRef.current = selectedRouteId;
+  }, [selectedRouteId, savedViewportForSelectedRoute]);
 
   useEffect(() => {
     if (focusUserSignal === undefined) return;
@@ -390,26 +492,58 @@ export function RoutesMapView({
     if (!followTracking) return;
     if (!mapRef.current || !trackingLatest) return;
 
+    const target = L.latLng(trackingLatest[0], trackingLatest[1]);
+    if (lastFollowTargetRef.current) {
+      const prev = L.latLng(lastFollowTargetRef.current[0], lastFollowTargetRef.current[1]);
+      // Evita animaciones innecesarias cuando la posición casi no cambia.
+      if (prev.distanceTo(target) < 8) return;
+    }
+
     const nextZoom = Math.max(mapRef.current.getZoom(), 15);
-    mapRef.current.flyTo(trackingLatest, nextZoom, {
+    mapRef.current.flyTo(target, nextZoom, {
       animate: true,
-      duration: 0.6,
+      duration: 0.45,
     });
+    lastFollowTargetRef.current = trackingLatest;
   }, [followTracking, trackingLatest]);
+
+  useEffect(() => {
+    if (followTracking) return;
+    lastFollowTargetRef.current = null;
+  }, [followTracking]);
 
   useEffect(() => {
     if (resizeSignal === undefined) return;
     if (!mapRef.current) return;
-    setTimeout(() => {
+    if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
+    resizeDebounceRef.current = setTimeout(() => {
       mapRef.current?.invalidateSize();
-    }, 0);
+    }, 100);
+    return () => {
+      if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
+    };
   }, [resizeSignal]);
+
+  useEffect(() => {
+    if (!mapRef.current || !zoomControlRef.current) return;
+    if (followTracking && zoomControlAttachedRef.current) {
+      mapRef.current.removeControl(zoomControlRef.current);
+      zoomControlAttachedRef.current = false;
+      return;
+    }
+    if (!followTracking && !zoomControlAttachedRef.current) {
+      zoomControlRef.current.addTo(mapRef.current);
+      zoomControlAttachedRef.current = true;
+    }
+  }, [followTracking]);
 
   return (
     <div className="routes-map-view w-full h-full min-h-0 rounded-xl overflow-hidden shadow-md bg-white">
       <MapContainer
+        ref={mapRef}
         center={mapInitialCenter}
         zoom={initialZoom}
+        preferCanvas
         dragging={!followTracking}
         scrollWheelZoom={!followTracking}
         doubleClickZoom={!followTracking}
@@ -418,17 +552,13 @@ export function RoutesMapView({
         keyboard={!followTracking}
         zoomControl={false}
         className="w-full h-full"
+        whenReady={() => {
+          if (mapRef.current) {
+            handleMapReady(mapRef.current);
+          }
+        }}
       >
-        <MapInteractionBridge
-          onMapReady={handleMapReady}
-          onUserMove={handleMapUserMove}
-        />
-        {!followTracking && <ZoomControl position="bottomright" />}
-        <ScaleControl position="topright" imperial={false} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer attribution={baseMapConfig.attribution} url={baseMapConfig.url} />
 
         {renderedRoutes.map((route) => {
           const planned = buildRoutePolyline(route);
@@ -512,7 +642,7 @@ export function RoutesMapView({
                 </Marker>
               )}
 
-              {showStops && (
+              {showOriginDestinationMarkers && (
                 <>
                   {/* Origen */}
                   <Marker position={origin}>

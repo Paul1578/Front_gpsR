@@ -123,7 +123,7 @@ export function FleetDashboard() {
 
   return (
     <>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-dvh min-h-dvh w-full bg-gray-50 overflow-hidden">
         {sidebarOpen && (
           <button
             type="button"
@@ -134,7 +134,7 @@ export function FleetDashboard() {
         )}
 
         <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 max-w-[85vw] bg-white border-r border-gray-200 shadow-lg z-[2000] transform transition-transform duration-300 flex flex-col ${
+          className={`fixed md:static inset-y-0 left-0 w-[90vw] max-sm:w-full sm:w-80 md:w-64 max-w-full bg-white border-r border-gray-200 shadow-lg z-[2000] transform transition-transform duration-300 flex flex-col ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
@@ -194,9 +194,9 @@ export function FleetDashboard() {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="flex h-20 items-center justify-between gap-4 px-4 md:px-8 bg-white border-b border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3">
+        <div className="flex-1 w-0 min-w-0 flex flex-col overflow-hidden">
+          <header className="flex h-20 items-center justify-between gap-4 px-4 md:px-8 bg-white border-b border-gray-100">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 className="md:hidden p-2 rounded-lg hover:bg-gray-100"
                 onClick={() => setSidebarOpen(true)}
@@ -204,21 +204,21 @@ export function FleetDashboard() {
               >
                 <Menu className="size-5 text-gray-600" />
               </button>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-gray-500">Bienvenido</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="truncate text-lg font-semibold text-gray-900">
                   {user.nombres} {user.apellidos}
                 </p>
               </div>
             </div>
 
-            <div className="text-right">
+            <div className="shrink-0 text-right">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Rol</p>
               <p className="text-sm font-semibold text-gray-800">{user.role}</p>
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto min-w-0">
+          <main className="flex-1 min-w-0 overflow-auto overflow-x-hidden">
             {renderView()}
           </main>
         </div>
