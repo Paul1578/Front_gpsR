@@ -192,6 +192,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - La ruta de tablet se creó en UI a 768×1024, persistió tres puntos con recogida+entrega según GET real y el cleanup retiró registros temporales.
 - Trabajo añadido después de esa corrida: el E2E de vehículos verifica estado operativo Mantenimiento→Disponible mediante UI, GET API y recarga. Aún no probado por CI.
 - Primera corrida de esta ampliación (`44994219944`) falló en GET inmediato porque el waiter reconocía el PUT de datos generales, anterior al PUT `/status`. Se estrechó a ruta exacta `/status`, se validan 204/payload y luego GET; volver a correr CI.
+- Resultado corregido: Actions `44994623654` en SHA `cf8dc13` terminó success con backend `029e94d`; xUnit **57/57**, responsive **1/1**, E2E **16/16**, cleanup MySQL, audit, lint y build correctos. Vehículo cambió `status 0→2→0` y el estado persistió en API y UI tras recarga.
+
+# Manager: permisos positivos HTTP — pendiente de CI — 2026-11-22
+
+- La matriz E2E ahora también comprueba que Manager lee vehículos y rutas y completa el ciclo API de vehículo crear/editar/cambiar a mantenimiento/volver a disponible/leer/eliminar.
+- Cuenta QA cambia a Manager y se restaura a Driver en `finally`. Vehículo usa prefijo `E2EQA` y limpieza local más fallback SQL del runner.
+- ESLint/build/discovery local y ejecución integrada Chrome/API/MySQL quedan pendientes para este SHA.
 - Primera corrida Actions `44991979019`: backend 57/57, audit/lint/build y responsive 1/1; E2E 15/16. Caso tablet expiró al timeout 30 s; cambio aplicado a límite 90 s y cleanup con fixture `request` independiente. Repetición de CI pendiente; no contar el nuevo test como aprobado.
 - Actions `44992464372` identificó el locator exacto tras bajar el límite de espera: el botón `Abrir menú` no existe en breakpoint tablet, el sidebar está desplegado. El selector se corrigió; 15 casos y cleanup pasaron, pero la ruta no se creó y el E2E sigue sin aprobar.
 - Actions `44992803081` falló después al no encontrar el vehículo creado por API en el selector del contexto ya cargado. Se agregó reload antes de crear la ruta; no se cuenta el E2E como pase hasta otra corrida (los otros 15 y cleanup sí pasaron).

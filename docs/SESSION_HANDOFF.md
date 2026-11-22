@@ -20,6 +20,8 @@
 - Actions `44993827707` terminó verde para Front `2932aa0` + Back `029e94d`: Release/xUnit **57/57**, audit/lint/build verdes, responsive **1/1**, E2E **16/16** y cleanup MySQL exitoso. La ruta creada en tablet está ahora verificada end-to-end.
 - Se añadió al E2E de vehículo el cambio `Mantenimiento`/`Disponible`, con lectura API y persistencia UI luego de reload; requiere nueva Actions integrada antes de contarse probado.
 - El primer run de vehículo (`44994219944`) falló por carrera de test: el waiter de PUT aceptaba antes la actualización general que el endpoint `/status`. Ahora se espera `PUT .../status`, valida 204/body, y después consulta GET. Repetir Actions.
+- Actions `44994623654` confirmó ese arreglo y el estado operativo real: backend 57/57, responsive 1/1, E2E 16/16, audit/lint/build/cleanup correctos. El test cambia mantenimiento y disponibilidad, compara valores API 2/0 y confirma tarjeta tras reload.
+- Próximo corte de roles añadido: Manager debe tener acceso positivo a listar rutas/vehículos y CRUD/lifecycle de vehículo; la matriz existente ya garantiza denegaciones Users/Roles y restores el fixture Driver en `finally`. Nueva ejecución CI pendiente.
 
 ## E2E de orden y operación de paradas — 2026-11-22
 

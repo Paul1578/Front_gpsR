@@ -590,3 +590,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44994219944`: los otros 15 E2E pasaron; el nuevo ciclo vehículo cambió visualmente a Disponible, pero el GET inmediato devolvió todavía `status=2`. El test esperaba cualquier PUT cuyo URL contuviera `/Vehicles/{id}`. `updateVehicle` primero persiste datos generales en `PUT /Vehicles/{id}` y después cambia el estado en `PUT /Vehicles/{id}/status`; el waiter podía resolver en la primera respuesta antes de que terminara la segunda.
 - Corrección: esperar el pathname exacto `/status`, verificar HTTP 204 y comprobar el body `{status: 0|2}` antes de hacer GET. Se aserta además el valor elegido en el select. La próxima corrida discriminará claramente una carrera de test de un problema de backend.
 - CI de ese SHA falló solo por la aserción de estado; no pasó el test agregado. Repetición integrada pendiente.
+- Resultado: Actions `44994623654` pasó el flujo de edición y persistencia de estado del vehículo y toda la suite; la carrera quedó corregida en el test.
+
+## Ampliación Manager positiva — 2026-11-22
+
+- La matriz cubría denegaciones de Manager pero no operaciones permitidas. Se agregó un ciclo autenticado positivo de vehículo y lectura de flota/rutas. Aún no hay errores asociados; se registrarán si las pruebas encuentran diferencias entre contrato y comportamiento.

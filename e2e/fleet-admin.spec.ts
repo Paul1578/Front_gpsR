@@ -949,6 +949,54 @@ test("API deniega mutaciones de flota y administración según el rol", async ({
     await setFixtureRole("Manager");
     const managerHeaders = await login(driverEmail!, driverPassword!);
     await expectDenied("Manager", userAndRoleMutations(managerHeaders));
+
+    const managerVehicles = await page.request.get("/api/backend/Vehicles", { headers: managerHeaders });
+    const managerRoutes = await page.request.get("/api/backend/Routes", { headers: managerHeaders });
+    expect(managerVehicles.status()).toBe(200);
+    expect(managerRoutes.status()).toBe(200);
+
+    let managerVehicleId: string | undefined;
+    try {
+      const managerVehicle = await page.request.post("/api/backend/Vehicles", {
+        headers: managerHeaders,
+        data: { ...qaVehicle, plate: `E2EQAM${suffix}`, brand: "Manager QA" },
+      });
+      expect(managerVehicle.status()).toBe(201);
+      managerVehicleId = (await managerVehicle.json()).id as string;
+
+      const updateManagerVehicle = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}`, {
+        headers: managerHeaders,
+        data: { ...qaVehicle, plate: `E2EQAM${suffix}`, brand: "Manager editado" },
+      });
+      expect(updateManagerVehicle.status()).toBe(200);
+      const changeManagerVehicleStatus = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+        headers: managerHeaders,
+        data: { status: 2 },
+      });
+      expect(changeManagerVehicleStatus.status()).toBe(204);
+
+      const persistedManagerVehicle = await page.request.get(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+      expect(persistedManagerVehicle.status()).toBe(200);
+      expect(await persistedManagerVehicle.json()).toMatchObject({
+        plate: `E2EQAM${suffix}`,
+        brand: "Manager editado",
+        status: 2,
+      });
+
+      const resetManagerVehicleStatus = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+        headers: managerHeaders,
+        data: { status: 0 },
+      });
+      expect(resetManagerVehicleStatus.status()).toBe(204);
+      const deleteManagerVehicle = await page.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+      expect(deleteManagerVehicle.status()).toBe(204);
+      managerVehicleId = undefined;
+    } finally {
+      if (managerVehicleId) {
+        const cleanupManagerVehicle = await page.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+        expect([200, 204, 404]).toContain(cleanupManagerVehicle.status());
+      }
+    }
   } finally {
     await setFixtureRole("Driver");
   }

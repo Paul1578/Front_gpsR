@@ -129,3 +129,5 @@
 - Actions `44993827707` validó SHA `2932aa0` con backend `029e94d`: 57/57 xUnit, responsive 1/1, E2E 16/16, audit/lint/build y cleanup SQL correctos.
 - El E2E CRUD de vehículo ahora cambia estado operativo a mantenimiento y disponible, valida persistencia API/UI tras recarga; su Actions sigue pendiente.
 - Actions `44994219944` descubrió que el test esperaba el PUT genérico de edición antes del PUT específico `/status`; el waiter ahora observa exactamente el cambio de estado y payload.
+- Actions `44994623654` validó el ciclo vehículo `Disponible→Mantenimiento→Disponible` de punta a punta, con GET de API y recarga, junto a E2E 16/16 y xUnit 57/57.
+- La matriz de roles añade el lado permitido de Manager para lecturas y CRUD de vehículo vía API, además de las denegaciones existentes; validación aún pendiente.
