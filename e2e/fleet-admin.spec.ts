@@ -480,14 +480,23 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     expect(persistedRoute.name).toBe(routeName);
     const persistedPoints = persistedRoute.points as Array<{ name?: string; operation: number | string }>;
     expect(persistedPoints).toHaveLength(4);
-    expect(persistedPoints.map((point) => point.name)).toEqual([
-      "Origen E2E desde mapa",
-      "Entrega y recogida E2E",
-      "Recogida E2E",
-      "Destino E2E desde mapa",
+    const operationNames: Record<number, string> = {
+      0: "None",
+      1: "Pickup",
+      2: "Delivery",
+      3: "PickupAndDelivery",
+    };
+    expect(persistedPoints.map((point) => ({
+      name: point.name,
+      operation: typeof point.operation === "number"
+        ? operationNames[point.operation] ?? `Unknown(${point.operation})`
+        : point.operation,
+    }))).toEqual([
+      { name: "Origen E2E desde mapa", operation: "None" },
+      { name: "Entrega y recogida E2E", operation: "PickupAndDelivery" },
+      { name: "Recogida E2E", operation: "Pickup" },
+      { name: "Destino E2E desde mapa", operation: "None" },
     ]);
-    expect(persistedPoints.some((point) => point.operation === 1 || point.operation === "Pickup")).toBe(true);
-    expect(persistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
 
     const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
     await expect(routeHeading).toBeVisible();
@@ -509,8 +518,14 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     }));
     expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
-    if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
-    if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
+    if (routeId) {
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+      expect([200, 204, 404]).toContain(cleanupRoute.status());
+    }
+    if (vehicleId) {
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
   }
 });
 

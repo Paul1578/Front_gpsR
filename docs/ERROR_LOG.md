@@ -1,5 +1,11 @@
 # Registro de errores y decisiones
 
+## 2026-11-21 — Playwright autenticado local omitido por falta de entorno QA
+
+- El caso del constructor se invocó de forma aislada; Playwright inició Next, pero lo marcó skipped porque no estaban configurados Admin QA/`FLETFLOW_E2E_ALLOW_MUTATIONS` ni Driver fixture. La API local tampoco respondía en Swagger (`HTTP 000`). No se realizaron mutaciones.
+- No es una falla de producto ni del test. La suite real requiere levantar API/MySQL en configuración descartable y proporcionar los fixtures QA; el runner del backend ejecuta esas precondiciones y limpia por prefijo.
+- No se reutilizó la base del checkout backend compartido: presentaba cambios locales no relacionados y su runner opera sobre fixtures QA. La prueba queda pendiente de ejecución autenticada aislada.
+
 ## 2026-11-21 — Playwright de alta Driver seleccionaba dos campos por placeholder parcial — CORREGIDO
 
 - La prueba UI de Equipo buscó `jperez` y Playwright también encontró el email `jperez@empresa.com`; strict mode detuvo el caso antes de enviar el formulario.

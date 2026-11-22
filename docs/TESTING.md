@@ -2,6 +2,10 @@
 
 ## Comandos y resultados
 
+- 2026-11-21, rama aislada `test/route-builder-persistence`: `npm ci` correcto (0 vulnerabilidades), `npm run lint` correcto, `npm run build` correcto y `npm run test:e2e -- --list` descubre 14 casos.
+- Constructor de rutas: el caso existente agrega tres paradas, elimina una, reordena otra y crea la ruta desde el navegador. La aserción API ahora compara cada punto persistido por nombre y operación en orden exacto (incluye origen/destino sin operación), lo que demuestra que la parada eliminada no quedó y que los tipos siguieron a sus paradas al reordenar. El `finally` verifica las respuestas de limpieza de la ruta y vehículo.
+- Intento Playwright autenticado local: `CI=true npm run test:e2e -- --grep "Admin crea una ruta desde el mapa móvil"` arrancó Next y reportó 1 skipped; faltaban credenciales QA/mutaciones y API no estaba activa (Swagger local HTTP 000). No se crearon fixtures; para resultado funcional se requiere el runner con API/MySQL descartables y variables QA.
+
 - Cierre 2026-11-21: lint, build de producción Next y npm audit (`--audit-level=low`) correctos, 0 vulnerabilidades.
 - Backend asociado: `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`, 47/47.
 - Chrome Admin E2E: editó un conductor, verificó persistencia por API, lo dio de baja, lo encontró con “Mostrar bajas”, lo reactivó y verificó estado. Viewport 390×844 sin overflow.
