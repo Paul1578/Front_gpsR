@@ -3,6 +3,11 @@
 - Resolución integrada en Action `45076629351` (`2147be7`): **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL correctos. Los fallos 503 de usuarios y flota permanecen independientes hasta sus respectivos reintentos.
 - El panel Driver se prueba sin mutaciones a 320/768 px; los estados de error no se convierten en ceros.
 
+## 2026-11-22 — CRUD de pantalla dedicada de conductores — E2E PENDIENTE
+
+- Auditoría encontró que `DriversManagement` ofrecía alta, edición, asignación, desasignación y baja/reactivación pero su E2E sólo hacía búsqueda.
+- Se agregó un flujo a 320/768 px y verificación de persistencia con API autenticada. Lint/build y discovery 38 pasan local; falta Action integrada.
+
 - Corregidos selectores/secuencia del E2E de fallos 503, que buscaba exportar en el tab equivocado y duplicaba un retry conjunto.
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.
 - La Action `45072706025` del SHA anterior terminó **35/37**; detectó también que Gestión de Equipo podía perder el error de Drivers cuando se solapaban dos cargas. La vista ahora consume el error compartido de FleetContext además del error local.

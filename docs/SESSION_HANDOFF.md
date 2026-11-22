@@ -1,8 +1,9 @@
 ## Continuación — 2026-11-22
 
-- Estado vigente Front `refactor/route-builder` en `2147be7`: Action `45076629351` completó **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL. El mock separa los errores 503 de usuarios y flota para que cada reintento se pruebe de forma determinista.
+- Estado vigente Front `refactor/route-builder`: `2147be7` pasó Action `45076629351` y docs HEAD `8887649` pasó `45077576665`; ambas Actions completaron **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL.
 - El test responsive de administración llena datos Driver y comprueba overflow a 320/768 px; también se valida en el historial de Actions. Front limpio tras publicar el commit.
 - Próximo: cubrir más casos CRUD y matriz HTTP por rol; continuar responsive de vistas pendientes. No cerrar misión. Decisiones pendientes de Admin delegado y desvinculación User↔Driver; móvil nativo diferido.
+- Auditoría de `DriversManagement` identificó que la pantalla operativa dedicada sólo probaba búsqueda. Se agregó E2E de CRUD completo y asignación a 320/768 px (`e2e/driver-management-search.spec.ts`); lint, build, discovery 38 y diff-check pasan local. Falta Action autenticada API/MySQL y revisar cleanup si aparece fallo.
 
 - Action `45072706025` sobre `7f4841c` terminó **35/37**. Falló el E2E de Exportar por localizarlo en Resumen y el E2E de Gestión de Equipo porque un error de carga Driver se ocultaba entre solicitudes paralelas. Ambos fallos registrados en `docs/ERROR_LOG.md` y corregidos localmente.
 - E2E corregido: navega a Gestión de Datos, verifica los tres `—`, recupera `/Users/my-team` desde Usuarios y hace un solo reintento conjunto de rutas/vehículos. Gestión de Equipo combina error local con el compartido de FleetContext. El resumen ya no muestra ceros engañosos.

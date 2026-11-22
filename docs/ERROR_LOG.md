@@ -1356,3 +1356,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se acotaron locators al panel correcto, se comprobó cada mensaje de error específico, se separaron interceptores 503 por recurso y se reordenó el retry según los efectos de navegación. La respuesta tardía de Users se ignora por secuencia. No se relajaron verificaciones de producto.
 - Action `45076629351` en `2147be7`: 37/37 E2E, responsive 1/1, audit/lint/build y cleanup pasaron.
 - Prevención: usar fallos por endpoint en mocks de estado compartido, locators acotados al panel y aserciones de recuperación sobre el error específico esperado.
+
+## 2026-11-22 — CRUD de Gestión de Conductores no tenía E2E propio — PRUEBA AGREGADA
+
+- Auditoría responsive observó que el test de la pantalla dedicada sólo creaba un Driver por API y probaba búsqueda, aunque la vista implementa alta, edición, asignación/desasignación y baja/reactivación. El CRUD en Gestión de Equipo no valida esta pantalla independiente.
+- Se añadió un flujo Playwright con interacciones a 320 px, verificación a 768 px y lecturas autenticadas API para comprobar persistencia. Lint/build, discovery 38 y diff-check pasan; Action E2E y limpieza integrada todavía pendientes.
+- Prevención: cubrir cada flujo de CRUD en la vista operativa donde se ofrece, no inferir su funcionamiento desde otra pantalla que comparte el backend.
