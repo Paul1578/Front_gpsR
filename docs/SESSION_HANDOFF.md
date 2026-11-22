@@ -426,3 +426,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend local: Release build 0 warnings/0 errors; xUnit 64/64; `bash -n` y diff-check correctos. Ejecutar el smoke de API/MySQL en Actions, esperar workflow y revisar cleanup. El host correcto es `/home/leonardo/.dotnet/dotnet`, solución `BackEnd_Gps.sln`.
 - El error y solución del Actions inicial están en `docs/ERROR_LOG.md` de ambos repos. No declarar esta prueba cerrada antes de CI.
 - Pendientes misión global: cobertura CRUD/roles/responsive por ampliar; no modificar política de Admin delegado sin decisión de producto. SMTP requiere credenciales externas; móvil nativo está aplazado por el usuario.
+
+## Estado verificado más reciente — 2026-11-22
+
+- Front `refactor/route-builder`, código `4117342`; Actions `45012698648` pasó audit/lint/build, responsive 1/1 y E2E Chrome/API/MySQL 18/18, cleanup completo. El run valida el endpoint nuevo para Logistics, ruta creada/cancelada desde UI y prefix de cleanup.
+- Back `chore/stabilize-fleet-platform`, código `6def8fa`; Actions `45011796536` pasó Release build, xUnit 64/64, smoke HTTP/MySQL tenant/Logistics y concurrencia. Commit documental posterior `5dc2426`.
+- Errores de dos runs frontend (stub de endpoint faltante y prefijo de fixture) ya quedaron solucionados y registrados en `docs/ERROR_LOG.md`.
+- Continuar misión: auditar siguiente brecha de CRUD/roles/responsive con prueba ejecutable; la política de Admin delegado sigue sin definición. SMTP requiere credenciales externas; app nativa móvil está pospuesta.

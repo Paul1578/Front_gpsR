@@ -803,7 +803,7 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se consultó un ID de Actions frontend desde el repositorio backend y un ID backend desde el frontend; GitHub respondió 404. También se repitió una consulta Front desde Back durante dos runs concurrentes. Se volvieron a consultar los IDs desde sus repositorios de origen y se confirmaron sus estados.
 - Prevención: usar el checkout/repositorio que originó cada run al llamar `gh run view`; consultar en paralelo desde cada checkout cuando se monitorean ambos workflows.
 
-## 2026-11-22 — E2E de Logistics sin opciones para asignar recursos — EN VALIDACIÓN
+## 2026-11-22 — E2E de Logistics sin opciones y fallos de cleanup — CORREGIDO Y VERIFICADO
 
 - Actions `45009790973` pasó 15/18. El nuevo recorrido de Logistics agotó 90 s durante la creación UI; al cambiar después la cuenta compartida de Logistics a Driver, el backend dejó el perfil Driver inactivo. El test Driver siguiente no pudo crear su ruta (HTTP 400), y el test de Equipo esperaba un Driver “Foreign Driver QA” creado/limpiado por otro caso y falló por dependencia de orden.
 - Se añadió una sección Playwright “Logistics crea una ruta…” para identificar el último paso y el `finally` ahora restaura tanto el rol como el estado activo del Driver. El test de Equipo valida el propio Driver independiente que acaba de crear, sin depender de otro caso.
@@ -818,4 +818,4 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Verificación local posterior: ambos casos de carga pasan 2/2, lint/build y diff-check correctos. Actions integrado después de este fix pendiente.
 - El siguiente Actions `45012288100` ejecutó los 18 E2E y responsive (18/18), pero el runner falló al limpiar MySQL. El fixture de ruta Logistics usaba `E2E QA Logistics ruta …`; `cleanup-e2e.sql` limpia por el prefijo `E2E QA ruta …`, por lo que el nombre no coincidía.
 - Solución: el fixture ahora se llama `E2E QA ruta Logistics …`, alineado con el prefijo de cleanup compartido. Prevención: todo recurso persistido por E2E debe respetar los prefijos del script de limpieza; comprobar cleanup aunque todas las aserciones de navegador pasen.
-- Repetición integrada pendiente; la DB anterior era efímera y el runner apagó API/containers tras registrar el fallo.
+- Actions `45012698648` para Front `4117342` + Backend `6def8fa` pasó: audit/lint/build, responsive 1/1, Playwright API/MySQL 18/18, runner cleanup y containers success. El endpoint habilitó la creación Logistics y los tests aislados recuperaron el drawer; DB temporal limpia.

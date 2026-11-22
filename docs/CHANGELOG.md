@@ -220,9 +220,9 @@
 
 - Actions `45009354112` pasó para Front `6681023`: Playwright autenticado Chrome/API/MySQL **18/18**, responsive browser **1/1**, audit/lint/build y cleanup completos. El nuevo caso crea desde UI un Driver sin usuario y confirma null persistido en POST/GET a 768×1024.
 
-## 2026-11-22 — Rutas UI para Logistics y breakpoint 320 px — validación pendiente
+## 2026-11-22 — Rutas UI para Logistics y breakpoint 320 px — validado
 
-- Logistics ahora tiene un recorrido UI de creación y cancelación de ruta con persistencia consultada por API. Constructor móvil de Admin se amplía a 320×844; checks locales lint/build y discovery 18 correctos. Espera Actions integrada.
+- Logistics ahora tiene recorrido UI de creación/cancelación y persistencia API; Admin constructor a 320×844. Actions `45012698648`: responsive 1/1, E2E 18/18, audit/lint/build y cleanup success.
 
 
 ## 2026-11-22 — Corrección de aislamiento de fixtures E2E — pendiente de repetición
@@ -233,5 +233,6 @@
 - Constructor y filtros de rutas usan opciones activas de vehículo/Driver desde `/Routes/assignment-options`, incluyendo Drivers sin cuenta de usuario.
 - Se distingue el error de carga con reintento; Logistics conserva el acceso restringido a CRUD de vehículos y Drivers.
 - E2E agregado para autorización mínima, omisión de PII, creación/cancelación y selectores con recursos reales. CI integrado pendiente.
-- Actions `45011806008` dejó 16/18: los tests mockeados de Equipo/Historial no interceptaban el nuevo endpoint y fallaban al abrir drawer. Stub JSON vacío agregado; suite dirigida 2/2, lint/build pasan localmente. Repetir Actions integrado.
-- Actions `45012288100` ejecutó E2E 18/18, pero cleanup falló porque `E2E QA Logistics ruta` no coincidía con el prefijo SQL `E2E QA ruta`. Nombre ajustado al prefijo convencional; nueva corrida pendiente.
+- Actions `45011806008` dejó 16/18: los tests mockeados de Equipo/Historial no interceptaban el nuevo endpoint. Stub agregado y 2/2 dirigidas.
+- Actions `45012288100` corrió E2E 18/18, pero el cleanup SQL no reconocía el nombre `E2E QA Logistics ruta`; se alineó el prefijo.
+- Actions `45012698648` pasó: 18/18 E2E, responsive 1/1, API/MySQL y cleanup completo.
