@@ -582,6 +582,134 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
   }
 });
 
+test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", async ({ page }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA tablet ${suffix}`;
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+
+  const expectNoHorizontalOverflow = async () => {
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.mainContent).toBeLessThanOrEqual(widths.main);
+  };
+
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tablet route", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Entrega y recogida QA en tablet");
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    const map = page.locator(".leaflet-container");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen tablet QA");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("Parada 1").fill("Recogida y entrega tablet QA");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("pickup_and_delivery");
+    const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("¿A dónde llega?").fill("Destino tablet QA");
+    await expectNoHorizontalOverflow();
+
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId);
+    await page.locator("select").nth(1).selectOption(driverIdFixture!);
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(page.getByText("Recogida y entrega tablet QA")).toBeVisible();
+    await expectNoHorizontalOverflow();
+
+    const createResponsePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(201);
+    routeId = (await createResponse.json()).id as string;
+
+    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    const persistedPoints = persistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(persistedPoints.map((point) => point.name)).toEqual([
+      "Origen tablet QA",
+      "Recogida y entrega tablet QA",
+      "Destino tablet QA",
+    ]);
+    expect([3, "PickupAndDelivery"]).toContain(persistedPoints[1].operation);
+    await expectNoHorizontalOverflow();
+  } finally {
+    const cleanupIssues: string[] = [];
+    if (routeId) {
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
+        cleanupIssues.push(`No se pudo retirar la ruta tablet temporal: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
+      }
+    }
+    if (vehicleId) {
+      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      if (currentDriverResponse?.status() === 200) {
+        const currentVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
+        if (currentVehicleId === vehicleId) {
+          const restoreAssignment = originalDriverVehicleId
+            ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers, data: { vehicleId: originalDriverVehicleId } })
+            : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+          if (restoreAssignment.status() !== 204) cleanupIssues.push(`No se pudo restaurar el vehículo anterior del Driver: HTTP ${restoreAssignment.status()}`);
+        }
+      } else {
+        cleanupIssues.push(`No se pudo verificar la asignación del Driver: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
+      }
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (!cleanupVehicle || ![200, 204, 404].includes(cleanupVehicle.status())) {
+        cleanupIssues.push(`No se pudo retirar el vehículo tablet temporal: HTTP ${cleanupVehicle?.status() ?? "sin respuesta"}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup tablet debe retirar ruta/vehículo y restaurar el Driver").toEqual([]);
+  }
+});
+
 test("User no ve operaciones y la API deniega recursos de flota", async ({ page }) => {
   test.skip(!userEmail || !userPassword, "El runner local crea el usuario QA para verificar permisos.");
 

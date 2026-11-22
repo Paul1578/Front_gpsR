@@ -117,3 +117,7 @@
 
 - Frontend `8b59308` ejecutó Actions `44991377967` contra Backend `029e94d`: Release 57/57, audit sin vulnerabilidades, lint/build correctos, responsive 1/1 y Playwright autenticado 15/15 sin skips.
 - Las ramas feature quedaron integradas por CI cross-branch; continúan pruebas progresivas de CRUD, permisos y responsive pendientes de cobertura.
+# 2026-11-22 — Creación responsive de ruta en tablet
+
+- Se agregó un E2E de Admin que crea por UI una ruta con parada recogida+entrega en 768×1024, verifica la persistencia exacta de sus tres puntos y comprueba overflow en las cuatro etapas.
+- Lint, build, discovery de 16 casos y diff check pasan localmente. El CI integrado Chrome/API/MySQL queda pendiente; el cleanup restaura la asignación de Driver y elimina las filas temporales.

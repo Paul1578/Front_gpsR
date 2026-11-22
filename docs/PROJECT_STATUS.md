@@ -7,6 +7,7 @@ Fecha de actualización: 2026-11-22.
 - GitHub Actions `44991377967` terminó `success` en frontend `8b59308`; hizo checkout de `chore/stabilize-fleet-platform` exactamente en backend `029e94d`.
 - Evidencia de la corrida: backend Release build correcto y xUnit 57/57; `npm audit` sin vulnerabilidades; lint y build Next correctos; responsive 1/1; Playwright autenticado Chrome/API/MySQL 15/15 sin skips.
 - Este corte confirma integración de ambas ramas publicadas. No implica que el catálogo completo de CRUD, todos los roles o todas las vistas responsive estén cubiertos; permanecen como trabajo activo.
+- Se añadió un E2E real para crear y persistir una ruta con parada recogida+entrega en tablet (768×1024), comprobando overflow en cada paso y cleanup de ruta/vehículo/asignación. ESLint, build y discovery **16 tests** pasan localmente; la ejecución navegador/API/MySQL queda pendiente del Actions del nuevo commit.
 
 ## Ramas
 

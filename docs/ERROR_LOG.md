@@ -547,3 +547,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El primer build de la matriz falló con `TS2304: Cannot find name 'MutationCheck'` y `TS2304: Cannot find name 'AuthHeaders'` en `fleet-admin.spec.ts`; ambos tipos habían quedado declarados dentro del test de vehículos, fuera del alcance del test de permisos.
 - Corrección: mover los tipos auxiliares al test de la matriz y pasar los headers explícitamente a las factories de operaciones en vez de depender de una variable mutable compartida.
 - Verificación local posterior: lint/build pasan y Playwright descubre 15 casos; la matriz HTTP no se ejecutó localmente por falta de servicios/credenciales. Actions `44989454133` para `286b100` confirmó después 15/15 Playwright sin skips, incluidas las denegaciones de rol, contra API/MySQL descartables.
+# 2026-11-22 — Búsqueda de auditoría con rutas relativas de otro repositorio — CORREGIDO
+
+- Durante el inventario cruzado se ejecutó `rg` desde el repositorio equivocado usando rutas relativas `BackEnd_Gps`/`src`; `rg` devolvió “No such file or directory” y esos intentos no inspeccionaron archivos ni cambiaron estado.
+- Corrección: ejecutar cada búsqueda desde la raíz de su repositorio y usar sus rutas reales (`src` en Front; `fletflow` y `BackEnd_Gps.Tests` en Back). Repetición del inventario Backend encontró el uso esperado de refresh token y ningún TODO/FIXME/NotImplementedException en el alcance buscado.
+- Prevención: confirmar `pwd` y `rg --files` del repositorio objetivo antes de búsquedas con prefijos de directorio.

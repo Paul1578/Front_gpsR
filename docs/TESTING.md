@@ -179,3 +179,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Frontend: `npm audit --audit-level=low` con 0 vulnerabilidades, ESLint y build Next correctos.
 - Navegador: responsive no mutante **1/1**; E2E autenticado Chrome/API/MySQL **15/15**, sin skips.
 - Alcance: valida el estado publicado de ambas ramas y sus flujos automatizados; la cobertura no equivale a pruebas exhaustivas de cada acción CRUD/pantalla responsive.
+# Nuevo caso responsive tablet pendiente de CI — 2026-11-22
+
+- `fleet-admin.spec.ts` añade `Admin crea una ruta con parada operativa en tablet sin desbordamiento`: viewport 768×1024, creación visual por mapa, asignación, revisión, persistencia HTTP de origen/parada recogida+entrega/destino y verificación de overflow en cada etapa.
+- El `finally` retira ruta y vehículo QA y restaura la asignación original del Driver; el workflow usa API y MySQL descartables.
+- Verificación local posterior al cambio: ESLint correcto, build Next correcto, Playwright discovery **16 tests**, `git diff --check` correcto.
+- Pendiente para considerar el caso probado: resultado CI completo en Chrome/API/MySQL; no se afirma ejecución local real porque no hay credenciales/servicios QA disponibles en esta sesión.

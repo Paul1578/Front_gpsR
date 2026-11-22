@@ -7,6 +7,12 @@
 - La misión sigue abierta: el objetivo siguiente es ampliar en forma verificable las acciones de CRUD y vistas responsive que no aparecen en los 15 E2E actuales. Revisar informe de auditoría de cobertura en curso antes de elegir el siguiente test.
 - Externos/diferidos: SMTP real requiere credenciales vigentes; la aplicación móvil nativa fue pospuesta por el usuario. No confundir estos límites con web responsive.
 
+## Cobertura nueva en validación — 2026-11-22
+
+- Se añadió en `e2e/fleet-admin.spec.ts` un flujo real de creación de ruta en tablet 768×1024: mapa, parada PickupAndDelivery, asignación, revisión, GET de persistencia y overflow por etapa. Limpieza intenta retirar ruta y vehículo y restaurar la asignación previa.
+- Local pasó `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (16 tests) y `git diff --check`; el caso de navegador/API/MySQL sólo se contará al pasar Actions.
+- Auditoría independiente de huecos confirma que CRUD básico UI (vehículo, Driver, User y ruta), matriz parcial de roles y mobile responsive ya están cubiertos; siguen pendientes pruebas CRUD negativas, matriz HTTP exhaustiva, más vistas responsive tablet y acceso a rutas por Driver entre alcances.
+
 ## E2E de orden y operación de paradas — 2026-11-22
 
 - El cambio aislado se integró a `refactor/route-builder` en `69bdd31`; el test agrega, quita y reordena paradas y confirma por GET API el orden y operación persistidos. La ejecución local se omitió por falta de Admin QA y API activa, sin crear fixtures.
