@@ -354,3 +354,8 @@
 - FleetContext cancela y descarta respuestas de solicitudes iniciadas por una cuenta anterior cuando cambia `user.id`; protege vehículos, rutas, opciones de asignación y reintentos.
 - E2E inicia sesión A, mantiene su respuesta pendiente, cambia a B y la libera después de cargar B; confirma que los datos A no se renderizan.
 - Validación local: caso enfocado 1/1, load-errors 7/7, lint/build, discovery 25 y diff-check pasan. CI integrado pendiente.
+# 2026-11-22 — Aislamiento de sesiones de autenticación
+
+- `AuthContext` descarta login, restauración, refresh y peticiones autenticadas cuya generación de sesión quedó obsoleta. Logout conserva el refresh token capturado y ya no puede borrar el estado de una sesión posterior.
+- Se añadió una regresión E2E A→logout→B con refresh de A retrasado; protege tokens y usuario de B. `AbortError` esperados por cancelación no generan errores de consola.
+- Verificación local: spec de carga/error **8/8**, lint/build, discovery **26** y diff-check correctos. CI integrado pendiente.

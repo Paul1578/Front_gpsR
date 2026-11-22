@@ -444,3 +444,10 @@ Fecha de actualización: 2026-11-22.
 
 - Cerrada carrera de solicitudes entre cuentas: al cambiar owner, FleetContext aborta la sesión anterior y rechaza cualquier respuesta tardía por identidad/versión, incluyendo reintentos y datos de asignación.
 - E2E A→logout→B con GET de A retrasado confirma que `A-PRIVATE-01` no aparece en la flota de B; Playwright load-errors 7/7, lint/build y discovery 25 pasan. Actions exacto de este fix pendiente.
+
+## Aislamiento de la sesión de autenticación — 2026-11-22
+
+- Fix local en `AuthContext`: respuestas tardías de login/restauración/refresh/API no pueden sobrescribir ni cerrar una sesión posterior. Logout limpia estado local inmediatamente y envía el refresh token capturado de esa sesión.
+- E2E de carrera de refresh: **1/1**; spec de cargas/errores: **8/8**. `npm run lint`, `npm run build`, discovery Playwright (**26**) y `git diff --check` pasan.
+- La acción integrada de este cambio aún está pendiente. Front previo `5bc0bff` pasó Actions `45041860522` (24/24 E2E; backend checkout `a18a34f`; responsive, audit, lint/build y cleanup success).
+- Misión integral abierta. Faltan ciclos CRUD/responsive que se cubrirán progresivamente, decisión de política para Admin delegado, SMTP actualizado/infraestructura de certificado. Móvil nativo está aplazado por decisión del usuario.

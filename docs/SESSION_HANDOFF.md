@@ -614,3 +614,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Primera prueba usó selector ambiguo para contraseña; corregido a `getByRole("textbox")`. ESLint reportó dependencias hook omitida/sobrante; corregidas. Ambos quedan en ERROR_LOG.
 - Última Action Front `45040955335` pasó código previo `98f7c67` con Backend `a18a34f`: E2E 24/24, responsive/audit/lint/build. El fix de aislamiento está pendiente de commit, push y Action nuevo.
 - Intento de subagente rebotó por límite de threads; se cerró al agente Backend completado y la auditoría se lanzó correctamente.
+
+## Continuación — carrera de refresh entre sesiones — 2026-11-22
+
+- Front branch `refactor/route-builder`. `AuthContext` estaba expuesto a respuestas tardías de refresh/API de A después de iniciar sesión como B; podía reemplazar tokens o limpiar la sesión B.
+- Cambio local no publicado: generación monotónica de sesión protege restore/login/register/refresh/apiFetch/logout; refresh además comprueba el refresh token capturado. Logout invalida y limpia localmente de inmediato y envía el token de la sesión que cerró. `AbortError` esperado se silencia; verificación de sesión periódica sigue la identidad del usuario.
+- E2E nuevo deja pendiente refresh A, hace logout/login B, y libera respuesta de A. Resultado: caso 1/1; `team-management-load-errors.spec.ts` 8/8; lint/build correctos; Playwright discovery 26; `git diff --check` correcto.
+- Errores iniciales documentados en `ERROR_LOG.md`: primer E2E activó overlay Next por log de AbortError esperado e interceptó logout; repetir después de suprimir el log pasó. Lint y Playwright simultáneos chocaron con `test-results` recreado; los checks se secuenciaron y pasaron.
+- Actions `45041860522` validó el commit previo Front `5bc0bff` (24/24, backend `a18a34f`, responsive, audit/lint/build, cleanup). El Auth fix actual todavía no está en commit/Actions.
+- Próximo paso: ejecutar `git diff --check`, revisar el diff y commit/push en la rama; esperar Actions del commit exacto y registrar el resultado. Luego seguir auditoría por CRUD/roles/responsive reales; el objetivo integral permanece abierto.
+- Dependencias sin decisión: política de Admin delegado; SMTP actual; provisioning de key ring/PFX en producción. Nativo móvil diferido por el usuario.

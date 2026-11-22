@@ -470,6 +470,156 @@ test("FleetContext descarta una respuesta pendiente de una cuenta anterior", asy
   await expect(page.getByText("B-PRIVATE-01", { exact: true })).toBeVisible();
 });
 
+test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión nueva", async ({ page }) => {
+  let releaseAccountARefresh: () => void = () => {};
+  let notifyAccountARefresh: () => void = () => {};
+  const accountARefreshStarted = new Promise<void>((resolve) => {
+    notifyAccountARefresh = resolve;
+  });
+  const accountARefreshGate = new Promise<void>((resolve) => {
+    releaseAccountARefresh = resolve;
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const authorization = request.headers().authorization;
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "auth-owner-a",
+          email: "auth-a@example.test",
+          username: "auth-a@example.test",
+          firstName: "Auth",
+          lastName: "A",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
+      if (authorization === "Bearer auth-account-a-token") {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Token caducado" }) });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "vehicle-auth-account-b",
+            plate: "AUTH-B-01",
+            brand: "Fleet QA",
+            model: "Van",
+            year: 2025,
+            status: 0,
+            isActive: true,
+          }]),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/Auth/refresh")) {
+      const body = request.postDataJSON() as { refreshToken?: string };
+      if (body.refreshToken === "auth-account-a-refresh") {
+        notifyAccountARefresh();
+        await accountARefreshGate;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            accessToken: "auth-account-a-refreshed-token",
+            refreshToken: "auth-account-a-refreshed-refresh",
+            user: {
+              id: "auth-owner-a",
+              email: "auth-a@example.test",
+              username: "auth-a@example.test",
+              firstName: "Auth",
+              lastName: "A",
+              roles: ["Admin"],
+              isActive: true,
+            },
+          }),
+        }).catch(() => {});
+      } else {
+        await route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+      }
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/Auth/logout")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/Auth/login")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          accessToken: "auth-account-b-token",
+          refreshToken: "auth-account-b-refresh",
+          user: {
+            id: "auth-owner-b",
+            email: "auth-b@example.test",
+            username: "auth-b@example.test",
+            firstName: "Auth",
+            lastName: "B",
+            roles: ["Admin"],
+            isActive: true,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "auth-account-a-token",
+      refreshToken: "auth-account-a-refresh",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await accountARefreshStarted;
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  await page.waitForURL(/\/login/);
+  await page.getByLabel("Correo electrónico").fill("auth-b@example.test");
+  await page.getByRole("textbox", { name: "Contraseña" }).fill("test-password");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page.getByText("Auth B", { exact: false })).toBeVisible();
+
+  releaseAccountARefresh();
+  await expect(page.getByText("Auth B", { exact: false })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const tokens = localStorage.getItem("auth_tokens");
+    return tokens ? JSON.parse(tokens).accessToken : null;
+  })).toBe("auth-account-b-token");
+  await expect(page.getByText("Auth A", { exact: false })).toHaveCount(0);
+});
+
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;

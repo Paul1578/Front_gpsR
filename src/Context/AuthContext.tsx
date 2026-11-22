@@ -49,6 +49,14 @@ interface AuthTokens {
   refreshToken: string;
 }
 
+const staleAuthRequestError = () => {
+  const error = new Error("La respuesta pertenece a una sesión de autenticación anterior.");
+  error.name = "AbortError";
+  return error;
+};
+const isAbortedRequest = (error: unknown) =>
+  (error as { name?: string } | null)?.name === "AbortError";
+
 interface ApiErrorPayload {
   statusCode?: number;
   error?: string;
@@ -269,6 +277,7 @@ export type ApiRequestOptions = RequestInit & {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const tokensRef = useRef<AuthTokens | null>(null);
+  const authSessionVersionRef = useRef(0);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const isAuthenticated = !!user;
@@ -296,28 +305,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const restoreSession = async () => {
+      const sessionVersion = ++authSessionVersionRef.current;
       try {
         const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (!storedTokens) {
-          persistUser(null);
-          setIsLoadingUser(false);
+          if (sessionVersion === authSessionVersionRef.current) {
+            persistUser(null);
+            setIsLoadingUser(false);
+          }
           return;
         }
         const parsed: unknown = JSON.parse(storedTokens);
         if (!isRecord(parsed) || typeof parsed.accessToken !== "string" || typeof parsed.refreshToken !== "string") {
-          clearAuthState();
+          clearAuthState(sessionVersion);
           return;
         }
         setTokens({ accessToken: parsed.accessToken, refreshToken: parsed.refreshToken });
         // El perfil cacheado es sólo presentación: rol y permisos siempre vienen del backend.
         const verifiedUser = await fetchMeUser();
+        if (sessionVersion !== authSessionVersionRef.current) return;
         if (verifiedUser) persistUser(verifiedUser);
-        else clearAuthState();
+        else clearAuthState(sessionVersion);
       } catch (error) {
+        if (sessionVersion !== authSessionVersionRef.current) return;
         console.error("No se pudo restaurar la sesión guardada.", error);
-        clearAuthState();
+        clearAuthState(sessionVersion);
       } finally {
-        setIsLoadingUser(false);
+        if (sessionVersion === authSessionVersionRef.current) setIsLoadingUser(false);
       }
     };
 
@@ -328,7 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthenticated && (user?.role === "gerente" || user?.role === "superadmin")) {
       void refreshTeamUsers().catch((error) => {
-        console.error("Error obteniendo equipo:", error);
+        if (!isAbortedRequest(error)) console.error("Error obteniendo equipo:", error);
       });
     } else {
       setTeamUsers([]);
@@ -360,7 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   const buildApiError = async (response: Response) => {
     let data: ApiErrorPayload | null = null;
@@ -378,9 +392,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return enrichedError;
   };
 
-  const refreshAccessToken = async () => {
+  const refreshAccessToken = async (
+    expectedSessionVersion = authSessionVersionRef.current,
+    expectedRefreshToken = tokensRef.current?.refreshToken,
+  ) => {
     const refreshToken = tokensRef.current?.refreshToken;
-    if (!refreshToken) return false;
+    if (
+      !refreshToken ||
+      refreshToken !== expectedRefreshToken ||
+      expectedSessionVersion !== authSessionVersionRef.current
+    ) return false;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     try {
@@ -390,22 +411,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ refreshToken }),
         signal: controller.signal,
       });
+      if (
+        expectedSessionVersion !== authSessionVersionRef.current ||
+        tokensRef.current?.refreshToken !== refreshToken
+      ) return false;
       if (!response.ok) {
         if (user) {
           toast?.error?.("Sesión cerrada en otro dispositivo.");
         }
-        await clearAuthState();
+        clearAuthState(expectedSessionVersion);
         return false;
       }
       const data = (await response.json()) as AuthResponseDto;
-      await applyAuthResponse(data);
-      return true;
+      if (
+        expectedSessionVersion !== authSessionVersionRef.current ||
+        tokensRef.current?.refreshToken !== refreshToken
+      ) return false;
+      return applyAuthResponse(data, expectedSessionVersion);
     } catch (error) {
+      if (
+        expectedSessionVersion !== authSessionVersionRef.current ||
+        tokensRef.current?.refreshToken !== refreshToken
+      ) return false;
       console.error("Error al refrescar token:", error);
       if (user) {
         toast?.error?.("Sesión expirada. Inicia sesión nuevamente.");
       }
-      await clearAuthState();
+      clearAuthState(expectedSessionVersion);
       return false;
     } finally {
       window.clearTimeout(timeoutId);
@@ -418,18 +450,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<T> => {
     const { skipAuth = false, retry = true, tokensOverride, ...fetchOptions } =
       options;
+    const requestSessionVersion = authSessionVersionRef.current;
+    let requestTokenSource = tokensOverride ?? tokensRef.current;
     const headers = new Headers(fetchOptions.headers || {});
     if (!headers.has("Content-Type") && fetchOptions.body) {
       headers.set("Content-Type", "application/json");
     }
     if (!skipAuth) {
-      let tokenSource = tokensOverride ?? tokensRef.current;
+      let tokenSource = requestTokenSource;
       // fallback: si el ref no está poblado aún, intenta leer del storage
       if (!tokenSource && typeof window !== "undefined") {
         const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (stored) {
           tokenSource = JSON.parse(stored) as AuthTokens;
           tokensRef.current = tokenSource;
+          requestTokenSource = tokenSource;
         }
       }
       if (tokenSource?.accessToken) {
@@ -442,27 +477,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers,
     });
 
+    if (!skipAuth && requestSessionVersion !== authSessionVersionRef.current) {
+      throw staleAuthRequestError();
+    }
+
     if (
       response.status === 401 &&
       !skipAuth &&
       retry &&
-      tokensRef.current?.refreshToken
+      requestTokenSource?.refreshToken
     ) {
-      const refreshed = await refreshAccessToken();
+      const refreshed = await refreshAccessToken(requestSessionVersion, requestTokenSource.refreshToken);
       if (refreshed) {
+        if (requestSessionVersion !== authSessionVersionRef.current) throw staleAuthRequestError();
         return apiFetch<T>(path, { ...options, retry: false });
       }
     }
 
     if (!response.ok) {
-      throw await buildApiError(response);
+      const error = await buildApiError(response);
+      if (!skipAuth && requestSessionVersion !== authSessionVersionRef.current) {
+        throw staleAuthRequestError();
+      }
+      throw error;
     }
 
     if (response.status === 204) {
+      if (!skipAuth && requestSessionVersion !== authSessionVersionRef.current) {
+        throw staleAuthRequestError();
+      }
       return undefined as T;
     }
 
     const text = await response.text();
+    if (!skipAuth && requestSessionVersion !== authSessionVersionRef.current) {
+      throw staleAuthRequestError();
+    }
     return text ? (JSON.parse(text) as T) : (undefined as T);
   };
 
@@ -600,7 +650,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await apiFetch<ApiUser>("/Auth/me", { signal: controller.signal });
       return mapApiUser(me);
     } catch (error) {
-      console.error("Error obteniendo usuario actual:", error);
+      if (!isAbortedRequest(error)) console.error("Error obteniendo usuario actual:", error);
       return null;
     } finally {
       window.clearTimeout(timeoutId);
@@ -608,7 +658,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // 👇 AQUÍ ESTÁ EL CAMBIO IMPORTANTE
-  const applyAuthResponse = async (data: AuthResponseDto) => {
+  const applyAuthResponse = async (
+    data: AuthResponseDto,
+    expectedSessionVersion = authSessionVersionRef.current,
+  ): Promise<boolean> => {
+    if (expectedSessionVersion !== authSessionVersionRef.current) return false;
     // Usar accessToken si viene, si no usar token (del backend C#)
     const accessToken = data.accessToken ?? data.token;
 
@@ -616,8 +670,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error(
         "No se recibió accessToken/token en la respuesta de autenticación"
       );
-      clearAuthState();
-      return;
+      clearAuthState(expectedSessionVersion);
+      return false;
     }
 
     const newTokens: AuthTokens = {
@@ -627,16 +681,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(newTokens);
 
     if (data.user) {
+      if (expectedSessionVersion !== authSessionVersionRef.current) return false;
       persistUser(mapApiUser(data.user));
       setIsLoadingUser(false);
-      return;
+      return true;
     }
 
     const fetched = await fetchMeUser();
+    if (expectedSessionVersion !== authSessionVersionRef.current) return false;
     if (fetched) {
       persistUser(fetched);
       setIsLoadingUser(false);
-      return;
+      return true;
     }
 
     const derived = deriveUserFromToken(accessToken);
@@ -646,9 +702,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistUser(null);
     }
     setIsLoadingUser(false);
+    return !!derived;
   };
 
-  const clearAuthState = () => {
+  const clearAuthState = (expectedSessionVersion?: number) => {
+    if (
+      expectedSessionVersion !== undefined &&
+      expectedSessionVersion !== authSessionVersionRef.current
+    ) return;
+    authSessionVersionRef.current += 1;
     persistUser(null);
     setTokens(null);
     setIsLoadingUser(false);
@@ -658,14 +720,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<{ ok: boolean; message?: string }> => {
+    const sessionVersion = ++authSessionVersionRef.current;
     try {
       const data = await apiFetch<AuthResponseDto>("/Auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
         skipAuth: true,
       });
-      await applyAuthResponse(data);
-      return { ok: true };
+      if (sessionVersion !== authSessionVersionRef.current) {
+        return { ok: false, message: "La solicitud de inicio de sesión quedó obsoleta." };
+      }
+      const applied = await applyAuthResponse(data, sessionVersion);
+      return applied
+        ? { ok: true }
+        : { ok: false, message: "La solicitud de inicio de sesión quedó obsoleta." };
     } catch (error) {
       console.error("Error en login:", error);
       const message =
@@ -687,6 +755,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: RegisterData): Promise<boolean> => {
+    const sessionVersion = ++authSessionVersionRef.current;
     try {
       const payload = {
         username: buildRegisterUsername(data),
@@ -698,8 +767,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
         skipAuth: true,
       });
-      await applyAuthResponse(response);
-      return true;
+      if (sessionVersion !== authSessionVersionRef.current) return false;
+      return applyAuthResponse(response, sessionVersion);
     } catch (error) {
       console.error("Error en registro:", error);
       return false;
@@ -707,11 +776,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    const refreshToken = tokensRef.current?.refreshToken;
+    authSessionVersionRef.current += 1;
+    clearAuthState(authSessionVersionRef.current);
     try {
-      if (tokensRef.current?.refreshToken) {
+      if (refreshToken) {
         await apiFetch("/Auth/logout", {
           method: "POST",
-          body: JSON.stringify({ refreshToken: tokensRef.current.refreshToken }),
+          body: JSON.stringify({ refreshToken }),
           skipAuth: true,
         });
       }
@@ -719,8 +791,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (getApiRequestError(error)?.status !== 401) {
         console.error("Error al cerrar sesión:", error);
       }
-    } finally {
-      clearAuthState();
     }
   };
 
@@ -875,11 +945,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logoutAll = async () => {
+    const sessionVersion = authSessionVersionRef.current;
     try {
       await apiFetch("/Auth/logout-all", {
         method: "POST",
         body: JSON.stringify({}),
       });
+      if (sessionVersion !== authSessionVersionRef.current) {
+        return { ok: false, message: "La sesión cambió antes de completar el cierre." };
+      }
       await logout();
       return { ok: true };
     } catch (error) {
