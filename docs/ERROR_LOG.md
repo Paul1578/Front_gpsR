@@ -1116,3 +1116,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El E2E previo filtraba dos rutas Pending por vehículo y Driver; el estado Pending estaba aplicado pero una regresión que ignorara estado podía pasar porque recursos distintos ya excluían la otra ruta.
 - Solución: una ruta fixture se cancela; los selectores del segundo recurso con estado Pending deben devolver cero, y sólo `Cancelada` muestra esa ruta. Se prueban ambos anchos con filtros activos y overflow de documento/main.
 - Logistics ya cubría selectores de asignación e historial a 320/768 px, pero mapa y lista no. Ampliado el E2E para medir mapa/editor a 320/768 y lista/main tras crear ruta. CI autenticada queda pendiente para el nuevo SHA.
+
+## 2026-11-22 — Logout global difícil de encontrar y cobertura de revocación incompleta — CORREGIDO/AMPLIADA
+
+- Auditoría frontend encontró que “Cerrar sesión en todos los dispositivos” sólo aparecía al expandir el formulario para cambiar contraseña. Se movió a una acción visible e independiente dentro de Seguridad, con estado deshabilitado durante el envío.
+- La suite verificaba un 503 y preservación de la sesión local, pero no el éxito real entre dos sesiones ni la revocación de tokens al desactivar un miembro. Se añadieron E2E para ambas situaciones.
+- La prueba de baja usa un segundo usuario QA activo creado por `run-e2e-local.sh`, ya que los usuarios invitación creados en UI no se pueden autenticar sin el correo real; el fixture se crea en MySQL descartable y el cleanup existente lo elimina por prefijo.
+- Lint y Playwright discovery pasan localmente. E2E autenticado API/MySQL, build y Actions del nuevo SHA pendientes.
+- Prevención: para revocaciones de sesión, cubrir éxito/error, tokens en otra sesión y cambios administrativos de estado; las pruebas deben autenticarse con fixtures activos de la base desechable.

@@ -293,3 +293,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Cierre E2E de Vehículos: Actions [`45038229853`](https://github.com/Paul1578/Front_gpsR/actions/runs/45038229853), Front `40bdcea`, **23/23** API/MySQL, responsive **1/1**, audit/lint/build y cleanup success. Checkout Backend `4090176`.
 - Backend integrado actual `b625c28`: Actions [`45038446662`](https://github.com/Paul1578/Back_GPS/actions/runs/45038446662), xUnit **86/86**, build 0 warnings/0 errors, HTTP/MySQL y concurrencia/cleanup success. Repetir Front contra este SHA tras publicar esta evidencia.
 - Revalidación completa contra backend actual: Actions [`45038687601`](https://github.com/Paul1578/Front_gpsR/actions/runs/45038687601) validó Front `f972e19` + Backend `b625c28`: xUnit **86/86**, E2E API/MySQL **23/23**, responsive 1/1, audit/lint/build y cleanup success.
+
+## Logout global y desactivación de usuario — 2026-11-22
+
+- E2E añadidos: dos contextos de navegador inician sesión; logout-all termina la sesión actual y el refresh del segundo contexto recibe 401; otro caso autentica un miembro, lo da de baja desde Gestión de Equipo y comprueba 401 tanto de refresh como de access.
+- El runner crea una cuenta de baja independiente para mantener aislado el test de cambio de contraseña y la elimina con el cleanup de fixtures `fletflow.e2e.user.*`.
+- ESLint y `npm run build` pasan; Playwright descubre **28 pruebas**. Suite autenticada contra API/MySQL descartable pendiente.

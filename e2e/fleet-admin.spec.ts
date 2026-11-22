@@ -5,6 +5,8 @@ const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
 const userEmail = process.env.FLETFLOW_E2E_USER_EMAIL;
 const userPassword = process.env.FLETFLOW_E2E_USER_PASSWORD;
+const deactivationUserEmail = process.env.FLETFLOW_E2E_DEACTIVATION_EMAIL;
+const deactivationUserPassword = process.env.FLETFLOW_E2E_DEACTIVATION_PASSWORD;
 const driverEmail = process.env.FLETFLOW_E2E_DRIVER_EMAIL;
 const driverPassword = process.env.FLETFLOW_E2E_DRIVER_PASSWORD;
 const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
@@ -2994,6 +2996,49 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", async ({ page, browser }) => {
+  test.skip(!userEmail || !userPassword, "Requiere cuenta QA User con credenciales activas.");
+
+  const secondContext = await browser.newContext();
+  const secondPage = await secondContext.newPage();
+  try {
+    for (const targetPage of [page, secondPage]) {
+      await targetPage.goto("/login");
+      await targetPage.getByLabel("Correo electrónico").fill(userEmail!);
+      await targetPage.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
+      await targetPage.getByRole("button", { name: "Iniciar sesión" }).click();
+      await expect(targetPage).toHaveURL(/\/dashboard$/);
+    }
+
+    const secondRefreshToken = await secondPage.evaluate(() => {
+      const serialized = localStorage.getItem("auth_tokens");
+      return serialized ? JSON.parse(serialized).refreshToken as string : null;
+    });
+    expect(secondRefreshToken).toBeTruthy();
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+    await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    const revokedRefresh = await page.request.post("/api/backend/Auth/refresh", {
+      data: { refreshToken: secondRefreshToken },
+    });
+    expect(revokedRefresh.status()).toBe(401);
+    await expect.poll(() => secondPage.evaluate(() => localStorage.getItem("auth_tokens"))).toBeTruthy();
+    const secondSessionCheck = await secondPage.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${await secondPage.evaluate(() => {
+        const serialized = localStorage.getItem("auth_tokens");
+        return serialized ? JSON.parse(serialized).accessToken as string : "";
+      })}` },
+    });
+    expect(secondSessionCheck.status()).toBe(401);
+  } finally {
+    await secondContext.close();
+  }
+});
+
 test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", async ({ page }) => {
   test.skip(!userEmail || !userPassword, "El runner local/CI crea el usuario QA para validar autenticación.");
 
@@ -3045,4 +3090,58 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
     return serialized ? JSON.parse(serialized).accessToken as string : null;
   });
   expect(newSessionToken).toBeTruthy();
+});
+
+test("desactivar un usuario desde Equipo revoca su sesión y refresh token", async ({ page, browser }) => {
+  test.skip(!email || !password || !deactivationUserEmail || !deactivationUserPassword || !allowMutations, "Requiere cuentas QA activas y base descartable.");
+
+  const userContext = await browser.newContext();
+  const userPage = await userContext.newPage();
+  try {
+    await userPage.goto("/login");
+    await userPage.getByLabel("Correo electrónico").fill(deactivationUserEmail!);
+    await userPage.getByRole("textbox", { name: "Contraseña" }).fill(deactivationUserPassword!);
+    await userPage.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(userPage).toHaveURL(/\/dashboard$/);
+    const userTokens = await userPage.evaluate(() => {
+      const serialized = localStorage.getItem("auth_tokens");
+      return serialized ? JSON.parse(serialized) as { accessToken: string; refreshToken: string } : null;
+    });
+    expect(userTokens?.refreshToken).toBeTruthy();
+
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(email!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const teamResponse = await page.request.get("/api/backend/Users/my-team", {
+      headers: { Authorization: `Bearer ${await page.evaluate(() => {
+        const serialized = localStorage.getItem("auth_tokens");
+        return serialized ? JSON.parse(serialized).accessToken as string : "";
+      })}` },
+    });
+    expect(teamResponse.status()).toBe(200);
+    const member = (await teamResponse.json()).find((candidate: { email: string }) => candidate.email === deactivationUserEmail);
+    expect(member?.id).toBeTruthy();
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+    const memberCard = page.getByTestId(`team-user-${member.id}`);
+    const deactivateResponse = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Users/${member.id}/status`) && response.request().method() === "PUT",
+    );
+    await memberCard.getByRole("button", { name: "Activo", exact: true }).click();
+    expect((await deactivateResponse).status()).toBe(200);
+
+    const rejectedRefresh = await page.request.post("/api/backend/Auth/refresh", {
+      data: { refreshToken: userTokens!.refreshToken },
+    });
+    expect(rejectedRefresh.status()).toBe(401);
+    const rejectedAccess = await page.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${userTokens!.accessToken}` },
+    });
+    expect(rejectedAccess.status()).toBe(401);
+  } finally {
+    await userContext.close();
+  }
 });

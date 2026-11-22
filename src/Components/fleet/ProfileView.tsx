@@ -24,6 +24,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   if (!user) {
@@ -107,9 +108,12 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
   };
 
   const handleLogoutAll = async () => {
+    if (isLoggingOutAll) return;
+    setIsLoggingOutAll(true);
     const result = await logoutAll();
     if (result.ok) toast.success("Cerraste sesión en todos los dispositivos");
     else toast.error(result.message ?? "No se pudo cerrar sesión en los demás dispositivos");
+    setIsLoggingOutAll(false);
   };
 
   const isDark = scheme === "dark";
@@ -240,17 +244,23 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                       ? "Actualizando..."
                       : "Cambiar contraseña"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleLogoutAll}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 flex items-center gap-2"
-                  >
-                    <LogOut size={16} />
-                    Cerrar sesión en todos los dispositivos
-                  </button>
                 </div>
               </form>
             )}
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <p className="mb-2 text-xs text-gray-500">
+                Revoca todas las sesiones activas de tu cuenta, incluida esta.
+              </p>
+              <button
+                type="button"
+                onClick={handleLogoutAll}
+                disabled={isLoggingOutAll}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 disabled:opacity-60 flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                {isLoggingOutAll ? "Cerrando sesiones..." : "Cerrar sesión en todos los dispositivos"}
+              </button>
+            </div>
           </div>
 
           {/* Identification */}

@@ -1,3 +1,11 @@
+## Session handoff — Cierre global visible y revocación E2E — 2026-11-22
+
+- Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; `main` intacta. Front `38c58d6` pasó Action `45047502825` (26 E2E, responsive, build/lint/audit, backend tests y cleanup).
+- Cambios locales Front: logout-all se movió fuera del acordeón de contraseña; E2E nuevos para revocación entre dos contextos y baja de miembro desde Equipo (401 en refresh y access). Runner backend prepara el User QA activo independiente para la baja.
+- ESLint y `npm run build` pasaron; Playwright discovery **28** pruebas. Pendiente E2E remoto integrado; no publicar hasta resolver fallos y cleanup.
+- Backend fix Driver/ruta: 94/94 xUnit local; smoke concurrencia y CI remoto pendientes. Actualizar este handoff después de cada Action.
+- Auditoría integral sigue activa. SMTP/PFX/infrastructura productiva externos; app móvil pospuesta.
+
 ## Session handoff — 2026-11-22
 
 - Branch Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`. Working branches only; no `main` changes.

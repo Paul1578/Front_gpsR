@@ -384,3 +384,9 @@
 ## 2026-11-22 — Backend a207c08 validado en MySQL
 
 - Actions `45047226328` pasó xUnit 91/91, build Release, smoke tenant HTTP/MySQL y concurrencia de rutas. Cleanup confirmó cero rutas/posiciones/vehicles, cero fixtures Manager y tenant A/B.
+
+## 2026-11-22 — Seguridad de sesión visible y verificada
+
+- La acción de cierre de sesión global ahora se encuentra visible en el bloque Seguridad, independiente del formulario de contraseña.
+- Se añadieron E2E reales para logout-all entre contextos independientes y para revocación de access/refresh al desactivar desde Gestión de Equipo.
+- Runner E2E prepara una cuenta User QA adicional aislada, activa y eliminable por cleanup.

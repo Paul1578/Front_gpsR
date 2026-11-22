@@ -1,3 +1,10 @@
+# Estado actual — 2026-11-22
+
+- Front rama `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; no se trabaja en `main`.
+- Front integrado `38c58d6` pasó Action `45047502825` (26 E2E, responsive, backend build/tests, audit/lint/build y cleanup), contra backend previo.
+- Cambios Front locales: logout-all visible sin abrir el formulario de contraseña; E2E de dos sesiones y de baja de miembro con revocación access/refresh; el runner crea un fixture User adicional activo. Lint pasa y Playwright descubre **28 pruebas**; build y E2E integrado nuevos pendientes.
+- Criterios globales siguen abiertos: más cobertura de CRUD/roles/responsive. SMTP/PFX e infraestructura productiva externos; app nativa aplazada.
+
 ## Estado actual de estabilización — 2026-11-22
 
 - Ramas: Front `refactor/route-builder`; backend `chore/stabilize-fleet-platform`; `main` intacta.
