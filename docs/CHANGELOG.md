@@ -13,6 +13,10 @@
 - Action `45081264602` mostró que falla también el GET directo (no es la rewrite). El nuevo E2E consulta `Drivers.VehicleId` en el MySQL temporal para decidir si la pérdida ocurre al escribir o al leer.
 - Action `45081992619` confirmó VehicleId NULL en SQL tras 204; configuración temporal CI a un worker diagnostica si tests concurrentes alteran fixtures compartidos.
 
+## 2026-11-22 — Alta Driver desde Administración de la empresa
+
+- `SuperAdminView` tenía formulario, pero E2E sólo comprobaba campos y responsive. El flujo ahora crea Driver con email/documento únicos, comprueba respuesta API, estado SMTP no enviado, persistencia User↔Driver y aparición en lista; Action pendiente.
+
 - Corregidos selectores/secuencia del E2E de fallos 503, que buscaba exportar en el tab equivocado y duplicaba un retry conjunto.
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.
 - La Action `45072706025` del SHA anterior terminó **35/37**; detectó también que Gestión de Equipo podía perder el error de Drivers cuando se solapaban dos cargas. La vista ahora consume el error compartido de FleetContext además del error local.

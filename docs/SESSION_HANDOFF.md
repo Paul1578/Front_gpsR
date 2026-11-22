@@ -1,5 +1,9 @@
 ## Continuación — 2026-11-22
 
+## Auditoría de Administración de empresa — alta Driver con API/MySQL
+
+- Auditoría independiente encontró que `company-admin.spec.ts` completaba el formulario de `SuperAdminView` pero nunca lo enviaba. Se está ampliando el flujo para crear Driver real, verificar User/Driver por API y renderizado, y validar mensaje SMTP no enviado; requiere lint/build y Action antes de cerrar.
+
 ## Continuación — matriz de roles y CRUD de conductores — 2026-11-22
 
 - Ramas activas: Front `refactor/route-builder` (`4206b0d`) y Backend `chore/stabilize-fleet-platform` (`fa16d05`); ambas publicadas, main intacta.

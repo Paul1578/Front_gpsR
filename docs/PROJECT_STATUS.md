@@ -1,5 +1,7 @@
 ## Estado actual — 2026-11-22
 
+- Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Nuevo E2E crea Driver, consulta User y perfil Driver persistidos, y verifica UI/SMTP; cambios en curso, Action pendiente.
+
 - Front `e18ea0f` publicado: Action `45080342001` terminó success con 37 passed y 1 flaky (asignación Driver/Vehicle falló en intento inicial, pasó en retry). El E2E local ahora compara GET directo al backend y vía rewrite `/api/backend` para diagnosticar. Persistencia estable abierta; ver `ERROR_LOG.md`.
 - El diagnóstico directo vs. rewrite pasa localmente lint/build y discovery **38 tests**; el cambio quedó pendiente de commit/Action.
 - Action `45081264602` confirmó que GET directo también da null. `b5b9f21` consulta SQL `Drivers.VehicleId` directamente; validación local de lint/build/discovery **38 tests** y diff-check pasó. Action `45081992619` confirmó NULL en SQL después de la respuesta 204.

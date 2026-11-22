@@ -101,6 +101,11 @@
 - `team-search.spec.ts` ahora ejercita la búsqueda de miembros a 320 px y la búsqueda de conductores a 768 px, además del flujo existente a 390 px; verifica que no haya overflow horizontal en móvil/tablet.
 - El flujo autenticado necesita fixtures reales de miembros y conductores; la Action API/MySQL valida interacción y cleanup. Ejecutar lint/build/discovery local y repetir Action integrada.
 
+## Alta de Driver en Administración de la empresa — ampliación local, Action pendiente
+
+- La vista tenía un formulario de creación, pero el E2E sólo comprobaba campos responsive y no enviaba. Ahora crea un Driver con identidad aleatoria a 320/768 px, verifica POST 200, respuesta honesta de correo no enviado, persistencia en `/Users/my-team` y perfil Driver en API, y lo localiza en la lista.
+- Email/documento usan prefijos incluidos en `cleanup-e2e.sql`. Lint/build y Action integrada de esta ampliación pendientes.
+
 ## Comandos y resultados
 
 - 2026-11-21, rama aislada `test/route-builder-persistence`: `npm ci` correcto (0 vulnerabilidades), `npm run lint` correcto, `npm run build` correcto y `npm run test:e2e -- --list` descubre 14 casos.
