@@ -1191,6 +1191,7 @@ test("API deniega mutaciones de flota y administración según el rol", async ({
     ["POST /Users", () => page.request.post("/api/backend/Users", { headers: currentHeaders, data: qaUser })],
     [`PUT /Users/${userId}/status`, () => page.request.put(`/api/backend/Users/${userId}/status?isActive=false`, { headers: currentHeaders })],
     [`PUT /Users/${userId}/role`, () => page.request.put(`/api/backend/Users/${userId}/role`, { headers: currentHeaders, data: { roleName: "Manager" } })],
+    [`PUT /Users/${userId}/profile`, () => page.request.put(`/api/backend/Users/${userId}/profile`, { headers: currentHeaders, data: { username: "blocked", firstName: "Blocked", lastName: "Member" } })],
     [`POST /Users/${userId}/roles/Manager`, () => page.request.post(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
     [`DELETE /Users/${userId}/roles/Manager`, () => page.request.delete(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
     // El rol existente no puede crear datos aunque una autorización se configurara mal.

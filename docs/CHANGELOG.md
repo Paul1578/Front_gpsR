@@ -188,3 +188,8 @@
 
 - Gestión de Rutas incorpora cancelación con confirmación; usa el endpoint existente de estado y sólo comunica éxito si el backend acepta la transición.
 - El E2E de edición/historial ahora cancela desde la UI y consulta persistencia e historial. Actions integrado pendiente.
+
+## 2026-11-22 — Denegación de edición de perfil para roles operativos
+
+- La matriz API agrega PUT /Users/{id}/profile a las mutaciones denegadas para User, Driver, Logistics y Manager. Validación integrada pendiente.
+- Actions 45005400590 pasó el commit anterior: build, audit/lint, responsive 1/1 y E2E 18/18 con backend e54d3c8.

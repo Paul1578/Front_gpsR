@@ -752,3 +752,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El spec de error pasa 2/2; la suite integrada final pasó 18/18 en Chrome/API/MySQL, runner código 0.
 - La segunda suite dio 17/18: tras recargar, otro tramo del mismo E2E seguía buscando el username como encabezado, aunque el diseño muestra el nombre legal. Se reemplazó también ese selector por el testid del perfil.
 - Prevención: usar IDs para selectores de tarjetas y no liberar mocks antes de observar el estado UI ejercitado.
+
+## 2026-11-22 — Esquema de solicitud de aclaración — CORREGIDO
+
+- La primera llamada a request_user_input_async incluyó question; esta interfaz sólo acepta title y options, así que rechazó la solicitud antes de mostrarla.
+- Se reintentó con el esquema válido; la respuesta sobre el alcance del rol Admin sigue pendiente.
+- Prevención: confirmar el esquema de herramienta activo antes de construir la pregunta.
