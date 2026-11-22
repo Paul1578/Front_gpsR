@@ -5,7 +5,7 @@
 - Lint, build, discovery **21 tests** y `git diff --check` pasan localmente. Actions `45034387245` pasó backend Release/xUnit, auditoría, lint, build, responsive **1/1**, E2E autenticados **21/21** y cleanup.
 - Actions `45033927966` llegó a validar ruta/placa Logistics pero falló 20/21 porque una aserción contaba cualquier `role=alert`; se limitó al mensaje del Historial y la repetición integrada pasó.
 - El E2E de Logistics ahora también mide el diálogo de detalle contra el viewport a 320/768 px. Lint/build/discovery 21 y diff-check pasan localmente; la verificación integrada de este assert queda pendiente.
-- Auditoría detectó y corrigió otro caso: Logistics ya no muestra cero como disponibilidad por depender de `/Vehicles`; usa las opciones permitidas y cuenta vehículos únicos en rutas en progreso. E2E valida los datos reales, el no-request a `/Vehicles` y ambos estados de error; CI pendiente.
+- Auditoría detectó y corrigió otro caso: Logistics ya no muestra cero como disponibilidad por depender de `/Vehicles`; usa las opciones permitidas y cuenta vehículos únicos en rutas en progreso. Actions `45035807218` pasó la suite E2E **21/21**, responsive **1/1**, build/lint/audit, backend tests y cleanup; valida el conteo real y que el navegador no llame `/Vehicles`.
 - Actions `45033061272` pasó 20/20 con responsive 1/1 y cleanup; `45033318956` había validado build/responsive, pero su flujo de contraseña no llegó al API por el selector ya corregido.
 - No declarar la misión completa: siguen pendientes más matriz CRUD/roles/responsive y límites de producto/servicio externos.
 

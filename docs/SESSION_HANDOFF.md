@@ -5,7 +5,7 @@
 - Prior failures `45033318956` (ambiguous password selector) and `45033927966` (overbroad alert assertion) are documented with corrections; both conditions pass in 21/21 now.
 - History uses route DTO vehicle plate/brand/model and doesn't request `/Vehicles` from Logistics.
 - The detail-dialog bounds assertion at 320/768 px was added after Action `45034387245`; local lint/build/discovery and diff-check pass; this exact addition is pending a new Action.
-- Front has another local change after `e8b3035`: fix Logistics dashboard counts using authorized assignment options and active route vehicle IDs; E2E asserts counts and no browser GET `/Vehicles`. Local checks and integrated Action pending.
+- Front commit `11aeb19` fixes Logistics dashboard counts using authorized assignment options and active route vehicle IDs. Actions `45035807218` passed backend Release tests, audit/lint/build, responsive **1/1**, E2E **21/21**, cleanup. The E2E asserts real counts, no browser GET `/Vehicles`, and detail-dialog bounds at 320/768 px.
 - Backend isolation smoke additions are in progress in `scripts/smoke-tenant-http.sh` (uncommitted; review after agent reports). Continue validation, update docs and branch, then continue more CRUD/role/responsive gaps.
 - Backend HEAD `d3ac953` clean on `chore/stabilize-fleet-platform`; latest backend Actions `45032172895` passed Release build, xUnit 82/82, HTTP/MySQL tenant smoke, concurrency smoke and cleanup; docs-only `45032479667` also passed.
 - External/product boundaries remain: valid SMTP credentials needed to test actual email; native mobile deferred per user; delegated-Admin policy needs product decision. The overall mission remains open.

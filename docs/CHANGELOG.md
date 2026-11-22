@@ -3,7 +3,7 @@
 - Historial muestra vehículo desde el DTO de ruta, sin depender del endpoint `/Vehicles` reservado a roles administrativos.
 - E2E de Logistics recorre historial/detalle y verifica 320/768 px, incluido el límite del diálogo; el E2E User valida cambio de contraseña, invalidación de sesión anterior y nuevo login.
 - Fallos de locator ambiguo y aserción global de alertas corregidos y registrados. Actions `45034387245` pasó 21/21 E2E, responsive 1/1 y cleanup.
-- Dashboard Logistics calcula disponibilidad desde opciones de ruta autorizadas y vehículos en ruta desde IDs únicos de rutas activas; errores de esos recursos se muestran como no disponibles. E2E agregado; Actions pendiente.
+- Dashboard Logistics calcula disponibilidad desde opciones de ruta autorizadas y vehículos en ruta desde IDs únicos de rutas activas; errores de esos recursos se muestran como no disponibles. Actions `45035807218` validó el fix junto a 21/21 E2E y responsive 1/1.
 
 ## 2026-11-22 — Gestión de perfil de miembros
 
