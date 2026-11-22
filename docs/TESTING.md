@@ -239,3 +239,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - npm run lint, npm run build y discovery Playwright (18 tests): correctos.
 - Spec de estados de error/reintento: 2/2. El test Historial conserva 503 hasta observar el alert y luego permite reintentar.
 - Dos primeras E2E API/MySQL dieron 16/18 y 17/18; tras corregir selectores y mock, repetición completa pasó 18/18 en Chrome. Runner local acabó código 0 y eliminó la DB/fixtures efímeros.
+- Actions Front `45023625523` para SHA `42b1b4b35b3489e388488910e1ee084595f8b3b7` terminó `success`; el workflow incluye backend Release/xUnit, frontend lint/build, responsive y E2E autenticado con API/MySQL/cleanup.

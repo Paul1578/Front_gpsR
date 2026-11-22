@@ -482,3 +482,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Auditor Front señaló que sólo se comprobaba un GET adicional, sin verificar opciones utilizables. Se amplió fixture con Driver y Vehicle disponibles; E2E comprueba la opción `ABC-123 · Fleet QA Van` y una sola nueva llamada de Vehicle.
 - UI deshabilita retry repetido y muestra “Reintentando…”.
 - Un primer test falló al mantener expectativa de lista vacía luego de agregar Driver fixture; se corrigió y E2E enfocado pasó 1/1. Error y remedio documentados.
+
+- Front commit `42b1b4b` quedó validado por Actions `45023625523` (`success`), incluidos build backend y E2E Chrome/API/MySQL integrado. Próxima iteración puede continuar sobre `refactor/route-builder`.
