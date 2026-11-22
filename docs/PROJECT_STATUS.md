@@ -418,3 +418,4 @@ Fecha de actualización: 2026-11-22.
 - Pendiente global: continuar con acciones CRUD/responsive no cubiertas; decisión de producto para Admin delegado; credenciales SMTP vigentes. Móvil nativo sigue aplazado por el usuario.
 
 - Cierre integrado Front `a75914f`: Actions `45036661541` success; Playwright Chrome/API/MySQL **22/22**, responsive browser 1/1, audit/lint/build y cleanup correctos. Incluye la regresión de error/reintento del dashboard Logistics.
+- Revalidación cruzada del código de seguridad: Front Actions `45037486681` pasó 22/22 y usó Backend `0b1c1d1` (código `94c3e90`); responsive, audit/lint/build y cleanup correctos.

@@ -561,3 +561,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Actions `45036661541` terminó success: audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **22/22**, cleanup success. El caso de error/reintento de `Routes/assignment-options` quedó validado integrado.
 - Actions `45036249291` también terminó success para `4e3ddc8`, E2E **21/21**. Ambos resultados quedaron registrados.
+
+### Revalidación cruzada de seguridad
+
+- Front Actions `45037486681` pasó: SHA Front `c7b0771`, checkout Backend `0b1c1d1` que incluye código de seguridad `94c3e90`; 22/22 E2E, responsive 1/1, backend build/tests, audit/lint/build y cleanup success.
+- Los resultados de los casos sintéticos y de API/MySQL deben seguir diferenciándose: aquí el flujo completo de browser opera contra API/MySQL efímero; el caso de fallo/retry de options es el harness controlado de Playwright.

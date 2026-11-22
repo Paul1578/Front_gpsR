@@ -324,3 +324,5 @@
 - Validación local: lint/build, discovery 22, E2E enfocado 1/1 y diff-check correctos; CI integrado pendiente.
 
 - Front `a75914f` validado por Actions `45036661541`: nuevo E2E de reintento Logistics; total **22/22**, responsive 1/1, audit/lint/build y cleanup success.
+
+- Revalidación cruzada `45037486681`: Front 22/22 contra Backend `0b1c1d1`, responsive 1/1 y todos los checks/cleanup success.

@@ -284,3 +284,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Cierre CI del E2E Dashboard Logistics: Actions [`45036661541`](https://github.com/Paul1578/Front_gpsR/actions/runs/45036661541), Front `a75914f`, **22/22** Playwright autenticado API/MySQL, responsive **1/1**, auditoría/lint/build correctos y cleanup completado.
 - El run previo [`45036249291`](https://github.com/Paul1578/Front_gpsR/actions/runs/45036249291) pasó **21/21** para SHA `4e3ddc8`, incluyendo validación del diálogo History en 320/768 px.
+- Revalidación cruzada Front [`45037486681`](https://github.com/Paul1578/Front_gpsR/actions/runs/45037486681): Front docs SHA `c7b0771`, checkout Backend `0b1c1d1` (código de seguridad `94c3e90`), **22/22 E2E**, responsive 1/1, backend build/tests, audit/lint/build y cleanup success.
