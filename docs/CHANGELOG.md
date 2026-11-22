@@ -233,3 +233,4 @@
 - Constructor y filtros de rutas usan opciones activas de vehículo/Driver desde `/Routes/assignment-options`, incluyendo Drivers sin cuenta de usuario.
 - Se distingue el error de carga con reintento; Logistics conserva el acceso restringido a CRUD de vehículos y Drivers.
 - E2E agregado para autorización mínima, omisión de PII, creación/cancelación y selectores con recursos reales. CI integrado pendiente.
+- Actions `45011806008` dejó 16/18: los tests mockeados de Equipo/Historial no interceptaban el nuevo endpoint y fallaban al abrir drawer. Stub JSON vacío agregado; suite dirigida 2/2, lint/build pasan localmente. Repetir Actions integrado.

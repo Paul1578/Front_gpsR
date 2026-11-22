@@ -67,6 +67,15 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
       return;
     }
 
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ vehicles: [], drivers: [] }),
+      });
+      return;
+    }
+
     await route.continue();
   });
 
@@ -146,6 +155,15 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
       ["/Users/my-team", "/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
     ) {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ vehicles: [], drivers: [] }),
+      });
       return;
     }
 

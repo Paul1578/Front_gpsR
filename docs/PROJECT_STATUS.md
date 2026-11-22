@@ -318,4 +318,4 @@ Fecha de actualización: 2026-11-22.
 - Causa del fallo Actions `45009790973`: Logistics podía crear rutas pero el constructor cargaba vehículos/conductores desde endpoints administrativos con 403.
 - FleetContext ahora consulta `/Routes/assignment-options` para gerente/Logistics y RoutesManagement consume conductores activos independientes de cuentas de usuario. El paso de asignación muestra error y reintento si el endpoint falla.
 - E2E extiende caso Logistics: comprueba 403 en `/Vehicles` y `/Drivers`, 200 en opciones mínimas sin documento/teléfono, disponibilidad de recursos en selectores, creación y cancelación UI.
-- Local: lint, build Next, discovery Playwright 18 tests, diff-check; Actions con API/MySQL aún pendiente. No considerar cerrada la prueba Logistics hasta validar el workflow integrado.
+- Actions `45011806008` probó el caso Logistics, pero falló 2/18 en mocks de Equipo/Historial porque faltaba stub del nuevo GET. Ambos mocks ya responden opciones vacías; la prueba dirigida pasa 2/2 local, lint/build y diff-check. Nueva Actions API/MySQL pendiente; no cerrar el flujo hasta verla verde.
