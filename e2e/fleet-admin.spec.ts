@@ -1899,7 +1899,7 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   }
 });
 
-test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivación", async ({ page }) => {
+test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1996,6 +1996,35 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await duplicateDriverDialog.getByRole("button", { name: "Cancelar" }).click();
 
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const unlinkedFirstName = `Chofer libre ${suffix}`;
+  const unlinkedDocument = `E2EQA${suffix}U`;
+  await page.getByRole("combobox", { name: "Usuario vinculado al chofer" }).selectOption("");
+  await page.getByPlaceholder("Nombres").fill(unlinkedFirstName);
+  await page.getByPlaceholder("Apellidos").fill("Sin cuenta");
+  await page.getByPlaceholder("Documento").fill(unlinkedDocument);
+  await page.getByPlaceholder("Teléfono").fill("0990000099");
+  const createUnlinkedDriverPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Drivers") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear Chofer" }).click();
+  const createUnlinkedDriverResponse = await createUnlinkedDriverPromise;
+  expect(createUnlinkedDriverResponse.status()).toBe(201);
+  const unlinkedDriver = await createUnlinkedDriverResponse.json();
+  expect(unlinkedDriver).toMatchObject({
+    firstName: unlinkedFirstName,
+    documentNumber: unlinkedDocument,
+    userId: null,
+    vehicleId: null,
+  });
+  const unlinkedDriverRead = await page.request.get(`/api/backend/Drivers/${unlinkedDriver.id}`, { headers });
+  expect(unlinkedDriverRead.status()).toBe(200);
+  expect((await unlinkedDriverRead.json()).userId).toBeNull();
+  const createdUnlinkedDriverCard = page.getByText(`${unlinkedFirstName} Sin cuenta`, { exact: true }).locator("xpath=../..");
+  await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
+
   const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true }).first();
   await expect(driverName).toBeVisible();
   const driverCard = driverName.locator("xpath=../..");

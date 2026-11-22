@@ -397,3 +397,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front branch `refactor/route-builder`, commit `d0ab050`; Actions `45008495969` pasó: npm audit, lint, build, responsive **1/1**, Playwright autenticado **18/18** contra Chrome/API/MySQL desechables y cleanup correcto.
 - El run anterior `45008055246` falló en un solo caso (17/18) porque el editor quedó oculto tras agregar parada; se corrigió cambiando al panel “Ver paradas y detalles”. Error/prevención en `ERROR_LOG.md`.
 - Continuar auditoría de CRUD y responsive en pantallas no recorridas; mantener abierta la política de promoción a Admin delegado hasta decisión del usuario. Backend NuGet audit volvió a pasar sin paquetes vulnerables. Móvil nativo está pospuesto; SMTP requiere credenciales externas vigentes.
+
+
+## Siguiente iteración frontend — creación de Driver sin cuenta — 2026-11-22
+
+- Cambios locales en `refactor/route-builder`: `TeamManagement.tsx` admite `userId` opcional y muestra “Sin usuario vinculado”; `FleetContext.addDriver` manda null explícito. E2E tablet crea Driver, confirma 201, GET con `userId=null`, tarjeta y overflow.
+- `npm run lint`, `npm run build`, `npx playwright test --list` (18) y `git diff --check` pasaron. Falta integrar el E2E con API/MySQL en Actions del nuevo SHA.
+- Nueva auditoría backend: hueco cross-tenant en escrituras de paradas (status/evidence) ahora cubierto en smoke, y CRUD positivo Driver cubierto por HTTP/MySQL; smoke local aprobado, xUnit 64/64. Código/doc backend aún debe validarse en Actions.

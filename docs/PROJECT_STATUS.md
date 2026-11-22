@@ -294,3 +294,10 @@ Fecha de actualización: 2026-11-22.
 - Front `d0ab050` pasó Actions `45008495969`: auditoría npm, lint, build, browser responsive **1/1** y suite autenticada Chrome/API/MySQL **18/18**; los servicios desechables y el runner finalizaron correctamente.
 - El E2E móvil vuelve explícitamente al editor antes de eliminar la parada temporal añadida; causa del fallo previo `45008055246` y prevención documentadas en `ERROR_LOG.md`.
 - Auditoría integral sigue abierta: quedan CRUD y vistas responsive por recorrer, además de la definición de privilegio para asignar rol Admin. SMTP depende de credenciales externas; aplicación nativa móvil está aplazada por decisión del usuario.
+
+
+## Alta de Driver independiente — Actions pendiente — 2026-11-22
+
+- Admin ahora puede crear un conductor sin cuenta asociada desde Gestión de Choferes; el vínculo de usuario es opcional y se persiste como null. Los datos operativos del conductor siguen requeridos.
+- Playwright cubre creación tablet 768×1024, HTTP 201, lectura API de `userId=null`, tarjeta “Sin usuario vinculado” y overflow. Lint/build y discovery **18 tests** pasaron localmente; integración API/MySQL pendiente de Actions.
+- La prueba reutiliza el fixture Admin y cleanup por prefijo `E2EQA`; misión de CRUD/roles/responsive sigue abierta.

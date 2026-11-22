@@ -786,3 +786,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `45008055246` dejó 17/18 casos verdes: el test de creación móvil volvía a agregar una parada y trataba de eliminarla sin regresar desde el mapa al editor.
 - Se agregó una transición explícita a “Ver paradas y detalles” antes de interactuar con la fila. Actions `45008495969` pasó los 18/18 E2E y la prueba responsive 1/1; también pasó audit, lint y build.
 - Prevención: después de agregar o ubicar una parada, el test debe cambiar al panel que contiene el control antes de operar sobre esa parada.
+
+
+## 2026-11-22 — Selector del E2E de chofer independiente — CORREGIDO ANTES DE CI
+
+- Durante la revisión del test de creación de Driver sin cuenta, un locator quedó temporalmente con cierre de corchete incorrecto y nombre duplicado en el mismo scope. `git diff` lo detectó antes de ejecutar la suite; se corrigió el locator y se usó un nombre distinto para la tarjeta.
+- Prevención: revisar compilación TypeScript y declarar locators con nombres únicos antes de disparar E2E integrado. El lint/build posteriores pasaron.

@@ -248,11 +248,11 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const handleCreateDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     const { userId, firstName, lastName, documentNumber, phoneNumber } = createDriverForm;
-    if (!userId || !firstName || !lastName || !documentNumber || !phoneNumber) {
+    if (!firstName.trim() || !lastName.trim() || !documentNumber.trim() || !phoneNumber.trim()) {
       toast.error("Completa todos los campos del chofer");
       return;
     }
-    const result = await addDriver({ userId, firstName, lastName, documentNumber, phoneNumber });
+    const result = await addDriver({ userId: userId || null, firstName, lastName, documentNumber, phoneNumber });
     if (result.ok) {
       toast.success(result.message ?? "Chofer creado");
       await refreshDrivers();
@@ -389,6 +389,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
               <form onSubmit={handleCreateDriver} className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
                 <select
+                  aria-label="Usuario vinculado al chofer"
                   value={createDriverForm.userId}
                   onChange={(e) =>
                     setCreateDriverForm({
@@ -401,7 +402,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   }
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 >
-                  <option value="">Selecciona usuario</option>
+                  <option value="">Sin usuario vinculado</option>
                   {users.filter((u) => u.isActive !== false).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.nombres} {u.apellidos} (@{u.usuario})

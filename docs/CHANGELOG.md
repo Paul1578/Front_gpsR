@@ -208,3 +208,9 @@
 ## 2026-11-22 — Validación final del cambio responsive del constructor
 
 - Actions `45008495969` pasó para `d0ab050`: audit, lint, build, responsive browser **1/1** y Playwright autenticado **18/18** contra API/MySQL efímeros; cleanup completo.
+
+
+## 2026-11-22 — Alta de Driver sin usuario vinculado
+
+- Gestión de Equipo permite crear Driver con o sin cuenta asociada; nombre, apellido, documento y teléfono siguen siendo obligatorios. El payload envía `userId: null` explícitamente.
+- E2E añadido en tablet 768×1024: verifica HTTP 201, `userId=null` por POST y GET, tarjeta “Sin usuario vinculado” y ausencia de overflow. lint/build y discovery de 18 tests pasan localmente; Actions API/MySQL está pendiente.

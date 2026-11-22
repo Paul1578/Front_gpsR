@@ -1062,7 +1062,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         lastName: driver.lastName,
         documentNumber: driver.documentNumber,
         phoneNumber: driver.phoneNumber,
-        userId: driver.userId,
+        userId: driver.userId ?? null,
       };
       const created = await apiFetch<ApiDriver>("/Drivers", {
         method: "POST",
