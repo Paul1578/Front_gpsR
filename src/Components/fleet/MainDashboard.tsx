@@ -9,7 +9,7 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onNavigate }: MainDashboardProps) {
-  const { vehicles, routes, loadErrors, retryFleetData } = useFleet();
+  const { vehicles, routes, routeAssignmentVehicles, loadErrors, retryFleetData } = useFleet();
   const { user, getAllUsers } = useAuth();
 
   const users = getAllUsers();
@@ -18,6 +18,13 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const completedRoutes = routes.filter(r => r.estado === "completada");
   const availableVehicles = vehicles.filter(v => v.estado === "disponible");
   const vehiclesInRoute = vehicles.filter(v => v.estado === "en_ruta");
+  const isLogistics = user?.role === "logistica";
+  const availableVehicleCount = isLogistics
+    ? routeAssignmentVehicles.length
+    : availableVehicles.length;
+  const vehiclesInRouteCount = isLogistics
+    ? new Set(activeRoutes.map((route) => route.vehiculoId)).size
+    : vehiclesInRoute.length;
   const completedOperationalStops = routes
     .flatMap((route) => [
       ...(route.origen ? [route.origen] : []),
@@ -208,10 +215,10 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
     },
     {
       label: "Vehículos Disponibles",
-      value: loadErrors.includes("vehículos") ? "—" : availableVehicles.length,
+      value: loadErrors.includes(isLogistics ? "opciones de asignación" : "vehículos") ? "—" : availableVehicleCount,
       icon: Truck,
       color: "bg-green-100 text-green-600",
-      change: `${vehiclesInRoute.length} en ruta`,
+      change: loadErrors.includes("rutas") ? "— en ruta" : `${vehiclesInRouteCount} en ruta`,
     },
     {
       label: "Rutas Pendientes",

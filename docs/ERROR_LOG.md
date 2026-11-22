@@ -5,6 +5,13 @@
 - Solución: el Historial usa los datos de vehículo incluidos en el DTO de cada ruta y deja de pedir el listado administrativo de vehículos. El E2E de Logistics ahora abre Historial, comprueba placa/detalle y revisa 320 y 768 px.
 - Validación: lint/build pasan; Actions `45034387245` confirmó historial/detalle responsive dentro de **21/21 E2E** Chrome/API/MySQL y cleanup.
 
+# 2026-11-22 — Dashboard de Logística calculaba cero vehículos disponibles — CORREGIDO; E2E PENDIENTE
+
+- Síntoma: Logistics podía consultar vehículos disponibles por `Routes/assignment-options`, pero el dashboard mostraba cero porque intentaba contar la colección `vehicles` vacía.
+- Causa: el contexto omite correctamente GET administrativo `/Vehicles` para Logistics; `MainDashboard` sólo contaba ese listado y no usaba el recurso autorizado.
+- Solución: disponibilidad usa `routeAssignmentVehicles` para Logistics; cantidad en ruta usa IDs únicos de vehículos de rutas activas. Si falla el endpoint de opciones o rutas, muestra `—` en la métrica afectada.
+- E2E comprueba el dashboard contra el número real de opciones de asignación y asegura que el navegador no emita GET `/Vehicles`. Lint/build local pasan; falta Actions Chrome/API/MySQL para este cambio.
+
 # 2026-11-22 — E2E Logistics contaba alertas ajenas al Historial — CORREGIDO Y VALIDADO
 
 - Síntoma: Actions `45033927966` pasó 20/21. El E2E llegó a encontrar la ruta y su placa, pero `getByRole("alert").toHaveCount(0)` falló al encontrar otro elemento accesible como alerta.

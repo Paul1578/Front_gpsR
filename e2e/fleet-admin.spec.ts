@@ -1842,6 +1842,15 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
 
   const logisticsContext = await browser.newContext();
   const logisticsPage = await logisticsContext.newPage();
+  let forbiddenVehicleListRequests = 0;
+  logisticsPage.on("request", (request) => {
+    if (
+      request.method() === "GET" &&
+      new URL(request.url()).pathname === "/api/backend/Vehicles"
+    ) {
+      forbiddenVehicleListRequests += 1;
+    }
+  });
   try {
     await logisticsPage.setViewportSize({ width: 390, height: 844 });
     await logisticsPage.goto("/login");
@@ -1849,32 +1858,43 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     await logisticsPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
     await logisticsPage.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(logisticsPage).toHaveURL(/\/dashboard$/);
-    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
-    await expect(logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
-    await expect(logisticsPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
-    await expect(logisticsPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toHaveCount(0);
-    await expect(logisticsPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
-
     const logisticsToken = await logisticsPage.evaluate(() => {
       const serialized = localStorage.getItem("auth_tokens");
       return serialized ? JSON.parse(serialized).accessToken as string : null;
     });
     expect(logisticsToken).toBeTruthy();
     const logisticsHeaders = { Authorization: `Bearer ${logisticsToken}` };
-    const [routesResponse, vehiclesResponse, driversResponse, assignmentOptionsResponse] = await Promise.all([
+    const assignmentOptionsResponse = await logisticsPage.request.get(
+      "/api/backend/Routes/assignment-options",
+      { headers: logisticsHeaders },
+    );
+    expect(assignmentOptionsResponse.status()).toBe(200);
+    const assignmentOptions = await assignmentOptionsResponse.json();
+    const availableVehiclesStat = logisticsPage
+      .getByText("Vehículos Disponibles", { exact: true })
+      .locator("xpath=..");
+    await expect(availableVehiclesStat.locator("p").nth(1)).toHaveText(
+      String(assignmentOptions.vehicles.length),
+    );
+    expect(forbiddenVehicleListRequests).toBe(0);
+
+    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+
+    const [routesResponse, vehiclesResponse, driversResponse] = await Promise.all([
       logisticsPage.request.get("/api/backend/Routes", { headers: logisticsHeaders }),
       logisticsPage.request.get("/api/backend/Vehicles", { headers: logisticsHeaders }),
       logisticsPage.request.get("/api/backend/Drivers", { headers: logisticsHeaders }),
-      logisticsPage.request.get("/api/backend/Routes/assignment-options", { headers: logisticsHeaders }),
     ]);
     expect(routesResponse.status()).toBe(200);
     expect(vehiclesResponse.status()).toBe(403);
     expect(driversResponse.status()).toBe(403);
-    expect(assignmentOptionsResponse.status()).toBe(200);
     const logisticsTeamResponse = await logisticsPage.request.get("/api/backend/Users/my-team", { headers: logisticsHeaders });
     expect(logisticsTeamResponse.status()).toBe(403);
     expect(await logisticsTeamResponse.text()).not.toContain(driverEmail!);
-    const assignmentOptions = await assignmentOptionsResponse.json();
     expect(assignmentOptions.vehicles).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: vehicleId, plate: `E2EQA${suffix}` }),
     ]));
@@ -1997,6 +2017,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       expect(dialogBounds!.x).toBeGreaterThanOrEqual(0);
       expect(dialogBounds!.x + dialogBounds!.width).toBeLessThanOrEqual(width);
     }
+    expect(forbiddenVehicleListRequests).toBe(0);
   } finally {
     if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
     if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);

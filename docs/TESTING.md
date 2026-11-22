@@ -5,6 +5,7 @@
 - Actions `45033927966` validó ruta/placa pero falló **20/21** porque el assert global `role=alert` encontró una alerta no relacionada. El assert quedó limitado a `No se pudieron cargar las rutas`.
 - Actions `45034387245` pasó backend Release/xUnit, audit/lint/build, responsive browser **1/1**, E2E Chrome/API/MySQL **21/21** y cleanup. Incluye Historial Logistics en 320/768 px, cambio de contraseña, revocación del refresh/password anterior y nuevo login.
 - Después del pase se añadió una aserción más estricta del diálogo de detalle de Logistics dentro del viewport a 320/768 px; lint/build/discovery 21 y diff-check locales pasan; Actions pendiente para esta ampliación.
+- Dashboard Logistics ahora verifica la cifra de vehículos disponibles contra `/Routes/assignment-options`, además de garantizar que el navegador no llame `GET /Vehicles`; E2E local no mutante no simula datos productivos. Esta aserción espera Actions Chrome/API/MySQL.
 - Historial Logistics usa placa/marca/modelo del DTO de ruta, sin GET administrativo `/Vehicles`.
 
 # Pruebas frontend
