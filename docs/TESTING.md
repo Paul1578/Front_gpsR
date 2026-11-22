@@ -1,3 +1,10 @@
+# Validación de búsqueda de conductores y corrección E2E — 2026-11-22
+
+- Front lint y build correctos; `npm audit --audit-level=low`: 0 vulnerabilidades; Playwright descubre **36 tests** en 5 archivos; `git diff --check` correcto.
+- Action `45067692881`: backend Release/xUnit **107/107**, audit/lint/build y responsive browser **1/1** pasaron; E2E **34/35**. El único fallo fue un locator estricto ambiguo para Documento/Teléfono en el ciclo de alta Driver, no un fallo de API.
+- Corrección: se identifican esos campos por rol textbox y nombre accesible. La nueva búsqueda de Gestión de Conductores y su E2E real a 320/768 px aún esperan CI autenticada contra API/MySQL efímeros.
+- La API local :5048 no está disponible, por lo que no se reporta ejecución funcional local de estos E2E.
+
 # Actualización 2026-11-22 — administración de empresa, búsquedas y responsive
 
 - Front Action previo `45066249833` sobre `57e44c6`: Release backend/xUnit 107/107, audit/lint/build, responsive browser 1/1, Playwright autenticado API/MySQL 33/33 y cleanup.

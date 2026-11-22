@@ -1,3 +1,10 @@
+# 2026-11-22 — Búsqueda operativa de conductores y selectores E2E robustos
+
+- Gestión de Conductores permite buscar por nombre, apellido, documento y teléfono, sin sensibilidad a mayúsculas ni tildes; mantiene el filtro de inactivos y distingue vacío real de búsqueda sin resultados.
+- E2E nuevo valida consulta real por documento, vacío, limpieza y responsive a 320/768 px. Suite descubierta: 36 casos.
+- Action `45067692881` pasó backend 107/107, audit/lint/build y responsive, pero falló 1 de 35 E2E: el test del ciclo Driver usaba placeholders ambiguos después de añadir búsquedas. Cambiados a textbox con nombre accesible; repetición integrada pendiente.
+- Lint/build, audit (0 vulnerabilidades), discovery (36) y diff-check locales pasan. Historial del fallo/solución en `ERROR_LOG.md`.
+
 ## 2026-11-22 — Constructor de rutas Manager y cobertura responsive
 
 - `FleetContext` solicita opciones de asignación para el rol Manager; refresco/reintento incluyen el mismo rol.

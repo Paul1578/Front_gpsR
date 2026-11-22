@@ -11,6 +11,9 @@ type DriverForm = Pick<Driver, "firstName" | "lastName" | "documentNumber" | "ph
 
 const emptyForm: DriverForm = { firstName: "", lastName: "", documentNumber: "", phoneNumber: "" };
 
+const normalizeSearchText = (value: string) =>
+  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+
 export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   const {
     drivers,
@@ -25,6 +28,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
     unassignVehicleFromDriver,
   } = useFleet();
   const [showInactive, setShowInactive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [retryingFleetData, setRetryingFleetData] = useState(false);
@@ -50,6 +54,15 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   }, [loadDrivers]);
 
   const visibleDrivers = drivers.filter((driver) => showInactive || driver.isActive !== false);
+  const normalizedQuery = normalizeSearchText(searchQuery.trim());
+  const filteredDrivers = normalizedQuery
+    ? visibleDrivers.filter((driver) => normalizeSearchText([
+      driver.firstName,
+      driver.lastName,
+      driver.documentNumber,
+      driver.phoneNumber,
+    ].join(" ")).includes(normalizedQuery))
+    : visibleDrivers;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -180,9 +193,19 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
           </div>
         </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-slate-800">Conductores ({visibleDrivers.length})</h2>
-          <button type="button" onClick={() => { const next = !showInactive; setShowInactive(next); void loadDrivers(next); }} className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">{showInactive ? "Ocultar bajas" : "Mostrar bajas"}</button>
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-base font-semibold text-slate-800">Conductores ({filteredDrivers.length})</h2>
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="search"
+              aria-label="Buscar conductores por nombre, apellido, documento o teléfono"
+              placeholder="Buscar conductores"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm sm:w-72"
+            />
+            <button type="button" onClick={() => { const next = !showInactive; setShowInactive(next); void loadDrivers(next); }} className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">{showInactive ? "Ocultar bajas" : "Mostrar bajas"}</button>
+          </div>
         </div>
 
         {loadError ? (
@@ -192,14 +215,20 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
           </div>
         ) : loading ? (
           <p role="status" className="py-8 text-center text-sm text-slate-500">Cargando conductores…</p>
-        ) : visibleDrivers.length === 0 ? (
+        ) : filteredDrivers.length === 0 ? normalizedQuery ? (
+          <div className="rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center">
+            <UserRound className="mx-auto mb-2 text-slate-400" />
+            <p className="text-sm font-medium text-slate-700">No hay conductores que coincidan con la búsqueda.</p>
+            <button type="button" onClick={() => setSearchQuery("")} className="mt-2 rounded-lg px-3 py-2 text-sm font-medium text-[#3271a4] hover:bg-slate-50">Limpiar búsqueda</button>
+          </div>
+        ) : (
           <div className="rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center">
             <UserRound className="mx-auto mb-2 text-slate-400" />
             <p className="text-sm font-medium text-slate-700">No hay conductores {showInactive ? "registrados" : "activos"}.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-            {visibleDrivers.map((driver) => {
+            {filteredDrivers.map((driver) => {
               const assignedVehicle = vehicles.find((vehicle) => vehicle.id === driver.vehicleId);
               const availableVehicles = vehicles.filter((vehicle) => {
                 if (vehicle.id === driver.vehicleId) return true;

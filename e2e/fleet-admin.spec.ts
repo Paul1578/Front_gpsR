@@ -3309,15 +3309,15 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   await page.setViewportSize({ width: 768, height: 1024 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await expect(page.getByPlaceholder("Documento")).toHaveAttribute("maxlength", "20");
-  await expect(page.getByPlaceholder("Teléfono")).toHaveAttribute("maxlength", "20");
+  await expect(page.getByRole("textbox", { name: "Documento" })).toHaveAttribute("maxlength", "20");
+  await expect(page.getByRole("textbox", { name: "Teléfono" })).toHaveAttribute("maxlength", "20");
   const unlinkedFirstName = `Chofer libre ${suffix}`;
   const unlinkedDocument = `E2EQA${suffix}U`;
   await page.getByRole("combobox", { name: "Usuario vinculado al chofer" }).selectOption("");
   await page.getByPlaceholder("Nombres").fill(unlinkedFirstName);
   await page.getByPlaceholder("Apellidos").fill("Sin cuenta");
-  await page.getByPlaceholder("Documento").fill(unlinkedDocument);
-  await page.getByPlaceholder("Teléfono").fill("0990000099");
+  await page.getByRole("textbox", { name: "Documento" }).fill(unlinkedDocument);
+  await page.getByRole("textbox", { name: "Teléfono" }).fill("0990000099");
   const createUnlinkedDriverPromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/backend/Drivers") &&
     response.request().method() === "POST",

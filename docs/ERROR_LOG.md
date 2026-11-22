@@ -1250,3 +1250,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una consulta shell terminó con `unexpected end of file` por un `&&` final; se repitió sin el operador sobrante.
 - Dos parches documentales fueron rechazados porque las líneas ancla supuestas no coincidían con el contenido real. No cambiaron archivos; se leyó el contexto exacto y se aplicó el contenido usando las líneas existentes.
 - Prevención: leer el bloque literal antes de formular un hunk y no cerrar una cadena de comandos con un operador de control sin comando siguiente.
+
+## 2026-11-22 — Búsquedas hicieron ambiguos los locators del ciclo Driver — CORREGIDO; CI PENDIENTE
+
+- Action `45067692881` pasó lint/build/audit/responsive y backend xUnit **107/107**, pero E2E terminó **34/35**. En el caso de alta Driver, `getByPlaceholder("Documento")` coincidía con el campo del formulario y con inputs de búsqueda del Equipo/Conductores; Playwright lanzó strict mode violation. El selector de Teléfono también dependía de placeholder.
+- Solución: usar `getByRole("textbox", { name: "Documento" })` y el nombre accesible "Teléfono". Se mantiene el contenido de producto y los límites verificados.
+- Prevención: si se agregan controles de búsqueda junto a formularios, los E2E deben apuntar a nombres accesibles/roles y comprobar unicidad semántica, no asumir unicidad de placeholder.
+- Repetición integrada del SHA corregido pendiente; no contar la búsqueda como verificada por ejecución funcional hasta entonces.
+
+## 2026-11-22 — Guía local Next.js consultada después del primer cambio — PROCESO CORREGIDO
+
+- El `AGENTS.md` exige leer la guía instalada de Next antes de escribir código. En el primer lote de componentes se omitió ese paso.
+- Antes de continuar se leyeron `01-app/03-api-reference/01-directives/use-client.md` y `01-app/01-getting-started/05-server-and-client-components.md`. Los componentes ya pertenecen a la frontera cliente y usan estado/eventos locales; no hay cambios de API Next requeridos. Build y lint pasan.
+- Prevención: iniciar cada sesión de implementación leyendo la guía específica de la versión desde `node_modules/next/dist/docs/`, como exige AGENTS.
