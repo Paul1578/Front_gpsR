@@ -240,3 +240,8 @@
 
 - Amplía la prueba de roles: tras alternar Driver→Logistics→Manager, abre sesión Manager, valida visibilidad de Rutas/Vehículos y oculta Equipo; crea/edita/cambia estado/da de baja vehículo por UI con persistencia API.
 - Comprueba overflow a 320, 390 y 768 px. Lint/build/discovery 18 local pasan; Actions integrado pendiente.
+
+# 2026-11-22 — Separación visual de Manager y Logistics
+
+- El E2E integrado reveló que ambos roles backend compartían el rol UI `logistica`; Manager perdía el menú de Vehículos pese a tener CRUD API.
+- Añadido rol UI `manager` / etiqueta “Gestor de flota”, permisos de vehículo y rutas sin administración de usuarios; selección disponible en gestión de equipo y panel de organización. CI integrado pendiente.

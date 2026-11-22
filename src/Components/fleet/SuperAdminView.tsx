@@ -125,6 +125,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     switch (role) {
       case "superadmin": return "bg-red-100 text-red-800";
       case "gerente": return "bg-blue-100 text-blue-800";
+      case "manager": return "bg-cyan-100 text-cyan-800";
       case "logistica": return "bg-purple-100 text-purple-800";
       case "chofer": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
@@ -135,6 +136,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     switch (role) {
       case "superadmin": return "Super Admin";
       case "gerente": return "Gerente";
+      case "manager": return "Gestor de flota";
       case "logistica": return "Logística";
       case "chofer": return "Chofer";
       default: return role;
@@ -488,6 +490,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                           >
                             <option value="superadmin">Super Admin</option>
                             <option value="gerente">Gerente</option>
+                            <option value="manager">Gestor de flota</option>
                             <option value="logistica">Logística</option>
                             <option value="chofer">Chofer</option>
                           </select>
@@ -583,7 +586,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["gerente", "logistica", "chofer"] as UserRole[]).map((role) => (
+                      {(["gerente", "manager", "logistica", "chofer"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           type="button"

@@ -37,6 +37,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "gerente": return "bg-blue-100 text-blue-800";
+      case "manager": return "bg-cyan-100 text-cyan-800";
       case "logistica": return "bg-purple-100 text-purple-800";
       case "chofer": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
@@ -46,6 +47,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case "gerente": return "Gerente";
+      case "manager": return "Gestor de flota";
       case "logistica": return "Logística";
       case "chofer": return "Chofer";
       default: return role;

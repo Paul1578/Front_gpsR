@@ -92,7 +92,7 @@ const getApiRequestError = (error: unknown): ApiRequestError | null => {
   };
 };
 
-export type UserRole = "superadmin" | "gerente" | "logistica" | "chofer" | "usuario";
+export type UserRole = "superadmin" | "gerente" | "manager" | "logistica" | "chofer" | "usuario";
 
 export interface UserPermissions {
   canViewMap: boolean;
@@ -170,7 +170,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const roleMap: Record<ApiRole, UserRole> = {
   Admin: "gerente",
   Driver: "chofer",
-  Manager: "logistica",
+  Manager: "manager",
   User: "usuario",
   Logistics: "logistica",
 };
@@ -178,6 +178,7 @@ const roleMap: Record<ApiRole, UserRole> = {
 const uiRoleToBackendRole: Record<UserRole, ApiRole> = {
   superadmin: "Admin",
   gerente: "Admin",
+  manager: "Manager",
   logistica: "Logistics",
   chofer: "Driver",
   usuario: "User",
@@ -201,6 +202,17 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canManageVehicles: true,
     canManageTeam: true,
     canViewOwnRoute: true,
+    canAccessSuperAdmin: false,
+    canManageAllOrganizations: false,
+    canViewSystemLogs: false,
+    canExportData: false,
+  },
+  manager: {
+    canViewMap: true,
+    canCreateRoutes: true,
+    canManageVehicles: true,
+    canManageTeam: false,
+    canViewOwnRoute: false,
     canAccessSuperAdmin: false,
     canManageAllOrganizations: false,
     canViewSystemLogs: false,

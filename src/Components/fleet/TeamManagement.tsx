@@ -215,6 +215,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const styles = {
       superadmin: "bg-red-100 text-red-700",
       gerente: "bg-purple-100 text-purple-700",
+      manager: "bg-cyan-100 text-cyan-800",
       logistica: "bg-blue-100 text-blue-700",
       chofer: "bg-green-100 text-green-700",
       usuario: "bg-gray-100 text-gray-700",
@@ -222,6 +223,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const labels = {
       superadmin: "Super Admin",
       gerente: "Gerente",
+      manager: "Gestor de flota",
       logistica: "Logística",
       chofer: "Chofer",
       usuario: "Usuario",
@@ -626,7 +628,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <div className="mb-4">
                     <label className="block text-xs text-gray-500 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["gerente", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => (
+                      {(["gerente", "manager", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           onClick={() => handleRoleChange(user.id, role)}
@@ -638,7 +640,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                               : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          {role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+                          {role === "superadmin" ? "Super Admin" : role === "manager" ? "Gestor de flota" : role.charAt(0).toUpperCase() + role.slice(1)}
                         </button>
                       ))}
                     </div>
@@ -762,15 +764,17 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <span className="text-xs text-gray-500">Selecciona el rol para el nuevo usuario</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(["gerente", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => {
+                {(["gerente", "manager", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => {
                   const active = createUserForm.role === role;
                   const roleLabel =
-                    role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1);
+                    role === "superadmin" ? "Super Admin" : role === "manager" ? "Gestor de flota" : role.charAt(0).toUpperCase() + role.slice(1);
                   const roleInfo =
                     role === "superadmin"
                       ? "Control total del sistema"
                       : role === "gerente"
                       ? "Administra equipos y rutas"
+                      : role === "manager"
+                      ? "Administra vehículos, conductores y rutas sin gestionar usuarios"
                       : role === "logistica"
                       ? "Gestiona operaciones diarias"
                       : role === "chofer"

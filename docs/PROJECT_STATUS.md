@@ -323,3 +323,4 @@ Fecha de actualización: 2026-11-22.
 
 - Auditoría Front detectó que Manager tenía CRUD Vehicle validado por API, pero no E2E de menú/pantalla. El caso de matriz ahora inicia sesión como Manager y comprueba rutas/vehículos visibles, Equipo oculto, alta/edición/estado mantenimiento/baja y persistencia.
 - Vistas cubiertas a 320×844, 390×844 y 768×1024 con aserción de overflow. Local lint/build/discovery de 18 pasa; API/MySQL E2E Actions pendiente.
+- Actions `45013936721` pasó 17/18: el CRUD API Manager pasó, pero la UI ocultó Vehículos. Causa: Front colapsaba Manager y Logistics; se agregó el rol UI `manager` distinto con permisos de flota sin gestión de equipo. E2E integrado debe repetirse.

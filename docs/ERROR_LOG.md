@@ -826,3 +826,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Un comando de lectura ejecutado en `/home/leonardo/Back_GPS` buscó `src/Components/fleet/RoutesManagement.tsx`, que pertenece a `/home/leonardo/Front_gpsR`; `sed` devolvió error y no modificó archivos.
 - Solución: repetir las lecturas de frontend desde el checkout Front. La inspección de compatibilidad de `UpdateRouteCommand` sí se realizó desde Back.
 - Prevención: ejecutar cada path relativo desde su repositorio de origen y confirmar el directorio de trabajo antes de agrupar lecturas.
+
+## 2026-11-22 — Frontend confundía Manager con Logistics — EN CORRECCIÓN, CI PENDIENTE
+
+- Actions Front `45013936721`: 17/18 E2E pasaron; el recorrido UI Manager confirmó acceso a Rutas pero no encontró Vehículos. El API/MySQL sí confirmó HTTP 200 y CRUD de vehículos para Manager.
+- Causa: `roleMap` convertía ambos roles API (`Manager` y `Logistics`) a la misma UI `logistica`; sus permisos ocultaban Vehículos aunque el backend lo permite para Manager.
+- Solución: modelar `manager` como rol UI propio, con vehículos/rutas y sin administración de usuarios; separar su etiqueta “Gestor de flota” de “Logística”; incluirlo en altas/cambios de rol y badges. Mantener backend como autoridad.
+- Prevención: conservar cada rol de backend como identidad independiente cuando su matriz de permisos difiere; E2E por rol debe comparar navegación UI además de autorización HTTP.
