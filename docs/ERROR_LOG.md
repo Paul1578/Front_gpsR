@@ -12,7 +12,7 @@
 - Auditoría de suite descubrió que el E2E autenticaba como Manager después de cambiar el rol con API; no probaba la acción Admin en Gestión de Equipo. El diálogo de usuario se usaba a 390 px y sin afirmar que controles/scroll cupieran en 320/768.
 - El E2E ahora cambia el fixture Logistics→Manager desde el botón visible del rol, espera HTTP 200, lee persistencia desde /Users/my-team y luego inicia sesión con esa cuenta para comprobar su acceso y restricciones.
 - El diálogo Admin verifica contenido y acciones a 320×844/768×1024 y alterna rol de Driver a Gestor de flota, confirmando los campos condicionales.
-- Lint/build/discovery pasan localmente; Actions autenticada de este cambio pendiente.
+- Solución validada: lint/build local pasan; Actions `45017898939` ejecutó 18/18 E2E autenticados contra Chrome/API/MySQL, responsive 1/1 y cleanup success.
 
 ## 2026-11-22 — Formulario Driver aceptaba documento/teléfono sobre el límite y E2E medía overflow incompleto — CORREGIDO
 
