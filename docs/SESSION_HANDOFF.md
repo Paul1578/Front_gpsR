@@ -19,6 +19,7 @@
 - Auditoría independiente de huecos confirma que CRUD básico UI (vehículo, Driver, User y ruta), matriz parcial de roles y mobile responsive ya están cubiertos; siguen pendientes pruebas CRUD negativas, matriz HTTP exhaustiva, más vistas responsive tablet y acceso a rutas por Driver entre alcances.
 - Actions `44993827707` terminó verde para Front `2932aa0` + Back `029e94d`: Release/xUnit **57/57**, audit/lint/build verdes, responsive **1/1**, E2E **16/16** y cleanup MySQL exitoso. La ruta creada en tablet está ahora verificada end-to-end.
 - Se añadió al E2E de vehículo el cambio `Mantenimiento`/`Disponible`, con lectura API y persistencia UI luego de reload; requiere nueva Actions integrada antes de contarse probado.
+- El primer run de vehículo (`44994219944`) falló por carrera de test: el waiter de PUT aceptaba antes la actualización general que el endpoint `/status`. Ahora se espera `PUT .../status`, valida 204/body, y después consulta GET. Repetir Actions.
 
 ## E2E de orden y operación de paradas — 2026-11-22
 

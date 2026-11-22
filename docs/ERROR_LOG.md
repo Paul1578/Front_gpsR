@@ -584,3 +584,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La base pertenece a un servicio MySQL efímero del workflow y se destruye al terminar el job. Repetir CI para demostrar Playwright 16/16 y cleanup SQL exitoso antes de marcar el lote validado.
 
 - Resultado de corrección: Actions `44993827707` completó success con 16/16 Playwright; el cleanup SQL pasó y no reportó fixtures retenidos.
+
+# 2026-11-22 — E2E leyó estado antes de completar PUT `/status` — CORREGIDO EN EL TEST
+
+- Actions `44994219944`: los otros 15 E2E pasaron; el nuevo ciclo vehículo cambió visualmente a Disponible, pero el GET inmediato devolvió todavía `status=2`. El test esperaba cualquier PUT cuyo URL contuviera `/Vehicles/{id}`. `updateVehicle` primero persiste datos generales en `PUT /Vehicles/{id}` y después cambia el estado en `PUT /Vehicles/{id}/status`; el waiter podía resolver en la primera respuesta antes de que terminara la segunda.
+- Corrección: esperar el pathname exacto `/status`, verificar HTTP 204 y comprobar el body `{status: 0|2}` antes de hacer GET. Se aserta además el valor elegido en el select. La próxima corrida discriminará claramente una carrera de test de un problema de backend.
+- CI de ese SHA falló solo por la aserción de estado; no pasó el test agregado. Repetición integrada pendiente.

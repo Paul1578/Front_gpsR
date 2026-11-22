@@ -209,11 +209,15 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     await card.getByRole("button", { name: "Editar" }).click();
     const maintenanceDialog = page.getByRole("dialog");
     await maintenanceDialog.locator("select").selectOption("mantenimiento");
+    await expect(maintenanceDialog.locator("select")).toHaveValue("mantenimiento");
     const maintenanceUpdate = page.waitForResponse((response) =>
-      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) && response.request().method() === "PUT",
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
     );
     await maintenanceDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
-    expect((await maintenanceUpdate).status()).toBe(200);
+    const maintenanceResponse = await maintenanceUpdate;
+    expect(maintenanceResponse.status()).toBe(204);
+    expect(maintenanceResponse.request().postDataJSON()).toEqual({ status: 2 });
     await expect(card).toContainText("Mantenimiento");
     const authHeaders = {
       Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}`,
@@ -230,11 +234,15 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     await page.locator(".grid > div").filter({ hasText: plate }).getByRole("button", { name: "Editar" }).click();
     const availableDialog = page.getByRole("dialog");
     await availableDialog.locator("select").selectOption("disponible");
+    await expect(availableDialog.locator("select")).toHaveValue("disponible");
     const availableUpdate = page.waitForResponse((response) =>
-      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) && response.request().method() === "PUT",
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
     );
     await availableDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
-    expect((await availableUpdate).status()).toBe(200);
+    const availableResponse = await availableUpdate;
+    expect(availableResponse.status()).toBe(204);
+    expect(availableResponse.request().postDataJSON()).toEqual({ status: 0 });
     const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
     expect(availableVehicle.status()).toBe(200);
     expect((await availableVehicle.json()).status).toBe(0);
