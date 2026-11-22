@@ -78,7 +78,7 @@ Fecha de actualización: 2026-11-22.
 - Auditoría independiente identificó que el mapa a 768×1024 se abría sin verificar selección de ruta ni tracking.
 - Nuevo Playwright crea dos rutas reales mediante API/MySQL, registra GPS en una ruta iniciada, cambia la selección desde la lista, espera el GET de posiciones y verifica el marcador con viewport tablet y sin overflow en documento/`main`.
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**17 tests**) y `git diff --check` pasan localmente.
-- Front local `:3000` y API `:5048` no estaban disponibles (HTTP 000); no se creó fixture local. La ejecución y cleanup integrados en Actions están pendientes; no contar la cobertura como terminada hasta obtener el resultado.
+- Front local `:3000` y API `:5048` no estaban disponibles (HTTP 000); no se creó fixture local. Actions `44997939176` para Front `a5dd689` + Back `a7f7c4e` pasó: backend xUnit 61/61, audit/lint/build, responsive 1/1, E2E 17/17 y cleanup MySQL/servicios success. El nuevo caso de tracking tablet ya está validado.
 - SMTP real requiere credenciales externas; nativo móvil fue pospuesto por el usuario. Mantener misión activa y continuar con cobertura CRUD/responsive.
 
 ## Actualización de cierre E2E — 2026-11-21

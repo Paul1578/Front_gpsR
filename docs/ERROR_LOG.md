@@ -636,4 +636,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El inventario independiente encontró que la vista Mapa se abría a 768×1024 sin probar la selección de ruta ni el tracking.
 - Se añadió un E2E con dos rutas reales API/MySQL, selección alterna, GET de posiciones y marcador GPS visible; usa geometría OSRM como dependencia visual opcional fallable y mide overflow de documento y `main`.
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (17 tests) y `git diff --check` pasan. La ejecución local autenticada no pudo arrancar porque Front `:3000` y API `:5048` devuelven HTTP 000; no se crearon fixtures locales.
-- Debe ejecutarse en Actions integrada antes de contar el caso como cubierto. El runner final elimina rutas/vehículos por API y limpia el Driver adicional (`fletflow.e2e.driver.*`, documento/vehículo `E2EQA`) desde `cleanup-e2e.sql`.
+- Actions integrada `44997939176` para Front `a5dd689` + Back `a7f7c4e` pasó: Release xUnit 61/61, audit/lint/build, responsive 1/1, E2E **17/17** y cleanup/stop containers success. El caso nuevo quedó incluido; se puede contar como cubierto.
+- `run-e2e-local.sh` ejecutó su trap de cleanup SQL sin error; eliminó los prefijos de la cuenta Driver, documento/vehículos y rutas temporales. La base MySQL del job se destruyó al finalizar.
