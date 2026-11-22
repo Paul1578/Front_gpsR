@@ -329,3 +329,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Acción Front `45048803279`: 26/28 E2E pasaron. Los dos fallos esperaban el botón responsive “Abrir menú” con el viewport desktop por defecto; corregido fijando 390×844 en logout-all y offboarding. El fallo y prevención están en `ERROR_LOG.md`.
 - Mi Ruta: agregados casos para ruta InProgress sobre Pending más reciente, GET `/Routes` 503 y retry, y avance de “Siguiente punto” al completar dos operaciones. `npm run lint`, `npm run build` y discovery **30** pasaron tras el ajuste del viewport. E2E autenticado integrado de estas pruebas sigue pendiente.
+
+## Cobertura añadida — 2026-11-22
+
+- Driver adjunta PNG; Playwright comprueba respuesta, render/persistencia y evidencia en Historial tras completar ruta.
+- Ciclo Driver de asignación, edición, baja/reactivación a 320 px.
+- Registro y cambio de contraseña a 320/768 px sin overflow.
+- Validación local: lint/build/discovery 33. E2E API/MySQL y CI pendientes.

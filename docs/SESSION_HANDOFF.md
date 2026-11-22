@@ -698,3 +698,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front Action `45046312974` validó `d05dcf8` con E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup.
 - Backend `a207c08` pasó Action `45047226328`: xUnit **91/91**, smoke HTTP/MySQL, concurrencia y cleanup. Validó la fixture maintenance aislada. El siguiente lote backend agrega supresión de reset-email obsoleto (test focal 3/3; full suite local 92/92, build clean) y requiere nueva CI.
 - Crear/pushear documentación Front para disparar E2E integrado contra `a207c08`; luego, una vez integrado el siguiente worker backend, repetir Front contra su SHA actual. Si falla, usar logs del step exacto, corregir y volver a ejecutar.
+
+## Continuación — evidencia fotográfica y responsive CRUD — 2026-11-22
+
+- Rama refactor/route-builder; no tocar main.
+- Auditoría QA read-only encontró cuatro huecos: foto en parada/historial, ciclo Driver a 320 px, cambio de contraseña y registro a 320/768 px.
+- Playwright ampliado en e2e/fleet-admin.spec.ts; intentos fallidos y viewport accidental documentados en ERROR_LOG.md.
+- npm run lint, npm run build, discovery 33 y diff-check pasaron. Falta E2E real API/MySQL y Actions del nuevo SHA.
+- Auditoría backend encontró también validación de cuenta Driver bajo locks y falta de pruebas HTTP activate/reset; revisar rama chore/stabilize-fleet-platform.
+- No cerrar misión; seguir con cobertura restante. Admin delegado sigue pendiente de decisión; SMTP/infra productiva externas; móvil nativo aplazado.

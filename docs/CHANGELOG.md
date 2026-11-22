@@ -425,3 +425,10 @@
 
 - La ruta en curso ahora tiene prioridad sobre pendientes en Dashboard y Mi Ruta. Se distinguen carga y fallo de API con un reintento en vez de presentar datos vacíos engañosos. El indicador “Siguiente punto” avanza tras completar/omitir paradas.
 - E2E cubre la prioridad, error 503/reintento y operación con dos paradas.
+
+## 2026-11-22 — Evidencia fotográfica y CRUD responsive
+
+- E2E de Driver verifica captura PNG, respuesta del endpoint, persistencia y consulta de foto/descripción desde Historial.
+- E2E de equipo mantiene el ciclo de Driver a 320 px durante asignación, edición y cambio de estado.
+- Registro y cambio de contraseña verifican formularios a 320 y 768 px.
+- Lint, build y discovery 33 correctos; E2E API/MySQL del nuevo SHA pendiente.

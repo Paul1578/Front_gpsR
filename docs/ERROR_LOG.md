@@ -1189,3 +1189,17 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Action `45048803279` pasó lint/build/responsive y 26/28 E2E; los dos nuevos tests se bloquearon esperando “Abrir menú” porque Playwright inicia con viewport desktop, donde la navegación lateral ya está visible. El código de logout y offboarding no llegó a ejecutarse en esos casos.
 - Corrección: fijar explícitamente 390×844 px en ambos flujos antes de usar el menú tipo drawer. Prevenir: definir el viewport esperado antes de interactuar con navegación responsive. Repetir E2E integrado tras publicar el SHA actualizado.
+
+## 2026-11-22 — Cobertura fotográfica y responsive ampliada — VALIDACIÓN INTEGRADA PENDIENTE
+
+- Auditoría QA encontró que el E2E Driver sólo adjuntaba notas, no fotos; tampoco recorría el ciclo Driver completo a 320 px. Registro y cambio de contraseña tenían cobertura parcial de anchos.
+- Se amplió Playwright para adjuntar PNG, verificar respuesta/persistencia y consultar la foto en Historial; mantener 320 px durante asignación, desasignación, edición y baja/reactivación del Driver; y validar registro/cambio de contraseña a 320/768 px.
+- El primer parche no encontró el fragmento exacto del test y no modificó archivos; se releyó el bloque. Un parche contextual cambió accidentalmente el viewport inicial de login a 320 px; el diff lo detectó y se restauró a 390 px antes de validar.
+- ESLint, build y discovery de 33 escenarios pasan; E2E autenticado de esta ampliación requiere Actions/API/MySQL descartables.
+- Prevención: ante un parche fallido, releer el contexto inmediato; evitar reemplazos genéricos y revisar el diff completo antes de validar.
+
+## 2026-11-22 — Escritura documental abortada antes de modificar archivos
+
+- La primera preparación del apéndice falló por intentar usar btoa/TextEncoder, no disponibles en el runtime de orquestación; otra versión falló por un literal Markdown con backtick que rompió la sintaxis JavaScript.
+- Ambas fallas ocurrieron antes de ejecutar comandos y no modificaron archivos. Se resolvió escribiendo los apéndices mediante heredoc con delimitadores entre comillas; diff-check confirma los cambios esperados.
+- Prevención: usar APIs del runtime realmente disponibles y no delimitar literales JS con backticks cuando el texto Markdown contiene backticks.

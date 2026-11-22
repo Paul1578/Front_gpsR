@@ -95,6 +95,19 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/register");
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+    await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Crear cuenta" })).toBeVisible();
+    const registrationBounds = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+      form: document.querySelector("form")?.getBoundingClientRect(),
+    }));
+    expect(registrationBounds.content).toBeLessThanOrEqual(registrationBounds.viewport);
+    expect(registrationBounds.form).not.toBeNull();
+    expect(registrationBounds.form!.width).toBeLessThanOrEqual(width);
+  }
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const emailAddress = `fletflow.e2e.admin.register.${suffix}@example.test`;
   const password = `RegisterQA-${randomUUID()}aA1!`;
@@ -2437,7 +2450,7 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
 });
 
-test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page, request }) => {
+test("Driver sólo ve su operación, persiste evidencia fotográfica y la API protege recursos administrativos", async ({ page, request, browser }) => {
   test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -2596,6 +2609,31 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   await evidenceDialog.getByRole("button", { name: "Agregar Nota" }).click();
   expect((await evidencePromise).ok()).toBe(true);
 
+  const photoDescription = `Entrega fotografiada ${routeId}`;
+  await stopCard.getByRole("button", { name: "Evidencia" }).click();
+  const photoDialog = page.getByRole("dialog");
+  await expect(photoDialog.getByRole("button", { name: "Foto", exact: true })).toBeVisible();
+  await photoDialog.getByPlaceholder("Ej: Entrega en puerta principal").fill(photoDescription);
+  const photoEvidencePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&
+    response.request().method() === "POST",
+  );
+  await photoDialog.locator('input[type="file"]').setInputFiles({
+    name: "evidencia-qa.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=", "base64"),
+  });
+  expect((await photoEvidencePromise).status()).toBe(200);
+  await expect(stopCard.getByAltText("Evidencia de la parada")).toBeVisible();
+  await expect(stopCard).toContainText(photoDescription);
+  const photoRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+  expect(photoRouteResponse.status()).toBe(200);
+  const photoPoint = (await photoRouteResponse.json()).points[1] as { evidence: Array<{ type: string; content: string; description: string }> };
+  expect(photoPoint.evidence).toEqual(expect.arrayContaining([
+    expect.objectContaining({ type: "image", description: photoDescription }),
+  ]));
+  expect(photoPoint.evidence.find((item) => item.description === photoDescription)?.content).toMatch(/^data:image\/png;base64,/);
+
   const completeStopPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
     response.request().method() === "PUT",
@@ -2643,6 +2681,25 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   const persistedRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
   expect(persistedRoute.status()).toBe(200);
   expect((await persistedRoute.json()).status).toBe(2);
+  const historyPage = await browser.newPage({ viewport: { width: 320, height: 844 } });
+  await historyPage.goto("/login");
+  await historyPage.getByLabel("Correo electrónico").fill(email!);
+  await historyPage.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await historyPage.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(historyPage).toHaveURL(/\/dashboard$/);
+  await historyPage.getByRole("button", { name: "Abrir menú" }).click();
+  await historyPage.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(historyPage.getByRole("heading", { name: "Historial de Rutas" })).toBeVisible();
+  await historyPage.getByRole("button", { name: "Completadas", exact: true }).click();
+  const historyCard = historyPage.getByText(routeName, { exact: true }).locator("xpath=../../../..");
+  await expect(historyCard).toContainText("1 evidencia(s)");
+  await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
+  const historyDialog = historyPage.getByRole("dialog");
+  await expect(historyDialog.getByAltText("Evidencia")).toBeVisible();
+  await expect(historyDialog).toContainText(photoDescription);
+  const historyWidths = await historyPage.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(historyWidths.content).toBeLessThanOrEqual(historyWidths.viewport);
+  await historyPage.close();
   const persistedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
   expect(persistedVehicle.status()).toBe(200);
   expect((await persistedVehicle.json()).status).toBe(0);
@@ -3200,11 +3257,11 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await expect(createdUnlinkedDriverCard.getByRole("button", { name: "Quitar", exact: true })).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.setViewportSize({ width: 390, height: 844 });
-
   const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true }).first();
   await expect(driverName).toBeVisible();
   const driverCard = driverName.locator("xpath=../..");
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await driverCard.getByRole("combobox").selectOption(vehicleId);
   const assignVehiclePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/assign-vehicle`) &&
@@ -3230,6 +3287,8 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 
   await driverCard.getByRole("button", { name: "Editar" }).click();
   const driverEditForm = driverCard.locator("form");
+  expect(await driverEditForm.boundingBox()).not.toBeNull();
+  expect((await driverEditForm.boundingBox())!.width).toBeLessThanOrEqual(320);
   await expect(driverEditForm.getByLabel("Documento del conductor")).toHaveAttribute("maxlength", "20");
   await expect(driverEditForm.getByLabel("Teléfono del conductor")).toHaveAttribute("maxlength", "20");
   let invalidDriverEditRequests = 0;
@@ -3265,6 +3324,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   expect(linkedUserAfterDriverEdit).toMatchObject({ firstName: `${firstName} editado`, lastName });
 
   const updatedDriverCard = page.getByText(`${firstName} editado ${lastName}`, { exact: true }).locator("xpath=../..");
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const deactivatePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&
     response.request().method() === "PUT",
@@ -3474,7 +3534,7 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   test.skip(!userEmail || !userPassword, "El runner local/CI crea el usuario QA para validar autenticación.");
 
   const newPassword = `PwQA-${randomUUID()}aA1!`;
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(userEmail!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
@@ -3492,6 +3552,16 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
   await page.getByRole("button", { name: "Cambiar contraseña", exact: true }).first().click();
   const passwordForm = page.getByPlaceholder("Contraseña actual").locator("xpath=ancestor::form");
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+    expect(await passwordForm.boundingBox()).not.toBeNull();
+    await expect(passwordForm.getByRole("button", { name: "Cambiar contraseña", exact: true })).toBeVisible();
+  }
   await page.getByPlaceholder("Contraseña actual").fill(userPassword!);
   await page.getByRole("textbox", { name: "Nueva contraseña", exact: true }).fill(newPassword);
   await page.getByRole("textbox", { name: "Confirmar nueva contraseña", exact: true }).fill(newPassword);
@@ -3502,6 +3572,7 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await passwordForm.getByRole("button", { name: "Cambiar contraseña", exact: true }).click();
   expect((await changePasswordResponsePromise).status()).toBe(200);
   await expect(page).toHaveURL(/\/login$/);
+  await page.setViewportSize({ width: 320, height: 844 });
 
   const refreshAfterPasswordChange = await page.request.post("/api/backend/Auth/refresh", {
     data: { refreshToken: previousRefreshToken },
