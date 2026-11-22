@@ -203,3 +203,8 @@
 - El constructor cambia a panel móvil/tablet: al ubicar origen/parada/destino abre el mapa, al seleccionar un punto regresa a paradas y detalles; se puede alternar manualmente. El helper E2E verifica ambos cambios; lint/build/discovery pasan localmente, browser/API/MySQL pendiente.
 - Actions `45007503895` detectó expectativas E2E antiguas de panel visible y drawer cerrado tras reload (15/18 pasaron); pruebas actualizadas a la nueva interacción, integración repetida pendiente.
 - Actions `45008055246` pasó 17/18; el caso móvil aún intentaba eliminar una parada temporal con el editor oculto después de agregarla. Se añadió transición explícita al editor; repetición pendiente.
+
+
+## 2026-11-22 — Validación final del cambio responsive del constructor
+
+- Actions `45008495969` pasó para `d0ab050`: audit, lint, build, responsive browser **1/1** y Playwright autenticado **18/18** contra API/MySQL efímeros; cleanup completo.

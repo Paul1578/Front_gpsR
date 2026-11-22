@@ -287,3 +287,10 @@ Fecha de actualización: 2026-11-22.
 - Auditoría Front encontró que cancelar sólo estaba cubierto mediante una llamada API directa; en Gestión de Rutas no había acción visible específica.
 - Se añadió acción “Cancelar” para rutas pendientes con diálogo que explica la liberación de vehículo/conductor. Usa el endpoint de estado existente, refresca desde la API y muestra éxito/error.
 - El E2E móvil de edición e Historial ahora cancela desde la tarjeta, confirma HTTP 204 y persistencia `Cancelled`, y valida la ruta en Historial. Lint/build/discovery (18) y diff-check pasan localmente. Actions `45000517571` pasó con backend `d346fa2`: Playwright 18/18, responsive 1/1, API/MySQL y cleanup success.
+
+
+## Builder responsive — Actions validado — 2026-11-22
+
+- Front `d0ab050` pasó Actions `45008495969`: auditoría npm, lint, build, browser responsive **1/1** y suite autenticada Chrome/API/MySQL **18/18**; los servicios desechables y el runner finalizaron correctamente.
+- El E2E móvil vuelve explícitamente al editor antes de eliminar la parada temporal añadida; causa del fallo previo `45008055246` y prevención documentadas en `ERROR_LOG.md`.
+- Auditoría integral sigue abierta: quedan CRUD y vistas responsive por recorrer, además de la definición de privilegio para asignar rol Admin. SMTP depende de credenciales externas; aplicación nativa móvil está aplazada por decisión del usuario.

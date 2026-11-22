@@ -779,3 +779,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - En la ejecución posterior `45008055246` quedó un acceso adicional sin transición: el caso móvil agregaba una parada temporal y luego intentaba quitarla desde el editor, todavía oculto. El test ahora vuelve al editor antes de modificar esa fila.
 - En el mismo run, tracking falló tras `page.reload()` a 768 px porque no se volvió a abrir el drawer; se agregó el clic explícito.
 - Prevención: las pruebas deben observar el panel actualmente visible y cambios de navegación después de reload, no asumir que contenido oculto sigue accionable.
+
+
+## 2026-11-22 — Eliminación de parada temporal en el panel oculto — CORREGIDO Y VERIFICADO
+
+- Actions `45008055246` dejó 17/18 casos verdes: el test de creación móvil volvía a agregar una parada y trataba de eliminarla sin regresar desde el mapa al editor.
+- Se agregó una transición explícita a “Ver paradas y detalles” antes de interactuar con la fila. Actions `45008495969` pasó los 18/18 E2E y la prueba responsive 1/1; también pasó audit, lint y build.
+- Prevención: después de agregar o ubicar una parada, el test debe cambiar al panel que contiene el control antes de operar sobre esa parada.

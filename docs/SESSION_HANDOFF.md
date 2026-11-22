@@ -390,3 +390,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - `RoutesManagement.tsx` muestra acción con confirmación sólo para rutas pendientes; llama `updateRoute(..., { estado: "cancelada" })` y reporta según resultado del backend.
 - El E2E móvil existente cancela mediante UI, confirma HTTP 204, lee el estado persistido y comprueba Historial. Lint/build, discovery (18) y diff-check pasan localmente.
 - Error inicial TypeScript por variable `routeCard` redeclarada corregido y registrado en `ERROR_LOG.md`. Actions `45000517571` pasó: backend Release 61/61, responsive 1/1 y Playwright 18/18; el caso cancela por UI, verifica 204/persistencia e Historial.
+
+
+## Última validación de constructor responsive — 2026-11-22
+
+- Front branch `refactor/route-builder`, commit `d0ab050`; Actions `45008495969` pasó: npm audit, lint, build, responsive **1/1**, Playwright autenticado **18/18** contra Chrome/API/MySQL desechables y cleanup correcto.
+- El run anterior `45008055246` falló en un solo caso (17/18) porque el editor quedó oculto tras agregar parada; se corrigió cambiando al panel “Ver paradas y detalles”. Error/prevención en `ERROR_LOG.md`.
+- Continuar auditoría de CRUD y responsive en pantallas no recorridas; mantener abierta la política de promoción a Admin delegado hasta decisión del usuario. Backend NuGet audit volvió a pasar sin paquetes vulnerables. Móvil nativo está pospuesto; SMTP requiere credenciales externas vigentes.
