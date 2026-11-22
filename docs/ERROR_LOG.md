@@ -28,6 +28,12 @@
 - El flujo ahora vuelve a Resumen mientras los errores siguen visibles, libera HTTP 200 y hace allí el retry conjunto; después cambia a Usuarios para recuperar `/Users/my-team`, y al final verifica que Exportar se habilitó.
 - Prevención: ordenar una prueba de reintentos según las transiciones que disparan cargas automáticas de la pantalla.
 
+## 2026-11-22 — Retry de flota también refrescó el equipo, ocultando el siguiente botón — CORREGIDO LOCALMENTE
+
+- Action `45075805793` terminó 36/37. Tras reintentar rutas/vehículos, el efecto compartido recargó `/Users/my-team`; al entrar a la pestaña Usuarios, el error ya se había eliminado y no existía botón Reintentar.
+- E2E ahora entra en Usuarios mientras el mock aún mantiene 503, verifica que el botón está visible, libera la respuesta y ejecuta retry de miembros primero. Luego comprueba que rutas/vehículos se recuperan con los renders/refrescos derivados y que Exportar vuelve a habilitarse. Los retries directos de flota siguen comprobados en pruebas específicas de su pantalla.
+- Prevención: probar cada botón antes de acciones que desencadenan recargas compartidas y pueden limpiar su estado.
+
 ## 2026-11-22 — Panel de empresa requería cobertura responsive estrecha — EN VALIDACIÓN
 
 - QA detectó que la prueba del formulario verificaba los campos Driver a 390 px y sólo medía el ancho general en 320 px dentro de otra pestaña; no probaba escribir ni la presentación del formulario en 320/768.

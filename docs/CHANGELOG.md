@@ -7,6 +7,7 @@
 - Action `45073324431` sobre `147ba89` pasó **36/37**; el único fallo fue un conteo global de guiones (siete en toda la página vs. tres en la tarjeta). Locator acotado a “Resumen de Datos”; nueva Action requerida.
 - Action `45074489447` sobre `00f3b7c` pasó **36/37**; el único fallo esperaba cero alertas ARIA y capturaba el toast de bienvenida. El E2E ahora espera sólo la desaparición de los errores de carga específicos; ejecutar Action nueva.
 - Action `45075092805` sobre `ae34fa9` pasó **36/37**; al volver a Resumen después del retry User, rutas/vehículos ya se habían recuperado automáticamente y su retry no existía. E2E reordenado para reintentar primero esos recursos en Resumen, luego Usuarios.
+- Action `45075805793` para `067793e` pasó **36/37**; el retry de flota también disparó el refresco de Users y quitó su botón. E2E ahora ejecuta el retry de Users primero, luego verifica recuperación de flota.
 - E2E de administración ahora completa los campos Driver y comprueba formulario/overflow a 320 y 768 px; prueba responsive de este caso pendiente.
 
 # 2026-11-22 — Sincronización de edición parcial de vehículo
