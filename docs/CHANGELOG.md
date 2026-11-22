@@ -5,6 +5,7 @@
 - La Action `45072706025` del SHA anterior terminó **35/37**; detectó también que Gestión de Equipo podía perder el error de Drivers cuando se solapaban dos cargas. La vista ahora consume el error compartido de FleetContext además del error local.
 - Verificación local: lint y build correctos; discovery Playwright 37. E2E integrado completo pendiente en una Action del parche actual.
 - Action `45073324431` sobre `147ba89` pasó **36/37**; el único fallo fue un conteo global de guiones (siete en toda la página vs. tres en la tarjeta). Locator acotado a “Resumen de Datos”; nueva Action requerida.
+- Action `45074489447` sobre `00f3b7c` pasó **36/37**; el único fallo esperaba cero alertas ARIA y capturaba el toast de bienvenida. El E2E ahora espera sólo la desaparición de los errores de carga específicos; ejecutar Action nueva.
 
 # 2026-11-22 — Sincronización de edición parcial de vehículo
 

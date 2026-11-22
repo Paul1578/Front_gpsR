@@ -21,6 +21,7 @@
 
 - Action `45072706025` (SHA `7f4841c`) terminó 35/37. Errores: Exportar buscado en tab equivocado; Gestión de Equipo no reflejaba error de Driver compartido tras carrera con solicitudes duplicadas. Documentados y corregidos localmente.
 - Action `45073324431` en `147ba89` terminó 36/37; sólo falló un conteo global de `—` que incluía métricas ajenas. Locator restringido a “Resumen de Datos”; requiere Action nueva.
+- Action `45074489447` en `00f3b7c` terminó 36/37; único fallo era el toast de bienvenida atrapado por un conteo global ARIA. Aserciones ahora usan los mensajes de error específicos. Repetir Action para validar también persistencia parcial de vehículo.
 - Front local corrige actualización parcial del vehículo al fallar su segunda solicitud de cambio de estado; E2E fuerza 409 y verifica UI+GET. Falta validación local y Action del commit actual.
 - E2E actualizado: tab correcto, un retry conjunto, retry independiente de usuarios, conteos `—`. Gestión de Equipo ya presenta error compartido FleetContext. Solicitudes `/Users/my-team` obsoletas no pisan resultados nuevos.
 - `npm run lint`, `npm run build` y discovery Playwright (37) pasan localmente. Falta commit/push y nueva Action con API/MySQL efímeros.

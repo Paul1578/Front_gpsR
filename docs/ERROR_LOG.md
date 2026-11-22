@@ -16,6 +16,12 @@
 - La aserción ahora se limita al contenedor encabezado “Resumen de Datos”, que contiene únicamente los tres conteos de exportación. No se cambió el comportamiento visual.
 - Prevención: acotar aserciones E2E al componente/contenedor cuyo estado se está verificando; datos similares pueden aparecer en widgets vecinos.
 
+## 2026-11-22 — E2E contaba todos los roles alert y atrapó el toast de bienvenida — CORREGIDO LOCALMENTE
+
+- Action `45074489447` terminó **36/37**. Error-context/trace: tras reintentar usuarios, el mensaje de carga sí se eliminó; quedaba un `role=alert` distinto, el toast “Bienvenido, admin” del login. El test usó `getByRole("alert").toHaveCount(0)`, demasiado global para una página con notificaciones.
+- Ahora espera que desaparezca cada mensaje de error de carga específico de usuarios/rutas/vehículos. El toast independiente no afecta el resultado.
+- Prevención: asertar estados de negocio por contenido/localizador del recurso y no inferir que todas las alertas ARIA deben desaparecer al recuperar una consulta.
+
 ## 2026-11-22 — Edición de vehículo podía ocultar una actualización parcial — CORREGIDO LOCALMENTE
 
 - Auditoría independiente confirmó que el frontend envía datos generales y estado a endpoints distintos. Si `/Vehicles/{id}` respondía 200 y `/Vehicles/{id}/status` fallaba, la base ya tenía marca/modelo nuevos, pero la UI conservaba el objeto viejo y reportaba un fallo total sin explicar que hubo persistencia parcial.
