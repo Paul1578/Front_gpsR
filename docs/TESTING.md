@@ -162,3 +162,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 ## Breakpoint de 320 px — 2026-11-22
 
 - El E2E Admin responsive ahora reduce Mi Perfil a 320×844 y comprueba que el cambio de contraseña sigue visible sin overflow. Actions `44987222908` validó el navegador: responsive 1/1, Playwright autenticado 14/14; backend Release 57/57 y build sin warnings/errores.
+
+## Cobertura negativa por rol y errores móviles — 2026-11-22
+
+- Playwright discovery actual: 15 tests en dos archivos. `npm run lint`, `npm run build` y `git diff --check` pasan.
+- El spec `team-management-load-errors.spec.ts` se ejecutó localmente: **2/2**. Equipo y Choferes a 390×844 conservan visibles los avisos/Reintentar y no desbordan documento ni área principal, antes y después de recuperar.
+- Se añadió un caso API que espera 403 para mutaciones no permitidas de User/Driver/Logistics/Manager. Usa las identidades User y Driver efímeras del runner; el rol Driver se restaura en `finally`.
+- El caso nuevo de permisos no se ejecutó localmente: API y frontend locales devolvieron HTTP 000 y no había credenciales QA disponibles. No se cuenta como aprobado ni omitido; requiere Actions con API/MySQL descartables.

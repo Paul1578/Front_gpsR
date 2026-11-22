@@ -3,6 +3,22 @@ import { expect, test } from "@playwright/test";
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const expectNoHorizontalOverflow = async () => {
+    const widths = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      return {
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        mainClient: main?.clientWidth ?? 0,
+        mainContent: main?.scrollWidth ?? 0,
+      };
+    });
+
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.mainContent).toBeLessThanOrEqual(widths.mainClient);
+  };
 
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -62,25 +78,33 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
   });
 
   await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Gestión de Equipo", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
 
   const teamAlert = page.getByRole("alert").filter({ hasText: "No se pudo cargar el equipo" });
   await expect(teamAlert).toBeVisible();
+  await expect(teamAlert.getByRole("button", { name: "Reintentar" })).toBeVisible();
+  await expectNoHorizontalOverflow();
   await expect(page.getByText("No hay otros miembros en el equipo")).toHaveCount(0);
   teamRequestFails = false;
   await teamAlert.getByRole("button", { name: "Reintentar" }).click();
   await expect(teamAlert).toHaveCount(0);
   await expect(page.getByText("No hay otros miembros en el equipo")).toBeVisible();
+  await expectNoHorizontalOverflow();
 
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   const driversAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los choferes" });
   await expect(driversAlert).toBeVisible();
+  await expect(driversAlert.getByRole("button", { name: "Reintentar" })).toBeVisible();
+  await expectNoHorizontalOverflow();
   await expect(page.getByText("No hay choferes registrados")).toHaveCount(0);
   driversRequestFails = false;
   await driversAlert.getByRole("button", { name: "Reintentar" }).click();
   await expect(driversAlert).toHaveCount(0);
   await expect(page.getByText("No hay choferes registrados")).toBeVisible();
+  await expectNoHorizontalOverflow();
 });
 
 test("Historial distingue error de lista vacía y permite reintentar", async ({ page }) => {

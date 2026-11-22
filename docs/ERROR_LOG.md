@@ -541,3 +541,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Corrección: capturar la asignación original del Driver y, en `finally`, restaurarla si la ruta temporal la cambió (o desasignar si no había una previa) después de borrar la ruta. Luego se elimina el vehículo temporal y se comprueba el status HTTP.
 - Run Actions `44986079119` reveló el problema: el test nuevo falló sólo en cleanup (409 esperado por la guarda real); restante suite pasó. Se capturó/restauró la asignación anterior. Actions `44986497890` para `010bc31` pasó responsive 1/1 y Playwright 14/14.
 - Revisión adicional: el primer `finally` podía abandonar pasos de limpieza posteriores tras un error en DELETE/restauración, y no cancelaba una ruta activa. Ahora cada paso se intenta independientemente, las rutas InProgress se cancelan primero y los fallos se acumulan para reportarlos sin ocultarlos. Lint/build/listado pasan. Actions `44986877646` para `aa49b83` validó el flujo normal de cleanup y el E2E 14/14; la rama de cancelación ante fallo no se ejercitó en esta corrida.
+
+## 2026-11-22 — Matriz E2E de roles tuvo un error inicial de tipos — CORREGIDO
+
+- Al construir operaciones API por rol, la primera forma capturaba headers mutables antes de asignarlos; TypeScript detectó un problema de definite assignment durante el build.
+- Corrección: pasar los headers explícitamente a las factories de operaciones (`vehicleMutations`, `driverMutations`, `routeManagementMutations`) en lugar de cerrar sobre una variable mutable compartida.
+- Verificación local posterior: lint/build pasan y Playwright descubre 15 casos. La matriz HTTP aún requiere Actions con API/MySQL efímeros y no se marca ejecutada localmente.

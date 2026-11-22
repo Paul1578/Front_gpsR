@@ -107,3 +107,8 @@
 - Cleanup restaura la asignación previa del Driver, cancela rutas activas si la prueba se interrumpe, intenta las operaciones restantes y reporta fallos acumulados.
 - Perfil amplía la comprobación responsive a 320×844.
 - Actions `44987222908` para `18ca8f0`: backend 57/57, responsive 1/1, Playwright autenticado 14/14, lint/build/audit correctos; Release sin warnings/errores.
+
+## 2026-11-22 — Matriz de permisos y responsive de errores
+
+- Se ampliaron las denegaciones API esperadas para User, Driver, Logistics y Manager; Equipo/Choferes ahora comprueban error/reintento a 390×844.
+- Lint, build, diff check y discovery de 15 tests pasan; spec de errores pasa 2/2. La matriz espera ejecución integrada en Actions con API/MySQL descartables.

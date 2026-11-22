@@ -236,3 +236,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; no cerrar la auditoría con estos 14 E2E.
 - Externos delimitados: credenciales SMTP válidas; móvil nativo pospuesto por el usuario; administración global Super Admin sin contrato/rol backend definido; despliegue productivo (dominio/TLS/object storage/rate limiting distribuido).
+
+## Matriz de permisos y responsive de errores — 2026-11-22
+
+- Trabajo local pendiente de commit en Front `refactor/route-builder`: `e2e/fleet-admin.spec.ts` incorpora denegaciones API esperadas para User, Driver, Logistics y Manager en operaciones de flota, rutas, usuarios y roles.
+- La matriz usa las cuentas User/Driver efímeras del runner, IDs inexistentes para operaciones negativas y un Vehicle QA para payloads. El rol temporal del Driver se restaura a Driver mediante `finally`; `run-e2e-local.sh` limpia prefijos E2E de MySQL.
+- En `team-management-load-errors.spec.ts`, errores y reintentos de Equipo/Choferes comprueban 390×844 y ausencia de overflow. El spec pasó 2/2 localmente.
+- Estado combinado: lint/build, discovery (15) y `git diff --check` pasan. Matriz API no ejecutada porque API/Frontend locales responden HTTP 000 y no hay credenciales QA; Actions debe ejecutarla con DB efímera.
+- El primer build detectó error TypeScript por capturar headers mutables no inicializados; se pasan explícitamente a cada factory y el build posterior pasó. Ver `docs/ERROR_LOG.md`.
+- Próximo: integrar, ejecutar Actions y corregir cualquier diferencia de status HTTP. No declarar completa la matriz hasta tener resultado real.

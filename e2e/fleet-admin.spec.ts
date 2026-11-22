@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -613,6 +614,170 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("API deniega mutaciones de flota y administración según el rol", async ({ page }) => {
+  test.skip(
+    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations,
+    "Requiere fixtures QA de Admin, User y Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+  );
+
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  type AuthHeaders = { Authorization: string };
+  type MutationCheck = [string, () => Promise<{ status(): number }>];
+
+  const login = async (accountEmail: string, accountPassword: string) => {
+    const response = await page.request.post("/api/backend/Auth/login", {
+      data: { email: accountEmail, password: accountPassword },
+    });
+    expect(response.status(), `login QA para ${accountEmail}`).toBe(200);
+    const body = await response.json();
+    const token = body.token ?? body.accessToken;
+    expect(token, `token QA para ${accountEmail}`).toBeTruthy();
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  const adminHeaders = await login(email!, password!);
+  const vehicleId = randomUUID();
+  const driverId = randomUUID();
+  const routeId = randomUUID();
+  const userId = randomUUID();
+
+  for (const [path, id] of [
+    ["Vehicles", vehicleId],
+    ["Drivers", driverId],
+    ["Routes", routeId],
+  ]) {
+    const response = await page.request.get(`/api/backend/${path}/${id}`, { headers: adminHeaders });
+    expect(response.status(), `el GUID QA ${path}/${id} debe ser inexistente`).toBe(404);
+  }
+  const team = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+  expect(team.status()).toBe(200);
+  expect((await team.json()).some((member: { id: string }) => member.id === userId)).toBe(false);
+
+  // Si una autorización falla, los POST sólo escriben fixtures con prefijos que
+  // scripts/cleanup-e2e.sql elimina al cerrar el runner de base desechable.
+  const qaVehicle = {
+    plate: `E2EQA${suffix}`,
+    brand: "FleetFlow QA",
+    model: "Role matrix",
+    year: 2025,
+  };
+  const qaDriver = {
+    firstName: "E2E QA",
+    lastName: `Denied ${suffix}`,
+    documentNumber: `E2EQA${suffix}`,
+    phoneNumber: "0990000000",
+  };
+  const qaRoute = {
+    vehicleId: driverIdFixture,
+    driverId: driverIdFixture,
+    name: `E2E QA ruta autorización ${suffix}`,
+    cargoDescription: "Fixture de matriz de permisos",
+    points: [
+      { lat: -0.18, lng: -78.46, name: "Origen QA", operation: 0 },
+      { lat: -0.19, lng: -78.47, name: "Destino QA", operation: 0 },
+    ],
+  };
+  const qaUser = {
+    username: `E2E QA denied ${suffix}`,
+    email: `fletflow.e2e.user.denied.${suffix}@example.test`,
+    password: "QA-only-Password-934!",
+    roleName: "User",
+  };
+
+  const createdVehicle = await page.request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: qaVehicle,
+  });
+  expect(createdVehicle.status()).toBe(201);
+  const qaVehicleId = (await createdVehicle.json()).id as string;
+  qaRoute.vehicleId = qaVehicleId;
+
+  const expectDenied = async (role: string, operations: MutationCheck[]) => {
+    for (const [operation, send] of operations) {
+      const response = await send();
+      expect(response.status(), `${role} debe recibir 403 en ${operation}`).toBe(403);
+    }
+  };
+
+  const vehicleMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Vehicles", () => page.request.post("/api/backend/Vehicles", { headers, data: { ...qaVehicle, plate: `E2EQA${suffix.slice(1)}` } })],
+    [`PUT /Vehicles/${vehicleId}`, () => page.request.put(`/api/backend/Vehicles/${vehicleId}`, { headers, data: qaVehicle })],
+    [`PUT /Vehicles/${vehicleId}/status`, () => page.request.put(`/api/backend/Vehicles/${vehicleId}/status`, { headers, data: { status: 0 } })],
+    [`DELETE /Vehicles/${vehicleId}`, () => page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers })],
+    [`POST /Vehicles/${vehicleId}/reactivate`, () => page.request.post(`/api/backend/Vehicles/${vehicleId}/reactivate`, { headers })],
+  ];
+  const driverMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Drivers", () => page.request.post("/api/backend/Drivers", { headers, data: { ...qaDriver, documentNumber: `E2EQA${suffix.slice(1)}` } })],
+    [`PUT /Drivers/${driverId}`, () => page.request.put(`/api/backend/Drivers/${driverId}`, { headers, data: qaDriver })],
+    [`PUT /Drivers/${driverId}/status`, () => page.request.put(`/api/backend/Drivers/${driverId}/status`, { headers, data: { isActive: false } })],
+    [`PUT /Drivers/${driverId}/assign-vehicle`, () => page.request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, { headers, data: { vehicleId: qaVehicleId } })],
+    [`PUT /Drivers/${driverId}/unassign-vehicle`, () => page.request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers })],
+  ];
+  const userAndRoleMutations = (currentHeaders: AuthHeaders): MutationCheck[] => [
+    ["POST /Users", () => page.request.post("/api/backend/Users", { headers: currentHeaders, data: qaUser })],
+    [`PUT /Users/${userId}/status`, () => page.request.put(`/api/backend/Users/${userId}/status?isActive=false`, { headers: currentHeaders })],
+    [`PUT /Users/${userId}/role`, () => page.request.put(`/api/backend/Users/${userId}/role`, { headers: currentHeaders, data: { roleName: "Manager" } })],
+    [`POST /Users/${userId}/roles/Manager`, () => page.request.post(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
+    [`DELETE /Users/${userId}/roles/Manager`, () => page.request.delete(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
+    // El rol existente no puede crear datos aunque una autorización se configurara mal.
+    ["POST /Roles", () => page.request.post("/api/backend/Roles", { headers: currentHeaders, data: { name: "User" } })],
+    [`DELETE /Roles/E2E-QA-MISSING-${suffix}`, () => page.request.delete(`/api/backend/Roles/E2E-QA-MISSING-${suffix}`, { headers: currentHeaders })],
+  ];
+  const routeManagementMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Routes", () => page.request.post("/api/backend/Routes", { headers, data: qaRoute })],
+    [`PUT /Routes/${routeId}`, () => page.request.put(`/api/backend/Routes/${routeId}`, { headers, data: qaRoute })],
+    [`DELETE /Routes/${routeId}`, () => page.request.delete(`/api/backend/Routes/${routeId}`, { headers })],
+  ];
+
+  const userHeaders = await login(userEmail!, userPassword!);
+  await expectDenied("User", [
+    ...vehicleMutations(userHeaders),
+    ...driverMutations(userHeaders),
+    ...routeManagementMutations(userHeaders),
+    [`PUT /Routes/${routeId}/status`, () => page.request.put(`/api/backend/Routes/${routeId}/status`, { headers: userHeaders, data: { status: 3 } })],
+    [`PUT /Routes/${routeId}/points/0/status`, () => page.request.put(`/api/backend/Routes/${routeId}/points/0/status`, { headers: userHeaders, data: { status: 2 } })],
+    [`POST /Routes/${routeId}/points/0/evidence`, () => page.request.post(`/api/backend/Routes/${routeId}/points/0/evidence`, { headers: userHeaders, data: { type: "note", content: "QA denied", description: "QA" } })],
+    [`POST /Routes/${routeId}/positions`, () => page.request.post(`/api/backend/Routes/${routeId}/positions`, { headers: userHeaders, data: { latitude: -0.18, longitude: -78.46 } })],
+    ...userAndRoleMutations(userHeaders),
+  ]);
+
+  const driverHeaders = await login(driverEmail!, driverPassword!);
+  await expectDenied("Driver", [
+    ...vehicleMutations(driverHeaders),
+    ...driverMutations(driverHeaders),
+    ...routeManagementMutations(driverHeaders),
+    ...userAndRoleMutations(driverHeaders),
+  ]);
+
+  const adminTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+  expect(adminTeam.status()).toBe(200);
+  const fixtureDriver = (await adminTeam.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
+  expect(fixtureDriver?.id).toBeTruthy();
+  const setFixtureRole = async (roleName: "Driver" | "Logistics" | "Manager") => {
+    const response = await page.request.put(`/api/backend/Users/${fixtureDriver.id}/role`, {
+      headers: adminHeaders,
+      data: { roleName },
+    });
+    expect(response.status(), `cambio del fixture a ${roleName}`).toBe(200);
+  };
+
+  try {
+    await setFixtureRole("Logistics");
+    const logisticsHeaders = await login(driverEmail!, driverPassword!);
+    await expectDenied("Logistics", [
+      ...vehicleMutations(logisticsHeaders),
+      ...driverMutations(logisticsHeaders),
+      ...userAndRoleMutations(logisticsHeaders),
+    ]);
+
+    await setFixtureRole("Manager");
+    const managerHeaders = await login(driverEmail!, driverPassword!);
+    await expectDenied("Manager", userAndRoleMutations(managerHeaders));
+  } finally {
+    await setFixtureRole("Driver");
+  }
 });
 
 test("Logistics ve rutas pero no vehículos ni administración de equipo", async ({ page, browser }) => {
