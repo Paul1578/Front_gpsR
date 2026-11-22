@@ -737,3 +737,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Registro público es neutral: `register` no persiste tokens; el formulario muestra el mensaje común y navega a Login. El E2E compara las respuestas de alta nueva/duplicada y autentica el usuario creado. Falta Action integrada con cambio frontend/backend actual.
 - La Action Front `45065014129` aprobó 33/33 y responsive check con backend `30bcb2f`, pero precede al cambio de registro neutral; ejecutar nuevo Action tras publicar ambos repos.
+- Action Front `45065745273` pasó **33/33** con registro neutral del backend `825bbed` y valida registro/email duplicado/login. No contiene el piso temporal añadido luego en `52d7e46`; nueva integración pendiente.

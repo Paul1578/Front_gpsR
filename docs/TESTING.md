@@ -357,3 +357,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Action integrada `45064475585`: **33/33 E2E autenticados**, Responsive browser check, lint, build y audit pasaron. Cubre mapa a 320 px e Historial/foto/descripción a 320/768 px.
 - Registro neutral: UI redirige a Login; E2E compara status/payload para email nuevo/duplicado y valida login posterior. Discovery sigue en 33 pruebas; lint/build pasan localmente. Action integrada pendiente.
 - Action `45065014129` pasó **33/33 E2E** con backend `30bcb2f`; no incluye aún el commit de registro neutral, que requiere nueva integración.
+- Action `45065745273` pasó **33/33** e incluye alta neutral, email duplicado y login posterior sobre backend `825bbed`. Sólo falta integrar en Front el piso temporal de backend `52d7e46`.

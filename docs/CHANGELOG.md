@@ -452,3 +452,4 @@
 ## 2026-11-22 — Registro de empresa con respuesta neutral
 
 - Registro ya no crea una sesión automáticamente. La respuesta uniforme lleva al usuario a Login; el E2E compara alta y email duplicado y luego autentica la empresa nueva.
+- Action Front `45065745273` verificó 33/33 E2E con el backend neutral `825bbed`; el backend añade luego un piso temporal y requiere otra corrida integrada.

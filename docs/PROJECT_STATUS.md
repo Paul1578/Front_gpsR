@@ -521,4 +521,4 @@ Fecha de actualización: 2026-11-22.
 ## Registro de cuenta y anti-enumeración — CI integrado pendiente
 
 - Front presenta respuesta neutral al registro y redirige a login. E2E compara alta/email duplicado con status y payload iguales y valida login posterior. Lint/build/discovery 33 pasan localmente; la Action nueva integrará la última rama backend.
-- Action `45065014129` pasó 33/33 con backend `30bcb2f`; el cambio neutral de registro es posterior, requiere otra corrida integrada.
+- Action `45065745273` pasó **33/33 E2E** con backend `825bbed`, incluida respuesta neutra del registro, comparación email nuevo/duplicado y login posterior. El piso temporal backend llegó después en `52d7e46`; integración de ese último SHA pendiente.
