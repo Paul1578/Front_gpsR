@@ -5,6 +5,13 @@
 - Solución: el Historial usa los datos de vehículo incluidos en el DTO de cada ruta y deja de pedir el listado administrativo de vehículos. El E2E de Logistics ahora abre Historial, comprueba placa/detalle y revisa 320 y 768 px.
 - Validación local: lint y build pasan; Playwright descubre 21 casos. Falta probar este flujo con API/MySQL real en Actions.
 
+# 2026-11-22 — E2E Logistics contaba alertas ajenas al Historial — CORREGIDO; REPETICIÓN PENDIENTE
+
+- Síntoma: Actions `45033927966` pasó 20/21. El E2E llegó a encontrar la ruta y su placa, pero `getByRole("alert").toHaveCount(0)` falló al encontrar otro elemento accesible como alerta.
+- Causa: el assert global no diferenciaba el error de carga del Historial de otras alertas de la pantalla.
+- Solución: comprobar sólo la alerta con el texto exacto `No se pudieron cargar las rutas`; el test ya comprueba que la ruta y su vehículo se muestran.
+- Repetir Actions integrado para verificar que el Historial funciona y que el login/cambio de contraseña también pasan juntos.
+
 # 2026-11-22 — Selector E2E ambiguo al cambiar contraseña — CORREGIDO; REPETICIÓN PENDIENTE
 
 - Síntoma: Actions `45033318956` pasó backend, auditoría, lint, build y responsive; falló 20/21 E2E en el flujo nuevo de contraseña antes del POST.

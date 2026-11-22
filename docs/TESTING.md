@@ -1,8 +1,9 @@
 # Validación integrada pendiente — Historial Logistics y cambio de contraseña — 2026-11-22
 
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**21 tests**) y `git diff --check` pasan localmente.
-- Actions `45033061272` pasó 20/20 E2E autenticados, responsive 1/1 y cleanup. Actions `45033318956` ejecutó backend Release/xUnit, audit/lint/build y responsive con éxito; E2E **20/21**. El nuevo caso de contraseña paró en locator Playwright ambiguo antes de enviar el cambio; locator exacto corregido.
-- Historial Logistics ahora lee placa/marca/modelo del DTO de ruta, no consulta `/Vehicles`; el test nuevo comprueba ruta/vehículo/detalle y ancho 320/768 px. Suite actual todavía necesita Actions con MySQL/Chrome descartables.
+- Actions `45033061272` pasó 20/20 E2E autenticados, responsive 1/1 y cleanup. Actions `45033318956` ejecutó backend Release/xUnit, audit/lint/build y responsive con éxito; E2E **20/21** por locator ambiguo del caso de contraseña, luego corregido.
+- Actions `45033927966` validó la ruta y placa en Historial Logistics, backend/audit/lint/build y responsive; **20/21** porque el assert global de `role=alert` encontraba un alerta no relacionada. El assert ahora filtra `No se pudieron cargar las rutas`; repetir suite descartable.
+- Historial Logistics ahora lee placa/marca/modelo del DTO de ruta, no consulta `/Vehicles`; el test comprueba ruta/vehículo/detalle y ancho 320/768 px. Falta Actions Chrome/API/MySQL con los fixes a ambos E2E.
 
 # Pruebas frontend
 

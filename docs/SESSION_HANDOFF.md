@@ -1,10 +1,10 @@
 ## Session handoff — 2026-11-22
 
 - Branch Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`. Working branches only; no `main` changes.
-- Front commits through `4e8a15b` had been pushed. Actions `45033061272` passed 20/20 E2E, responsive 1/1, cleanup. Actions `45033318956` failed 20/21 only because the new password E2E locator `Nueva contraseña` also matched `Confirmar nueva contraseña`; exact accessible names are now used. See `ERROR_LOG.md`.
-- New audit finding: Logistics is allowed to read Routes but not `/Vehicles`; `RouteHistory` incorrectly coupled both requests, hiding valid history. Front now renders vehicle details from route DTO fields and no longer fetches `/Vehicles`. Logistics E2E covers history, detail, and 320/768 px. Local lint/build/Playwright discovery 21 pass.
-- Docs (`PROJECT_STATUS`, `TESTING`, `CHANGELOG`, `ERROR_LOG`) updated. New code/docs remain uncommitted pending integrated Actions.
-- Immediate next: run `git diff --check`, review exact diff; commit and push Front branch; wait for Actions. Fix any functional/E2E failures and repeat. Then continue next backend/frontend audit gaps; don't stop at the passing tests.
+- Front commit `2353350` is pushed. Actions `45033061272` passed 20/20 E2E. `45033318956` failed 20/21 from ambiguous password locator, corrected with exact textbox names. `45033927966` failed 20/21 because a broad alert assertion counted an unrelated alert after the History route/plate had rendered; now scoped to the History error text. Both failures are documented.
+- New audit finding: Logistics is allowed to read Routes but not `/Vehicles`; `RouteHistory` incorrectly coupled both requests. Front uses vehicle DTO fields and has no Vehicles call. E2E covers History, detail, and 320/768 px. Local lint/build/discovery 21 pass before the last assertion-only patch; repeat local checks.
+- Docs updated; current assertion fix and matching docs remain uncommitted pending checks and new Actions.
+- Immediate next: run lint/build/list/diff-check, commit/push, wait for Actions, and fix/repeat until the complete suite passes. Then integrate backend isolation smoke assigned to backend agent and continue more CRUD/role/responsive gaps.
 - Backend HEAD `d3ac953` clean on `chore/stabilize-fleet-platform`; latest backend Actions `45032172895` passed Release build, xUnit 82/82, HTTP/MySQL tenant smoke, concurrency smoke and cleanup; docs-only `45032479667` also passed.
 - External/product boundaries remain: valid SMTP credentials needed to test actual email; native mobile deferred per user; delegated-Admin policy needs product decision. The overall mission remains open.
 

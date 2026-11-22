@@ -3,7 +3,8 @@
 - E2E de cambio de contraseña añadió persistencia, revocación de refresh/clave anterior y nuevo login. Actions `45033318956` falló 20/21 por un locator Playwright ambiguo (no llegó a ejecutar el endpoint); causa/corrección documentadas en `ERROR_LOG.md`, selector corregido.
 - Auditoría identificó que Historial de Logística recibía 403 de `/Vehicles` y ocultaba rutas que sí podía leer. Front usa ahora los campos de vehículo ya incluidos en `RouteDto`; el test verifica API, placa/detalle y responsive 320/768 px.
 - Lint, build y discovery **21 tests** pasan localmente. Falta Actions integrado con MySQL/Chrome para los cambios actuales.
-- Última Actions previa `45033061272` pasó 20/20 con responsive 1/1 y cleanup; `45033318956` validó build y responsive, pero no el nuevo flujo de contraseña por el selector.
+- Actions `45033927966` validó que Logistics sí muestra la ruta y placa, además de backend/audit/lint/build/responsive; terminó 20/21 porque una aserción contaba cualquier `role=alert`. Se limitó al mensaje específico del Historial; hay que repetir.
+- Actions `45033061272` pasó 20/20 con responsive 1/1 y cleanup; `45033318956` había validado build/responsive, pero su flujo de contraseña no llegó al API por el selector ya corregido.
 - No declarar la misión completa: siguen pendientes más matriz CRUD/roles/responsive y límites de producto/servicio externos.
 
 ## Edición de miembros y pruebas de roles — 2026-11-22

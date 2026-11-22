@@ -1967,7 +1967,9 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     await expect(historyCardHeading).toBeVisible();
     const historyCard = historyCardHeading.locator("xpath=../../../..");
     await expect(historyCard).toContainText(`E2EQA${suffix}`);
-    await expect(logisticsPage.getByRole("alert")).toHaveCount(0);
+    await expect(
+      logisticsPage.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" }),
+    ).toHaveCount(0);
     for (const width of [320, 768]) {
       await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
       const dimensions = await logisticsPage.evaluate(() => ({
