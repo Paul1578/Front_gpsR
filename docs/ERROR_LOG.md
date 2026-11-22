@@ -558,3 +558,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44991979019` pasó build backend (57/57), audit/lint/build frontend y responsive 1/1; de los E2E autenticados, **15 pasaron y el nuevo tablet expiró** al timeout general de 30 s. El `finally` estaba usando `page.request`, ligado al contexto del navegador que Playwright cerró al cortar el test; por eso las consultas de cleanup fallaron sin respuesta. La base era descartable y el runner elimina sus datos QA al finalizar.
 - El workflow no publicó el trace de ese fallo, así que el paso de UI que agotó los 30 s no puede afirmarse con evidencia. Corrección aplicada para la repetición: elevar a 90 s el límite total solo de este flujo, limitar esperas de UI a 8 s para obtener locator/paso concretos y usar el fixture independiente `request` en setup, verificación y cleanup para que siga vivo ante errores del page.
 - Estado: lint/build/discovery local ya habían pasado el primer SHA; falta repetir Actions con estas correcciones y confirmar 16/16, persistencia tablet y limpieza.
+
+# 2026-11-22 — Selector de navegación móvil usado en tablet — CORREGIDO
+
+- Actions `44992464372` volvió a fallar sólo en el caso nuevo: con viewport 768×1024 la página no renderiza `Abrir menú`; la barra lateral de escritorio/tablet está visible desde el inicio. El timeout de 8 s ahora identificó el locator exacto. Los otros 15 E2E y el cleanup del caso nuevo pasaron.
+- Corrección: eliminar la apertura del menú móvil y seleccionar directamente `Gestión de Rutas`, como ya hace el test tablet existente. El request context separado confirmó que cleanup devuelve respuestas aun cuando falla el flujo UI.
+- Verificación pendiente: lint/build y Actions integrado del siguiente SHA; contar el test tablet sólo tras completar y persistir la ruta en navegador/API/MySQL.

@@ -12,6 +12,7 @@
 - Se añadió en `e2e/fleet-admin.spec.ts` un flujo real de creación de ruta en tablet 768×1024: mapa, parada PickupAndDelivery, asignación, revisión, GET de persistencia y overflow por etapa. Limpieza intenta retirar ruta y vehículo y restaurar la asignación previa.
 - Local pasó `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (16 tests) y `git diff --check`; el caso de navegador/API/MySQL sólo se contará al pasar Actions.
 - Actions `44991979019` arrojó 15/16: el caso tablet superó el límite general de 30 s, y el cleanup con `page.request` falló al cerrarse su contexto. El trace no fue publicado, así que no se atribuye el timeout a un locator específico. Se cambió a timeout total de 90 s, waits UI de 8 s y fixture independiente `request`; repetir CI ahora.
+- La repetición `44992464372` precisó el locator: `Abrir menú` sólo aparece en móvil; en 768 px se navega directamente desde el sidebar. Esa selección ya se corrigió. El cleanup del vehículo pasó incluso tras el error UI; volver a ejecutar Actions y validar guardado/cleanup normal.
 - Auditoría independiente de huecos confirma que CRUD básico UI (vehículo, Driver, User y ruta), matriz parcial de roles y mobile responsive ya están cubiertos; siguen pendientes pruebas CRUD negativas, matriz HTTP exhaustiva, más vistas responsive tablet y acceso a rutas por Driver entre alcances.
 
 ## E2E de orden y operación de paradas — 2026-11-22

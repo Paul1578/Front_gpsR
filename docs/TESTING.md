@@ -186,3 +186,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Verificación local posterior al cambio: ESLint correcto, build Next correcto, Playwright discovery **16 tests**, `git diff --check` correcto.
 - Pendiente para considerar el caso probado: resultado CI completo en Chrome/API/MySQL; no se afirma ejecución local real porque no hay credenciales/servicios QA disponibles en esta sesión.
 - Primera corrida Actions `44991979019`: backend 57/57, audit/lint/build y responsive 1/1; E2E 15/16. Caso tablet expiró al timeout 30 s; cambio aplicado a límite 90 s y cleanup con fixture `request` independiente. Repetición de CI pendiente; no contar el nuevo test como aprobado.
+- Actions `44992464372` identificó el locator exacto tras bajar el límite de espera: el botón `Abrir menú` no existe en breakpoint tablet, el sidebar está desplegado. El selector se corrigió; 15 casos y cleanup pasaron, pero la ruta no se creó y el E2E sigue sin aprobar.

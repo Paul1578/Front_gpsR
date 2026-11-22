@@ -9,6 +9,7 @@ Fecha de actualización: 2026-11-22.
 - Este corte confirma integración de ambas ramas publicadas. No implica que el catálogo completo de CRUD, todos los roles o todas las vistas responsive estén cubiertos; permanecen como trabajo activo.
 - Se añadió un E2E real para crear y persistir una ruta con parada recogida+entrega en tablet (768×1024), comprobando overflow en cada paso y cleanup de ruta/vehículo/asignación. ESLint, build y discovery **16 tests** pasan localmente; la ejecución navegador/API/MySQL queda pendiente del Actions del nuevo commit.
 - Primera corrida del nuevo E2E: Actions `44991979019` encontró timeout de 30 s en el caso tablet (15 E2E restantes pasaron). Cleanup del caso dependía del contexto de página cerrado por el timeout; se separó a `APIRequestContext` del fixture `request`, se amplió timeout total del caso a 90 s y se acotaron los waits UI a 8 s. Revalidación integrada pendiente; detalle en `docs/ERROR_LOG.md`.
+- En Actions `44992464372`, el timeout acotado identificó un segundo error de test: esperaba el botón móvil Abrir menú a 768 px; el lateral ya está expandido en tablet. Se corrigió navegando directamente por Gestión de Rutas; 15 E2E restantes y cleanup del caso pasaron. Repetición pendiente.
 
 ## Ramas
 
