@@ -1,8 +1,8 @@
 ## Continuación — 2026-11-22
 
-- Front `refactor/route-builder`: `SuperAdminView` ya no ofrece equipos derivados de Admin ni lee/escribe `teamId` sin soporte de API. Formulario pide email válido y para Chofer pide documento/teléfono; E2E `company-admin.spec.ts` cubre esos controles.
-- Front local pasó lint, Next build, audit 0, discovery 36 y diff-check. Cambios actuales de componente/spec/docs están locales y aún deben commit/push y validar con Action.
-- Front Action `45071113746` para `5d4e290` terminó success: 36/36 Playwright autenticado, responsive 1/1, backend xUnit 110/110, lint/build/audit y cleanup.
+- Front `340eb55` eliminó Equipos/`teamId` ficticios, completó correo y campos Driver; Action `45072015727` pasó 36/36 E2E, responsive 1/1, backend 111/111, audit/lint/build y cleanup.
+- Front local añade estados de carga/error/reintento al panel de empresa y bloquea exportación parcial. Lint/build/audit/discovery 37/diff-check pasan; estos cambios siguen locales, deben publicarse y pasar Action.
+- Front Action `45071113746` para `5d4e290` también pasó: 36/36 Playwright, responsive 1/1, backend xUnit 110/110, lint/build/audit y cleanup.
 - Backend `87b208e` corrige desactivación de cuenta Driver con ruta Pending/InProgress. Action `45071475764` pasó build, xUnit 111/111, smoke tenant HTTP/MySQL, concurrencia y cleanup.
 - Decisiones pendientes: quién puede otorgar rol Admin y si el negocio necesita desvincular User/Driver preservando ambos. App nativa móvil pospuesta.
 

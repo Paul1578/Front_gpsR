@@ -152,6 +152,8 @@ interface AuthContextType {
     }
   ) => Promise<{ ok: boolean; invitationSent: boolean; message?: string }>;
   refreshTeamUsers: () => Promise<void>;
+  teamUsersLoading: boolean;
+  teamUsersError: string | null;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoadingUser: boolean;
@@ -280,6 +282,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authSessionVersionRef = useRef(0);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
+  const [teamUsersLoading, setTeamUsersLoading] = useState(false);
+  const [teamUsersError, setTeamUsersError] = useState<string | null>(null);
   const isAuthenticated = !!user;
 
   const setTokens = (tokens: AuthTokens | null) => {
@@ -346,6 +350,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } else {
       setTeamUsers([]);
+      setTeamUsersError(null);
+      setTeamUsersLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.role]);
@@ -845,8 +851,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshTeamUsers = async () => {
-    const data = await apiFetch<ApiUser[]>("/Users/my-team");
-    setTeamUsers(data.map(mapApiUser));
+    setTeamUsersLoading(true);
+    setTeamUsersError(null);
+    try {
+      const data = await apiFetch<ApiUser[]>("/Users/my-team");
+      setTeamUsers(data.map(mapApiUser));
+    } catch (error) {
+      setTeamUsersError("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.");
+      throw error;
+    } finally {
+      setTeamUsersLoading(false);
+    }
   };
 
   const getTeamUsers = (): User[] => {
@@ -984,6 +999,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getAllUsers,
         getTeamUsers,
         refreshTeamUsers,
+        teamUsersLoading,
+        teamUsersError,
         getManagers,
         isSuperAdmin,
         apiFetch,

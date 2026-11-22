@@ -1,3 +1,9 @@
+# Administración de empresa — errores y reintento — validación local 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
+- El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.
+- `340eb55` pasó Action `45072015727`: E2E **36/36**, responsive 1/1, backend xUnit 111/111, audit/lint/build y cleanup.
+
 # Administración de empresa y alta Driver — validación local 2026-11-22
 
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npm run test:e2e -- --list` (**36 tests**) y `git diff --check` pasan tras eliminar Equipos ficticios y completar el formulario.

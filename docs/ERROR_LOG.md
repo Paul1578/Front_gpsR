@@ -1,7 +1,13 @@
-## 2026-11-22 — Administración de empresa ofrecía equipos que API no guarda — CORREGIDO LOCALMENTE
+## 2026-11-22 — Administración mostraba cero cuando fallaba la carga y exportaba datos parciales — CORREGIDO LOCALMENTE
+
+- El panel tomaba arreglos vacíos tras fallos de `/Users/my-team`, `/Vehicles` o `/Routes` y los mostraba como cero. La exportación generaba archivo aunque faltaran consultas; al crear usuario tampoco actualizaba la lista visible.
+- AuthContext expone error/carga/reintento de miembros; el panel distingue estados y no habilita exportación parcial. Tras el alta refresca la lista y avisa si el refresco falla. Playwright simula HTTP 503 y recuperación; lint/build/audit 0/discovery 37 pasan local, Action pendiente.
+- Prevención: distinguir cero confirmado de error, probar carga y recuperación, y bloquear exportaciones hasta recibir todas las fuentes requeridas.
+
+## 2026-11-22 — Administración de empresa ofrecía equipos que API no guarda — CORREGIDO LOCALMENTE; CI APROBADO
 
 - El panel mostraba la lista “Equipos” agrupando por `teamId`, pero `/Users/my-team` no devuelve ese campo y `POST /Users` ignora el valor enviado. El contador y los detalles podían aparentar una relación inexistente. El mismo alta ofrecía Chofer sin recoger email/documento/teléfono completos.
-- Se retiraron la pestaña y el selector de equipo; alta ahora pide email y, para Chofer, documento/teléfono, que se envían a API. E2E verifica la interfaz y campos. Lint/build/audit 0/discovery 36 pasan local; Action integrada pendiente.
+- Se retiraron la pestaña y el selector de equipo; alta ahora pide email y, para Chofer, documento/teléfono, que se envían a API. Action `45072015727` sobre `340eb55` pasó 36/36 E2E, responsive 1/1, backend 111/111 y cleanup.
 - Prevención: no presentar relaciones de negocio como reales sin verificar su persistencia y lectura posterior desde API; probar que cada formulario incluya los campos obligatorios del contrato.
 
 ## 2026-11-22 — Email duplicado sólo se probaba por API, no por el formulario — CORREGIDO Y VALIDADO

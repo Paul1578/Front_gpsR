@@ -1,8 +1,14 @@
+# 2026-11-22 — Estados de carga y error en administración de empresa
+
+- Administración distingue carga/fallo de consultas User, Route y Vehicle; muestra reintentos, no presenta errores como conteos cero y bloquea exportación parcial.
+- Al crear usuario actualiza la lista y avisa si el alta fue exitosa pero falló el refresco. E2E simula HTTP 503 y comprueba recuperación.
+- Lint/build/audit/discovery 37 y diff-check locales pasan. Action integrada de este cambio pendiente.
+
 # 2026-11-22 — Administración de empresa sin relaciones de equipo ficticias
 
 - Se retiró la pestaña “Equipos” y los detalles calculados con `teamId`, que la API no guarda ni devuelve. La creación ya no promete asignación a equipo.
 - El formulario de alta pide correo electrónico; al elegir Chofer exige documento y teléfono para que el backend pueda crear la cuenta y el perfil operativo.
-- E2E `company-admin` comprueba la ausencia de Equipos, el campo email y los campos requeridos del Driver; lint/build/audit/discovery locales pasan. Action integrada de esta revisión pendiente.
+- E2E `company-admin` comprueba la ausencia de Equipos, el campo email y los campos requeridos del Driver. Commit `340eb55` pasó Action `45072015727`: 36/36 E2E, responsive 1/1, backend xUnit 111/111, audit/lint/build y cleanup.
 
 # 2026-11-22 — Registro duplicado validado desde UI — Action aprobada
 

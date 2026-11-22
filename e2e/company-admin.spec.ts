@@ -36,3 +36,44 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   const dimensions = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
 });
+
+test("Administración distingue fallos de carga de una empresa vacía y permite reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin.");
+
+  let shouldFail = true;
+  await page.route("**/api/backend/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const isFleetRead = pathname.endsWith("/Users/my-team") || pathname.endsWith("/Vehicles") || pathname.endsWith("/Routes");
+    if (shouldFail && isFleetRead) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Administración de la empresa", exact: true }).click();
+  await page.getByRole("button", { name: "Resumen", exact: true }).click();
+
+  await expect(page.getByText("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.")).toBeVisible();
+  await expect(page.getByText("No se pudieron cargar las rutas.")).toBeVisible();
+  await expect(page.getByText("No se pudieron cargar los vehículos.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeDisabled();
+
+  shouldFail = false;
+  const retryButtons = page.getByRole("button", { name: "Reintentar", exact: true });
+  await retryButtons.first().click();
+  await retryButtons.nth(1).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeEnabled();
+});

@@ -9,8 +9,8 @@ interface SuperAdminViewProps {
 }
 
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
-  const { getAllUsers, updateUserRole, createUser } = useAuth();
-  const { vehicles, routes } = useFleet();
+  const { getAllUsers, updateUserRole, createUser, refreshTeamUsers, teamUsersLoading, teamUsersError } = useAuth();
+  const { vehicles, routes, loadErrors, vehiclesLoading, routesLoading, retryFleetData } = useFleet();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "create" | "data">("overview");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -27,6 +27,10 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const users = getAllUsers();
+  const routesLoadFailed = loadErrors.includes("rutas");
+  const vehiclesLoadFailed = loadErrors.includes("vehículos");
+  const exportDisabled = teamUsersLoading || !!teamUsersError || vehiclesLoading || routesLoading || routesLoadFailed || vehiclesLoadFailed;
+  const metricValue = (value: number, loading: boolean, failed: boolean) => failed ? "—" : loading ? "…" : value;
 
   // Los contextos entregan los recursos visibles para la empresa autenticada.
   const allRoutes = routes;
@@ -81,7 +85,14 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     setIsCreating(false);
 
     if (result.ok) {
+      let usersRefreshed = true;
+      try {
+        await refreshTeamUsers();
+      } catch {
+        usersRefreshed = false;
+      }
       toast.success(result.invitationSent ? "Usuario creado y correo enviado" : "Usuario creado. No se pudo enviar el correo de invitación.");
+      if (!usersRefreshed) toast.warning("La cuenta se creó, pero no se pudo actualizar la lista de usuarios.");
       setCreateUserForm({
         nombres: "",
         apellidos: "",
@@ -104,6 +115,14 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
       toast.success("Rol actualizado correctamente");
     } else {
       toast.error(result.message ?? "No se pudo actualizar el rol");
+    }
+  };
+
+  const handleRetryUsers = async () => {
+    try {
+      await refreshTeamUsers();
+    } catch {
+      // El contexto conserva el error para que la vista muestre el estado y el reintento.
     }
   };
 
@@ -179,19 +198,19 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
                 <p className="text-red-100 text-xs mb-1">Administradores</p>
-                <p className="text-2xl">{stats.managers}</p>
+                <p className="text-2xl">{metricValue(stats.managers, teamUsersLoading, !!teamUsersError)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
               <p className="text-red-100 text-xs mb-1">Usuarios de la empresa</p>
-              <p className="text-2xl">{stats.totalUsers}</p>
+              <p className="text-2xl">{metricValue(stats.totalUsers, teamUsersLoading, !!teamUsersError)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
               <p className="text-red-100 text-xs mb-1">Rutas en curso</p>
-              <p className="text-2xl">{stats.activeRoutes}</p>
+              <p className="text-2xl">{metricValue(stats.activeRoutes, routesLoading, routesLoadFailed)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
               <p className="text-red-100 text-xs mb-1">Vehículos</p>
-              <p className="text-2xl">{stats.totalVehicles}</p>
+              <p className="text-2xl">{metricValue(stats.totalVehicles, vehiclesLoading, vehiclesLoadFailed)}</p>
             </div>
           </div>
         </div>
@@ -263,78 +282,99 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <h4 className="text-sm text-gray-600 mb-3">Usuarios</h4>
+                    {teamUsersLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando usuarios...</p>}
+                    {teamUsersError && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>{teamUsersError}</p>
+                        <button type="button" onClick={() => void handleRetryUsers()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
-                        <span className="text-lg text-gray-900">{stats.totalUsers}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalUsers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">Gerentes</span>
-                        <span className="text-lg text-blue-600">{stats.managers}</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.managers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
                         <span className="text-sm text-gray-700">Gestores de flota</span>
-                        <span className="text-lg text-cyan-700">{stats.fleetManagers}</span>
+                        <span className="text-lg text-cyan-700">{metricValue(stats.fleetManagers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                         <span className="text-sm text-gray-700">Logística</span>
-                        <span className="text-lg text-purple-600">{stats.logistics}</span>
+                        <span className="text-lg text-purple-600">{metricValue(stats.logistics, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Choferes</span>
-                        <span className="text-lg text-green-600">{stats.drivers}</span>
+                        <span className="text-lg text-green-600">{metricValue(stats.drivers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Usuarios</span>
-                        <span className="text-lg text-gray-900">{stats.regularUsers}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.regularUsers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="text-sm text-gray-600 mb-3">Estado de rutas</h4>
+                    {routesLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando rutas...</p>}
+                    {routesLoadFailed && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>No se pudieron cargar las rutas.</p>
+                        <button type="button" onClick={() => void retryFleetData()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
-                        <span className="text-lg text-gray-900">{stats.totalRoutes}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                         <span className="text-sm text-gray-700">Pendientes</span>
-                        <span className="text-lg text-yellow-700">{stats.pendingRoutes}</span>
+                        <span className="text-lg text-yellow-700">{metricValue(stats.pendingRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">En curso</span>
-                        <span className="text-lg text-blue-600">{stats.activeRoutes}</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.activeRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Completadas</span>
-                        <span className="text-lg text-green-600">{stats.completedRoutes}</span>
+                        <span className="text-lg text-green-600">{metricValue(stats.completedRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                         <span className="text-sm text-gray-700">Canceladas</span>
-                        <span className="text-lg text-red-600">{stats.cancelledRoutes}</span>
+                        <span className="text-lg text-red-600">{metricValue(stats.cancelledRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="text-sm text-gray-600 mb-3">Estado de vehículos</h4>
+                    {vehiclesLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando vehículos...</p>}
+                    {vehiclesLoadFailed && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>No se pudieron cargar los vehículos.</p>
+                        <button type="button" onClick={() => void retryFleetData()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
-                        <span className="text-lg text-gray-900">{stats.totalVehicles}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalVehicles, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Disponibles</span>
-                        <span className="text-lg text-green-600">{stats.availableVehicles}</span>
+                        <span className="text-lg text-green-600">{metricValue(stats.availableVehicles, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">En ruta</span>
-                        <span className="text-lg text-blue-600">{stats.vehiclesOnRoute}</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.vehiclesOnRoute, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
                         <span className="text-sm text-gray-700">En mantenimiento</span>
-                        <span className="text-lg text-orange-700">{stats.vehiclesInMaintenance}</span>
+                        <span className="text-lg text-orange-700">{metricValue(stats.vehiclesInMaintenance, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                     </div>
                   </div>
@@ -347,7 +387,16 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
             <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <h3 className="text-lg text-gray-900 mb-4">Usuarios de la empresa</h3>
-                <div className="space-y-3">
+                {teamUsersLoading ? (
+                  <p role="status" className="py-8 text-center text-sm text-gray-500">Cargando usuarios...</p>
+                ) : teamUsersError ? (
+                  <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <p>{teamUsersError}</p>
+                    <button type="button" onClick={() => void handleRetryUsers()} className="mt-2 font-medium underline">Reintentar</button>
+                  </div>
+                ) : users.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-gray-500">Aún no hay usuarios registrados en la empresa.</p>
+                ) : <div className="space-y-3">
                   {users.map((user) => {
                     return (
                       <div
@@ -395,7 +444,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                       </div>
                     );
                   })}
-                </div>
+                </div>}
               </div>
             </div>
           )}
@@ -556,6 +605,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                         </p>
                         <button
                           onClick={() => handleExportData(Date.now())}
+                          disabled={exportDisabled}
+                          title={exportDisabled ? "Espera a que carguen correctamente los datos" : undefined}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                         >
                           Exportar Ahora
