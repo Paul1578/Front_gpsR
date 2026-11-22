@@ -1,9 +1,9 @@
 ## Session handoff — 2026-11-22
 
 - Branch Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`. Working branches only; no `main` changes.
-- Front commit `2f9d146` is pushed. Actions `45034387245` passed backend Release/xUnit, audit/lint/build, responsive **1/1**, E2E Chrome/API/MySQL **21/21**, cleanup. It validates History Logistics and password update/revocation/login.
+- Front code commit `2f9d146` and result documentation are pushed (`9453479`). Actions `45034387245` passed backend Release/xUnit, audit/lint/build, responsive **1/1**, E2E Chrome/API/MySQL **21/21**, cleanup. It validates History Logistics and password update/revocation/login.
 - Prior failures `45033318956` (ambiguous password selector) and `45033927966` (overbroad alert assertion) are documented with corrections; both conditions pass in 21/21 now.
-- History uses route DTO vehicle plate/brand/model and doesn't request `/Vehicles` from Logistics. Docs need a result-only update and push.
+- History uses route DTO vehicle plate/brand/model and doesn't request `/Vehicles` from Logistics.
 - Immediate next: finish backend smoke additions for tenant user-list isolation and cross-tenant driver/vehicle assignment/reactivation. Review, run shell syntax, execute smoke against disposable MySQL/Actions, update docs and branch. Continue more CRUD/role/responsive gaps.
 - Backend HEAD `d3ac953` clean on `chore/stabilize-fleet-platform`; latest backend Actions `45032172895` passed Release build, xUnit 82/82, HTTP/MySQL tenant smoke, concurrency smoke and cleanup; docs-only `45032479667` also passed.
 - External/product boundaries remain: valid SMTP credentials needed to test actual email; native mobile deferred per user; delegated-Admin policy needs product decision. The overall mission remains open.
