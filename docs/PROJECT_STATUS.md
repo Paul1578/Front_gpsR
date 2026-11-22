@@ -1,3 +1,8 @@
+## Actualización — Driver, ownership y responsive — 2026-11-22
+
+- Actions `45002920723` success: backend Release/xUnit, audit/lint/build, responsive browser y E2E **18/18**. Verificados casos Driver activo/inactivo, ruta ajena, paradas/evidencia/GPS y vista de Driver sin cuenta.
+- Commit actual añade tipo nullable exacto; build/lint local pasan, Actions `45003051160` pendiente.
+
 ## Actualización — Drivers sin cuenta asociada — 2026-11-22
 
 - La vista Gestión de Equipo ahora representa un Driver nullable `UserId` como “Sin usuario vinculado”; antes la lectura `.slice` rompía el render. El E2E incluye un caso de regresión. Lint/build/discovery pasan; Actions `45002920723` pendiente.

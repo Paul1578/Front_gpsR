@@ -1,9 +1,9 @@
 # 2026-11-22 — Lectura de archivos E2E desde el repositorio equivocado — CORREGIDO
 
-- Síntoma: dos comandos de inspección buscaron `e2e/fleet-admin.spec.ts`/runner en el repositorio Backend; devolvieron “No such file” o `rg` IO error.
-- Causa: se ejecutó el comando con el cwd del otro repositorio, confundiendo paths hermanos Front/Back.
-- Solución: localizar el archivo con `rg --files` desde cada raíz y repetir la lectura en `/home/leonardo/Front_gpsR` o `/home/leonardo/Back_GPS` según corresponda.
-- Prevención: especificar `workdir` correcto al leer recursos hermanos; verificar `pwd`/`rg --files` antes de consultas dependientes del cwd.
+- Síntoma: inspecciones buscaron E2E Front desde Backend, y código Backend o carpetas `app/components` desde Front; devolvieron “No such file”/`rg` IO error.
+- Causa: se cruzaron las raíces hermanas `/home/leonardo/Front_gpsR` y `/home/leonardo/Back_GPS`, y se asumió estructura `app/components` en vez de la real `src/Components`.
+- Solución: localizar cada archivo con `rg --files` desde su raíz y repetir lectura desde el repositorio/carpeta real.
+- Prevención: especificar `workdir` correcto para recursos hermanos; verificar `pwd`/`rg --files` antes de consultas dependientes del cwd.
 
 # Registro de errores y decisiones
 
@@ -743,4 +743,4 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Causa: el E2E de autorización creó un Driver válido sin usuario vinculado, y `TeamManagement` asumía que `driver.userId` siempre era string al mostrar el identificador. El contrato permite `UserId` nullable y la excepción interrumpía la lista al mostrar bajas.
 - Solución: tipar `UserId` como nullable, presentar “Sin usuario vinculado” si falta, conservar username/ID abreviado cuando existe y ampliar el E2E para confirmar el render del Driver sin usuario.
 - Prevención: cubrir entidades opcionalmente asociadas con sus estados nulos en las vistas que consumen listas completas.
-- Verificación: fix y aserción agregados; lint/build/discovery pasan. Actions integrada `45002920723` pendiente.
+- Verificación: fix y aserción agregados; lint/build/discovery pasan. Actions integrada `45002920723` pasó Playwright 18/18 con cleanup; el ajuste de tipos `cd7f171` se repite en Actions `45003051160`.

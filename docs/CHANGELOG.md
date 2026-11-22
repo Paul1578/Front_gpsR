@@ -1,3 +1,7 @@
+## 2026-11-22 — Regresión nullable de Driver validada
+
+- Actions `45002920723` pasó Playwright API/MySQL 18/18 y cleanup. Cubrió render de perfil sin UserId, bloqueo por inactividad y aislamiento contra ruta de otro Driver. El cambio adicional de tipos nullable `cd7f171` tiene Actions pendiente.
+
 ## 2026-11-22 — Contrato Driver con usuario opcional
 
 - Los tipos Front reflejan `UserId` opcional/null como admite backend, y el listado mantiene fallback accesible. Lint/build pasan; integración final pendiente.
