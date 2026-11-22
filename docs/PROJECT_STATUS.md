@@ -319,3 +319,7 @@ Fecha de actualización: 2026-11-22.
 - FleetContext ahora consulta `/Routes/assignment-options` para gerente/Logistics y RoutesManagement consume conductores activos independientes de cuentas de usuario. El paso de asignación muestra error y reintento si el endpoint falla.
 - E2E extiende caso Logistics: comprueba 403 en `/Vehicles` y `/Drivers`, 200 en opciones mínimas sin documento/teléfono, disponibilidad de recursos en selectores, creación y cancelación UI.
 - Actions `45012698648` pasó para Front `4117342` + Backend `6def8fa`: audit/lint/build, responsive 1/1, E2E API/MySQL 18/18 y cleanup. Confirmado: Logistics consulta opciones sin PII y crea/cancela ruta; mocks actualizados y todos los fixtures MySQL retirados.
+# Cobertura de rol Manager desde UI — en validación — 2026-11-22
+
+- Auditoría Front detectó que Manager tenía CRUD Vehicle validado por API, pero no E2E de menú/pantalla. El caso de matriz ahora inicia sesión como Manager y comprueba rutas/vehículos visibles, Equipo oculto, alta/edición/estado mantenimiento/baja y persistencia.
+- Vistas cubiertas a 320×844, 390×844 y 768×1024 con aserción de overflow. Local lint/build/discovery de 18 pasa; API/MySQL E2E Actions pendiente.

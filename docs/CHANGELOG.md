@@ -236,3 +236,7 @@
 - Actions `45011806008` dejó 16/18: los tests mockeados de Equipo/Historial no interceptaban el nuevo endpoint. Stub agregado y 2/2 dirigidas.
 - Actions `45012288100` corrió E2E 18/18, pero el cleanup SQL no reconocía el nombre `E2E QA Logistics ruta`; se alineó el prefijo.
 - Actions `45012698648` pasó: 18/18 E2E, responsive 1/1, API/MySQL y cleanup completo.
+# 2026-11-22 — Manager: ciclo de vehículo desde UI
+
+- Amplía la prueba de roles: tras alternar Driver→Logistics→Manager, abre sesión Manager, valida visibilidad de Rutas/Vehículos y oculta Equipo; crea/edita/cambia estado/da de baja vehículo por UI con persistencia API.
+- Comprueba overflow a 320, 390 y 768 px. Lint/build/discovery 18 local pasan; Actions integrado pendiente.

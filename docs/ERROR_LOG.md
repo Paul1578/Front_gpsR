@@ -819,3 +819,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El siguiente Actions `45012288100` ejecutó los 18 E2E y responsive (18/18), pero el runner falló al limpiar MySQL. El fixture de ruta Logistics usaba `E2E QA Logistics ruta …`; `cleanup-e2e.sql` limpia por el prefijo `E2E QA ruta …`, por lo que el nombre no coincidía.
 - Solución: el fixture ahora se llama `E2E QA ruta Logistics …`, alineado con el prefijo de cleanup compartido. Prevención: todo recurso persistido por E2E debe respetar los prefijos del script de limpieza; comprobar cleanup aunque todas las aserciones de navegador pasen.
 - Actions `45012698648` para Front `4117342` + Backend `6def8fa` pasó: audit/lint/build, responsive 1/1, Playwright API/MySQL 18/18, runner cleanup y containers success. El endpoint habilitó la creación Logistics y los tests aislados recuperaron el drawer; DB temporal limpia.
+- Fallo de herramienta de aclaración: la primera llamada asíncrona envió el campo `question`, que el esquema no acepta; no se mostró al usuario. Se reintentó con `title/options` válidos y quedó pendiente política de promoción Admin. Prevención: seguir el esquema publicado exacto de la herramienta antes de formularla.
+
+## 2026-11-22 — Inspección de frontend desde el repositorio backend — CORREGIDO
+
+- Un comando de lectura ejecutado en `/home/leonardo/Back_GPS` buscó `src/Components/fleet/RoutesManagement.tsx`, que pertenece a `/home/leonardo/Front_gpsR`; `sed` devolvió error y no modificó archivos.
+- Solución: repetir las lecturas de frontend desde el checkout Front. La inspección de compatibilidad de `UpdateRouteCommand` sí se realizó desde Back.
+- Prevención: ejecutar cada path relativo desde su repositorio de origen y confirmar el directorio de trabajo antes de agrupar lecturas.

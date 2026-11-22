@@ -1128,7 +1128,7 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
-test("API deniega mutaciones de flota y administración según el rol", async ({ page }) => {
+test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", async ({ page, browser }) => {
   test.skip(
     !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations,
     "Requiere fixtures QA de Admin, User y Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
@@ -1335,6 +1335,102 @@ test("API deniega mutaciones de flota y administración según el rol", async ({
         const cleanupManagerVehicle = await page.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
         expect([200, 204, 404]).toContain(cleanupManagerVehicle.status());
       }
+    }
+
+    const managerContext = await browser.newContext();
+    const managerPage = await managerContext.newPage();
+    managerVehicleId = undefined;
+    const uiPlate = `E2EQAM${suffix}UI`;
+    try {
+      await managerPage.setViewportSize({ width: 390, height: 844 });
+      await managerPage.goto("/login");
+      await managerPage.getByLabel("Correo electrónico").fill(driverEmail!);
+      await managerPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+      await managerPage.getByRole("button", { name: "Iniciar sesión" }).click();
+      await expect(managerPage).toHaveURL(/\/dashboard$/);
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+      await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
+
+      const expectManagerNoOverflow = async () => {
+        const dimensions = await managerPage.evaluate(() => ({
+          viewport: document.documentElement.clientWidth,
+          content: document.documentElement.scrollWidth,
+        }));
+        expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      };
+      await managerPage.setViewportSize({ width: 320, height: 844 });
+      await expectManagerNoOverflow();
+      await managerPage.getByRole("button", { name: "Agregar Vehículo" }).click();
+      let vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.getByPlaceholder("ABC-123").fill(uiPlate);
+      await vehicleDialog.getByPlaceholder("Toyota").fill("Manager UI");
+      await vehicleDialog.getByPlaceholder("Hilux").fill("Responsive vehicle");
+      await vehicleDialog.locator('input[type="number"]').fill("2025");
+      const createManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Vehicles") && response.request().method() === "POST",
+      );
+      await vehicleDialog.getByRole("button", { name: "Agregar", exact: true }).click();
+      const createManagerResponse = await createManagerVehicle;
+      expect(createManagerResponse.status()).toBe(201);
+      managerVehicleId = (await createManagerResponse.json()).id as string;
+      const managerCard = managerPage.locator(".grid > div").filter({ hasText: uiPlate });
+      await expect(managerCard).toContainText("Manager UI Responsive vehicle");
+
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.getByPlaceholder("Toyota").fill("Manager editado");
+      const editManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await editManagerVehicle).status()).toBe(200);
+      await expect(managerCard).toContainText("Manager editado Responsive vehicle");
+
+      await managerPage.setViewportSize({ width: 768, height: 1024 });
+      await expectManagerNoOverflow();
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.locator("select").selectOption("mantenimiento");
+      const setManagerMaintenance = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}/status`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await setManagerMaintenance).status()).toBe(204);
+      const managerAuthHeaders = { Authorization: `Bearer ${await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` };
+      const persistedManagerUiVehicle = await managerPage.request.get(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerAuthHeaders });
+      expect(persistedManagerUiVehicle.status()).toBe(200);
+      expect(await persistedManagerUiVehicle.json()).toMatchObject({ plate: uiPlate, brand: "Manager editado", status: 2 });
+      await expect(managerCard).toContainText("Mantenimiento");
+
+      await managerCard.getByRole("button").nth(1).click();
+      const managerDeleteDialog = managerPage.getByRole("alertdialog");
+      const deleteManagerUiVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}`) && response.request().method() === "DELETE",
+      );
+      await managerDeleteDialog.getByRole("button", { name: "Sí, eliminar" }).click();
+      expect((await deleteManagerUiVehicle).status()).toBe(204);
+      managerVehicleId = undefined;
+      await expect(managerCard).toHaveCount(0);
+      await managerPage.setViewportSize({ width: 390, height: 844 });
+      await expectManagerNoOverflow();
+    } finally {
+      if (managerVehicleId) {
+        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        if (token) {
+          await managerPage.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+            headers: { Authorization: `Bearer ${token}` },
+            data: { status: 0 },
+          }).catch(() => undefined);
+          await managerPage.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => undefined);
+        }
+      }
+      await managerContext.close();
     }
   } finally {
     await setFixtureRole("Driver");

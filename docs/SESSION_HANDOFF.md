@@ -433,3 +433,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Back `chore/stabilize-fleet-platform`, código `6def8fa`; Actions `45011796536` pasó Release build, xUnit 64/64, smoke HTTP/MySQL tenant/Logistics y concurrencia. Commit documental posterior `5dc2426`.
 - Errores de dos runs frontend (stub de endpoint faltante y prefijo de fixture) ya quedaron solucionados y registrados en `docs/ERROR_LOG.md`.
 - Continuar misión: auditar siguiente brecha de CRUD/roles/responsive con prueba ejecutable; la política de Admin delegado sigue sin definición. SMTP requiere credenciales externas; app nativa móvil está pospuesta.
+
+## Iteración siguiente en curso — Manager UI y opciones asignables — 2026-11-22
+
+- Nueva auditoría frontend identificó CRUD vehículos de Manager cubierto sólo por API. Se amplió la prueba de matriz en `e2e/fleet-admin.spec.ts`: cuenta Manager inicia navegador, verifica menú (Rutas/Vehículos sí, Equipo no), alta/edición/mantenimiento/baja con persistencia, overflow 320/390/768; branch `refactor/route-builder` sin publicar este lote aún.
+- `npm run lint`, `npm run build`, discovery Playwright **18** y diff-check pasan localmente. Falta ejecutar flujo API/MySQL en Actions.
+- Auditoría backend encontró que options devolvía estado vehículo no asignable/cuenta de Driver inactiva. Código local en Back agrega status Available, `GetAssignableAsync` por tenant y User activo, prueba xUnit y smoke SQL del Driver vinculado desactivado. Release 65/65 y build 0 warnings/errors; smoke/Actions pendiente.
+- Política de Admin delegado preguntada vía herramienta (primer intento falló por esquema y quedó registrado en ERROR_LOG); continuar cambios independientes mientras se espera respuesta.
