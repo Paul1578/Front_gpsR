@@ -38,6 +38,10 @@
 
 - Gestión de Conductores refleja la regla de exclusividad vigente; el E2E Manager verifica retirada y disponibilidad posterior a desasignar. Actions `45031929936`: responsive 1/1 y Playwright autenticado 20/20, cleanup correcto.
 
+## 2026-11-22 — Feedback de conflicto al asignar Driver — VALIDADO
+
+- E2E confirma que un HTTP 409 muestra el mensaje del servicio y no una confirmación de éxito; luego comprueba la asignación real. Actions `45032626648` pasó 20/20, responsive y cleanup.
+
 ## 2026-11-21 — E2E móvil de rutas, conductores y roles
 
 - Playwright autenticado pasó 5/5 con frontend, API y MySQL locales; incluye el flujo progresivo de edición/cancelación de ruta, filtro y detalle de Historial a 390×844, y CRUD de Driver desde Gestión de Equipo.

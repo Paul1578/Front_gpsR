@@ -10,7 +10,7 @@
 ## Siguiente brecha — error visible al asignar un vehículo — 2026-11-22
 
 - El manejador UI ya enseña errores API, pero faltaba comprobar un 409 desde Gestión de Conductores. Se añadió al E2E Manager un stub 409, aserción de alerta/no éxito y luego se deja continuar con asignación HTTP real.
-- Local `npm run lint`, `npm run build`, discovery Playwright **20** y diff-check pasan. Actions autenticado con API/MySQL descartables pendiente.
+- Local `npm run lint`, `npm run build`, discovery Playwright **20** y diff-check pasan. Actions `45032626648` pasó audit/lint/build, responsive 1/1, E2E autenticado Chrome/API/MySQL **20/20** y cleanup.
 
 ## Fase completada — edición de perfil de equipo — 2026-11-22
 

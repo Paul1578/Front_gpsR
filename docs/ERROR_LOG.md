@@ -11,7 +11,7 @@
 
 - Auditoría confirmó que el componente ya mostraba el error de API al asignar, pero no había prueba de que un HTTP 409 se presentara sin un toast de éxito.
 - E2E Manager inyecta respuesta 409, exige el mensaje del backend y ausencia de confirmación; después retira el stub y ejecuta la asignación real.
-- `npm run lint`, `npm run build` y discovery Playwright **20** pasan local; Actions autenticado/cleanup de este cambio pendientes.
+- `npm run lint`, `npm run build` y discovery Playwright **20** pasan local. Actions `45032626648` pasó E2E autenticado **20/20**, responsive 1/1 y cleanup correcto.
 
 ## 2026-11-22 — Runner E2E local detenido por guard de mutaciones — CORREGIDO
 

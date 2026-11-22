@@ -54,7 +54,7 @@ Gestión de Equipo permite editar nombres, apellidos y username con backend real
 
 ## Próxima prueba negativa — 2026-11-22
 
-- E2E de Gestión de Conductores simula asignación HTTP 409, verifica mensaje legible y ausencia de toast de éxito, después ejecuta asignación real. Lint/build/discovery **20** pasan local; Actions pendiente.
+- E2E de Gestión de Conductores simula asignación HTTP 409, verifica mensaje legible y ausencia de toast de éxito, después ejecuta asignación real. Lint/build/discovery **20** pasan local; Actions `45032626648` pasó E2E **20/20**, responsive 1/1 y cleanup.
 
 # Estado del proyecto
 
