@@ -7,6 +7,13 @@
 
 # Registro de errores y decisiones
 
+## 2026-11-22 — Runner E2E local detenido por guard de mutaciones — CORREGIDO
+
+- Primera invocación de `run-e2e-local.sh` terminó en código 2 porque no estaba definida `FLETFLOW_E2E_ALLOW_MUTATIONS=true`; el guard se ejecutó antes de tocar servicios o datos.
+- Al relanzar con autorización, el precheck pidió una cuenta Admin bootstrap temporal `fletflow.e2e.admin.*@example.test`; no se proporcionó ni se creó una cuenta en la base local del desarrollador.
+- Para evitar mutar datos locales no descartables, el runner se detuvo y la prueba autenticada se delega a Actions, donde se generan credenciales y MySQL efímeros. Lint/build/discovery locales sí se ejecutan.
+- Prevención: para pruebas E2E destructivas locales, revisar `docs/TESTING.md` y habilitar la variable de consentimiento en el proceso de esa ejecución; no exportarla globalmente.
+
 ## 2026-11-22 — Matriz E2E preparaba Manager por API, no desde la UI; modal móvil sin verificación estrecha — COBERTURA AÑADIDA
 
 - Auditoría de suite descubrió que el E2E autenticaba como Manager después de cambiar el rol con API; no probaba la acción Admin en Gestión de Equipo. El diálogo de usuario se usaba a 390 px y sin afirmar que controles/scroll cupieran en 320/768.
@@ -887,6 +894,13 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Actions `45020301540` para Front `cacb72e` pasó lint/build/audit, responsive **1/1**, E2E autenticado Chrome/API/MySQL **18/18** y cleanup.
 - Backend Actions `45020146775` confirmó migración, persistencia `CreatedAtUtc`, edición inmutable y smoke MySQL. El fallo inicial por precisión `datetime(6)` se resolvió y quedó registrado en backend.
+
+# 2026-11-22 — Selector de Gestión de Conductores ofrecía vehículos ocupados — CORREGIDO; E2E pendiente
+
+- Auditoría encontró que la pantalla de Gestión de Conductores filtraba por estado `disponible`, pero no por asignación existente. El endpoint rechaza la operación con 409, así que la interfaz ofrecía recursos que no podía asignar.
+- Solución: conservar la opción del vehículo actual, pero excluir cualquier vehículo vinculado a otro Driver. E2E Manager crea otro Driver y comprueba que la opción desaparezca mientras existe la relación y reaparezca después de desasignar.
+- Aún pendiente: lint/build y E2E integrado tras editar.
+- Prevención: opciones operativas deben reflejar estado y relaciones de asignación del backend; una validación server-side no compensa un selector que induce una operación fallida.
 
 ## 2026-11-22 — Gestión de Equipo ofrecía asignación inválida y edición sin validar — CORREGIDO LOCAL; ACTIONS PENDIENTE
 

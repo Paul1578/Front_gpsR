@@ -201,7 +201,11 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {visibleDrivers.map((driver) => {
               const assignedVehicle = vehicles.find((vehicle) => vehicle.id === driver.vehicleId);
-              const availableVehicles = vehicles.filter((vehicle) => vehicle.estado === "disponible" || vehicle.id === driver.vehicleId);
+              const availableVehicles = vehicles.filter((vehicle) => {
+                if (vehicle.id === driver.vehicleId) return true;
+                const alreadyAssigned = drivers.some((other) => other.id !== driver.id && other.vehicleId === vehicle.id);
+                return vehicle.estado === "disponible" && !alreadyAssigned;
+              });
               return (
                 <article key={driver.id} data-testid={`managed-driver-${driver.id}`} className="min-w-0 space-y-3 rounded-xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

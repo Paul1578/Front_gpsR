@@ -1675,6 +1675,21 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       const assignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
       expect((await assignedManagerDriver.json()).vehicleId).toBe(managerVehicleId);
 
+      const secondManagerDriverDocument = `E2EQA${suffix}N`;
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager segundo ${suffix}`);
+      await managerPage.getByLabel("Apellidos del conductor").fill("Chofer");
+      await managerPage.getByLabel("Documento del conductor").fill(secondManagerDriverDocument);
+      await managerPage.getByLabel("Teléfono del conductor").fill("0990000078");
+      const createSecondManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Drivers") && response.request().method() === "POST",
+      );
+      await managerPage.getByRole("button", { name: "Crear conductor" }).click();
+      const secondManagerDriverResponse = await createSecondManagerDriver;
+      expect(secondManagerDriverResponse.status()).toBe(201);
+      const secondManagerDriver = await secondManagerDriverResponse.json();
+      const secondManagerDriverCard = managerPage.getByTestId(`managed-driver-${secondManagerDriver.id}`);
+      await expect(secondManagerDriverCard.getByRole("combobox").locator(`option[value="${managerVehicleId}"]`)).toHaveCount(0);
+
       const unassignManagerDriverVehicle = managerPage.waitForResponse((response) =>
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`) && response.request().method() === "PUT",
       );
@@ -1682,6 +1697,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       expect((await unassignManagerDriverVehicle).status()).toBe(204);
       const unassignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
       expect((await unassignedManagerDriver.json()).vehicleId).toBeNull();
+      await expect(secondManagerDriverCard.getByRole("combobox").locator(`option[value="${managerVehicleId}"]`)).toHaveCount(1);
 
       const deactivateManagerDriver = managerPage.waitForResponse((response) =>
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",

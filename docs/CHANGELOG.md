@@ -34,6 +34,10 @@
 
 # Changelog
 
+## 2026-11-22 — Selector evita vehículos ya asignados a otro conductor
+
+- Gestión de Conductores refleja la regla de exclusividad vigente; el E2E Manager verifica retirada y disponibilidad posterior a desasignar. CI pendiente.
+
 ## 2026-11-21 — E2E móvil de rutas, conductores y roles
 
 - Playwright autenticado pasó 5/5 con frontend, API y MySQL locales; incluye el flujo progresivo de edición/cancelación de ruta, filtro y detalle de Historial a 390×844, y CRUD de Driver desde Gestión de Equipo.

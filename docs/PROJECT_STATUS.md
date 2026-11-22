@@ -44,6 +44,13 @@ Gestión de Equipo permite editar nombres, apellidos y username con backend real
 - Alta Driver concurrente: smoke adaptado al status actual 200/409 y conserva verificación SQL de una sola cuenta/conductor/token. Backend Release 61/61 y shell syntax/diff-check pasan; Actions `45001599626` en ejecución al actualizar este documento.
 - Siguen pendientes cobertura progresiva de los CRUD, matriz de roles y responsive; no declarar auditoría completa. SMTP real externo, app nativa pospuesta y decisiones de despliegue permanecen fuera de alcance técnico local.
 
+# Actualización actual — coherencia de opciones Vehicle/Driver — 2026-11-22
+
+- Gestión de Conductores filtra selector a vehículos disponibles sin otro Driver vinculado, en concordancia con HTTP 409 del backend y exclusividad de asignación.
+- E2E comprueba que el selector de un segundo conductor no ofrezca el recurso asignado y que se habilite tras desasignar.
+- `npm run lint`, `npm run build` y discovery Playwright **20** pasan local. No se ejecutó mutación E2E local porque faltaba la cuenta QA bootstrap; el runner se detuvo sin modificar la DB. Actions pendiente valida el flujo sobre MySQL descartable.
+- Misión global permanece abierta.
+
 # Estado del proyecto
 
 Fecha de actualización: 2026-11-22.
