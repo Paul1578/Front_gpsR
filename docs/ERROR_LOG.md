@@ -792,3 +792,13 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Durante la revisión del test de creación de Driver sin cuenta, un locator quedó temporalmente con cierre de corchete incorrecto y nombre duplicado en el mismo scope. `git diff` lo detectó antes de ejecutar la suite; se corrigió el locator y se usó un nombre distinto para la tarjeta.
 - Prevención: revisar compilación TypeScript y declarar locators con nombres únicos antes de disparar E2E integrado. El lint/build posteriores pasaron.
+
+## 2026-11-22 — ESLint detectó variable mutable sin reasignación — CORREGIDO
+
+- La prueba de alta UI Logistics declaró `vehicleId` con `let` aunque sólo se asignaba una vez; `npm run lint` falló por `prefer-const`.
+- Se convirtió a `const`. La prueba se vuelve a validar con lint/build antes de publicar el siguiente SHA.
+
+## 2026-11-22 — Consulta de Actions en repositorio equivocado — CORREGIDO
+
+- Se consultó el ID de Actions del frontend usando el repositorio backend; GitHub respondió 404. Se consultó de nuevo desde `/home/leonardo/Front_gpsR` y se confirmó el estado correcto.
+- Prevención: usar el checkout/repositorio que originó cada run al llamar `gh run view`.

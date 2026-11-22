@@ -404,3 +404,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Cambios locales en `refactor/route-builder`: `TeamManagement.tsx` admite `userId` opcional y muestra “Sin usuario vinculado”; `FleetContext.addDriver` manda null explícito. E2E tablet crea Driver, confirma 201, GET con `userId=null`, tarjeta y overflow.
 - `npm run lint`, `npm run build`, `npx playwright test --list` (18) y `git diff --check` pasaron. Falta integrar el E2E con API/MySQL en Actions del nuevo SHA.
 - Nueva auditoría backend: hueco cross-tenant en escrituras de paradas (status/evidence) ahora cubierto en smoke, y CRUD positivo Driver cubierto por HTTP/MySQL; smoke local aprobado, xUnit 64/64. Código/doc backend aún debe validarse en Actions.
+
+
+## Resultado E2E Driver sin usuario — 2026-11-22
+
+- Actions `45009354112` para Front `6681023` pasó success: Playwright autenticado **18/18**, responsive browser **1/1**, audit/lint/build y cleanup; nuevo Driver se creó desde UI sin usuario, con `userId=null` persistido.
+- En progreso local (aún no publicar): Logistics crea/cancela ruta desde UI y Admin prueba el constructor a 320×844; lint/build/discovery 18 pasan. Revisar el diff, publicar y corregir cualquier fallo real de Actions.

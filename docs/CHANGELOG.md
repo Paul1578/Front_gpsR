@@ -214,3 +214,12 @@
 
 - Gestión de Equipo permite crear Driver con o sin cuenta asociada; nombre, apellido, documento y teléfono siguen siendo obligatorios. El payload envía `userId: null` explícitamente.
 - E2E añadido en tablet 768×1024: verifica HTTP 201, `userId=null` por POST y GET, tarjeta “Sin usuario vinculado” y ausencia de overflow. lint/build y discovery de 18 tests pasan localmente; Actions API/MySQL está pendiente.
+
+
+## 2026-11-22 — E2E UI para Driver independiente
+
+- Actions `45009354112` pasó para Front `6681023`: Playwright autenticado Chrome/API/MySQL **18/18**, responsive browser **1/1**, audit/lint/build y cleanup completos. El nuevo caso crea desde UI un Driver sin usuario y confirma null persistido en POST/GET a 768×1024.
+
+## 2026-11-22 — Rutas UI para Logistics y breakpoint 320 px — validación pendiente
+
+- Logistics ahora tiene un recorrido UI de creación y cancelación de ruta con persistencia consultada por API. Constructor móvil de Admin se amplía a 320×844; checks locales lint/build y discovery 18 correctos. Espera Actions integrada.

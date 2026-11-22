@@ -296,8 +296,14 @@ Fecha de actualización: 2026-11-22.
 - Auditoría integral sigue abierta: quedan CRUD y vistas responsive por recorrer, además de la definición de privilegio para asignar rol Admin. SMTP depende de credenciales externas; aplicación nativa móvil está aplazada por decisión del usuario.
 
 
-## Alta de Driver independiente — Actions pendiente — 2026-11-22
+## Alta de Driver independiente — Actions validado — 2026-11-22
 
 - Admin ahora puede crear un conductor sin cuenta asociada desde Gestión de Choferes; el vínculo de usuario es opcional y se persiste como null. Los datos operativos del conductor siguen requeridos.
 - Playwright cubre creación tablet 768×1024, HTTP 201, lectura API de `userId=null`, tarjeta “Sin usuario vinculado” y overflow. Lint/build y discovery **18 tests** pasaron localmente; integración API/MySQL pendiente de Actions.
 - La prueba reutiliza el fixture Admin y cleanup por prefijo `E2EQA`; misión de CRUD/roles/responsive sigue abierta.
+
+
+## Logistics administra rutas desde la UI y builder a 320 px — Actions pendiente — 2026-11-22
+
+- El E2E de Logistics ahora crea una ruta desde el constructor con un Driver activo sin cuenta, comprueba API/persistencia, la cancela desde la tarjeta y confirma estado Cancelled; además verifica denegación de flota/equipo.
+- El E2E de Admin crea una ruta a 320×844 y comprueba overflow; el alta de Driver independiente también verifica 320 px tras crearlo en tablet. Lint/build/discovery **18** pasan localmente; Actions API/MySQL de esta iteración pendiente.
