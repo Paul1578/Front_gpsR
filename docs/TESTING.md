@@ -1,7 +1,12 @@
+# Administración de empresa y alta Driver — validación local 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npm run test:e2e -- --list` (**36 tests**) y `git diff --check` pasan tras eliminar Equipos ficticios y completar el formulario.
+- El E2E `company-admin.spec.ts` valida que la pestaña Equipos no aparezca, el campo de email sea de tipo email y al elegir Chofer se pidan documento y teléfono. Action autenticada Chrome/API/MySQL todavía pendiente.
+
 # Registro duplicado visible desde formulario — 2026-11-22
 
 - E2E registra la empresa, repite el mismo email desde UI y espera HTTP 200 con el mismo payload neutral; verifica mensaje visible y redirección a Login, después inicia sesión con la cuenta creada.
-- Conserva además intento API directo de duplicado con status/body idénticos. Action con API/MySQL descartables pendiente; el servidor no expone indicador de email existente.
+- Conserva además intento API directo de duplicado con status/body idénticos. Action `45071113746` pasó **36/36 E2E** con API/MySQL descartables, responsive 1/1 y cleanup; no se expone indicador de email existente.
 
 # Evidencia obligatoria para cierre de parada/ruta — 2026-11-22
 

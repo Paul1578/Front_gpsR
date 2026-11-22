@@ -17,6 +17,14 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await expect(page.getByRole("heading", { name: "Administración de la empresa" })).toBeVisible();
   await expect(page.getByText("Actividad del Sistema", { exact: true })).toHaveCount(0);
   await expect(page.getByText("FleetTrack v1.0", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Equipos", exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Crear Usuario", exact: true }).first().click();
+  await expect(page.getByRole("heading", { name: "Crear Nuevo Usuario" })).toBeVisible();
+  await expect(page.getByLabel("Correo electrónico")).toHaveAttribute("type", "email");
+  await page.getByRole("button", { name: "Chofer", exact: true }).click();
+  await expect(page.getByLabel("Documento *")).toBeVisible();
+  await expect(page.getByLabel("Teléfono *")).toBeVisible();
 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();

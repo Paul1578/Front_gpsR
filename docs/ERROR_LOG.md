@@ -1,9 +1,15 @@
-## 2026-11-22 — Email duplicado sólo se probaba por API, no por el formulario — CORREGIDO EN SPEC; CI PENDIENTE
+## 2026-11-22 — Administración de empresa ofrecía equipos que API no guarda — CORREGIDO LOCALMENTE
+
+- El panel mostraba la lista “Equipos” agrupando por `teamId`, pero `/Users/my-team` no devuelve ese campo y `POST /Users` ignora el valor enviado. El contador y los detalles podían aparentar una relación inexistente. El mismo alta ofrecía Chofer sin recoger email/documento/teléfono completos.
+- Se retiraron la pestaña y el selector de equipo; alta ahora pide email y, para Chofer, documento/teléfono, que se envían a API. E2E verifica la interfaz y campos. Lint/build/audit 0/discovery 36 pasan local; Action integrada pendiente.
+- Prevención: no presentar relaciones de negocio como reales sin verificar su persistencia y lectura posterior desde API; probar que cada formulario incluya los campos obligatorios del contrato.
+
+## 2026-11-22 — Email duplicado sólo se probaba por API, no por el formulario — CORREGIDO Y VALIDADO
 
 - El registro E2E comprobaba el contrato neutral con HTTP directo, pero no ejecutaba la segunda presentación de email desde la UI ni verificaba el mensaje/redirección del usuario.
 - Se añadió submit duplicado por formulario, comparación exacta del payload con el primer registro, toast neutral y regreso a Login. El caso luego inicia sesión con la cuenta creada originalmente.
 - Prevención: probar respuestas neutrales de negocio tanto en endpoint como en el flujo visible; no afirmar que la UI es correcta sólo porque el API responda bien.
-- Lint/build/discovery y Action real pendientes.
+- Action `45071113746` pasó **36/36 E2E**, backend xUnit 110/110, responsive, audit/lint/build y cleanup contra MySQL descartable.
 
 ## 2026-11-22 — API permitía cerrar parada sin evidencia y dejar ruta atascada — CORREGIDO LOCAL; ACTION PENDIENTE
 

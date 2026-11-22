@@ -1,7 +1,14 @@
-## Registro público duplicado desde UI — nuevo E2E pendiente
+## Estado actual — 2026-11-22
+
+- Front `refactor/route-builder`: se corrigió el panel de empresa que ofrecía equipos/relaciones `teamId` no persistidos; alta captura email y los datos requeridos para Driver. Lint/build/audit 0/discovery 36 pasan local; Action de esta revisión pendiente.
+- Front `5d4e290` pasó Action `45071113746`: **36/36 E2E** contra API/MySQL, responsive **1/1**, backend xUnit **110/110**, audit/lint/build y cleanup.
+- Backend `87b208e` pasó Action `45071475764`: build, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup; adicionalmente smoke local efímero completo.
+- Misión abierta. No hay definición de producto sobre Admin delegado ni desvinculación de User/Driver; móvil nativo aplazado y SMTP/infraestructura de producción son externos.
+
+## Registro público duplicado desde UI — validado en Action
 
 - Se amplió el test para repetir un email existente desde el formulario, validar response neutral idéntica, toast de éxito neutral y redirección a Login; después autentica la cuenta original.
-- Local lint/build/discovery, Action autenticada Chrome/API/MySQL y cleanup pendientes para este cambio.
+- Action `45071113746` ejecutó el nuevo test en el commit `5d4e290`; 36/36 E2E, backend 110/110, responsive 1/1 y cleanup success.
 
 ## Evidencia obligatoria por parada — validado local; CI pendiente
 

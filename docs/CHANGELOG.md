@@ -1,8 +1,14 @@
-# 2026-11-22 — Registro duplicado validado desde UI — Action pendiente
+# 2026-11-22 — Administración de empresa sin relaciones de equipo ficticias
+
+- Se retiró la pestaña “Equipos” y los detalles calculados con `teamId`, que la API no guarda ni devuelve. La creación ya no promete asignación a equipo.
+- El formulario de alta pide correo electrónico; al elegir Chofer exige documento y teléfono para que el backend pueda crear la cuenta y el perfil operativo.
+- E2E `company-admin` comprueba la ausencia de Equipos, el campo email y los campos requeridos del Driver; lint/build/audit/discovery locales pasan. Action integrada de esta revisión pendiente.
+
+# 2026-11-22 — Registro duplicado validado desde UI — Action aprobada
 
 - E2E de registro ahora repite desde el formulario una cuenta de empresa ya existente. Confirma la respuesta neutral idéntica, mensaje visible y redirección a Login; conserva el intento API directo.
 - Correo duplicado no revela el estado de la cuenta ni crea sesión automáticamente.
-- Lint/build/audit/discovery 36 y Actions integradas pendientes de este assertion.
+- Action `45071113746` sobre `5d4e290` pasó: **36/36 E2E**, responsive **1/1**, backend xUnit **110/110**, audit/lint/build y cleanup.
 
 # 2026-11-22 — Cierre de parada sin evidencia podía bloquear la ruta — FIX LOCAL APROBADO; CI PENDIENTE
 

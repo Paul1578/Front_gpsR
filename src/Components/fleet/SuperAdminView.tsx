@@ -1,33 +1,32 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, Users, Database, Download, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Shield, Users, Database, Download, BarChart3, Eye, EyeOff } from "lucide-react";
 import { useAuth, UserRole } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
-import { TeamDetailsView } from "./TeamDetailsView";
 
 interface SuperAdminViewProps {
   onBack?: () => void;
 }
 
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
-  const { getAllUsers, updateUserRole, getManagers, createUser } = useAuth();
+  const { getAllUsers, updateUserRole, createUser } = useAuth();
   const { vehicles, routes } = useFleet();
-  const [activeTab, setActiveTab] = useState<"overview" | "teams" | "users" | "create" | "data">("overview");
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "create" | "data">("overview");
   const [isCreating, setIsCreating] = useState(false);
 
   const [createUserForm, setCreateUserForm] = useState({
     nombres: "",
     apellidos: "",
     usuario: "",
+    email: "",
     password: "",
     role: "gerente" as UserRole,
-    teamId: "",
+    documentNumber: "",
+    phoneNumber: "",
   });
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const users = getAllUsers();
-  const managers = getManagers();
 
   // Los contextos entregan los recursos visibles para la empresa autenticada.
   const allRoutes = routes;
@@ -50,31 +49,33 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     availableVehicles: allVehicles.filter((v) => v.estado === "disponible").length,
     vehiclesOnRoute: allVehicles.filter((v) => v.estado === "en_ruta").length,
     vehiclesInMaintenance: allVehicles.filter((v) => v.estado === "mantenimiento").length,
-    totalTeams: managers.length,
   };
 
-  // Si hay un equipo seleccionado, mostrar la vista de detalles
-  if (selectedTeamId) {
-    return <TeamDetailsView teamId={selectedTeamId} onBack={() => setSelectedTeamId(null)} />;
-  }
-
   const handleCreateUser = async () => {
-    if (!createUserForm.nombres || !createUserForm.apellidos || !createUserForm.usuario || !createUserForm.password) {
+    if (!createUserForm.nombres.trim() || !createUserForm.apellidos.trim() || !createUserForm.usuario.trim() || !createUserForm.email.trim() || !createUserForm.password) {
       toast.error("Por favor completa todos los campos");
       return;
     }
-
-    // Si el rol no es gerente ni superadmin, debe seleccionar un equipo
-    if (createUserForm.role !== "gerente" && createUserForm.role !== "superadmin" && !createUserForm.teamId) {
-      toast.error("Debes seleccionar un equipo para este usuario");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createUserForm.email.trim())) {
+      toast.error("Escribe un correo electrónico válido");
+      return;
+    }
+    if (createUserForm.role === "chofer" && (!createUserForm.documentNumber || !createUserForm.phoneNumber)) {
+      toast.error("Para crear un chofer indica documento y teléfono");
       return;
     }
 
     setIsCreating(true);
     
     const result = await createUser({
-      ...createUserForm,
-      teamId: createUserForm.role === "gerente" || createUserForm.role === "superadmin" ? undefined : createUserForm.teamId,
+      nombres: createUserForm.nombres.trim(),
+      apellidos: createUserForm.apellidos.trim(),
+      usuario: createUserForm.usuario.trim(),
+      email: createUserForm.email.trim(),
+      password: createUserForm.password,
+      role: createUserForm.role,
+      identificacion: createUserForm.documentNumber,
+      phoneNumber: createUserForm.phoneNumber,
     });
 
     setIsCreating(false);
@@ -85,13 +86,24 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
         nombres: "",
         apellidos: "",
         usuario: "",
+        email: "",
         password: "",
         role: "gerente",
-        teamId: "",
+        documentNumber: "",
+        phoneNumber: "",
       });
       setShowCreatePassword(false);
     } else {
       toast.error(result.message ?? "No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
+    }
+  };
+
+  const handleRoleUpdate = async (userId: string, role: UserRole) => {
+    const result = await updateUserRole(userId, role);
+    if (result.ok) {
+      toast.success("Rol actualizado correctamente");
+    } else {
+      toast.error(result.message ?? "No se pudo actualizar el rol");
     }
   };
 
@@ -166,8 +178,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Gerentes</p>
-              <p className="text-2xl">{stats.totalTeams}</p>
+                <p className="text-red-100 text-xs mb-1">Administradores</p>
+                <p className="text-2xl">{stats.managers}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
               <p className="text-red-100 text-xs mb-1">Usuarios de la empresa</p>
@@ -199,17 +211,6 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
             >
               <BarChart3 size={18} />
               Resumen
-            </button>
-            <button
-              onClick={() => setActiveTab("teams")}
-              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === "teams"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <Building2 size={18} />
-              Equipos
             </button>
             <button
               onClick={() => setActiveTab("users")}
@@ -342,74 +343,12 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
             </div>
           )}
 
-          {activeTab === "teams" && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg text-gray-900 mb-4">
-                  Equipos Registrados ({managers.length})
-                </h3>
-                {managers.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-8">
-                    No hay equipos registrados aún
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {managers.map((manager) => {
-                      const teamMembers = users.filter(u => u.teamId === manager.id);
-                      const teamVehicles = allVehicles.filter((v) => v.teamId === manager.id);
-                      const teamRoutes = allRoutes.filter((r) => r.teamId === manager.id);
-                      
-                      return (
-                        <button
-                          key={manager.id}
-                          onClick={() => setSelectedTeamId(manager.id)}
-                          className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-600 hover:bg-red-50 transition-all text-left"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white">
-                              {manager.nombres.charAt(0)}
-                              {manager.apellidos.charAt(0)}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-900">
-                                {manager.teamName || `Equipo de ${manager.nombres}`}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                Gerente: {manager.nombres} {manager.apellidos}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="bg-blue-50 rounded p-2">
-                              <p className="text-xs text-blue-600">Miembros</p>
-                              <p className="text-sm text-blue-900">{teamMembers.length}</p>
-                            </div>
-                            <div className="bg-green-50 rounded p-2">
-                              <p className="text-xs text-green-600">Vehículos</p>
-                              <p className="text-sm text-green-900">{teamVehicles.length}</p>
-                            </div>
-                            <div className="bg-purple-50 rounded p-2">
-                              <p className="text-xs text-purple-600">Rutas</p>
-                              <p className="text-sm text-purple-900">{teamRoutes.length}</p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {activeTab === "users" && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <h3 className="text-lg text-gray-900 mb-4">Usuarios de la empresa</h3>
                 <div className="space-y-3">
                   {users.map((user) => {
-                    const manager = user.teamId ? users.find(u => u.id === user.teamId) : null;
-                    
                     return (
                       <div
                         key={user.id}
@@ -430,16 +369,13 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                             </p>
                             <p className="text-xs text-gray-500">
                               @{user.usuario} · ID: {user.identificacion}
-                              {manager && ` · Equipo: ${manager.teamName || manager.nombres}`}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <select
                             value={user.role}
-                            onChange={(e) =>
-                              updateUserRole(user.id, e.target.value as UserRole)
-                            }
+                            onChange={(e) => void handleRoleUpdate(user.id, e.target.value as UserRole)}
                             className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
                           >
                             <option value="superadmin">Administrador</option>
@@ -469,7 +405,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-4">Crear Nuevo Usuario</h3>
                 <p className="text-sm text-gray-600 mb-6">
-                  Crea usuarios para tu empresa y asígnalos a un equipo cuando corresponda.
+                  Crea usuarios de tu empresa. Para choferes, el documento y teléfono son necesarios para crear su perfil operativo.
                 </p>
 
                 <div className="space-y-4">
@@ -514,6 +450,18 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm text-gray-700 mb-2" htmlFor="company-user-email">Correo electrónico</label>
+                      <input
+                        id="company-user-email"
+                        type="email"
+                        autoComplete="email"
+                        value={createUserForm.email}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm"
+                        placeholder="usuario@empresa.com"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm text-gray-700 mb-2">Contraseña</label>
                       <div className="relative">
                         <input
@@ -544,12 +492,10 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                         <button
                           key={role}
                           type="button"
-                          onClick={() => setCreateUserForm({ ...createUserForm, role, teamId: role === "gerente" || role === "superadmin" ? "" : createUserForm.teamId })}
+                          onClick={() => setCreateUserForm({ ...createUserForm, role })}
                           className={`px-3 py-2 rounded-lg border-2 transition-all text-xs ${
                             createUserForm.role === role
-                              ? role === "superadmin"
-                                ? "border-red-600 bg-red-600 text-white"
-                                : "border-red-600 bg-red-600 text-white"
+                              ? "border-red-600 bg-red-600 text-white"
                               : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                           }`}
                         >
@@ -559,28 +505,18 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                     </div>
                   </div>
 
-                  {createUserForm.role !== "gerente" && createUserForm.role !== "superadmin" && (
+                  {createUserForm.role === "chofer" && (
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">
-                        Equipo (Gerente) *
-                      </label>
-                      <select
-                        value={createUserForm.teamId}
-                        onChange={(e) =>
-                          setCreateUserForm({ ...createUserForm, teamId: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm"
-                      >
-                        <option value="">Seleccionar equipo...</option>
-                        {managers.map((manager) => (
-                          <option key={manager.id} value={manager.id}>
-                            {manager.teamName || `Equipo de ${manager.nombres} ${manager.apellidos}`} (@{manager.usuario})
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Selecciona el gerente al que pertenecerá este usuario
-                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-700 mb-2" htmlFor="company-driver-document">Documento *</label>
+                          <input id="company-driver-document" value={createUserForm.documentNumber} onChange={(event) => setCreateUserForm({ ...createUserForm, documentNumber: event.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" autoComplete="off" />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-700 mb-2" htmlFor="company-driver-phone">Teléfono *</label>
+                          <input id="company-driver-phone" value={createUserForm.phoneNumber} onChange={(event) => setCreateUserForm({ ...createUserForm, phoneNumber: event.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" inputMode="tel" autoComplete="tel" />
+                        </div>
+                      </div>
                     </div>
                   )}
 

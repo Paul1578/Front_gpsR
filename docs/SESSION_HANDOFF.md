@@ -1,3 +1,11 @@
+## Continuación — 2026-11-22
+
+- Front `refactor/route-builder`: `SuperAdminView` ya no ofrece equipos derivados de Admin ni lee/escribe `teamId` sin soporte de API. Formulario pide email válido y para Chofer pide documento/teléfono; E2E `company-admin.spec.ts` cubre esos controles.
+- Front local pasó lint, Next build, audit 0, discovery 36 y diff-check. Cambios actuales de componente/spec/docs están locales y aún deben commit/push y validar con Action.
+- Front Action `45071113746` para `5d4e290` terminó success: 36/36 Playwright autenticado, responsive 1/1, backend xUnit 110/110, lint/build/audit y cleanup.
+- Backend `87b208e` corrige desactivación de cuenta Driver con ruta Pending/InProgress. Action `45071475764` pasó build, xUnit 111/111, smoke tenant HTTP/MySQL, concurrencia y cleanup.
+- Decisiones pendientes: quién puede otorgar rol Admin y si el negocio necesita desvincular User/Driver preservando ambos. App nativa móvil pospuesta.
+
 ## Cobertura del email duplicado en registro público — pendiente Action
 
 - `e2e/fleet-admin.spec.ts`: tras crear cuenta raíz, el test envía el mismo email otra vez desde el formulario, comprueba HTTP 200/payload neutral igual, toast y redirección Login; después login de la cuenta original. El POST directo duplicado permanece como aserción de contrato.
