@@ -26,23 +26,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout backend feature branch for authenticated E2E
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Paul1578/Back_GPS
           ref: chore/stabilize-fleet-platform
           path: Back_GPS
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
 
       - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "8.0.x"
 

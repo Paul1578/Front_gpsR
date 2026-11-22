@@ -81,3 +81,4 @@ Fecha de actualización: 2026-11-21.
 - El workflow del backend ahora levanta MySQL 8 y ejecuta un smoke HTTP autenticado cross-tenant para Vehicles, Drivers, Routes y RoutePositions. La ejecución equivalente local pasó en una base descartable aislada; el workflow remoto aún no ha corrido porque las ramas feature no están publicadas.
 - Frontend: workflow ahora clona la rama backend de estabilización, levanta MySQL/API aislados y corre los ocho escenarios Playwright autenticados, además de lint/build/audit. La ejecución local de ese runner pasó 8/8; falta publicar ramas y comprobar Actions.
 - SMTP requiere credenciales vigentes del entorno. App nativa móvil pospuesta por el usuario; web responsive continúa en alcance.
+- PRs borrador publicados: frontend #2, backend #5. Backend Actions pasó; primer frontend run reveló precheck de Next prematuro y actions con runtime Node 20 deprecado; correcciones ya empujadas están pendientes de nueva ejecución.

@@ -90,3 +90,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `scripts/run-e2e-local.sh` acepta configuración MySQL por variables, usa el cliente host y limita en CI las DB a `fletflow_ci*`; servicios locales se limitan a loopback.
 - Repetición local del runner en base nueva: Playwright Chrome **8/8**. Cleanup confirmado y esquema temporal descartado.
 - No se afirma ejecución en GitHub Actions: falta publicar las ramas y abrir/ejecutar sus PR.
+- Las ramas se publicaron y abrieron PRs borrador (#2 frontend, #5 backend). Backend Actions pasó. Primer frontend Actions pasó todas las fases previas, pero el runner abortó porque Next aún no estaba iniciado; `playwright.config.ts` lo inicia en CI. El precheck ya se corrigió; nueva ejecución pendiente.

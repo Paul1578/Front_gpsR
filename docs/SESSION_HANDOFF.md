@@ -122,3 +122,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Se ejecutó localmente con un esquema descartable nuevo y Chrome: **8/8**; ruta con paradas, User, tenant cruzado y CRUD pasaron. Cleanup dejó cero usuarios E2E en la DB principal, 22 migraciones y la base temporal descartada.
 - La primera preparación omitió exportar `MYSQL_PWD` y abortó antes de crear el esquema; se corrigió exportando el secreto local, sin cambios en datos. Tras la prueba, la API local se reinició explícitamente y Swagger responde.
 - Pendiente: ejecutar ambos workflows remotos después de publicar las ramas/PR; cerrar cobertura visual de vistas/acciones aún no cubiertas y SMTP externo.
+- Las ramas ya se publicaron y existen PRs borrador frontend #2 y backend #5. El backend Actions pasó; el primer frontend Actions falló sólo en el precheck de Next antes de crear fixtures. Se corrigió y actualizó runtime de actions; revisar la siguiente ejecución.

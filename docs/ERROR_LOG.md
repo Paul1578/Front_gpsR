@@ -417,3 +417,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - El cliente host rechazó `root` con `using password: NO` antes de crear el esquema temporal. No se detuvo la API ni se escribieron datos.
 - Se exportó `MYSQL_PWD` y se repitió el E2E completo en una DB nueva: 8/8 y fixtures limpiados. La API principal se reinició y quedó saludable.
+
+## 2026-11-22 — E2E frontend de Actions abortó porque Playwright aún no había iniciado Next — CORREGIDO
+
+- El primer workflow pasó checkout cruzado, backend, npm audit/lint/build y prueba responsive; el runner final falló en su precheck HTTP porque esperaba el frontend ya disponible, aunque en CI `playwright.config.ts` lo inicia como `webServer`.
+- Se cambió el precheck: API obligatoria siempre; URL frontend obligatoria sólo en ejecución local. En CI se deja que Playwright inicie Next.
+- GitHub Actions también avisó que checkout/setup-dotnet/setup-node usaban runtime Node 20. Se actualizaron a checkout v7, setup-dotnet v6 y setup-node v7 (runtime Node 24).
+- Pendiente repetir el workflow remoto para comprobar el arreglo.
