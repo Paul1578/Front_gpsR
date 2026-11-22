@@ -94,3 +94,5 @@ Fecha de actualización: 2026-11-21.
 - Equipo ya distingue errores de `/Users/my-team` y `/Drivers` de resultados vacíos; ambas vistas permiten reintentar y cierran correctamente el estado de carga.
 - Playwright amplió pruebas reales: tablet 768×1024, roles User/Driver/Logistics, denegaciones API y fallo/recuperación de carga. Suite autenticada **12/12** con Chrome/API/MySQL; fixtures en base descartable eliminados.
 - Aún faltan otras pantallas/acciones responsive y CRUD; se mantienen como trabajo activo. SMTP requiere credenciales externas. Móvil nativo se hará después por decisión del usuario.
+- El workflow remoto frontend terminó verde: run `44974312596` para commit `4b60bf1` (12 casos Playwright autenticados, audit, lint y build). Debe repetirse al actualizar el backend con la protección de concurrencia recién añadida.
+- El backend publicó `90da59a` en `chore/stabilize-fleet-platform`, incluyendo locks para concurrencia de rutas/vehículos/Drivers; Actions frontend debe usar este commit en su checkout cruzado y volver a validar.
