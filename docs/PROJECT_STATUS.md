@@ -343,3 +343,9 @@ Fecha de actualización: 2026-11-22.
 
 - Front `cacb72e` consume `createdAtUtc` nullable, no inventa fechas legacy y ordena la actividad con timestamps reales.
 - Actions `45020301540`: audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **18/18**, cleanup success. Backend `45020146775` validó migración/persistencia y que editar no cambia el timestamp.
+
+## Gestión de Equipo — edición/asignación Drivers en validación
+
+- Selector filtra estado y asignaciones activas de otros Drivers; conserva el vehículo actual. “Quitar” requiere relación existente.
+- La edición valida espacios y longitudes según backend antes de enviar el PUT.
+- E2E añade errores UI/API y persistencia; lint/build/discovery Playwright 18 y diff-check pasan local. Actions `45021100857` valida con API/MySQL.

@@ -887,3 +887,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Actions `45020301540` para Front `cacb72e` pasó lint/build/audit, responsive **1/1**, E2E autenticado Chrome/API/MySQL **18/18** y cleanup.
 - Backend Actions `45020146775` confirmó migración, persistencia `CreatedAtUtc`, edición inmutable y smoke MySQL. El fallo inicial por precisión `datetime(6)` se resolvió y quedó registrado en backend.
+
+## 2026-11-22 — Gestión de Equipo ofrecía asignación inválida y edición sin validar — CORREGIDO LOCAL; ACTIONS PENDIENTE
+
+- Auditoría independiente encontró que el selector Drivers de Equipo listaba vehículos no disponibles/ocupados y “Quitar” aparecía sin asignación. El formulario duplicado carecía de required/maxLength y enviaba espacios al API.
+- Solución local: selector limita a vehículos disponibles sin otra asignación activa (más el vehículo propio), botón condicional y validación trimmeada/límites antes del PUT.
+- E2E añade aserciones de selector/botón, intenta espacios y exige no emitir PUT, y comprueba 400 del API sin mutar el registro. Lint/build/discovery 18 y diff-check pasan; Actions API/MySQL pendiente.
+- Prevención: toda pantalla duplicada debe reutilizar validación/elegibilidad y cubrir estado negativo además del flujo exitoso.
+
+## 2026-11-22 — Actualización documental Front falló por contexto desfasado — CORREGIDO
+
+- El primer `apply_patch` que intentó actualizar handoff/changelog no encontró la línea esperada sobre política Admin y rechazó el parche entero sin modificar archivos.
+- Solución: releer el tail exacto y aplicar cambios en fragmentos pequeños con anclas vigentes; la contradicción antigua de perfil quedó marcada como resuelta.
+- Prevención: usar la ubicación actual del texto, no asumir que una frase de handoff permanece idéntica.

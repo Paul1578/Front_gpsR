@@ -1,4 +1,4 @@
-## Trabajo actual — edición de perfil de equipo — 2026-11-22
+## Fase completada — edición de perfil de equipo — 2026-11-22
 
 - Gestión de Equipo edita nombres, apellidos y username con PUT /Users/{id}/profile; email queda inmutable. AuthContext.updateUserProfile separa guardado y refresco para no afirmar que falló un guardado exitoso.
 - E2E edita miembro regular y valida GET /Users/my-team; edita Driver y comprueba sincronización en ambos sentidos. Tarjetas usan team-user-<id>.
@@ -6,10 +6,9 @@
 - Revisión independiente: selector incorrecto, invalidación de tokenVersion sin revocar refresh (se retiró la invalidación innecesaria para editar datos de presentación), backfill omitido y sincronización de Driver sin filtro propietario; los cuatro quedaron resueltos.
 - Misión no completa: seguir cubriendo CRUD/roles/responsive y no declarar cerrado el criterio de roles hasta resolver política de Admin delegado.
 
-## Brecha de edición y datos personales de usuarios — pendiente
+## Brecha de edición de perfil — RESUELTA; nota histórica supersedida
 
-- Revisión de `TeamManagement` confirma CRUD UI incompleto para miembros: permite alta, estado y rol, pero no edición de cuenta. El formulario captura nombres/apellidos, sin embargo backend `User`/`UserDto` sólo persisten y exponen `Username`/`Email`; el mapper Front espera `firstName/lastName` opcionales y muestra valores vacíos cuando no llegan.
-- Próximo lote alcanzable: revisar necesidad de campos y unicidad en backend, extender contrato con nombre/apellido, implementar actualización segura de username/datos mostrados y E2E de persistencia. Email no debe cambiarse sin definir verificación de propiedad.
+- Esta brecha fue resuelta por la fase de arriba: backend persiste nombres/apellidos, Front los edita junto al username, el email es inmutable y E2E valida persistencia/sincronización. Se conserva este encabezado únicamente para corregir el estado de la nota previa.
 
 ## Cierre E2E de Driver/GPS y render nullable — 2026-11-22
 
@@ -462,3 +461,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `cacb72e`: Actions `45020301540` success con audit/lint/build, responsive 1/1, E2E autenticado Chrome/API/MySQL 18/18 y cleanup. Primera actividad del dashboard y fecha de creación contrastadas contra API real.
 - El error de precisión del primer smoke backend `45019828759` está corregido/documentado.
 - Hallazgos siguientes en progreso: invalidación de JWT al desactivar/reactivar y mutación del catálogo global de roles. Política de promoción a Admin delegado sigue pendiente de respuesta.
+
+## Corrección de la sección Drivers duplicada — en Actions — 2026-11-22
+
+- Auditoría encontró que Gestión de Equipo mostraba vehículos no disponibles/ocupados y el botón Quitar sin asignación. El formulario duplicado de edición no validaba campos ni límites.
+- Front ahora filtra a vehículos disponibles sin otra asignación activa, conserva el vehículo del Driver actual y oculta Quitar cuando no aplica. Edición valida datos trimmeados y comparte límites backend (nombres/apellidos 100, documento/teléfono 20).
+- E2E verifica estado del botón/selector, rechazo local de espacios sin request, 400 API para datos inválidos y persistencia intacta. `npm run lint`, `npm run build`, discovery Playwright 18 y diff-check pasan local.
+- Front `41c97b9`; Actions integrada `45021100857` en curso con backend `eaeb495`. Revisar resultado y cleanup antes de cerrar.
+- La nota antigua de CRUD de perfil se corrigió: esa brecha ya estaba implementada y validada previamente; no queda pendiente.

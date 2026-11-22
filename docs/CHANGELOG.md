@@ -262,3 +262,8 @@
 # 2026-11-22 — Fecha real de creación de rutas validada
 
 - Front `cacb72e` consume `CreatedAtUtc`, evita fechas inventadas y ordena la actividad con timestamps reales. Actions `45020301540` pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **18/18** y cleanup completo. Backend `e31e3cc` ejecutó la migración y smoke MySQL en Actions `45020146775`.
+
+# 2026-11-22 — Validación y asignación de Drivers en Gestión de Equipo
+
+- El formulario duplicado de edición valida campos trimmeados y límites compartidos con API; el selector filtra vehículos fuera de servicio y ocupados; “Quitar” sólo aparece con asignación.
+- E2E añade errores UI/API y persistencia sin mutación. Lint/build/discovery 18 local pasan. Actions `45021100857` en curso.
