@@ -172,3 +172,9 @@ Fecha de actualización: 2026-11-22.
 ## Responsive móvil estrecho — 2026-11-22
 
 - Amplié el E2E Admin de Perfil para comprobar el formulario de cambio de contraseña a 320×844, además de los breakpoints ya cubiertos 390×844 y 768×1024. Actions `44987222908` para `18ca8f0` pasó responsive 1/1 y Playwright autenticado 14/14; el perfil quedó accesible sin overflow. Backend Release 57/57.
+
+## Estado de continuidad — 2026-11-22
+
+- Front `refactor/route-builder`: HEAD documental `2500ddb`, limpio y sincronizado; última verificación funcional `18ca8f0`. Back `chore/stabilize-fleet-platform`: `fb01c25`, limpio y sincronizado. Ningún cambio en `main`.
+- La auditoría sigue abierta: ampliar CRUD, autorizaciones/mutaciones y vistas responsive no cubiertas. Los E2E actuales no se consideran cobertura exhaustiva.
+- Fuera de capacidad local o aplazado por decisión: SMTP válido, aplicación nativa, Super Admin global aún no definido, y componentes de despliegue productivo como dominio/TLS, almacenamiento de objetos y rate limiting distribuido.

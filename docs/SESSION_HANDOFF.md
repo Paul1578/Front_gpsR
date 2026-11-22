@@ -218,16 +218,21 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Integré la prueba en `refactor/route-builder` (commit `69bdd31`); agrega/retira/reordena paradas y compara vía API los cuatro puntos y operaciones persistidos. La ejecución local se omitió por no tener servicios/credenciales QA; Actions `44986079119` sí la ejecutó y detectó que la limpieza de vehículo recibía 409.
 - Causa: crear ruta asigna su vehículo al Driver; tras borrar la ruta, ese vínculo sigue vigente. El test ahora captura el `vehicleId` previo y en `finally` lo restaura (o desasigna) antes de eliminar el vehículo de prueba.
-- Lint, build y `git diff --check` pasan tras el cambio. Pendiente publicar y repetir Actions Chrome/API/MySQL; no contar aún este E2E como aprobado.
+- Lint/build/discovery pasaron. Actions `44986497890` para `010bc31` validó el caso 14/14; Actions `44986877646` para `aa49b83` confirmó el cleanup endurecido 14/14.
 
 ## Resultado E2E de orden y cleanup — 2026-11-22
 
 - Actions frontend `44986877646` para `aa49b83` terminó success: backend Release 57/57, build sin warnings/errores, responsive 1/1 y Playwright Chrome/API/MySQL 14/14.
 - El test persistió cuatro puntos en el orden exacto con operaciones recogida/ambas/recogida y demostró que el punto eliminado no se guarda. Su cleanup restauró/desasignó el Driver y retiró el vehículo.
 - La cancelación de ruta activa ante fallo está implementada y reporta errores de limpieza, pero el caso normal del test no ejecutó esa rama.
-- Estado frontend `refactor/route-builder` sincronizado en `aa49b83`; faltan pruebas CRUD, roles y responsive que continúan listadas en estado del proyecto.
+- Estado actual Front `refactor/route-builder` sincronizado en `2500ddb` (documentación; el último código funcional es `18ca8f0`). Back `chore/stabilize-fleet-platform` sincronizado en `fb01c25`. `main` intacta.
 
 ## Responsive de Perfil a 320 px — 2026-11-22
 
 - Amplié el recorrido autenticado Admin para abrir Perfil y reducir el viewport a 320×844 antes de abrir el formulario de cambio de contraseña; se conserva la aserción de ancho y visibilidad.
 - Lint, build, test discovery (14) y diff check pasan localmente. Actions `44987222908` para `18ca8f0` validó responsive 1/1 y E2E 14/14 con API/MySQL descartables; backend Release 57/57. Breakpoint validado en Chrome.
+
+## Trabajo restante
+
+- Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; no cerrar la auditoría con estos 14 E2E.
+- Externos delimitados: credenciales SMTP válidas; móvil nativo pospuesto por el usuario; administración global Super Admin sin contrato/rol backend definido; despliegue productivo (dominio/TLS/object storage/rate limiting distribuido).
