@@ -725,6 +725,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
     await expect(routeHeading).toBeVisible();
     const routeCard = routeHeading.locator("xpath=../../../..");
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await routeCard.getByRole("button", { name: "Editar ruta" }).click();
 
     await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedName);
@@ -758,6 +760,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
     await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
 
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const cancelRouteCard = page.getByRole("heading", { name: updatedName, exact: true }).locator("xpath=../../../..");
     await cancelRouteCard.getByRole("button", { name: `Cancelar ruta ${updatedName}` }).click();
     const cancellationPromise = page.waitForResponse((response) =>
@@ -765,6 +769,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
       response.request().method() === "PUT",
     );
     await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    const cancelDialog = page.getByRole("alertdialog");
+    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
     await page.getByRole("button", { name: "Sí, cancelar ruta" }).click();
     expect((await cancellationPromise).status()).toBe(204);
     const cancelledRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
@@ -835,6 +841,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
 
 test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación", async ({ page }) => {
   test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
 
   await page.setViewportSize({ width: 320, height: 844 });
   await page.goto("/login");
@@ -1786,6 +1793,37 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await expect(managerDriverCard).toContainText(`E2E QA Manager tablet ${suffix}`);
       const persistedTabletManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
       expect(await persistedTabletManagerDriver.json()).toMatchObject({ firstName: `E2E QA Manager tablet ${suffix}` });
+      await managerDriverCard.getByRole("combobox").selectOption(managerVehicleId!);
+      const assignTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      expect((await assignTabletManagerDriver).status()).toBe(204);
+      const tabletAssignedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletAssignedDriver.json()).vehicleId).toBe(managerVehicleId);
+
+      const unassignTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Quitar" }).click();
+      expect((await unassignTabletManagerDriver).status()).toBe(204);
+      const tabletUnassignedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletUnassignedDriver.json()).vehicleId).toBeNull();
+
+      const deactivateTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      expect((await deactivateTabletManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard).toContainText("Inactivo");
+      const reactivateTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Reactivar" }).click();
+      expect((await reactivateTabletManagerDriver).status()).toBe(204);
+      const tabletReactivatedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletReactivatedDriver.json()).isActive).toBe(true);
+      await expectManagerNoOverflow();
       await managerPage.getByRole("button", { name: "Abrir menú" }).click();
       await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
       await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
@@ -2205,6 +2243,7 @@ test("Mi Ruta prioriza una ruta en curso sobre una pendiente más reciente", asy
 test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite reintentar", async ({ page }) => {
   test.skip(!driverEmail || !driverPassword, "Requiere cuenta QA Driver.");
 
+  await page.setViewportSize({ width: 390, height: 844 });
   let routeReads = 0;
   await page.route("**/api/backend/Routes", async (route) => {
     if (route.request().method() === "GET" && routeReads++ === 0) {
@@ -3019,6 +3058,8 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 
   const teamMemberCard = page
     .getByTestId(`team-user-${createdUser.id}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const logisticsRolePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
     response.request().method() === "PUT",
@@ -3078,6 +3119,8 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   const inactiveMemberAfterReload = page.getByTestId(`team-user-${createdUser.id}`);
   await expect(inactiveMemberAfterReload.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
 
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Crear Usuario" }).click();
   const userDialog = page.getByRole("dialog");
   await userDialog.getByPlaceholder("Juan").fill(`Usuario QA ${suffix}`);

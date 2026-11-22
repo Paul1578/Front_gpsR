@@ -4,7 +4,7 @@
 - La lista de rutas informa error y reintento cuando falla la carga de opciones de asignación; IDs cuyo nombre no está disponible ya no se anuncian como ausencia de asignación.
 - Se corrigió la promesa de disponibilidad en la confirmación de cancelación.
 - E2E cubre coordenadas pendientes, recuperación de etiquetas y edición Driver persistida a 768 px. Dos selectores E2E fallidos en Action `45050067540` se corrigieron; causa en `ERROR_LOG.md`.
-- Validación local: lint/build, discovery **31**, estados de carga/error **9/9**. Action integrada de este lote pendiente.
+- Validación local: lint/build, discovery **31**, estados de carga/error **9/9**. Action `45051132073` pasó build/lint/backend/responsive, E2E **29/31**; sus 2 fallos de timeout/viewport están documentados y corregidos localmente, repetición pendiente.
 
 ## 2026-11-22 — Fix de Historial para Logistics y cobertura de contraseña
 

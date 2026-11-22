@@ -1,3 +1,11 @@
+# 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
+
+- Action validó backend Release/xUnit, audit, lint, build y responsive; E2E **29/31**.
+- El E2E de ruta desde mapa a 320 px excedió timeout de 30 s tras agregar validación de ubicación pendiente. El finally intentó restaurar el Driver/eliminar vehículo cuando ya no quedaba presupuesto de test, y Playwright reportó timeout también durante cleanup.
+- Solución: ampliar a 90 s sólo el caso completo de mapa, que incluye varios puntos, validación, API real y limpieza. Reejecutar en MySQL descartable; no se ignorará un error de cleanup.
+- El E2E Mi Ruta volvió a asumir menú móvil, pero Playwright inicia en viewport desktop. Solución: fijar 390×844 al inicio. Prevención: todo test que dependa de hamburger debe declarar viewport responsive explícito, no asumirlo por el tipo de flujo.
+- Action actual requiere repetición; cualquier cambio de fixture ocurrido en el run fallido fue en contenedor/MySQL descartable y el runner desmontó los servicios.
+
 # 2026-11-22 — Crear/editar rutas mostraba coordenadas de Quito sin seleccionar punto — CORREGIDO
 
 - Síntoma: al escribir un nombre en origen/destino sin elegir una ubicación, el formulario podía mostrar/persistir las coordenadas predeterminadas de Quito como si fueran reales.

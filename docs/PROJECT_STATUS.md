@@ -1,9 +1,9 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `52d3e28` + Backend `2045b18`: Action `45050067540` pasó build, auditoría, lint y responsive; Playwright **28/30**. Los dos fallos de selectores quedaron corregidos/documentados en `ERROR_LOG.md`.
+- Front `b534480` + Backend `2045b18`: Action `45051132073` pasó backend Release/xUnit, audit, lint, build y responsive; Playwright **29/31**. Expiró el timeout del E2E largo de mapa (incluido cleanup) y el caso Mi Ruta esperaba menú móvil sin declarar viewport. Correcciones locales documentadas en `ERROR_LOG.md`; Action repetida pendiente.
 - Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
-- Verificación local actual: lint y build pasan, discovery **31**, suite de carga/error **9/9**. Falta Action API/MySQL/Chrome del commit actual.
+- Verificación local del fix geográfico: lint/build, discovery **31** y estados de carga/error **9/9**. El nuevo lote responsive de usuarios, conductores y rutas está en trabajo local; lint/build/discovery pasan. La siguiente validación autenticada es Action en curso después del fix de timeout/viewport.
 - Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
 
 # Estado actual — 2026-11-22

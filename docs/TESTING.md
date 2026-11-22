@@ -4,7 +4,8 @@
 - `npm run build`: correcto (Next.js 16.4.6, TypeScript y páginas estáticas).
 - `npx playwright test --list`: **31 casos** descubiertos.
 - `npx playwright test e2e/team-management-load-errors.spec.ts`: **9/9**; incluye 503/reintento de assignment-options en Rutas y etiqueta temporal que no se confunde con vehículo/conductor ausente.
-- E2E de API/MySQL: Action `45050067540` pasó **28/30** en el SHA anterior. Sus dos fallos de selector fueron corregidos. Este lote añade puntos de mapa no seleccionados y CRUD Driver en 768 px; resultado integrado pendiente.
+- E2E de API/MySQL: Action `45050067540` pasó **28/30**; selectores corregidos. Action `45051132073` pasó Release/xUnit, audit/lint/build y responsive; E2E **29/31**. El test de mapa agotó los 30 s y su cleanup quedó sin margen; Mi Ruta esperaba menú móvil con viewport desktop. Se amplió timeout del mapa a 90 s y se fijó 390×844 en Mi Ruta. Repetición pendiente.
+- El lote local siguiente añade ciclo User a 768 px, rol a 320, acciones Driver a 768, edición ruta a 320 y cancelación a 768; integrado pendiente.
 - El primer build del cambio produjo TS18047 por acceso a `point.lat/lng` nullable; se añadió guard explícito `point && validPoint(point)` y el build final pasó. Ver registro y prevención en `ERROR_LOG.md`.
 
 # Validación integrada pendiente — Historial Logistics y cambio de contraseña — 2026-11-22
