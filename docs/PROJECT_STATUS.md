@@ -349,3 +349,11 @@ Fecha de actualización: 2026-11-22.
 - Selector filtra estado y asignaciones activas de otros Drivers; conserva el vehículo actual. “Quitar” requiere relación existente.
 - La edición valida espacios y longitudes según backend antes de enviar el PUT.
 - E2E añade errores UI/API y persistencia; lint/build/discovery Playwright 18 y diff-check pasan local. Actions `45021100857` valida con API/MySQL.
+
+## Carga de conductores — lote local (2026-11-22)
+
+- Nuevo feedback con error accesible y reintento si falla `GET /Vehicles` al gestionar conductores.
+- E2E enfocado pasó 1/1. `npm run lint`, `npm run build`, y discovery Playwright terminaron bien; 19 casos descubiertos.
+- Cambios y documentación están locales; falta publicar y comprobar Actions integrado/cleanup.
+
+- Revisión externa del E2E añadió verificación de vehículo visible/seleccionable después del retry; botón deshabilitado con estado “Reintentando…”. El test enfocado pasó 1/1 tras ajustar la expectativa del fixture conductor.

@@ -214,3 +214,116 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
+
+test("Gestión de Conductores informa y permite recuperar errores de Drivers y Vehicles", async ({ page }) => {
+  let failDrivers = true;
+  let failVehicles = true;
+  let vehicleRequests = 0;
+  const testDriver = {
+    id: "drivers-load-test-driver",
+    firstName: "Lina",
+    lastName: "Prueba",
+    documentNumber: "QA-001",
+    phoneNumber: "0990000000",
+    isActive: true,
+    vehicleId: null,
+    userId: null,
+  };
+  const testVehicle = {
+    id: "drivers-load-test-vehicle",
+    plate: "ABC-123",
+    brand: "Fleet QA",
+    model: "Van",
+    year: 2025,
+    status: 0,
+    isActive: true,
+  };
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "drivers-load-test-admin",
+          email: "admin@example.test",
+          username: "admin@example.test",
+          firstName: "Admin",
+          lastName: "QA",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+    if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
+      vehicleRequests += 1;
+      if (failVehicles) {
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([testVehicle]) });
+      return;
+    }
+    if (request.method() === "GET" && url.pathname.endsWith("/Drivers")) {
+      if (failDrivers) {
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([testDriver]) });
+      return;
+    }
+    if (
+      request.method() === "GET" &&
+      ["/Users/my-team", "/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
+    ) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Conductores" })).toBeVisible();
+
+  const driversAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los conductores" });
+  await expect(driversAlert).toBeVisible();
+  await expect(page.getByText("No hay conductores activos.")).toHaveCount(0);
+  failDrivers = false;
+  await driversAlert.getByRole("button", { name: "Reintentar" }).click();
+  await expect(driversAlert).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Lina Prueba" })).toBeVisible();
+
+  const vehiclesAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los vehículos" });
+  await expect(vehiclesAlert).toBeVisible();
+  expect(vehicleRequests).toBeGreaterThan(0);
+  failVehicles = false;
+  const requestsBeforeRetry = vehicleRequests;
+  const retryButton = vehiclesAlert.getByRole("button", { name: "Reintentar" });
+  await retryButton.click();
+  const retryingButton = vehiclesAlert.getByRole("button", { name: "Reintentando…" });
+  await expect(retryingButton).toBeDisabled();
+  await expect(vehiclesAlert).toHaveCount(0);
+  expect(vehicleRequests).toBe(requestsBeforeRetry + 1);
+  const vehicleSelect = page.getByRole("combobox", { name: "Vehículo para Lina" });
+  await expect(vehicleSelect).toBeVisible();
+  await expect(vehicleSelect.locator("option", { hasText: "ABC-123 · Fleet QA Van" })).toBeAttached();
+});

@@ -15,6 +15,8 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   const {
     drivers,
     vehicles,
+    loadErrors,
+    retryFleetData,
     refreshDrivers,
     addDriver,
     updateDriver,
@@ -25,6 +27,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [retryingFleetData, setRetryingFleetData] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<DriverForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -143,6 +146,27 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
       </header>
 
       <div className="flex-1 space-y-5 overflow-auto p-4 md:p-6">
+        {loadErrors.includes("vehículos") && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <span>No se pudieron cargar los vehículos. Las opciones de asignación pueden estar incompletas.</span>
+            <button
+              type="button"
+              onClick={async () => {
+                setRetryingFleetData(true);
+                try {
+                  await retryFleetData();
+                } finally {
+                  setRetryingFleetData(false);
+                }
+              }}
+              disabled={retryingFleetData}
+              aria-busy={retryingFleetData}
+              className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:cursor-wait disabled:opacity-60"
+            >
+              {retryingFleetData ? "Reintentando…" : "Reintentar"}
+            </button>
+          </div>
+        )}
         <form onSubmit={submit} className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:grid-cols-4">
           <h2 className="text-base font-semibold text-slate-800 sm:col-span-2 xl:col-span-4">{editingId ? "Editar conductor" : "Registrar conductor"}</h2>
           <input aria-label="Nombres del conductor" required maxLength={100} value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} placeholder="Nombres" className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />

@@ -900,3 +900,18 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El primer `apply_patch` que intentó actualizar handoff/changelog no encontró la línea esperada sobre política Admin y rechazó el parche entero sin modificar archivos.
 - Solución: releer el tail exacto y aplicar cambios en fragmentos pequeños con anclas vigentes; la contradicción antigua de perfil quedó marcada como resuelta.
 - Prevención: usar la ubicación actual del texto, no asumir que una frase de handoff permanece idéntica.
+
+## 2026-11-22 — Gestión de Conductores ocultaba fallos al cargar vehículos — CORREGIDO Y VALIDADO
+
+- Si fallaba `GET /Vehicles`, Gestión de Conductores no mostraba error ni ofrecía reintento; el formulario podía parecer funcional con opciones de asignación incompletas.
+- Solución: mostrar alerta accesible con explicación y botón Reintentar conectado a `retryFleetData`; se conservan los errores de API como error, no como lista vacía.
+- E2E enfocado con 503 reales simulados en el harness: error visible para Drivers y Vehicles, no se muestra estado vacío durante fallo, reintento y recuperación. Resultado local: 1/1.
+- `npm run lint`, `npm run build` y descubrimiento de Playwright terminaron correctamente; suite descubre 19 pruebas. Ejecutar Actions integrado después de publicar.
+- Error de edición anterior: un parche del E2E de mapa no encontró sus anclas de marker y fue rechazado sin cambios. Solución: releer el spec y dividir el cambio en hunks pequeños. Prevención: comprobar el contexto real antes de parchear pruebas largas.
+
+## 2026-11-22 — E2E de retry no comprobaba opciones recuperadas — CORREGIDO
+
+- Revisión independiente detectó que la prueba comprobaba sólo la desaparición de la alerta y que hubiera otro GET; al devolver `[]` de conductores, no comprobaba si el vehículo volvió a mostrarse.
+- Solución: el harness ahora responde con conductor y vehículo disponibles; E2E verifica el nombre/placa en el selector y que exactamente una nueva solicitud de Vehicle se completa. El botón informa “Reintentando…” y queda deshabilitado mientras espera.
+- Primer intento tras hacer realista el fixture falló porque el test aún esperaba el estado vacío “No hay conductores activos”. Se actualizó la expectativa a la tarjeta del conductor fixture, luego el E2E enfocado pasó 1/1.
+- Prevención: probar el resultado funcional del reintento, no sólo el cambio de estado de la alerta.

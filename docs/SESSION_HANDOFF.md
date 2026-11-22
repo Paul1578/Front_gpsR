@@ -469,3 +469,16 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - E2E verifica estado del botón/selector, rechazo local de espacios sin request, 400 API para datos inválidos y persistencia intacta. `npm run lint`, `npm run build`, discovery Playwright 18 y diff-check pasan local.
 - Front `41c97b9`; Actions integrada `45021100857` en curso con backend `eaeb495`. Revisar resultado y cleanup antes de cerrar.
 - La nota antigua de CRUD de perfil se corrigió: esa brecha ya estaba implementada y validada previamente; no queda pendiente.
+
+## Recuperación de carga de Drivers/Vehicles — 2026-11-22
+
+- En `refactor/route-builder`, Gestión de Conductores ahora expone error de `GET /Vehicles` con botón accesible Reintentar vía `retryFleetData`.
+- Nuevo E2E devuelve 503 a `/Drivers` y `/Vehicles`, confirma alertas (no estado vacío ante fallo), luego recupera tras reintentar. Resultado local 1/1.
+- Lint y build Next 16.4.6 pasaron; Playwright discovery lista 19 pruebas. Falta Actions integrado después de push.
+- `ERROR_LOG.md` registra el fallo y solución, además del parche de contexto rechazado durante el E2E del mapa.
+
+### Ajuste del E2E de reintento tras revisión independiente — 2026-11-22
+
+- Auditor Front señaló que sólo se comprobaba un GET adicional, sin verificar opciones utilizables. Se amplió fixture con Driver y Vehicle disponibles; E2E comprueba la opción `ABC-123 · Fleet QA Van` y una sola nueva llamada de Vehicle.
+- UI deshabilita retry repetido y muestra “Reintentando…”.
+- Un primer test falló al mantener expectativa de lista vacía luego de agregar Driver fixture; se corrigió y E2E enfocado pasó 1/1. Error y remedio documentados.

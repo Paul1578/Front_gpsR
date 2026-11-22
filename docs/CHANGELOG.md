@@ -267,3 +267,10 @@
 
 - El formulario duplicado de edición valida campos trimmeados y límites compartidos con API; el selector filtra vehículos fuera de servicio y ocupados; “Quitar” sólo aparece con asignación.
 - E2E añade errores UI/API y persistencia sin mutación. Lint/build/discovery 18 local pasan. Actions `45021100857` en curso.
+
+## 2026-11-22 — Recuperación de carga de conductores
+
+- Gestión de Conductores informa los fallos de carga de vehículos y ofrece reintentar, evitando presentar opciones de asignación incompletas como estado normal.
+- Nuevo E2E valida los estados de error y la recuperación de Drivers y Vehicles.
+
+- La alerta de Vehicle ahora bloquea clics repetidos durante el reintento y comunica su estado; E2E verifica que un vehículo vuelve a estar disponible para asignación.
