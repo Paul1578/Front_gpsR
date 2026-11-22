@@ -718,3 +718,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - `git diff --check` detectó whitespace al final en PROJECT_STATUS, SESSION_HANDOFF, CHANGELOG y ERROR_LOG después de concatenar secciones.
 - Corrección: normalizar EOF a una sola línea final; repetir diff-check.
 - Prevención: revisar whitespace después de añadir documentación mediante scripts.
+
+
+## 2026-11-22 — Cancelación de ruta desde UI verificada
+
+- Actions `45000517571` pasó en Front `0f91d9a` con Backend `d346fa2`: Playwright 18/18, responsive 1/1, build/audit/lint y cleanup API/MySQL success. El E2E confirmó `PUT /Routes/{id}/status` 204 después de la confirmación UI, luego estado persistido cancelado e Historial.

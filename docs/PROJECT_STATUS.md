@@ -236,8 +236,8 @@ Fecha de actualización: 2026-11-22.
 
 - Actions `44997054375` validó Front `1bb7d71` con backend `a7f7c4e`: xUnit 61/61, responsive 1/1, E2E 16/16, audit/lint/build y cleanup del runner success. Documento duplicado devuelve 409 y no crea usuario parcial.
 
-## Cancelación operativa desde Gestión de Rutas — en validación
+## Cancelación operativa desde Gestión de Rutas — validada
 
 - Auditoría Front encontró que cancelar sólo estaba cubierto mediante una llamada API directa; en Gestión de Rutas no había acción visible específica.
 - Se añadió acción “Cancelar” para rutas pendientes con diálogo que explica la liberación de vehículo/conductor. Usa el endpoint de estado existente, refresca desde la API y muestra éxito/error.
-- El E2E móvil de edición e Historial ahora cancela desde la tarjeta, confirma HTTP 204 y persistencia `Cancelled`, y valida la ruta en Historial. Lint/build/discovery (18) y diff-check pasan localmente; Actions API/MySQL pendiente.
+- El E2E móvil de edición e Historial ahora cancela desde la tarjeta, confirma HTTP 204 y persistencia `Cancelled`, y valida la ruta en Historial. Lint/build/discovery (18) y diff-check pasan localmente. Actions `45000517571` pasó con backend `d346fa2`: Playwright 18/18, responsive 1/1, API/MySQL y cleanup success.
