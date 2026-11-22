@@ -72,6 +72,7 @@
 - Action `45072706025` (SHA `7f4841c`): **35/37 E2E**. Fallaron (1) el test buscaba Exportar en Resumen, donde no se renderiza y (2) Gestión de Equipo no veía un error Driver compartido cuando una carga local obsoleta se descartaba por carrera. Ambos corregidos en el siguiente cambio; aún sin ejecución integrada.
 - Action `45073324431` (`147ba89`): **36/37 E2E**; sólo falló el conteo global de `—` (7 encontrados frente a 3 esperados) porque métricas ajenas también usan el valor. Selector acotado a la tarjeta “Resumen de Datos”; repetir Action.
 - Action `45074489447` (`00f3b7c`): **36/37 E2E**. Error-context confirma que quedaba toast “Bienvenido, admin” aunque el error consultado ya se hubiera retirado. Se sustituyó conteo global ARIA por aserciones de texto de error concretas; nueva Action pendiente.
+- Action `45075092805` (`ae34fa9`): **36/37 E2E**. Al navegar entre tabs se recargaban rutas/vehículos y ya no existía su botón retry en el regreso; secuencia reordenada para recuperar rutas/vehículos primero desde Resumen, después usuarios.
 - E2E de vehículo amplía ahora ciclo real para provocar HTTP 409 en el segundo endpoint (estado) tras persistir los campos generales; verifica respuesta visible, tarjeta y GET real antes de continuar la operación válida. La prueba integrada de este parche está pendiente.
 - QA independiente detectó que el segundo clic de retry también apuntaba a una alerta ya retirada. El test ahora ejecuta un solo retry conjunto. El resumen de datos muestra `—`/carga durante fallos en vez de arrays vacíos como ceros.
 

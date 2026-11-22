@@ -22,6 +22,12 @@
 - Ahora espera que desaparezca cada mensaje de error de carga específico de usuarios/rutas/vehículos. El toast independiente no afecta el resultado.
 - Prevención: asertar estados de negocio por contenido/localizador del recurso y no inferir que todas las alertas ARIA deben desaparecer al recuperar una consulta.
 
+## 2026-11-22 — Navegar a Usuarios recuperaba rutas/vehículos antes del click de retry — CORREGIDO LOCALMENTE
+
+- Action `45075092805` terminó 36/37. El retry de Usuario se hacía primero; al navegar de vuelta a Resumen la aplicación ya había reconsultado y recuperado rutas/vehículos desde el mock HTTP 200. Por eso no quedaban botones de retry y el test agotaba 30 s.
+- El flujo ahora vuelve a Resumen mientras los errores siguen visibles, libera HTTP 200 y hace allí el retry conjunto; después cambia a Usuarios para recuperar `/Users/my-team`, y al final verifica que Exportar se habilitó.
+- Prevención: ordenar una prueba de reintentos según las transiciones que disparan cargas automáticas de la pantalla.
+
 ## 2026-11-22 — Edición de vehículo podía ocultar una actualización parcial — CORREGIDO LOCALMENTE
 
 - Auditoría independiente confirmó que el frontend envía datos generales y estado a endpoints distintos. Si `/Vehicles/{id}` respondía 200 y `/Vehicles/{id}/status` fallaba, la base ya tenía marca/modelo nuevos, pero la UI conservaba el objeto viejo y reportaba un fallo total sin explicar que hubo persistencia parcial.
