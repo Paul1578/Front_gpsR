@@ -638,3 +638,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (17 tests) y `git diff --check` pasan. La ejecución local autenticada no pudo arrancar porque Front `:3000` y API `:5048` devuelven HTTP 000; no se crearon fixtures locales.
 - Actions integrada `44997939176` para Front `a5dd689` + Back `a7f7c4e` pasó: Release xUnit 61/61, audit/lint/build, responsive 1/1, E2E **17/17** y cleanup/stop containers success. El caso nuevo quedó incluido; se puede contar como cubierto.
 - `run-e2e-local.sh` ejecutó su trap de cleanup SQL sin error; eliminó los prefijos de la cuenta Driver, documento/vehículos y rutas temporales. La base MySQL del job se destruyó al finalizar.
+- El mismo código se revalidó con Actions `44998269115` para SHA documental `4f94633`: backend 61/61, responsive 1/1, E2E 17/17 y cleanup success.
+
+## 2026-11-22 — Consulta de estado de Actions con comillas inválidas — CORREGIDO
+
+- Una llamada de diagnóstico `gh run view` combinó una expresión jq con quoting incorrecto y Bash respondió `unexpected EOF while looking for matching \'`; el comando no inició ni modificó ningún proceso o dato.
+- Corrección: consultar los campos JSON por separado con expresiones jq entre comillas válidas; la segunda consulta devolvió estado de los workflows correctamente.
+- Prevención: simplificar los filtros jq en consultas al CLI y comprobar la cadena shell antes de incluir comillas anidadas.

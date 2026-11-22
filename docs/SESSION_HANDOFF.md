@@ -306,3 +306,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - El E2E Admin que ya crea/edita/cancela y consulta la ruta cambia a 768×1024 al entrar en Historial; verifica que el filtro `Canceladas` es visible y funcional, que la pantalla y `main` no desbordan, y que el diálogo de detalles cabe en el viewport.
 - `npm run lint`, `npm run build`, discovery **17 tests** y `git diff --check` pasan localmente. El caso depende de API/MySQL y queda pendiente de ejecutar en Actions después de publicar.
+- Actions `44998408284` para Front `650e306` terminó success: backend Release 61/61, audit/lint/build, responsive 1/1 y E2E **17/17**; cleanup/stop API y contenedores success. El filtro y detalle del Historial pasan en 768×1024. La rama sigue en `refactor/route-builder`.
