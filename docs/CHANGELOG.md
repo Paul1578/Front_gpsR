@@ -1,3 +1,9 @@
+# 2026-11-22 — Registro duplicado validado desde UI — Action pendiente
+
+- E2E de registro ahora repite desde el formulario una cuenta de empresa ya existente. Confirma la respuesta neutral idéntica, mensaje visible y redirección a Login; conserva el intento API directo.
+- Correo duplicado no revela el estado de la cuenta ni crea sesión automáticamente.
+- Lint/build/audit/discovery 36 y Actions integradas pendientes de este assertion.
+
 # 2026-11-22 — Cierre de parada sin evidencia podía bloquear la ruta — FIX LOCAL APROBADO; CI PENDIENTE
 
 - Auditoría detectó que API aceptaba `InProgress→Completed`/`Pending→Skipped` sin evidencia aunque `AddPointEvidence` luego rechaza paradas cerradas; la ruta podía quedar imposible de finalizar. La interfaz bloqueaba completar, pero permitía omitir sin evidencia.

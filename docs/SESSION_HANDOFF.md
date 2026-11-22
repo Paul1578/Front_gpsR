@@ -1,3 +1,9 @@
+## Cobertura del email duplicado en registro público — pendiente Action
+
+- `e2e/fleet-admin.spec.ts`: tras crear cuenta raíz, el test envía el mismo email otra vez desde el formulario, comprueba HTTP 200/payload neutral igual, toast y redirección Login; después login de la cuenta original. El POST directo duplicado permanece como aserción de contrato.
+- Ejecutar `npm run lint`, `npm run build`, discovery 36, diff-check y publicar en Front; exigir Action API/MySQL efímera y cleanup.
+- Sigue el objetivo CRUD/roles/responsive. Respuestas pendientes sobre otorgar rol Admin y desvincular User/Driver.
+
 ## Hallazgo crítico — cierre de parada sin evidencia — fix local; CI pendiente
 
 - Auditoría descubrió que API aceptaba `Pending→Skipped` y `InProgress→Completed` sin evidencia; luego no se permitía agregarla y la ruta quedaba imposible de finalizar.

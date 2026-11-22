@@ -1,3 +1,8 @@
+# Registro duplicado visible desde formulario — 2026-11-22
+
+- E2E registra la empresa, repite el mismo email desde UI y espera HTTP 200 con el mismo payload neutral; verifica mensaje visible y redirección a Login, después inicia sesión con la cuenta creada.
+- Conserva además intento API directo de duplicado con status/body idénticos. Action con API/MySQL descartables pendiente; el servidor no expone indicador de email existente.
+
 # Evidencia obligatoria para cierre de parada/ruta — 2026-11-22
 
 - E2E intenta por API cerrar parada `InProgress→Completed` sin evidencia y cerrar ruta sin evidencia; espera HTTP 400, vuelve a leer y comprueba ruta/parada abiertas, evidencia vacía y vehículo OnRoute. Luego completa el camino positivo con evidencia.

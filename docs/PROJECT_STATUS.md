@@ -1,3 +1,8 @@
+## Registro público duplicado desde UI — nuevo E2E pendiente
+
+- Se amplió el test para repetir un email existente desde el formulario, validar response neutral idéntica, toast de éxito neutral y redirección a Login; después autentica la cuenta original.
+- Local lint/build/discovery, Action autenticada Chrome/API/MySQL y cleanup pendientes para este cambio.
+
 ## Evidencia obligatoria por parada — validado local; CI pendiente
 
 - Se corrigió API que permitía Completed/Skipped sin evidencia y dejaba la operación atascada. El dominio exige evidencia; DriverView deshabilita Omitir sin evidencia.

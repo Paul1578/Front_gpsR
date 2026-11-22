@@ -134,7 +134,24 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
   });
   expect(duplicateRegistration.status()).toBe(200);
   expect(await duplicateRegistration.json()).toEqual(neutralRegistrationResponse);
+  await page.goto("/register");
+  await page.getByLabel("Nombres").fill("E2E QA Empresa duplicada");
+  await page.getByLabel("Apellidos").fill("Propietaria");
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.locator('input[type="password"]').nth(0).fill(password);
+  await page.locator('input[type="password"]').nth(1).fill(password);
+  const duplicateUiResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/register") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  const duplicateUiResponse = await duplicateUiResponsePromise;
+  expect(duplicateUiResponse.status()).toBe(200);
+  expect(await duplicateUiResponse.json()).toEqual(neutralRegistrationResponse);
   await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.locator("[data-sonner-toast]").filter({ hasText: neutralRegistrationResponse.message }).last(),
+  ).toBeVisible();
   await page.getByLabel("Correo electrónico").fill(emailAddress);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();

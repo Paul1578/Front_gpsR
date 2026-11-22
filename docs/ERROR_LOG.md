@@ -1,3 +1,10 @@
+## 2026-11-22 — Email duplicado sólo se probaba por API, no por el formulario — CORREGIDO EN SPEC; CI PENDIENTE
+
+- El registro E2E comprobaba el contrato neutral con HTTP directo, pero no ejecutaba la segunda presentación de email desde la UI ni verificaba el mensaje/redirección del usuario.
+- Se añadió submit duplicado por formulario, comparación exacta del payload con el primer registro, toast neutral y regreso a Login. El caso luego inicia sesión con la cuenta creada originalmente.
+- Prevención: probar respuestas neutrales de negocio tanto en endpoint como en el flujo visible; no afirmar que la UI es correcta sólo porque el API responda bien.
+- Lint/build/discovery y Action real pendientes.
+
 ## 2026-11-22 — API permitía cerrar parada sin evidencia y dejar ruta atascada — CORREGIDO LOCAL; ACTION PENDIENTE
 
 - `Route.UpdatePointStatus` aceptaba Completed/Skipped con cero evidencia; luego `AddPointEvidence` rechazaba la parada cerrada y `ChangeStatus(Completed)` rechazaba la ruta, dejándola imposible de finalizar. La interfaz bloqueaba Completar, pero Omitir también podía crear la inconsistencia.
