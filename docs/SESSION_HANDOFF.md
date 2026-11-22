@@ -4,6 +4,7 @@
 - Local Front: búsqueda por nombre/apellido/documento/teléfono, insensible a tildes y mayúsculas, con estado vacío separado; nuevo E2E API/UI a 320 y 768 px.
 - Action `45067692881` tuvo backend 107/107, audit/lint/build y responsive 1/1 verdes, E2E **34/35**. Falló el caso existente de alta Driver: `getByPlaceholder("Documento")` resolvía tres elementos tras añadir búsquedas. Se corrigió a `getByRole("textbox", {name:"Documento"})` y equivalente para Teléfono.
 - Correcciones pasan lint/build, audit 0, discovery **36** y diff-check local. Commit/Action de repetición todavía pendientes; API local no disponible para funcional E2E.
+- Para garantizar que el caso corra sin registros preexistentes, el E2E crea su Driver con API y lo desactiva en `afterEach`. El primer build de esa robustez encontró tipo nullable de token; ya corregido, repetir build y enviar en nueva Action.
 - Backend smoke recibió pruebas HTTP negativas para PUT Vehicle inválido y create/update Driver inválido; revisar el diff del agente, ejecutar el smoke en MySQL descartable, documentar y validar CI antes de integrar.
 - Mantener misión abierta: faltan más casos de CRUD/roles/responsive. Política de Admin delegado requiere decisión de producto; SMTP/PFX/infra productiva son externos; app nativa pospuesta.
 

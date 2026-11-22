@@ -1258,6 +1258,12 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Prevención: si se agregan controles de búsqueda junto a formularios, los E2E deben apuntar a nombres accesibles/roles y comprobar unicidad semántica, no asumir unicidad de placeholder.
 - Repetición integrada del SHA corregido pendiente; no contar la búsqueda como verificada por ejecución funcional hasta entonces.
 
+## 2026-11-22 — Fixture E2E de búsqueda no admitía token nullable — CORREGIDO LOCAL
+
+- Al quitar la dependencia de que existiera un Driver previo, el E2E empezó a crear un conductor descartable por API y a desactivarlo en `afterEach`. El primer build detectó que `page.evaluate` puede devolver `null`, incompatible con el tipo opcional `string | undefined` del token.
+- Solución: normalizar `null` a `undefined` antes de almacenar el token. Lint pasa; build local repetido pendiente y Action autenticada cubre el ciclo real.
+- Prevención: tipar los resultados de browser storage como nullable y normalizar explícitamente al cruzar el límite Playwright/UI.
+
 ## 2026-11-22 — Guía local Next.js consultada después del primer cambio — PROCESO CORREGIDO
 
 - El `AGENTS.md` exige leer la guía instalada de Next antes de escribir código. En el primer lote de componentes se omitió ese paso.
