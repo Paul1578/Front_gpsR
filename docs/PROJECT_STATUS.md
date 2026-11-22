@@ -419,3 +419,8 @@ Fecha de actualización: 2026-11-22.
 
 - Cierre integrado Front `a75914f`: Actions `45036661541` success; Playwright Chrome/API/MySQL **22/22**, responsive browser 1/1, audit/lint/build y cleanup correctos. Incluye la regresión de error/reintento del dashboard Logistics.
 - Revalidación cruzada del código de seguridad: Front Actions `45037486681` pasó 22/22 y usó Backend `0b1c1d1` (código `94c3e90`); responsive, audit/lint/build y cleanup correctos.
+
+## Actualización Front 2026-11-22 — estado de carga de Vehículos
+
+- Gestión de Vehículos ya no presenta “No hay vehículos registrados” si la petición inicial falla; muestra error/reintento y renderiza la flota después de recuperar.
+- E2E local del archivo de estados de carga **5/5**, lint/build y discovery 23 pasan; Actions integrado pendiente para el nuevo caso.

@@ -326,3 +326,8 @@
 - Front `a75914f` validado por Actions `45036661541`: nuevo E2E de reintento Logistics; total **22/22**, responsive 1/1, audit/lint/build y cleanup success.
 
 - Revalidación cruzada `45037486681`: Front 22/22 contra Backend `0b1c1d1`, responsive 1/1 y todos los checks/cleanup success.
+
+## 2026-11-22 — Error visible y reintento en Gestión de Vehículos
+
+- Ante fallo de GET `/Vehicles`, la vista deja de mostrar flota vacía y permite reintentar; E2E 320×844 confirma recuperación con unidad cargada.
+- Local: spec de estados de carga 5/5, lint/build, discovery 23 y diff-check pasan; CI integrado pendiente.

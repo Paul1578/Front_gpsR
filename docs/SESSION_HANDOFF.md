@@ -566,3 +566,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front Actions `45037486681` pasó: SHA Front `c7b0771`, checkout Backend `0b1c1d1` que incluye código de seguridad `94c3e90`; 22/22 E2E, responsive 1/1, backend build/tests, audit/lint/build y cleanup success.
 - Los resultados de los casos sintéticos y de API/MySQL deben seguir diferenciándose: aquí el flujo completo de browser opera contra API/MySQL efímero; el caso de fallo/retry de options es el harness controlado de Playwright.
+
+## Nueva brecha responsive/estados de carga — Gestión de Vehículos
+
+- Hallazgo Front: `VehiclesManagement` no consultaba `loadErrors`, así que GET `/Vehicles` fallido se veía como lista vacía.
+- Corregido en código local: alerta + reintento de `retryFleetData`; bloquea el estado vacío hasta recuperación. E2E nuevo en 320×844: 503, error, retry 200 y unidad `QA-VEH-01` visible.
+- Local: spec de estados de carga **5/5**, lint/build y discovery **23** pasan. Falta commit/push/Actions del caso.
+- La edición se hizo después de Actions `45037929619` (Front docs SHA `2c85d35`); ese run valida el estado previo y no debe tomarse como evidencia del caso nuevo.

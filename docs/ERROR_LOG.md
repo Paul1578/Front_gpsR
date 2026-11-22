@@ -1035,3 +1035,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una búsqueda que combinaba los specs Front y tests backend se ejecutó desde `/home/leonardo/Back_GPS`; los paths `e2e` y `src` no existían en ese repo, por lo que `rg` devolvió esos errores aunque sí listó tests backend.
 - Solución: separar búsquedas por repositorio y ejecutar specs Front bajo `/home/leonardo/Front_gpsR`.
 - Prevención: no construir búsquedas de auditoría con raíces de ambos repositorios en una sola ejecución.
+
+## 2026-11-22 — Gestión de Vehículos confundía 503 con flota vacía — CORREGIDO; ACTIONS PENDIENTE
+
+- Hallazgo: si GET `/Vehicles` fallaba, el contexto conservaba la lista vacía y Gestión de Vehículos mostraba “No hay vehículos registrados”, aunque el dashboard ya sabía que la carga estaba fallida.
+- Solución: la vista ahora lee el error del recurso, muestra una alerta que aclara que el estado de la flota no está disponible y habilita Reintentar con `retryFleetData`; no presenta el vacío mientras exista error.
+- Nuevo E2E ejecuta 503 → alerta/no vacío → retry 200 con una unidad QA, confirma que aparece `QA-VEH-01` y comprueba overflow a 320 px.
+- Verificación local: spec completo de errores/carga **5/5**, lint/build y Playwright discovery **23** pasan; Actions integrada pendiente.
+- Prevención: cada pantalla consumidora debe reflejar el error de carga del recurso aunque el dashboard tenga una alerta global; no inferir vacío desde array inicial vacío.

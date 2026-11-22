@@ -105,6 +105,109 @@ test("Dashboard de Logistics muestra error de opciones de flota y recupera al re
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permite reintentar", async ({ page }) => {
+  let vehiclesRequestFails = true;
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "vehicles-load-error-admin",
+          email: "admin@example.test",
+          username: "admin@example.test",
+          firstName: "Admin",
+          lastName: "QA",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
+      if (vehiclesRequestFails) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "vehicle-load-error-fixture",
+            plate: "QA-VEH-01",
+            brand: "Fleet QA",
+            model: "Van",
+            year: 2025,
+            status: 0,
+            isActive: true,
+          }]),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ vehicles: [], drivers: [] }),
+      });
+      return;
+    }
+
+    if (
+      request.method() === "GET" &&
+      ["/Users/my-team", "/Drivers", "/Routes"].some((path) => url.pathname.endsWith(path))
+    ) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+
+  const vehiclesAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los vehículos" });
+  await expect(vehiclesAlert).toBeVisible();
+  await expect(page.getByText("No hay vehículos registrados", { exact: true })).toHaveCount(0);
+
+  vehiclesRequestFails = false;
+  const recoveredVehicles = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Vehicles") &&
+    response.status() === 200,
+  );
+  await vehiclesAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredVehicles;
+  await expect(vehiclesAlert).toHaveCount(0);
+  await expect(page.getByText("QA-VEH-01", { exact: true })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;
