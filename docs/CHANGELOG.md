@@ -1,3 +1,7 @@
+## 2026-11-22 — Matriz final Driver con tipos nullable
+
+- Actions `45003051160` pasó audit/lint/build, responsive, xUnit y E2E 18/18 con limpieza.
+
 ## 2026-11-22 — Regresión nullable de Driver validada
 
 - Actions `45002920723` pasó Playwright API/MySQL 18/18 y cleanup. Cubrió render de perfil sin UserId, bloqueo por inactividad y aislamiento contra ruta de otro Driver. El cambio adicional de tipos nullable `cd7f171` tiene Actions pendiente.

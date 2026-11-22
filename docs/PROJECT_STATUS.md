@@ -1,3 +1,8 @@
+## Verificación final Driver responsive/autorización — 2026-11-22
+
+- Actions `45003051160` success para Front `cd7f171` + Backend `41c01e7`: audit/lint/build, responsive browser y Playwright API/MySQL 18/18 con cleanup. Incluye `UserId` nullable, Driver sin cuenta, otro conductor, y perfil Driver desactivado/reactivado.
+- Siguiente brecha revisada: los miembros no tienen edición UI; `User`/`UserDto` no persisten/exponen nombres capturados en alta.
+
 ## Actualización — Driver, ownership y responsive — 2026-11-22
 
 - Actions `45002920723` success: backend Release/xUnit, audit/lint/build, responsive browser y E2E **18/18**. Verificados casos Driver activo/inactivo, ruta ajena, paradas/evidencia/GPS y vista de Driver sin cuenta.

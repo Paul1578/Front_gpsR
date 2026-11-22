@@ -1,8 +1,13 @@
+## Brecha de edición y datos personales de usuarios — pendiente
+
+- Revisión de `TeamManagement` confirma CRUD UI incompleto para miembros: permite alta, estado y rol, pero no edición de cuenta. El formulario captura nombres/apellidos, sin embargo backend `User`/`UserDto` sólo persisten y exponen `Username`/`Email`; el mapper Front espera `firstName/lastName` opcionales y muestra valores vacíos cuando no llegan.
+- Próximo lote alcanzable: revisar necesidad de campos y unicidad en backend, extender contrato con nombre/apellido, implementar actualización segura de username/datos mostrados y E2E de persistencia. Email no debe cambiarse sin definir verificación de propiedad.
+
 ## Cierre E2E de Driver/GPS y render nullable — 2026-11-22
 
 - Actions Front `45002920723` pasó con Front `5816adf` + Backend `41c01e7`: audit/lint/build, responsive browser, backend Release/xUnit y Playwright API/MySQL **18/18**, cleanup success.
 - El pase verificó ciclo vehículo 320×844/768×1024, listar ausente ruta asignada a otro Driver, detalle/estado/parada/evidencia/GPS denegados sin cambios, Driver desactivado sin acceso a lista/detalle/GPS y reactivación. La pantalla Equipo también renderizó “Sin usuario vinculado”.
-- Un commit de tipo posterior `cd7f171` expresa `userId?: string | null`; lint/build local pasan. Actions `45003051160` aún verifica el SHA exacto y el E2E completo.
+- Un commit de tipo posterior `cd7f171` expresa `userId?: string | null`; lint/build local pasan. Actions `45003051160` pasó para código `cd7f171`: audit/lint/build, responsive browser, backend y Playwright 18/18 con cleanup; valida el tipo nullable exacto.
 - La raíz de fallos repetidos `45002306327`, `45002396041`, `45002610099` fue la lectura `.slice()` del `userId` nullable; corregido y cubierto. El falso assert de lista vacía quedó corregido por ID. Ambos problemas/soluciones están en `docs/ERROR_LOG.md`.
 
 ## Contrato nullable de Driver — 2026-11-22
