@@ -335,3 +335,4 @@ Fecha de actualización: 2026-11-22.
 - Verificación local del SHA actual: `npm run lint`, `npm run build`, discovery Playwright **18 tests** y `git diff --check` pasan. Actions API/MySQL pendiente.
 - Auditoría read-only detectó un formulario duplicado de Admin sin restricciones y falta de cobertura tablet para la pantalla nueva. Equipo ahora exige perfil y comparte límites; E2E verifica atributos y la vista Manager con tarjeta/controles a 768×1024.
 - Integración `88b0907` pasó Actions `45016257079` (responsive 1/1, E2E 18/18); las correcciones y comprobaciones finales pasaron en `d79ecb8`, Actions `45016638974`: audit/lint/build, responsive **1/1**, E2E autenticado Chrome/API/MySQL **18/18**, cleanup correcto.
+- Auditoría siguiente: UI no cubría asignación de rol Manager (el fixture se cambiaba por API) y el diálogo de alta no se medía a 320/768. E2E actualizado; lint/build/discovery 18 local pasan, Actions integrada pendiente.

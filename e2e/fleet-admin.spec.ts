@@ -1287,7 +1287,24 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       ...userAndRoleMutations(logisticsHeaders),
     ]);
 
-    await setFixtureRole("Manager");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(email!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+    const roleCard = page.getByTestId(`team-user-${fixtureDriver.id}`);
+    const assignManagerRole = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Users/${fixtureDriver.id}/role`) && response.request().method() === "PUT",
+    );
+    await roleCard.getByRole("button", { name: "Gestor de flota", exact: true }).click();
+    expect((await assignManagerRole).status()).toBe(200);
+    const persistedManagerTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+    expect(persistedManagerTeam.status()).toBe(200);
+    expect((await persistedManagerTeam.json()).find((member: { id: string }) => member.id === fixtureDriver.id).roles).toContain("Manager");
+
     const managerHeaders = await login(driverEmail!, driverPassword!);
     await expectDenied("Manager", userAndRoleMutations(managerHeaders));
 
@@ -2248,6 +2265,32 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   const documentNumber = `E2EQA${suffix}`;
   await page.getByRole("button", { name: "Crear Usuario" }).click();
   const dialog = page.getByRole("dialog");
+  const expectUserDialogFits = async () => {
+    const sizes = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      page: document.documentElement.scrollWidth,
+    }));
+    const dialogSizes = await dialog.evaluate((element) => ({
+      width: element.getBoundingClientRect().width,
+      client: element.clientWidth,
+      scroll: element.scrollWidth,
+    }));
+    expect(sizes.page).toBeLessThanOrEqual(sizes.viewport);
+    expect(dialogSizes.width).toBeLessThanOrEqual(sizes.viewport);
+    expect(dialogSizes.scroll).toBeLessThanOrEqual(dialogSizes.client);
+    await expect(dialog.getByRole("button", { name: "Crear Usuario", exact: true })).toBeVisible();
+  };
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expectUserDialogFits();
+  await expect(dialog.getByPlaceholder("DNI / ID")).toBeVisible();
+  await expect(dialog.getByPlaceholder("999999999")).toBeVisible();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expectUserDialogFits();
+  await dialog.getByRole("button", { name: /Gestor de flota/ }).click();
+  await expect(dialog.getByPlaceholder("DNI / ID")).toHaveCount(0);
+  await dialog.getByRole("button", { name: /Chofer/ }).click();
+  await expect(dialog.getByPlaceholder("DNI / ID")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
   await dialog.getByPlaceholder("Juan").fill(firstName);
   await dialog.getByPlaceholder("Pérez").fill(lastName);
   await dialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`e2e${suffix}`);

@@ -7,6 +7,13 @@
 
 # Registro de errores y decisiones
 
+## 2026-11-22 — Matriz E2E preparaba Manager por API, no desde la UI; modal móvil sin verificación estrecha — COBERTURA AÑADIDA
+
+- Auditoría de suite descubrió que el E2E autenticaba como Manager después de cambiar el rol con API; no probaba la acción Admin en Gestión de Equipo. El diálogo de usuario se usaba a 390 px y sin afirmar que controles/scroll cupieran en 320/768.
+- El E2E ahora cambia el fixture Logistics→Manager desde el botón visible del rol, espera HTTP 200, lee persistencia desde /Users/my-team y luego inicia sesión con esa cuenta para comprobar su acceso y restricciones.
+- El diálogo Admin verifica contenido y acciones a 320×844/768×1024 y alterna rol de Driver a Gestor de flota, confirmando los campos condicionales.
+- Lint/build/discovery pasan localmente; Actions autenticada de este cambio pendiente.
+
 ## 2026-11-22 — Formulario Driver aceptaba documento/teléfono sobre el límite y E2E medía overflow incompleto — CORREGIDO
 
 - La revisión independiente encontró que el formulario permitía 100 caracteres de documento y 30 de teléfono, pero MySQL admite 20 para ambos; altas podían fallar en persistencia y ediciones eran rechazadas por API.

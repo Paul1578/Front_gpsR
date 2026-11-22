@@ -254,3 +254,4 @@
 - Contrato documento/teléfono unificado a 20 caracteres entre formulario, API y persistencia; responsive E2E ahora comprueba el panel y tarjeta creada a 320 px.
 - El formulario de Drivers que Admin conserva dentro de Gestión de Equipo ahora comparte los mismos límites y requeridos; E2E agrega checks del formulario a 768 px.
 - Actions `45016638974` en `d79ecb8`: audit/lint/build, responsive 1/1, E2E 18/18 contra Chrome/API/MySQL y cleanup success.
+- E2E ampliado para asignar Manager desde la UI Admin y validar persistencia/login; el modal de usuario se comprueba en 320/768 px y alterna campos condicionales Driver/Manager.
