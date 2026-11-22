@@ -99,3 +99,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - La corrida usó `fletflow_ci_validation_16`; el cleanup descartó la base. Primera invocación con URL que incluía `/api` abortó en prevalidación y está documentada en `ERROR_LOG.md`; la repetición pasó usando el origen API.
 - El test de error/reintento del Historial comprueba estado móvil de 390×844 sin overflow. Native mobile permanece fuera de alcance por decisión del usuario.
 - Resultado remoto previo: frontend Actions `44976408960` pasó para commit `1c8856a` con la suite anterior (12 escenarios). Esta iteración 13/13 local está pendiente de publicarse y verificar en Actions.
+
+## Verificación de autorización, concurrencia y recuperación de vehículos — 2026-11-21
+
+- Backend Release: `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **50/50**; build Release: 0 warnings/0 errores. NuGet vulnerability audit previo permanece limpio.
+- En MySQL temporal `fletflow_ci_validation_stab20261121`, `smoke-tenant-http.sh` confirmó aislamiento de tenant y que desactivar una cuenta invalida access y refresh tokens (401). `smoke-route-concurrency.sh` confirmó 409 para rutas/vehículos/Driver incompatibles, inicio rechazado con vehículo inactivo, ciclo de baja/reactivación, dos escrituras concurrentes en paradas sin pérdida y estados persistidos. Ambos esquemas se eliminaron mediante trap.
+- Frontend lint/build correctos; `npm audit --audit-level=low`: cero vulnerabilidades. Playwright autenticado sobre Chrome/API/MySQL: **14/14**, incluyendo mensaje de error de alta, baja/reactivación de usuario Driver, gestión móvil de vehículos con reactivación, mapa/equipo en móvil/tablet, filtros, reordenar/quitar paradas e Historial. E2E limpió fixtures y se descartó el esquema temporal.
+- Una corrida intermedia obtuvo 13/14 por una carrera del propio mock 503 del Historial; se corrigió sincronizando respuesta inicial y resultado esperado. Repetición final completa: 14/14.
+- La corrida de backend remota nueva y la de frontend para este lote quedan pendientes de publicar los commits siguientes.

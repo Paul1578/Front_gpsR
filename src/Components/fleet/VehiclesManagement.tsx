@@ -10,11 +10,15 @@ interface VehiclesManagementProps {
 }
 
 export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useFleet();
+  const { vehicles, addVehicle, updateVehicle, deleteVehicle, getInactiveVehicles, reactivateVehicle } = useFleet();
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+  const [inactiveVehicles, setInactiveVehicles] = useState<Vehicle[]>([]);
+  const [loadingInactive, setLoadingInactive] = useState(false);
+  const [inactiveError, setInactiveError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     placa: "",
@@ -75,6 +79,28 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       toast.error(result.message ?? "No se pudo eliminar el vehiculo");
     }
     setDeleteConfirm(null);
+  };
+
+  const loadInactiveVehicles = async () => {
+    setLoadingInactive(true);
+    setInactiveError(null);
+    try {
+      setInactiveVehicles(await getInactiveVehicles());
+    } catch {
+      setInactiveError("No se pudieron cargar los vehículos dados de baja.");
+    } finally {
+      setLoadingInactive(false);
+    }
+  };
+
+  const handleReactivate = async (id: string) => {
+    const result = await reactivateVehicle(id);
+    if (!result.ok) {
+      toast.error(result.message ?? "No se pudo reactivar el vehículo");
+      return;
+    }
+    toast.success(result.message ?? "Vehículo reactivado");
+    await loadInactiveVehicles();
   };
 
   const resetForm = () => {
@@ -138,7 +164,8 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
         </div>
 
         <div className="p-4 md:p-6 border-b border-gray-200">
-          <div className="relative max-w-md">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -148,7 +175,49 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showInactive;
+              setShowInactive(next);
+              if (next) void loadInactiveVehicles();
+            }}
+            className="self-start rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:self-auto"
+          >
+            {showInactive ? "Ocultar bajas" : "Mostrar bajas"}
+          </button>
+          </div>
         </div>
+
+        {showInactive && (
+          <section aria-label="Vehículos dados de baja" className="border-b border-gray-200 bg-slate-50 p-4 md:p-6">
+            <h3 className="mb-3 text-sm font-semibold text-gray-800">Vehículos dados de baja</h3>
+            {inactiveError ? (
+              <div role="alert" className="flex flex-wrap items-center justify-between gap-3 text-sm text-red-700">
+                <span>{inactiveError}</span>
+                <button type="button" onClick={() => void loadInactiveVehicles()} className="rounded border bg-white px-3 py-1.5">Reintentar</button>
+              </div>
+            ) : loadingInactive ? (
+              <p className="text-sm text-gray-500">Cargando vehículos dados de baja…</p>
+            ) : inactiveVehicles.length === 0 ? (
+              <p className="text-sm text-gray-500">No hay vehículos dados de baja.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {inactiveVehicles.map((vehicle) => (
+                  <div key={vehicle.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-gray-900">{vehicle.placa}</p>
+                      <p className="truncate text-xs text-gray-500">{vehicle.marca} {vehicle.modelo}</p>
+                    </div>
+                    <button type="button" onClick={() => void handleReactivate(vehicle.id)} className="rounded-md bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+                      Reactivar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {filteredVehicles.length === 0 ? (

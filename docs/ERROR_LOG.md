@@ -479,3 +479,27 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - El contrato backend actualmente expone Admin, Driver, Manager, User y Logistics; no hay rol SystemAdmin/SuperAdmin ni permisos de plataforma globales. La interfaz no puede validar de forma real ese escenario y no debe elevar Admin ni inventar un rol.
 - Hace falta definir si se requiere administración global multiempresa y diseñar ese rol y sus controles en backend antes de añadir una prueba de autorización Super Admin. Los roles existentes sí se prueban en los recorridos cubiertos.
+
+## 2026-11-21 — Alta de usuario convertía cualquier fallo en “usuario duplicado” — CORREGIDO
+
+- `createUser` devolvía sólo `ok=false`, y Gestión de Equipo mostraba “El nombre de usuario ya existe” aunque la API respondiera otro error. Se propaga el mensaje de servidor como parte del resultado y cada formulario lo muestra con un fallback genérico.
+- Playwright simula HTTP 409 con “El correo ya está registrado” y comprueba que no se muestre el diagnóstico de duplicado de usuario equivocado.
+
+## 2026-11-21 — No existía flujo para recuperar vehículos dados de baja — CORREGIDO
+
+- El backend conservaba el registro, pero el listado sólo mostraba activos y no ofrecía endpoint ni acción para reactivar.
+- Se agregó `POST /api/Vehicles/{id}/reactivate`, con lock de vehículo y validación de rutas en curso; Gestión de Vehículos muestra bajas, errores/reintento y acción Reactivar. El E2E valida baja, consulta `isActive=false`, reactivación y persistencia `isActive=true`.
+- Smoke local API/MySQL y Playwright móvil verificaron el ciclo completo.
+
+## 2026-11-21 — Desactivar cuenta no invalidaba sesiones y operaciones de ruta permitían estados contradictorios — CORREGIDO
+
+- Baja de usuario no revocaba refresh tokens y una ruta podía aceptar JWT de cuenta desactivada. Ahora se revocan todos los refresh al desactivar y JWT verifica la cuenta activa al validar cada solicitud; `/Auth/refresh` también rechaza cuentas inactivas.
+- Iniciar ruta comprueba `Vehicle.IsActive`; no se permite dar de baja una ruta en progreso, desasignar un Driver durante ruta en progreso ni dar de baja vehículos con asignación de conductor/ruta pendiente o en curso. Las mutaciones de estado/evidencia de paradas serializan por lock de ruta para no sobrescribirse.
+- Smoke HTTP/MySQL real comprobó access/refresh inválidos tras baja, 409 ante bajas/desasignaciones conflictivas, rechazo de inicio con vehículo inactivo y persistencia de dos actualizaciones concurrentes a paradas distintas.
+
+## 2026-11-21 — Validación local de estabilización encontró fallos del harness — CORREGIDOS
+
+- El primer arranque API encontró `DB_PASSWORD` distinto de `MYSQL_ROOT_PASSWORD`; la CLI podía conectar pero la app no. La prueba aislada pasó `DB_PASSWORD` por entorno igual a la credencial activa, sin cambiar el `.env` ni mostrar valores.
+- Una primera repetición usó el DLL previo al último cambio del comando de desactivación y observó HTTP 200 con la cuenta todavía activa. Se recompiló desde el código actual y la repetición confirmó 401 para access y refresh.
+- El primer smoke de bajas excedió el máximo de longitud de Plate; se cambiaron las placas/documentos QA a sufijos breves. La repetición final de ambos smokes pasó.
+- Una primera suite completa dio 13/14: el test de Historial activaba el mock 503 mientras aún había un GET `/Routes` inicial en curso, por lo que el fallo podía consumirse antes de entrar a Historial. Se espera explícitamente la respuesta inicial, `networkidle` y luego la respuesta 503/200 del flujo Historial. Caso aislado y suite final 14/14.

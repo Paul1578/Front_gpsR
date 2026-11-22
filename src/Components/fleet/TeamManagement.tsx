@@ -183,7 +183,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
         toast.warning("La cuenta se creó, pero no se pudo actualizar toda la lista. Intenta recargarla.");
       }
     } else {
-      toast.error("El nombre de usuario ya existe");
+      toast.error(success.message ?? "No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
     }
   };
 

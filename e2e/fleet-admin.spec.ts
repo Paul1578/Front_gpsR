@@ -97,6 +97,44 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const assertNoHorizontalOverflow = async () => {
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  };
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Crear Usuario" })).toBeVisible();
+  await assertNoHorizontalOverflow();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await assertNoHorizontalOverflow();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoHorizontalOverflow();
+  await page.getByRole("button", { name: "Volver" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  await assertNoHorizontalOverflow();
+});
+
 test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
@@ -155,6 +193,23 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     await confirmation.getByRole("button", { name: "Sí, eliminar" }).click();
     expect((await deleted).status()).toBe(204);
     await expect(card).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Mostrar bajas" }).click();
+    const inactiveVehicles = page.getByRole("region", { name: "Vehículos dados de baja" });
+    const inactiveCard = inactiveVehicles.locator("div.rounded-lg.border").filter({ hasText: plate });
+    await expect(inactiveCard).toContainText("FleetFlow QA Editado Browser test");
+    const reactivated = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}/reactivate`) &&
+      response.request().method() === "POST",
+    );
+    await inactiveCard.getByRole("button", { name: "Reactivar" }).click();
+    expect((await reactivated).status()).toBe(204);
+    const vehicleAfterReactivation = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, {
+      headers: { Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` },
+    });
+    expect(vehicleAfterReactivation.status()).toBe(200);
+    expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
+    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("FleetFlow QA Editado Browser test");
 
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -367,6 +422,13 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     await expect(page.getByTestId("stop-point-1")).not.toContainText(/Ubicación pendiente|NaN/);
     await stopTwo.fill("Entrega y recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    const temporaryStop = page.getByTestId("stop-point-2");
+    await temporaryStop.getByRole("button", { name: "Eliminar parada" }).click();
+    await expect(page.getByTestId("stop-point-2")).toHaveCount(0);
+    await page.getByTestId("stop-point-1").getByRole("button", { name: "Subir parada" }).click();
+    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("Entrega y recogida E2E");
+    await expect(page.getByPlaceholder("Parada 2")).toHaveValue("Recogida E2E");
     const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
     await destinationRow.getByRole("button", { name: "Ubicar" }).click();
     await page.getByRole("button", { name: "Seleccionando" }).waitFor();
@@ -400,8 +462,8 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     expect(persistedPoints).toHaveLength(4);
     expect(persistedPoints.map((point) => point.name)).toEqual([
       "Origen E2E desde mapa",
-      "Recogida E2E",
       "Entrega y recogida E2E",
+      "Recogida E2E",
       "Destino E2E desde mapa",
     ]);
     expect(persistedPoints.some((point) => point.operation === 1 || point.operation === "Pickup")).toBe(true);
@@ -751,6 +813,22 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await dialog.getByPlaceholder("DNI / ID").fill(documentNumber);
   await dialog.getByPlaceholder("999999999").fill("0990000000");
 
+    await page.route("**/api/backend/Users", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "El correo ya está registrado" }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+    await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+    await expect(page.getByText("El correo ya está registrado")).toBeVisible();
+    await expect(page.getByText("El nombre de usuario ya existe")).toHaveCount(0);
+    await page.unroute("**/api/backend/Users");
+
   const createUserResponsePromise = page.waitForResponse((response) =>
     response.url().includes("/api/backend/Users") &&
     response.request().method() === "POST",
@@ -851,6 +929,26 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   const activeAfterRoleChange = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
   expect((await activeAfterRoleChange.json()).isActive).toBe(true);
   await expect(updatedDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+
+  const deactivateUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await teamMemberCard.getByRole("button", { name: "Activo", exact: true }).click();
+  expect((await deactivateUserPromise).status()).toBe(200);
+  const inactiveUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(inactiveUsers.status()).toBe(200);
+  const persistedInactiveUser = (await inactiveUsers.json()).find((user: { id: string }) => user.id === createdUser.id);
+  expect(persistedInactiveUser?.isActive).toBe(false);
+  await expect(teamMemberCard.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  const inactiveMemberAfterReload = page
+    .getByRole("heading", { name: `e2e${suffix}`, exact: true })
+    .locator("xpath=../../../..");
+  await expect(inactiveMemberAfterReload.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

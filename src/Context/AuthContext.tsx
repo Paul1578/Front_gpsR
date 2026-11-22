@@ -141,7 +141,7 @@ interface AuthContextType {
       email?: string;
       phoneNumber?: string;
     }
-  ) => Promise<{ ok: boolean; invitationSent: boolean }>;
+  ) => Promise<{ ok: boolean; invitationSent: boolean; message?: string }>;
   refreshTeamUsers: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -716,7 +716,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email?: string;
       phoneNumber?: string;
     }
-  ): Promise<{ ok: boolean; invitationSent: boolean }> => {
+  ): Promise<{ ok: boolean; invitationSent: boolean; message?: string }> => {
     try {
       const payload = {
         username: data.usuario,
@@ -747,9 +747,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (Array.isArray(errData) ? errData.join(", ") : "") ||
         getApiRequestError(error)?.message ||
         "Error al crear usuario";
-      console.error("Error al crear usuario:", error);
-      toast?.error?.(message);
-      return { ok: false, invitationSent: false };
+      return { ok: false, invitationSent: false, message };
     }
   };
 

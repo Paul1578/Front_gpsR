@@ -110,6 +110,8 @@ interface FleetContextType {
   retryFleetData: () => Promise<void>;
 
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<ActionResult>;
+  getInactiveVehicles: () => Promise<Vehicle[]>;
+  reactivateVehicle: (id: string) => Promise<ActionResult>;
   updateVehicle: (
     id: string,
     vehicle: Partial<Vehicle>,
@@ -696,6 +698,35 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getInactiveVehicles = async (): Promise<Vehicle[]> => {
+    try {
+      const data = await apiFetch<ApiVehicle[]>("/Vehicles?onlyActive=false");
+      return data.filter((vehicle) => vehicle.isActive === false).map(mapApiVehicle);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  };
+
+  const reactivateVehicle = async (id: string): Promise<ActionResult> => {
+    try {
+      await apiFetch(`/Vehicles/${id}/reactivate`, { method: "POST" });
+      try {
+        const activeVehicles = await apiFetch<ApiVehicle[]>("/Vehicles?onlyActive=true");
+        setVehicles(activeVehicles.map(mapApiVehicle));
+        setResourceError("vehículos", false);
+        return { ok: true, message: "Vehículo reactivado" };
+      } catch {
+        setResourceError("vehículos", true);
+        return { ok: true, message: "Vehículo reactivado; recarga la lista para sincronizar los cambios." };
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        message: resolveApiMessage(error, "No se pudo reactivar el vehículo"),
+      };
+    }
+  };
+
   // ---------------- ROUTES ----------------
 
   // ✅ helper para re-listar SIEMPRE desde BD sin tocar otras cosas
@@ -1138,6 +1169,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         loadErrors: userOwnsLoadedData ? loadErrors : [],
         retryFleetData,
         addVehicle,
+        getInactiveVehicles,
+        reactivateVehicle,
         updateVehicle,
         deleteVehicle,
         addRoute,

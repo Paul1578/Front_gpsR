@@ -136,17 +136,34 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
     }));
   });
 
+  const initialRoutesResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname.endsWith("/Routes"),
+  );
   await page.goto("/dashboard");
   await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await initialRoutesResponse;
+  await page.waitForLoadState("networkidle");
   failRouteHistory = true;
   await page.getByRole("button", { name: "Abrir menú" }).click();
+  const failedHistoryResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Routes") &&
+    response.status() === 503,
+  );
   await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await failedHistoryResponse;
 
   const historyAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" });
   await expect(historyAlert).toBeVisible();
   await expect(page.getByText("No hay rutas para mostrar")).toHaveCount(0);
 
+  const recoveredHistoryResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Routes") &&
+    response.status() === 200,
+  );
   await historyAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredHistoryResponse;
   await expect(historyAlert).toHaveCount(0);
   await expect(page.getByText("No hay rutas para mostrar")).toBeVisible();
   const widths = await page.evaluate(() => ({

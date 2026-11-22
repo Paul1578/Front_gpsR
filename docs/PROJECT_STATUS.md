@@ -102,3 +102,13 @@ Fecha de actualización: 2026-11-21.
 - Historial ahora resuelve conductores por `driverId`, distingue planificación de timestamps reales y permite reintentar errores de API.
 - Playwright añadió filtros combinados/búsqueda/limpieza de rutas y asignación/desasignación de vehículo con verificación de persistencia. E2E local Chrome/API/MySQL: **13/13**; base temporal limpiada. Lint y build local correctos.
 - Próximo paso inmediato: publicar cambios y verificar Actions sobre el commit exacto. Pendientes de alcance: aumentar cobertura CRUD y responsive de vistas restantes; el contrato no define rol Super Admin global. SMTP requiere credenciales externas; aplicación nativa móvil pospuesta por el usuario.
+
+## Estabilización adicional de cuentas, rutas y CRUD de vehículos — 2026-11-21
+
+- La baja de usuario revoca refresh tokens y JWT consulta que la cuenta siga activa; `/Auth/refresh` rechaza usuarios dados de baja. Smoke real confirmó 401 en access y refresh ya emitidos.
+- Backend evita iniciar ruta con vehículo inactivo, borrar ruta en progreso, desasignar Driver en curso o dar de baja vehículo ligado a conductor/ruta activa. Updates concurrentes de paradas ahora se serializan por ruta.
+- Vehículos dados de baja pueden reactivarse desde API y UI; la interfaz lista las bajas con error/reintento. E2E verificó persistencia.
+- Gestión de Equipo muestra el mensaje real del API al fallar alta en vez de atribuir todo a usuario duplicado.
+- Validación local actual: backend Release **50/50**, build 0 warnings/0 errors; smoke tenant/auth e invariantes/concurrencia MySQL aprobados; frontend lint/build y npm audit (0 vulnerabilidades) correctos; Playwright Chrome/API/MySQL **14/14**, base descartada.
+- Commit anterior `dc8b697` pasó Frontend Actions run `44977358352`; este conjunto posterior aún debe commit/push y validar Actions en ambas ramas.
+- Pendientes: matriz HTTP exhaustiva de roles Manager/Logistics/Driver en mutaciones, CRUD y responsive de vistas/acciones aún no recorridas; Super Admin global no está definido por el backend. SMTP necesita credenciales externas válidas; app nativa móvil está pospuesta.

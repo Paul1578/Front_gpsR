@@ -87,7 +87,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
       });
       setShowCreatePassword(false);
     } else {
-      toast.error("No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
+      toast.error(result.message ?? "No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
     }
   };
 
