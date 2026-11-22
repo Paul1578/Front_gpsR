@@ -131,3 +131,9 @@
 - Actions `44994219944` descubrió que el test esperaba el PUT genérico de edición antes del PUT específico `/status`; el waiter ahora observa exactamente el cambio de estado y payload.
 - Actions `44994623654` validó el ciclo vehículo `Disponible→Mantenimiento→Disponible` de punta a punta, con GET de API y recarga, junto a E2E 16/16 y xUnit 57/57.
 - La matriz de roles añade el lado permitido de Manager para lecturas y CRUD de vehículo vía API, además de las denegaciones existentes. Actions `44994997016` validó Front `202ec3d` + Back `029e94d`, E2E 16/16, responsive 1/1, xUnit 57/57 y cleanup.
+
+## 2026-11-22 — Cobertura negativa de vehículo y GPS móvil
+
+- E2E Admin móvil ahora verifica que placa duplicada devuelve conflicto visible sin duplicar la tarjeta.
+- E2E Driver móvil concede GPS determinista, inicia la ruta en UI y valida la posición persistida por API.
+- Validación local: lint/build y discovery 16/16. Integración browser/API/MySQL pendiente.

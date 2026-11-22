@@ -205,3 +205,17 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Actions `44992803081` falló después al no encontrar el vehículo creado por API en el selector del contexto ya cargado. Se agregó reload antes de crear la ruta; no se cuenta el E2E como pase hasta otra corrida (los otros 15 y cleanup sí pasaron).
 - Actions `44993132771` llegó a revisión; falló una expectativa de nombre de parada que no forma parte del resumen UI. Ahora se comprueba el conteo de puntos y los datos exactos se dejan al GET de ruta persistida. Quedan 15 E2E y cleanup aprobados, nuevo caso pendiente.
 - Actions `44993456874`: backend 57/57, build/audit/lint y responsive 1/1 correctos; Playwright autenticado **16/16**. El job terminó fail porque cleanup SQL no reconoció el nombre `E2E QA tablet ...`; ya se ajustó a `E2E QA ruta tablet ...`, prefijo requerido por `cleanup-e2e.sql`. CI debe confirmar cleanup después del fix.
+
+## Validaciones negativas de vehículo y GPS móvil Driver — 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**16 tests**) y `git diff --check` pasan localmente.
+- Se amplió el E2E móvil Admin para intentar alta con placa repetida: espera 409, comprueba el mensaje del backend y confirma que queda un solo vehículo.
+- Se amplió el E2E móvil Driver con geolocalización Playwright fija: espera `GPS en vivo`, inicia la ruta en UI, verifica el POST de posición y GET API con latitud/longitud esperadas.
+- Backend local Release 59/59; Actions backend para `6ec5315` en curso. La ejecución integrada Playwright/API/MySQL frontend sigue pendiente.
+
+## Negativo de placa duplicada y GPS Driver móvil — 2026-11-22
+
+- Backend `6ec5315` pasó Actions `44995681296`: build, xUnit y smokes HTTP/MySQL de tenant y concurrencia. Release local backend 59/59.
+- E2E Admin móvil valida que repetir una placa recibe HTTP 409, muestra el mensaje en español y no duplica la tarjeta.
+- E2E Driver móvil usa geolocalización Playwright conocida, valida `GPS en vivo`, inicia la ruta, comprueba POST y lectura GET de coordenadas persistidas.
+- `npm run lint`, `npm run build`, discovery Playwright **16 tests** y `git diff --check`: correctos. Actions frontend/API/MySQL del nuevo código pendiente.

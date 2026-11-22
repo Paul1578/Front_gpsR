@@ -258,7 +258,7 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 ## Trabajo restante
 
-- Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; la suite actual de 15 E2E no pretende cubrir cada acción/pantalla.
+- Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; la suite actual descubre 16 E2E y no pretende cubrir cada acción/pantalla.
 - Externos delimitados: credenciales SMTP válidas; móvil nativo pospuesto por el usuario; administración global Super Admin sin contrato/rol backend definido; despliegue productivo (dominio/TLS/object storage/rate limiting distribuido).
 
 ## Matriz de permisos y responsive de errores — 2026-11-22
@@ -270,3 +270,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - El primer build detectó error TypeScript por capturar headers mutables no inicializados; se pasan explícitamente a cada factory y el build posterior pasó. Ver `docs/ERROR_LOG.md`.
 - La matriz comprobó los HTTP 403 esperados con API y MySQL efímeros. El commit `286b100` pasó Actions `44989454133`: xUnit 57/57; Playwright autenticado 15/15 sin skips; responsive 1/1; audit/lint/build correctos. Se corrigió el detalle de `ERROR_LOG.md`; continuar con la cobertura global restante.
 - El backend relacionado avanzó después a `029e94d`; Actions `44991181335` confirmó build, xUnit y smoke HTTP/MySQL del ciclo Logistics con cleanup. Siguiente: disparar el workflow frontend contra ese HEAD y registrar el SHA/run cruzado.
+
+## Cobertura en curso — duplicados y geolocalización móvil — 2026-11-22
+
+- Front E2E modifica el CRUD Admin para validar HTTP 409/mensaje en español al repetir placa, sin segundo vehículo.
+- E2E Driver a 390×844 habilita GPS Playwright a `(-0.185, -78.465)`, valida “GPS en vivo”, inicia la ruta y espera el POST + GET real de persistencia.
+- Local Front: lint/build, discovery 16 tests y diff-check verdes. Backend `6ec5315`: Release local 59/59 y Actions `44995681296` success con smokes MySQL. Luego probar ambos cambios frontend en el workflow cross-branch.
+- Brecha prioritaria sugerida por auditoría independiente real; agente no hizo modificaciones.
+- Backend corrigió duplicados de placa a HTTP 409: Release 59/59 y Actions `44995681296` success en `6ec5315` con smokes HTTP/MySQL. Front agregó E2E de rechazo visible y de geolocalización Driver móvil; lint/build/discovery 16 pasan localmente. Próximo paso: publicar E2E/documentación, verificar Actions frontend contra backend actualizado, corregir cualquier fallo y seguir con CRUD/responsive restantes.

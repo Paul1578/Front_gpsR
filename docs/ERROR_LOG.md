@@ -596,3 +596,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - La matriz cubría denegaciones de Manager pero no operaciones permitidas. Se agregó un ciclo autenticado positivo de vehículo y lectura de flota/rutas.
 - Actions `44994997016` pasó con 16/16 E2E, responsive 1/1, xUnit 57/57 y cleanup completo. No se detectó error de producto en el flujo permitido de Manager.
+
+## 2026-11-22 — Búsqueda del controlador de posiciones con ruta relativa del repositorio equivocado — CORREGIDO
+
+- Desde Front se intentó consultar `fletflow/Api/Controllers/RoutesController.cs`; esa ruta sólo existe desde la raíz backend y, además, se buscó el nombre de archivo antes de confirmar el inventario. `rg` informó que no encontraba el archivo; no cambió estado.
+- Corrección: usar `/home/leonardo/Back_GPS` como `workdir` y `rg --files` para localizar los controladores reales antes de leerlos. No se basó ninguna decisión en el resultado fallido.
+
+## 2026-11-22 — Referencia al controlador de posiciones desde repositorio equivocado — CORREGIDO
+
+- Desde Front se buscó `fletflow/Api/Controllers/RoutesController.cs`, ruta que sólo existe desde la raíz backend. `rg` indicó archivo inexistente y no cambió nada.
+- Corrección: cambiar el `workdir` a `/home/leonardo/Back_GPS`, localizar primero con `rg --files` y leer `fletflow/Api/Controllers/RoutesController.cs`. El contrato GET/POST de posiciones se confirmó desde el archivo real.
+- Prevención: no asumir rutas relativas entre repositorios; confirmar raíz antes de cada búsqueda cruzada.

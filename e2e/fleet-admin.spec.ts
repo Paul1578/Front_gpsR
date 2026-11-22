@@ -195,6 +195,25 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
 
     const card = page.locator(".grid > div").filter({ hasText: plate });
     await expect(card).toContainText("FleetFlow QA Browser test");
+
+    await page.getByRole("button", { name: "Agregar Vehículo" }).click();
+    const duplicateDialog = page.getByRole("dialog");
+    await duplicateDialog.getByPlaceholder("ABC-123").fill(plate);
+    await duplicateDialog.getByPlaceholder("Toyota").fill("FleetFlow QA");
+    await duplicateDialog.getByPlaceholder("Hilux").fill("Duplicate test");
+    await duplicateDialog.locator('input[type="number"]').fill("2025");
+    const duplicateResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Vehicles") &&
+      response.request().method() === "POST",
+    );
+    await duplicateDialog.getByRole("button", { name: "Agregar", exact: true }).click();
+    const duplicateResponse = await duplicateResponsePromise;
+    expect(duplicateResponse.status()).toBe(409);
+    await expect(page.getByText(`Ya existe un vehículo con la placa ${plate} en esta empresa.`)).toBeVisible();
+    await expect(duplicateDialog).toBeVisible();
+    await expect(page.locator(".grid > div").filter({ hasText: plate })).toHaveCount(1);
+    await duplicateDialog.getByRole("button", { name: "Cancelar" }).click();
+
     await card.getByRole("button", { name: "Editar" }).click();
     const editDialog = page.getByRole("dialog");
     await editDialog.getByPlaceholder("Toyota").fill("FleetFlow QA Editado");
@@ -1069,6 +1088,8 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.context().grantPermissions(["geolocation"]);
+  await page.context().setGeolocation({ latitude: -0.185, longitude: -78.465, accuracy: 10 });
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const adminLogin = await page.request.post("/api/backend/Auth/login", {
     data: { email, password },
@@ -1125,12 +1146,27 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
   await expect(page.getByText(routeName, { exact: true })).toBeVisible();
+  await expect(page.getByText("GPS en vivo", { exact: true })).toBeVisible();
+  const positionResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${routeId}/positions`) &&
+    response.request().method() === "POST",
+  );
   const startRoutePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
     response.request().method() === "PUT",
   );
   await page.getByRole("button", { name: "Iniciar Ruta" }).click();
   expect((await startRoutePromise).status()).toBe(204);
+  const positionResponse = await positionResponsePromise;
+  expect(positionResponse.status()).toBe(200);
+  const positionsResponse = await page.request.get(`/api/backend/Routes/${routeId}/positions`, {
+    headers: adminHeaders,
+  });
+  expect(positionsResponse.status()).toBe(200);
+  const positions = await positionsResponse.json() as Array<{ latitude: number; longitude: number }>;
+  expect(positions).toEqual(expect.arrayContaining([
+    expect.objectContaining({ latitude: -0.185, longitude: -78.465 }),
+  ]));
 
   const stopCard = page.locator("article").filter({ hasText: "Entrega E2E" });
   await expect(stopCard).toContainText("Recogida y entrega");
