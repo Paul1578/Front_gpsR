@@ -303,7 +303,21 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const handleSaveDriver = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!editingDriverId) return;
-    const result = await updateDriver(editingDriverId, driverEditForm);
+    const payload = {
+      firstName: driverEditForm.firstName.trim(),
+      lastName: driverEditForm.lastName.trim(),
+      documentNumber: driverEditForm.documentNumber.trim(),
+      phoneNumber: driverEditForm.phoneNumber.trim(),
+    };
+    if (Object.values(payload).some((value) => !value)) {
+      toast.error("Completa todos los datos del conductor.");
+      return;
+    }
+    if (payload.documentNumber.length > 20 || payload.phoneNumber.length > 20) {
+      toast.error("Documento y teléfono no pueden exceder 20 caracteres.");
+      return;
+    }
+    const result = await updateDriver(editingDriverId, payload);
     if (result.ok) {
       toast.success(result.message ?? "Conductor actualizado");
       setEditingDriverId(null);
@@ -474,6 +488,12 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   {visibleDrivers.map((driver) => {
                     const vehicle = vehicles.find((v) => v.id === driver.vehicleId);
                     const user = users.find((u) => u.id === driver.userId);
+                    const assignableVehicles = vehicles.filter((candidate) =>
+                      candidate.id === driver.vehicleId ||
+                      (candidate.estado === "disponible" && !drivers.some((other) =>
+                        other.id !== driver.id && other.isActive !== false && other.vehicleId === candidate.id,
+                      )),
+                    );
                     return (
                       <div
                         key={driver.id}
@@ -515,7 +535,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                           >
                             <option value="">Selecciona vehículo</option>
-                            {vehicles.map((v) => (
+                            {assignableVehicles.map((v) => (
                               <option key={v.id} value={v.id}>
                                 {v.placa} - {v.marca} {v.modelo}
                               </option>
@@ -527,12 +547,12 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                           >
                             Asignar
                           </button>
-                          <button
+                          {driver.vehicleId && <button
                             onClick={() => handleUnassignVehicle(driver.id)}
                             className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100"
                           >
                             Quitar
-                          </button>
+                          </button>}
                           <div className="flex items-center gap-2 text-xs text-gray-600">
                             <Truck size={14} />
                             <span>{vehicle ? `${vehicle.placa} (${vehicle.marca})` : "Sin vehículo"}</span>
@@ -541,10 +561,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                         </div>
                         {editingDriverId === driver.id && (
                           <form onSubmit={handleSaveDriver} className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:col-span-2">
-                            <input aria-label="Nombres del conductor" value={driverEditForm.firstName} onChange={(event) => setDriverEditForm({ ...driverEditForm, firstName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                            <input aria-label="Apellidos del conductor" value={driverEditForm.lastName} onChange={(event) => setDriverEditForm({ ...driverEditForm, lastName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                            <input aria-label="Documento del conductor" value={driverEditForm.documentNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, documentNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                            <input aria-label="Teléfono del conductor" value={driverEditForm.phoneNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, phoneNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Nombres del conductor" required maxLength={100} value={driverEditForm.firstName} onChange={(event) => setDriverEditForm({ ...driverEditForm, firstName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Apellidos del conductor" required maxLength={100} value={driverEditForm.lastName} onChange={(event) => setDriverEditForm({ ...driverEditForm, lastName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Documento del conductor" required maxLength={20} value={driverEditForm.documentNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, documentNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Teléfono del conductor" required maxLength={20} value={driverEditForm.phoneNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, phoneNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                             <div className="flex gap-2 sm:col-span-2 sm:justify-end">
                               <button type="button" onClick={() => setEditingDriverId(null)} className="px-3 py-2 border rounded-lg text-sm">Cancelar</button>
                               <button type="submit" className="px-3 py-2 bg-[#3271a4] text-white rounded-lg text-sm">Guardar cambios</button>

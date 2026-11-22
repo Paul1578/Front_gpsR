@@ -2438,6 +2438,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   expect((await unlinkedDriverRead.json()).userId).toBeNull();
   const createdUnlinkedDriverCard = page.getByText(`${unlinkedFirstName} Sin cuenta`, { exact: true }).locator("xpath=../..");
   await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
+  await expect(createdUnlinkedDriverCard.getByRole("button", { name: "Quitar", exact: true })).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -2455,6 +2456,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   const assignedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
   expect((await assignedDriver.json()).vehicleId).toBe(vehicleId);
   await expect(driverCard).toContainText(plate);
+  await expect(createdUnlinkedDriverCard.getByRole("combobox").locator("option").filter({ hasText: plate })).toHaveCount(0);
 
   const unassignVehiclePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/unassign-vehicle`) &&
@@ -2468,7 +2470,20 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await expect(driverCard).toContainText("Sin vehículo");
 
   await driverCard.getByRole("button", { name: "Editar" }).click();
-  await page.getByRole("textbox", { name: "Nombres del conductor" }).fill(`${firstName} editado`);
+  const driverEditForm = driverCard.locator("form");
+  await expect(driverEditForm.getByLabel("Documento del conductor")).toHaveAttribute("maxlength", "20");
+  await expect(driverEditForm.getByLabel("Teléfono del conductor")).toHaveAttribute("maxlength", "20");
+  let invalidDriverEditRequests = 0;
+  const countInvalidDriverEdit = (request: { url: () => string; method: () => string }) => {
+    if (request.url().includes(`/api/backend/Drivers/${driverId}`) && request.method() === "PUT") invalidDriverEditRequests += 1;
+  };
+  page.on("request", countInvalidDriverEdit);
+  await driverEditForm.getByLabel("Nombres del conductor").fill("   ");
+  await driverCard.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Completa todos los datos del conductor.")).toBeVisible();
+  expect(invalidDriverEditRequests).toBe(0);
+  page.off("request", countInvalidDriverEdit);
+  await driverEditForm.getByLabel("Nombres del conductor").fill(`${firstName} editado`);
 
   const updateDriverPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}`) &&
@@ -2479,6 +2494,13 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   const updatedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
   expect(updatedDriver.status()).toBe(200);
   expect((await updatedDriver.json()).firstName).toBe(`${firstName} editado`);
+  const invalidDriverUpdate = await page.request.put(`/api/backend/Drivers/${driverId}`, {
+    headers,
+    data: { firstName: " ", lastName, documentNumber, phoneNumber: "0990000000" },
+  });
+  expect(invalidDriverUpdate.status()).toBe(400);
+  const afterInvalidDriverUpdate = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await afterInvalidDriverUpdate.json()).firstName).toBe(`${firstName} editado`);
   const usersAfterDriverEdit = await page.request.get("/api/backend/Users/my-team", { headers });
   const linkedUserAfterDriverEdit = (await usersAfterDriverEdit.json()).find((member: { id: string }) => member.id === createdUser.id);
   expect(linkedUserAfterDriverEdit).toMatchObject({ firstName: `${firstName} editado`, lastName });
