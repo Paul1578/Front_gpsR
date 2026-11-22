@@ -41,7 +41,7 @@
 - Se añadió una generación de sesión a restauración, login/registro, refresh, consultas autenticadas y logout. Las respuestas sólo cambian estado si pertenecen a la generación y al refresh token actuales; logout captura el token previo y limpia el estado local al inicio. Los AbortError esperados por invalidación ya no se reportan como fallos inesperados.
 - E2E mantiene el refresh de A pendiente, cierra sesión, inicia B y libera la respuesta de A; verifica usuario B y `auth-account-b-token`. El caso pasó 1/1 y el spec de carga/error pasó 8/8.
 - Primer intento E2E falló: un `AbortError` normal de la sesión invalidada se registró con `console.error`; el overlay de Next dev interceptó el clic de logout. Se suprimió ese log esperado y la repetición pasó. En otra corrida, lint se ejecutó al mismo tiempo que Playwright y ESLint recibió `ENOENT` al recorrer `test-results`, directorio que Playwright recreaba. Prevención: ejecutar lint/build después de finalizar Playwright, no en paralelo.
-- `npm run lint`, `npm run build`, discovery Playwright (**26 pruebas**) y `git diff --check` pasan localmente. Action integrada del cambio Auth pendiente.
+- `npm run lint`, `npm run build`, discovery Playwright (**26 pruebas**) y `git diff --check` pasan localmente. Front commit `c6441b6` pasó Actions `45042907944`: backend Release, audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **26/26** y cleanup completo.
 
 ## 2026-11-22 — Asignación fallida sin E2E negativo en Gestión de Conductores — COBERTURA AÑADIDA
 

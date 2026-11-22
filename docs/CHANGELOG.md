@@ -358,4 +358,4 @@
 
 - `AuthContext` descarta login, restauración, refresh y peticiones autenticadas cuya generación de sesión quedó obsoleta. Logout conserva el refresh token capturado y ya no puede borrar el estado de una sesión posterior.
 - Se añadió una regresión E2E A→logout→B con refresh de A retrasado; protege tokens y usuario de B. `AbortError` esperados por cancelación no generan errores de consola.
-- Verificación local: spec de carga/error **8/8**, lint/build, discovery **26** y diff-check correctos. CI integrado pendiente.
+- Verificación local: spec de carga/error **8/8**, lint/build, discovery **26** y diff-check correctos. Actions `45042907944` validó commit `c6441b6`: backend Release, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26** y cleanup.

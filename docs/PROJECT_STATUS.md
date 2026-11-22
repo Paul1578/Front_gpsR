@@ -449,5 +449,6 @@ Fecha de actualización: 2026-11-22.
 
 - Fix local en `AuthContext`: respuestas tardías de login/restauración/refresh/API no pueden sobrescribir ni cerrar una sesión posterior. Logout limpia estado local inmediatamente y envía el refresh token capturado de esa sesión.
 - E2E de carrera de refresh: **1/1**; spec de cargas/errores: **8/8**. `npm run lint`, `npm run build`, discovery Playwright (**26**) y `git diff --check` pasan.
-- La acción integrada de este cambio aún está pendiente. Front previo `5bc0bff` pasó Actions `45041860522` (24/24 E2E; backend checkout `a18a34f`; responsive, audit, lint/build y cleanup success).
+- Front `c6441b6` pasó Actions `45042907944`: backend Release, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26**, cleanup success. El run usó el backend de la rama `chore/stabilize-fleet-platform`.
+- El commit previo Front `5bc0bff` también pasó Actions `45041860522` con 24/24 E2E.
 - Misión integral abierta. Faltan ciclos CRUD/responsive que se cubrirán progresivamente, decisión de política para Admin delegado, SMTP actualizado/infraestructura de certificado. Móvil nativo está aplazado por decisión del usuario.
