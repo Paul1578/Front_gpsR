@@ -1,3 +1,17 @@
+# 2026-11-22 — Historial de Logística fallaba por una consulta administrativa — CORREGIDO; E2E EN VALIDACIÓN
+
+- Síntoma: una cuenta Logistics podía leer `/Routes` pero Historial mostraba error al cargar.
+- Causa: `RouteHistory` esperaba que `/Routes` y `/Vehicles` terminaran correctamente con `Promise.all`; `/Vehicles` devuelve 403 a Logistics. El DTO de rutas ya incluye placa, marca y modelo.
+- Solución: el Historial usa los datos de vehículo incluidos en el DTO de cada ruta y deja de pedir el listado administrativo de vehículos. El E2E de Logistics ahora abre Historial, comprueba placa/detalle y revisa 320 y 768 px.
+- Validación local: lint y build pasan; Playwright descubre 21 casos. Falta probar este flujo con API/MySQL real en Actions.
+
+# 2026-11-22 — Selector E2E ambiguo al cambiar contraseña — CORREGIDO; REPETICIÓN PENDIENTE
+
+- Síntoma: Actions `45033318956` pasó backend, auditoría, lint, build y responsive; falló 20/21 E2E en el flujo nuevo de contraseña antes del POST.
+- Causa: `getByPlaceholder("Nueva contraseña")` también coincidía con “Confirmar nueva contraseña” y Playwright activó strict mode.
+- Solución: localizar ambos campos por nombre exacto de textbox.
+- Prevención: al usar locators por placeholder, revisar prefijos compartidos; preferir nombres accesibles exactos en formularios con campos similares. Repetir Actions con la suite actualizada.
+
 # 2026-11-22 — Lectura de archivos E2E desde el repositorio equivocado — CORREGIDO
 
 - Síntoma: inspecciones buscaron E2E Front desde Backend, y código Backend o carpetas `app/components` desde Front; devolvieron “No such file”/`rg` IO error.

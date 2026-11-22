@@ -1928,7 +1928,13 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     });
     const persistedRoute = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
     expect(persistedRoute.status()).toBe(200);
-    expect(await persistedRoute.json()).toMatchObject({ name: routeName, vehicleId, driverId: routeDriverId, status: 0 });
+    expect(await persistedRoute.json()).toMatchObject({
+      name: routeName,
+      vehicleId,
+      vehiclePlate: `E2EQA${suffix}`,
+      driverId: routeDriverId,
+      status: 0,
+    });
 
     const routeCard = logisticsPage.getByRole("heading", { name: routeName, exact: true }).locator("xpath=../../../..");
     await routeCard.getByRole("button", { name: `Cancelar ruta ${routeName}` }).click();
@@ -1953,6 +1959,29 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     expect((await cancelRoutePromise).status()).toBe(204);
     const cancelledRoute = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
     expect((await cancelledRoute.json()).status).toBe(3);
+
+    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
+    await logisticsPage.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+    await expect(logisticsPage.getByRole("heading", { name: "Historial de Rutas", exact: true })).toBeVisible();
+    const historyCardHeading = logisticsPage.getByRole("heading", { name: routeName, exact: true });
+    await expect(historyCardHeading).toBeVisible();
+    const historyCard = historyCardHeading.locator("xpath=../../../..");
+    await expect(historyCard).toContainText(`E2EQA${suffix}`);
+    await expect(logisticsPage.getByRole("alert")).toHaveCount(0);
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.main);
+      await expect(historyCardHeading).toBeVisible();
+    }
+    await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
+    await expect(logisticsPage.getByRole("dialog")).toContainText(`E2EQA${suffix}`);
   } finally {
     if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
     if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
@@ -2872,8 +2901,8 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await page.getByRole("button", { name: "Cambiar contraseña", exact: true }).first().click();
   const passwordForm = page.getByPlaceholder("Contraseña actual").locator("xpath=ancestor::form");
   await page.getByPlaceholder("Contraseña actual").fill(userPassword!);
-  await page.getByPlaceholder("Nueva contraseña").fill(newPassword);
-  await page.getByPlaceholder("Confirmar nueva contraseña").fill(newPassword);
+  await page.getByRole("textbox", { name: "Nueva contraseña", exact: true }).fill(newPassword);
+  await page.getByRole("textbox", { name: "Confirmar nueva contraseña", exact: true }).fill(newPassword);
   const changePasswordResponsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith("/api/backend/Auth/change-password") &&
     response.request().method() === "POST",

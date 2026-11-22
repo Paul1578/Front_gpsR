@@ -19,6 +19,9 @@ export type ApiFetcher = <T>(
 export interface RouteApiDto {
   id: string;
   vehicleId: string;
+  vehiclePlate?: string | null;
+  vehicleBrand?: string | null;
+  vehicleModel?: string | null;
   driverId: string;
   name: string;
   origin: {

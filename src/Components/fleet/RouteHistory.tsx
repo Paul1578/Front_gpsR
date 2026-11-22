@@ -16,9 +16,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
   fetchRoutes,
-  fetchVehicles,
   type RouteApiDto,
-  type VehicleApiDto,
 } from "@/services/fleetApi";
 import type { RouteEvidence } from "@/Context/FleetContext";
 
@@ -55,7 +53,6 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const { apiFetch, getAllUsers } = useAuth();
 
   const [routes, setRoutes] = useState<RouteHistoryItem[]>([]);
-  const [vehicles, setVehicles] = useState<VehicleApiDto[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<RouteHistoryItem | null>(
     null,
   );
@@ -77,14 +74,10 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
         setIsLoading(true);
         setError(null);
 
-        const [routesRes, vehiclesRes] = await Promise.all([
-          fetchRoutes(apiFetch),
-          fetchVehicles(apiFetch),
-        ]);
+        const routesRes = await fetchRoutes(apiFetch);
 
         if (cancelled) return;
         setRoutes(routesRes);
-        setVehicles(vehiclesRes);
       } catch (err) {
         console.error("Error cargando historial de rutas", err);
         if (!cancelled) setError("No se pudieron cargar las rutas");
@@ -270,7 +263,6 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
           ) : (
             <div className="space-y-3">
               {filteredRoutes.map((route) => {
-                const vehicle = vehicles.find((v) => v.id === route.vehicleId);
                 const driver = users.find(
                   (u) => u.driverId === route.driverId || u.id === route.driverId,
                 );
@@ -299,8 +291,10 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                       <div className="flex items-center gap-2 text-gray-600">
                         <Truck size={14} />
                         <span>
-                          {vehicle?.plate || "N/A"} - {vehicle?.brand}{" "}
-                          {vehicle?.model}
+                          {route.vehiclePlate || "N/A"}
+                          {route.vehicleBrand || route.vehicleModel
+                            ? ` - ${[route.vehicleBrand, route.vehicleModel].filter(Boolean).join(" ")}`
+                            : ""}
                         </span>
                       </div>
 
@@ -386,8 +380,10 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                     Vehículo
                   </label>
                   <p className="text-sm text-gray-900">
-                    {vehicles.find((v) => v.id === selectedRoute.vehicleId)
-                      ?.plate || "N/A"}
+                    {selectedRoute.vehiclePlate || "N/A"}
+                    {selectedRoute.vehicleBrand || selectedRoute.vehicleModel
+                      ? ` - ${[selectedRoute.vehicleBrand, selectedRoute.vehicleModel].filter(Boolean).join(" ")}`
+                      : ""}
                   </p>
                 </div>
 
