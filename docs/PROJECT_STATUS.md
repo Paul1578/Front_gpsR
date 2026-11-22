@@ -212,3 +212,4 @@ Fecha de actualización: 2026-11-22.
 - El frontend conserva los 15 E2E ya validados; se repetirá contra ese HEAD backend para confirmar la integración cruzada final.
 
 - Actions `44995899244`: backend build/xUnit, audit, lint, build, responsive y setup MySQL correctos; E2E **14/16**. El nuevo GPS detectó y permitió corregir el envío inicial bloqueado por el throttle de 20 s; retries revelaron cleanup/aislamiento de Driver incompleto, ahora endurecidos. Repetición del SHA siguiente pendiente.
+- Actions `44996497487` para Front `6fe66f7` + Back `104cda8` pasó: xUnit **59/59**, responsive **1/1**, E2E autenticados **16/16**, audit/lint/build y runner cleanup success. GPS móvil concedido se envió y leyó por API; el alta duplicada devolvió 409 y no creó una segunda tarjeta.

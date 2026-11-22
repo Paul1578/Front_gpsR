@@ -142,3 +142,4 @@
 
 - El test móvil encontró que una ubicación capturada mientras la ruta estaba pendiente consumía el throttle y retrasaba el primer envío hasta 20 s después del inicio.
 - `DriverView` ahora sólo actualiza el throttle para rutas en progreso; el E2E usa request independiente y limpia/restaura los recursos aunque falle el navegador. Repetición CI pendiente.
+- Actions `44996497487` confirmó la solución: frontend/backend integrados, Playwright 16/16, responsive 1/1, xUnit 59/59 y cleanup exitoso.

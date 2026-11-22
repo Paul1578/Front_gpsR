@@ -225,3 +225,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Primera ejecución integrada: **14/16**. La cobertura nueva de GPS reveló que el throttle de 20 s se actualizaba cuando la ruta aún estaba pendiente; el inicio no enviaba posición y expiraba el test. El timeout además impedía cleanup con `page.request`; retries encontraron recursos activos (409).
 - Se movió la guarda de estado antes del throttle y setup/cleanup pasa al request fixture independiente; ambos E2E restauran asignación de Driver y eliminan vehículo/ruta.
 - Nueva repetición integrada pendiente. La corrida anterior no valida el caso GPS.
+- Resultado: Actions `44996497487` validó Front `6fe66f7` + Back `104cda8`: xUnit 59/59, responsive 1/1, E2E 16/16, audit/lint/build y cleanup completos. Driver recibió GPS en vivo y el GET de ruta confirmó coordenadas; placa duplicada mostró el 409 sin duplicar vehículo.
