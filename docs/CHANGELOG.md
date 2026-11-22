@@ -199,3 +199,5 @@
 - El test de navegación ahora cambia de tablet a móvil estrecho, comprueba Dashboard Principal e Historial y verifica ausencia de overflow. Actions `45005853556` pasó en el commit previo con E2E 18/18; esta ampliación se valida en la próxima ejecución.
 - Mi Ruta añade viewport de 320 px, verifica que distintivos GPS/vehículo no se solapen y mide el encaje del diálogo de evidencia. Lint, discovery (18) y diff-check pasan; E2E API/MySQL pendiente.
 - El sidebar queda como drawer hasta 1024 px para liberar ancho operativo en tablets. El E2E mide un área `<main>` superior a 700 px a viewport 768; lint/build pasan localmente, Actions pendiente.
+- Primera Action del drawer detectó tres recorridos E2E que asumían menú fijo; se corrigieron los pasos de navegación. El fallo y la solución se registran en `docs/ERROR_LOG.md`; repetición integrada pendiente.
+- El constructor cambia a panel móvil/tablet: al ubicar origen/parada/destino abre el mapa, al seleccionar un punto regresa a paradas y detalles; se puede alternar manualmente. El helper E2E verifica ambos cambios; lint/build/discovery pasan localmente, browser/API/MySQL pendiente.

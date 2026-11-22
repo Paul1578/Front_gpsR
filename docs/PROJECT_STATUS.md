@@ -2,9 +2,11 @@
 
 - Front `fe86bfa` + Back `4695e79`: Actions frontend `45005853556` success; backend Release/xUnit, audit, lint/build, responsive browser y E2E autenticado API/MySQL **18/18**, cleanup correcto.
 - La matriz cubre rechazo de `PUT /Users/{id}/profile` para User, Driver, Logistics y Manager; backend prueba validaciones y límites de tenant/root. Cambios de perfil de miembro regular y Driver persisten y sincronizan.
-- Se añadió al E2E navegación Dashboard e Historial a 320×844 con control de overflow; el caso aún requiere Actions sobre el nuevo commit.
-- Cobertura responsive adicional de Mi Ruta a 320×844 verifica no-solapamiento de GPS/vehículo y límites del diálogo de evidencia; lint y discovery 18 pasan localmente, ejecución real pendiente.
+- Actions `45006305726` pasó Dashboard e Historial a 320×844 con control de overflow, E2E 18/18 y responsive browser 1/1.
+- Actions `45006627500` success en commit `441ee24`: E2E autenticado **18/18**, responsive browser 1/1 y cleanup. Incluye Mi Ruta a 320×844, insignias GPS/vehículo sin solapamiento y diálogo de evidencia dentro del viewport.
 - La auditoría de UX identificó que la barra lateral consumía 256 px a 768 px y comprimía el área operativa. Se cambió a drawer hasta 1024 px; E2E requiere navegación por hamburger y `main > 700 px`. Lint/build/diff-check pasan; falta correr browser/API/MySQL sobre el commit.
+- Actions `45006747816` falló 3/18 por tests que asumían sidebar fijo al navegar a 768 px; 15 pasaron. Los tres recorridos ya abren drawer explícitamente; la repetición integrada sigue pendiente.
+- El constructor de rutas ahora alterna editor/mapa en móvil y tablet y regresa al editor tras elegir un punto. Lint/build y discovery de 18 casos pasan; falta CI integrado.
 - Auditoría continúa abierta: faltan más operaciones CRUD, matriz de privilegios Admin y pruebas responsive de las vistas restantes. SMTP necesita configuración externa; móvil nativo pospuesto.
 
 ## Actualización — edición de miembros — 2026-11-22

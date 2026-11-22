@@ -13,6 +13,13 @@ const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
 
 async function clickMapAwayFromMarkers(map: Locator) {
+  const page = map.page();
+  const mapToggle = page.getByRole("button", { name: "Ver mapa", exact: true });
+  const usesMobileMapToggle = await mapToggle.isVisible();
+  if (usesMobileMapToggle) {
+    await mapToggle.click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles", exact: true })).toBeVisible();
+  }
   await map.scrollIntoViewIfNeeded();
   const bounds = await map.boundingBox();
   if (!bounds) throw new Error("El mapa de selección no tiene dimensiones visibles.");
@@ -47,6 +54,9 @@ async function clickMapAwayFromMarkers(map: Locator) {
 
   if (!safeSpot) throw new Error("No se encontró un área libre de marcadores para seleccionar el punto.");
   await map.click({ position: { x: safeSpot.x, y: safeSpot.y } });
+  if (usesMobileMapToggle) {
+    await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+  }
 }
 
 test("formulario de inicio de sesión se adapta a móvil sin desbordarse", async ({ page }) => {
@@ -203,6 +213,7 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.setViewportSize({ width: 768, height: 1024 });
   await assertNoHorizontalOverflow();
   await page.getByRole("button", { name: "Volver" }).click();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
   await assertNoHorizontalOverflow();
@@ -239,6 +250,8 @@ test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
 
   const token = await page.evaluate(() => {
     const serialized = localStorage.getItem("auth_tokens");
@@ -991,6 +1004,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
 
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
     await expectNoHorizontalOverflow();
     await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();

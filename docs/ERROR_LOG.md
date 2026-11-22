@@ -765,3 +765,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se detectó revisando el contexto y los nombres de test antes de ejecutar Playwright; el bloque se movió al test de navegación de dashboard/rutas. No se ejecutó ni integró el estado incorrecto.
 - En la ampliación posterior de Mi Ruta, otro parche con contexto genérico de login cayó inicialmente en el test de registro; se detectó con `rg` antes de correr Playwright y se reubicó dentro del test Driver.
 - Prevención: anclar parches al nombre del caso y al heading cercano, no a bloques genéricos repetidos.
+
+## 2026-11-22 — E2E asumían sidebar fijo al pasar tablet a drawer — CORREGIDO EN TESTS
+
+- Actions `45006747816` encontró tres E2E que navegaban al Mapa o a Rutas sin abrir el menú tras iniciar sesión/redimensionar a 768 px. El cambio de producto convirtió intencionalmente esa navegación en drawer.
+- Se añadieron clics explícitos al botón `Abrir menú` en los recorridos de Equipo, tracking y creación de ruta en tablet.
+- Prevención: al cambiar el breakpoint de navegación, buscar y validar cada recorrido de usuario que use el sidebar después de cambiar viewport o cargar sesión.

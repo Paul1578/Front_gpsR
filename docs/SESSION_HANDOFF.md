@@ -58,6 +58,10 @@
 - Se amplió también Mi Ruta a 320×844: comprobar overflow, no-solapamiento entre insignias GPS/vehículo y límites horizontales del diálogo de evidencia. Lint/discovery/diff-check pasan; commit/Actions pendientes.
 - Auditoría subagente: sidebar fijo de 256 px a 768 px comprime el área útil; constructor mapa/formulario secuencial bajo 1024 px causa desplazamiento repetido; Mi Ruta carecía prueba 320 px. Priorizar prueba/ajuste del menú tablet, luego flujo constructor.
 - Sidebar ya cambiado a drawer hasta 1024 px. Su E2E a 768 px verifica apertura del menú y ancho real de `<main>` >700 px; lint/build pasan localmente, CI pendiente antes de integrar.
+- Actions `45006627500` valida Driver a 320 px con E2E 18/18 + responsive 1/1.
+- Action `45006747816` para el drawer falló 3/18: las pruebas de Equipo, mapa tracking y creación route no abrían drawer al llegar a 768 px. Los clics ya están añadidos y el error quedó registrado en `docs/ERROR_LOG.md`.
+- Constructor móvil/tablet implementa alternancia editor/mapa y vuelve a editor tras seleccionar punto. Lint/build/discovery 18 pasan; código y corrección de test están locales, falta commit/push y Action integrada.
+- Próximo: ejecutar Action actualizada de Front; comprobar mapa seleccionable, altas/edición en 320/768 y `main >700` a 768; después continuar CRUD/roles.
 - Próximo: commit/push de prueba responsive, esperar Actions, incorporar hallazgos del agente de auditoría y seleccionar siguiente brecha CRUD/roles/responsive. La política de promoción de miembros a Admin delegado sigue pendiente de respuesta del usuario.
 - No marcar misión completa: cobertura de CRUD/roles/responsive no exhaustiva; SMTP depende de credenciales externas y móvil nativo está pospuesto.
 

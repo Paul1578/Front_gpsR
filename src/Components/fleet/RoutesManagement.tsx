@@ -549,6 +549,15 @@ function RouteBuilder({
   onSubmit,
   saving,
 }: RouteBuilderProps) {
+  const [mobileMapOpen, setMobileMapOpen] = useState(false);
+  const activateTarget = (target: Target) => {
+    selectTarget(target);
+    setMobileMapOpen(true);
+  };
+  const setPointAndReturnToEditor = (target: Target, point: PickerPoint) => {
+    setPoint(target, point);
+    setMobileMapOpen(false);
+  };
   const targetLabel =
     activeTarget?.type === "origin"
       ? "origen"
@@ -658,7 +667,7 @@ function RouteBuilder({
           </div>
           <button
             type="button"
-            onClick={() => selectTarget(target)}
+            onClick={() => activateTarget(target)}
             className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${selected ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
           >
             <MapPin size={14} className="mr-1 inline" />
@@ -753,8 +762,29 @@ function RouteBuilder({
         </button>
       </header>
       <div className="flex-1 overflow-auto">
+        {step === 2 && (
+          <div className="sticky top-0 z-[600] flex gap-2 border-b border-slate-200 bg-white p-3 lg:hidden">
+            {mobileMapOpen ? (
+              <button
+                type="button"
+                onClick={() => setMobileMapOpen(false)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700"
+              >
+                Ver paradas y detalles
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMobileMapOpen(true)}
+                className="flex-1 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Ver mapa
+              </button>
+            )}
+          </div>
+        )}
         <div className="mx-auto grid min-h-full max-w-[1500px] lg:grid-cols-[minmax(360px,0.8fr)_minmax(500px,1.2fr)]">
-          <section className="overflow-y-auto p-5 md:p-8">
+          <section className={`${step === 2 && mobileMapOpen ? "hidden lg:block" : ""} overflow-y-auto p-5 md:p-8`}>
             {step === 1 && (
               <div className="mx-auto max-w-xl">
                 <StepTitle
@@ -824,7 +854,7 @@ function RouteBuilder({
                           },
                         ],
                       }));
-                      selectTarget({ type: "stop", index });
+                      activateTarget({ type: "stop", index });
                     }}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:border-blue-400 hover:text-blue-700"
                   >
@@ -925,7 +955,7 @@ function RouteBuilder({
               )}
             </div>
           </section>
-          <section className="relative min-h-[460px] border-t border-slate-200 bg-slate-200 lg:min-h-0 lg:border-l lg:border-t-0">
+          <section className={`${step === 2 && !mobileMapOpen ? "hidden lg:block" : ""} relative min-h-[460px] border-t border-slate-200 bg-slate-200 lg:min-h-0 lg:border-l lg:border-t-0`}>
             <div className="absolute left-4 right-4 top-4 z-[500] rounded-xl bg-white/95 p-3 shadow-lg backdrop-blur md:left-8 md:right-8 md:top-8">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                 <Search size={15} className="text-blue-700" />
@@ -963,7 +993,7 @@ function RouteBuilder({
                       key={`${result.lat}-${result.lon}`}
                       onClick={() =>
                         activeTarget &&
-                        setPoint(activeTarget, {
+                        setPointAndReturnToEditor(activeTarget, {
                           lat: Number(result.lat),
                           lng: Number(result.lon),
                           nombre: result.display_name,
@@ -992,7 +1022,7 @@ function RouteBuilder({
                   : (activeTarget?.type ?? null)
               }
               onMapClick={(point: PickerPoint) =>
-                activeTarget && setPoint(activeTarget, point)
+                activeTarget && setPointAndReturnToEditor(activeTarget, point)
               }
               isOpen
             />
