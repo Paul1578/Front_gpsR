@@ -4,6 +4,8 @@ const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
 const userEmail = process.env.FLETFLOW_E2E_USER_EMAIL;
 const userPassword = process.env.FLETFLOW_E2E_USER_PASSWORD;
+const driverEmail = process.env.FLETFLOW_E2E_DRIVER_EMAIL;
+const driverPassword = process.env.FLETFLOW_E2E_DRIVER_PASSWORD;
 const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
@@ -67,6 +69,26 @@ test("login con credenciales inválidas muestra un error comprensible", async ({
   await page.getByRole("textbox", { name: "Contraseña" }).fill("invalid-password");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page.getByText("Correo o contraseña incorrectos")).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin.");
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
@@ -417,6 +439,100 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
   ]);
   expect(vehiclesResponse.status()).toBe(403);
   expect(routesResponse.status()).toBe(403);
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("Logistics ve rutas pero no vehículos ni administración de equipo", async ({ page, browser }) => {
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture, "Requiere fixtures Admin y Driver del runner.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const adminToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(adminToken).toBeTruthy();
+  const headers = { Authorization: `Bearer ${adminToken}` };
+  const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamResponse.status()).toBe(200);
+  const team = await teamResponse.json() as Array<{ id: string; driverId?: string }>;
+  const driver = team.find((member) => member.driverId === driverIdFixture);
+  expect(driver).toBeTruthy();
+
+  const promote = await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
+    headers,
+    data: { roleName: "Logistics" },
+  });
+  expect(promote.status()).toBe(200);
+
+  const logisticsContext = await browser.newContext();
+  const logisticsPage = await logisticsContext.newPage();
+  try {
+    await logisticsPage.setViewportSize({ width: 390, height: 844 });
+    await logisticsPage.goto("/login");
+    await logisticsPage.getByLabel("Correo electrónico").fill(driverEmail!);
+    await logisticsPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await logisticsPage.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(logisticsPage).toHaveURL(/\/dashboard$/);
+    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+
+    const logisticsToken = await logisticsPage.evaluate(() => {
+      const serialized = localStorage.getItem("auth_tokens");
+      return serialized ? JSON.parse(serialized).accessToken as string : null;
+    });
+    expect(logisticsToken).toBeTruthy();
+    const logisticsHeaders = { Authorization: `Bearer ${logisticsToken}` };
+    const [routesResponse, vehiclesResponse] = await Promise.all([
+      logisticsPage.request.get("/api/backend/Routes", { headers: logisticsHeaders }),
+      logisticsPage.request.get("/api/backend/Vehicles", { headers: logisticsHeaders }),
+    ]);
+    expect(routesResponse.status()).toBe(200);
+    expect(vehiclesResponse.status()).toBe(403);
+  } finally {
+    await logisticsContext.close();
+    await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
+      headers,
+      data: { roleName: "Driver" },
+    }).catch(() => undefined);
+  }
+});
+
+test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page }) => {
+  test.skip(!driverEmail || !driverPassword, "Requiere fixture Driver del runner.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(driverEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("button", { name: "Mi Ruta", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+
+  const driverToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(driverToken).toBeTruthy();
+  const headers = { Authorization: `Bearer ${driverToken}` };
+  const vehiclesResponse = await page.request.get("/api/backend/Vehicles", { headers });
+  expect(vehiclesResponse.status()).toBe(403);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

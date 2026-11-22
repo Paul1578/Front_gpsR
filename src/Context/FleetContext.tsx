@@ -724,12 +724,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setResourceError("conductores", false);
       } catch (error) {
         if (requestSequence !== driversRequestSequence.current) return;
-        if (isAuthError(error)) return;
         setResourceError("conductores", true);
         throw error;
       }
     },
-    [apiFetch, isAuthError, setResourceError, user?.role],
+    [apiFetch, setResourceError, user?.role],
   );
 
   useEffect(() => {

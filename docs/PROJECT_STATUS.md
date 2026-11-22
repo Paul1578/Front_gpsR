@@ -88,3 +88,9 @@ Fecha de actualización: 2026-11-21.
 - Playwright autenticado local Chrome/API/MySQL volvió a pasar **8/8** en una base efímera; el cleanup eliminó el esquema. El caso móvil valida origen, dos paradas y destino, incluyendo recogida y recogida+entrega.
 - Se corrigió la falsa seguridad de la aserción de coordenadas y se estabilizó el encuadre del mapa durante las selecciones. Lint y build de producción pasan.
 - Pendiente: publicar los cambios para que Actions repita el frontend; ampliar pruebas visuales de CRUD, roles y vistas responsive no cubiertas. SMTP requiere credenciales externas vigentes. App nativa móvil pospuesta por decisión del usuario.
+
+## Cobertura de roles, tablet y errores API — 2026-11-21
+
+- Equipo ya distingue errores de `/Users/my-team` y `/Drivers` de resultados vacíos; ambas vistas permiten reintentar y cierran correctamente el estado de carga.
+- Playwright amplió pruebas reales: tablet 768×1024, roles User/Driver/Logistics, denegaciones API y fallo/recuperación de carga. Suite autenticada **12/12** con Chrome/API/MySQL; fixtures en base descartable eliminados.
+- Aún faltan otras pantallas/acciones responsive y CRUD; se mantienen como trabajo activo. SMTP requiere credenciales externas. Móvil nativo se hará después por decisión del usuario.

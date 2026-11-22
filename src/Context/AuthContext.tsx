@@ -255,11 +255,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const isAuthenticated = !!user;
 
-  const isAuthError = (error: unknown) => {
-    const status = getApiRequestError(error)?.status;
-    return status === 401 || status === 403;
-  };
-
   const setTokens = (tokens: AuthTokens | null) => {
     tokensRef.current = tokens;
     if (typeof window === "undefined") return;
@@ -314,7 +309,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isAuthenticated && user?.role !== "chofer") {
-      void refreshTeamUsers();
+      void refreshTeamUsers().catch((error) => {
+        console.error("Error obteniendo equipo:", error);
+      });
     } else {
       setTeamUsers([]);
     }
@@ -739,7 +736,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       });
 
-      await refreshTeamUsers();
       return { ok: true, invitationSent: result.invitationSent !== false };
     } catch (error) {
       const errData = getApiRequestError(error)?.data;
@@ -762,13 +758,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshTeamUsers = async () => {
-    try {
-      const data = await apiFetch<ApiUser[]>("/Users/my-team");
-      setTeamUsers(data.map(mapApiUser));
-    } catch (error) {
-      if (isAuthError(error)) return;
-      console.error("Error obteniendo equipo:", error);
-    }
+    const data = await apiFetch<ApiUser[]>("/Users/my-team");
+    setTeamUsers(data.map(mapApiUser));
   };
 
   const getTeamUsers = (): User[] => {

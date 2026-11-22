@@ -32,7 +32,9 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
+  const [teamLoadError, setTeamLoadError] = useState(false);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [driversLoadError, setDriversLoadError] = useState(false);
   const [showDriversSection, setShowDriversSection] = useState(false);
   const [showInactiveDrivers, setShowInactiveDrivers] = useState(false);
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
@@ -46,21 +48,39 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const users = getTeamUsers();
   const visibleDrivers = drivers.filter((driver) => showInactiveDrivers || driver.isActive !== false);
 
-  useEffect(() => {
+  const loadTeamUsers = async () => {
     setIsLoadingTeam(true);
-    void (async () => {
+    setTeamLoadError(false);
+    try {
       await refreshTeamUsers();
+    } catch (error) {
+      console.error("No se pudo cargar el equipo:", error);
+      setTeamLoadError(true);
+    } finally {
       setIsLoadingTeam(false);
-    })();
+    }
+  };
+
+  const loadDrivers = async (onlyActive = !showInactiveDrivers) => {
+    setIsLoadingDrivers(true);
+    setDriversLoadError(false);
+    try {
+      await refreshDrivers(onlyActive);
+    } catch (error) {
+      console.error("No se pudieron cargar los choferes:", error);
+      setDriversLoadError(true);
+    } finally {
+      setIsLoadingDrivers(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadTeamUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    setIsLoadingDrivers(true);
-    void (async () => {
-      await refreshDrivers();
-      setIsLoadingDrivers(false);
-    })();
+    void loadDrivers(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -322,7 +342,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <p className="text-sm text-gray-500">Gestiona conductores y asigna vehículos</p>
                 </div>
                 <button
-                  onClick={() => void refreshDrivers(!showInactiveDrivers)}
+                  onClick={() => void loadDrivers(!showInactiveDrivers)}
                   className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
                 >
                   Recargar
@@ -335,7 +355,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   onClick={() => {
                     const next = !showInactiveDrivers;
                     setShowInactiveDrivers(next);
-                    void refreshDrivers(!next);
+                    void loadDrivers(!next);
                   }}
                   className="text-sm text-[#3271a4] hover:underline"
                 >
@@ -402,7 +422,14 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 </div>
               </form>
 
-              {isLoadingDrivers ? (
+              {driversLoadError ? (
+                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                  <span>No se pudieron cargar los choferes. Comprueba tu conexión e inténtalo de nuevo.</span>
+                  <button type="button" onClick={() => void loadDrivers(!showInactiveDrivers)} disabled={isLoadingDrivers} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+                    {isLoadingDrivers ? "Reintentando…" : "Reintentar"}
+                  </button>
+                </div>
+              ) : isLoadingDrivers ? (
                 <p className="text-sm text-gray-500">Cargando choferes...</p>
               ) : visibleDrivers.length === 0 ? (
                 <p className="text-sm text-gray-500">No hay choferes registrados</p>
@@ -496,7 +523,14 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             </div>
           )}
 
-          {isLoadingTeam ? (
+          {teamLoadError ? (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <span>No se pudo cargar el equipo. Comprueba tu conexión e inténtalo de nuevo.</span>
+              <button type="button" onClick={() => void loadTeamUsers()} disabled={isLoadingTeam} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+                {isLoadingTeam ? "Reintentando…" : "Reintentar"}
+              </button>
+            </div>
+          ) : isLoadingTeam ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
               Cargando equipo...
             </div>

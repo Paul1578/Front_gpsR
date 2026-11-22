@@ -436,3 +436,20 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se apuntó al directorio incorrecto del DLL; corregido a `Back_GPS/bin/Release/net8.0`. El runner sólo acepta `FLETFLOW_API_URL` sin `/api`; se configuró `http://127.0.0.1:5048`. Para que Playwright iniciara Next como en CI se usó `CI=true`.
 - Cambios intermedios del API de mapa dejaron un build inválido por tipos Leaflet incompletos y un lint por mutar refs durante render. Se completaron los tipos locales y la actualización de refs pasó a `useLayoutEffect`; lint/build quedaron limpios.
 - Los intentos usaron exclusivamente las bases `fletflow_ci_validation_06` y `fletflow_ci_validation_07`, eliminadas por `trap`; no se alteró la base local normal.
+
+## 2026-11-21 — Primer test tablet esperaba un título inexistente — CORREGIDO EN EL TEST
+
+- La prueba esperaba el encabezado “Gestión de Rutas”, pero esa vista usa “Rutas”; el nombre “Gestión de Rutas” corresponde al botón de navegación.
+- Se alineó la aserción al título real observado en `RoutesManagement.tsx`; no era un error de producto.
+
+## 2026-11-21 — Fallos al cargar Equipo se ocultaban como estados vacíos — CORREGIDO
+
+- `/Users/my-team` capturaba el error y dejaba la colección vacía, que la pantalla presentaba como “No hay otros miembros”. El fallo de `/Drivers` se propagaba sin `finally`, así que el indicador podía quedarse cargando.
+- Solución: AuthContext propaga fallos de equipo; TeamManagement muestra errores separados con botón Reintentar, y ambas cargas liberan su estado en `finally`. Un refresh fallido después de crear usuario ya no informa erróneamente que la creación falló.
+- Verificación: nuevo Playwright intercepta 503 en ambos endpoints, comprueba que no aparezca el estado vacío y repite la carga con 200. Suite completa Chrome/API/MySQL: **12/12**.
+
+## 2026-11-21 — Cobertura automatizada omitía tablet y roles Driver/Logistics — CUBIERTO
+
+- Se añadieron pruebas de navegación/overflow a 768×1024, menú de Driver y denegación API, y menú de Logistics con rutas permitidas y vehículos/equipo denegados.
+- El primer test tablet esperaba “Gestión de Rutas” como heading, pero la vista se titula “Rutas”; se corrigió la aserción tras revisar el DOM real.
+- Verificación final de la suite extendida: Chrome/API/MySQL **12/12**; SQL cleanup removió los fixtures de la base efímera.

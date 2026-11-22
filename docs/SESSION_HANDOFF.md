@@ -131,3 +131,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Frontend `npm run lint && npm run build`: correcto. E2E autenticado Chrome/API/MySQL local en bases efímeras `fletflow_ci_validation_06` y `fletflow_ci_validation_07`: **8/8** en la repetición final; la base fue descartada por cleanup.
 - Los fallos de preparación de esta sesión (ruta DLL, URL de API, servidor web, tipos Leaflet y aserción) constan en `docs/ERROR_LOG.md` con sus soluciones.
 - Siguiente: revisar diff/audit, publicar el commit en `refactor/route-builder`, comprobar Actions frontend/backend y continuar CRUD/roles/responsive aún no cubiertos. No cerrar la misión.
+
+## Errores de carga de Equipo y matriz de roles — 2026-11-21
+
+- `refreshTeamUsers` tragaba errores de API y presentaba lista vacía; el efecto de `refreshDrivers` dejaba la carga activa si rechazaba. Corregido: errores visibles con retry en ambas secciones, `finally` en las cargas y propagación segura desde contextos.
+- Añadidas pruebas Playwright para 503→retry en ambas colecciones, Driver, Logistics y responsive tablet 768×1024. Suite completa **12/12** en Chrome/API/MySQL con base efímera; cleanup exitoso.
+- Un primer assert tablet usó el texto de navegación como heading; se corrigió a “Rutas” y se registró en ERROR_LOG.
+- Pendiente incorporar estos cambios al PR y repetir CI; continuar cobertura de pantallas/CRUD no enumerados. Este reporte no cierra la misión.
