@@ -739,8 +739,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Verificación: corrección estática antes de la ejecución Actions; lint/build/discovery se vuelven a ejecutar antes del dispatch actualizado.
 # 2026-11-22 — Mostrar bajas de Drivers rompía con perfiles sin UserId — CORREGIDO
 
-- Síntoma: Actions `45002306327` y `45002396041` no encontraron el Driver recién dado de baja en UI; el listado completo no terminó de renderizar.
+- Síntoma: Actions `45002306327`, `45002396041` y `45002610099` no encontraron el Driver recién dado de baja en UI; el listado completo no terminó de renderizar.
 - Causa: el E2E de autorización creó un Driver válido sin usuario vinculado, y `TeamManagement` asumía que `driver.userId` siempre era string al mostrar el identificador. El contrato permite `UserId` nullable y la excepción interrumpía la lista al mostrar bajas.
 - Solución: presentar “Sin usuario vinculado” cuando no hay `UserId`, conservar el username/ID abreviado cuando sí existe, y ampliar el E2E para confirmar el render del Driver sin usuario.
 - Prevención: cubrir entidades opcionalmente asociadas con sus estados nulos en las vistas que consumen listas completas.
-- Verificación: fix y aserción agregados; lint/build/discovery y Actions integrado pendientes.
+- Verificación: fix y aserción agregados; lint/build/discovery pasan. Actions integrada `45002920723` pendiente.

@@ -1,8 +1,8 @@
 ## Fix de render para Drivers sin usuario vinculado — 2026-11-22
 
-- Las Actions `45002306327` y `45002396041` detectaron que mostrar bajas tras crear el Driver de prueba no encontraba el registro. Causa confirmada: `TeamManagement` ejecutaba `.slice` sobre `driver.userId` nullable y rompía el render al listar un Driver creado sin cuenta asociada.
+- Las Actions `45002306327`, `45002396041` y `45002610099` detectaron que mostrar bajas tras crear el Driver de prueba no encontraba el registro. Causa confirmada: `TeamManagement` ejecutaba `.slice` sobre `driver.userId` nullable y rompía el render al listar un Driver creado sin cuenta asociada.
 - Front corrigió el fallback visual a “Sin usuario vinculado” y agregó aserción al E2E; la falla y solución están en `docs/ERROR_LOG.md`.
-- Próximo: lint/build/discovery, Actions integrada usando backend `41c01e7`; asegurar que pasa la ruta ajena, perfil inactivo y flujo de Equipo, revisar cleanup total.
+- Próximo: Actions integrada `45002920723` con Front `5816adf` y backend `41c01e7`; asegurar que pasa la ruta ajena, perfil inactivo y flujo de Equipo, revisar cleanup total.
 
 ## Ampliación de acceso inactivo — 2026-11-22
 

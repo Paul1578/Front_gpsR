@@ -1,6 +1,6 @@
 ## Actualización — Drivers sin cuenta asociada — 2026-11-22
 
-- La vista Gestión de Equipo ahora representa un Driver nullable `UserId` como “Sin usuario vinculado”; antes la lectura `.slice` rompía el render. El E2E incluirá el caso. Validación integrada pendiente.
+- La vista Gestión de Equipo ahora representa un Driver nullable `UserId` como “Sin usuario vinculado”; antes la lectura `.slice` rompía el render. El E2E incluye un caso de regresión. Lint/build/discovery pasan; Actions `45002920723` pendiente.
 
 ## Actualización — perfil Driver inactivo — 2026-11-22
 
