@@ -674,3 +674,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El workflow sólo tenía triggers de push/PR a `main`, lo que impedía validar la rama refactor sin merge o PR.
 - Corrección: se habilitó `workflow_dispatch` para ejecutar manualmente la suite en el ref de trabajo; incluye el checkout del backend feature.
 - Prevención: verificar los triggers disponibles antes de asumir que el push aislado inicia Actions.
+- Evidencia integrada: Actions `44999716080` pasó en Front `e2cdcb1` con Backend `3620cc2`: xUnit 61/61, responsive 1/1, E2E 18/18 y cleanup success.
+
+## 2026-11-22 — Actualización documental esperaba texto de handoff obsoleto — CORREGIDO
+
+- Un parche agrupado esperaba una frase del handoff que no existía en Front; `apply_patch` rechazó todo el parche y no alteró documentos.
+- Corrección: volver a leer los párrafos reales del registro de sesión y aplicar cambios con el texto actual.
+- Prevención: no asumir que el handoff frontend y backend mantienen las mismas frases aunque documenten el mismo hallazgo.

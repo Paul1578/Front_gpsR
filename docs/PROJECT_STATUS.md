@@ -87,7 +87,7 @@ Fecha de actualización: 2026-11-22.
 - Hallazgo: `/register` decía “Registra tu equipo como Gerente”, pero el backend forzaba rol User y dejaba a la cuenta sin permisos operativos.
 - Backend cambia el rol fijo de registro a Admin raíz de tenant; el cliente no controla el rol y `owner_id` limita el acceso a la empresa recién creada. Se actualizan los smokes HTTP/MySQL y se elimina la elevación manual de la cuenta de segundo tenant en el runner.
 - Front elimina roleName del payload, envía nombres capturados como username y añade E2E móvil de alta, lectura `/Auth/me`, lista de flota vacía y acceso de menú a rutas/vehículos.
-- Front lint/build/discovery **18 tests** y Backend Release **61/61** pasan localmente; `bash -n` y `git diff --check` pasan. Integración HTTP/MySQL/Playwright pendiente de Actions en ambas ramas.
+- Front lint/build/discovery **18 tests** y Backend Release **61/61** pasan localmente; `bash -n` y `git diff --check` pasan. Actions `44999716080` pasó en Front `e2cdcb1`, con checkout de Backend `3620cc2`, Release xUnit 61/61, audit/lint/build, responsive 1/1 y Playwright **18/18**; MySQL/API descartables y cleanup terminaron correctamente.
 - Errores de inspección de repositorio y decisión de aislamiento documentados en `docs/ERROR_LOG.md` de cada rama.
 
 ## Actualización de cierre E2E — 2026-11-21

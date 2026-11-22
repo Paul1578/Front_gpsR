@@ -313,6 +313,6 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Hallazgo: `/register` prometía una cuenta Gerente pero el backend forzaba User; la cuenta se autenticaba sin capacidad para manejar su empresa.
 - Backend local cambia el rol fijo a Admin como propietario de un tenant nuevo; el cliente no puede escoger el rol y `owner_id` mantiene el aislamiento multiempresa.
 - Front elimina `roleName` del payload, conserva los nombres introducidos como username y agrega E2E UI de registro a 390×844, rol Admin en `/Auth/me`, lista Vehicles vacía con 200 y acceso al menú de gestión.
-- Validación local Front lint/build/discovery **18**, Backend Release xUnit **61/61**, bash syntax y diff-check pasan. Actions HTTP/MySQL/Playwright integrados pendientes.
-- Se habilitó `workflow_dispatch` para ejecutar la CI en las ramas aisladas; pendiente publicar y disparar backend y Front cross-branch.
+- Validación integrada: Actions `44999716080` pasó en Front `e2cdcb1` con Backend `3620cc2`: xUnit 61/61, audit/lint/build, responsive 1/1 y Playwright **18/18**, API/MySQL y cleanup success.
+- Alta móvil confirmó redirección al Dashboard con sesión Admin, `/Auth/me`, lista propia vacía y navegación a Vehículos/Rutas; E2E comprobó ancho sin overflow. Ambos workflows manuales concluyeron en verde.
 - Errores de investigación y decisión/corrección de la contradicción están en `ERROR_LOG.md` de ambos repositorios.
