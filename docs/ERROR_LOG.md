@@ -1350,3 +1350,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El `AGENTS.md` exige leer la guía instalada de Next antes de escribir código. En el primer lote de componentes se omitió ese paso.
 - Antes de continuar se leyeron `01-app/03-api-reference/01-directives/use-client.md` y `01-app/01-getting-started/05-server-and-client-components.md`. Los componentes ya pertenecen a la frontera cliente y usan estado/eventos locales; no hay cambios de API Next requeridos. Build y lint pasan.
 - Prevención: iniciar cada sesión de implementación leyendo la guía específica de la versión desde `node_modules/next/dist/docs/`, como exige AGENTS.
+## 2026-11-22 — Reintento de carga empresa era sensible a carreras de contexto — CORREGIDO Y VALIDADO
+
+- Las Actions `45072706025`, `45073324431`, `45074489447`, `45075092805`, `45075805793`, `45075980605` y `45076444690` registraron fallos distintos de selector/secuencia al simular 503 y recuperar Users/Routes/Vehicles. La causa común fue que tests globales o respuestas compartidas cambiaban con tabs, toasts y refresh automáticos.
+- Se acotaron locators al panel correcto, se comprobó cada mensaje de error específico, se separaron interceptores 503 por recurso y se reordenó el retry según los efectos de navegación. La respuesta tardía de Users se ignora por secuencia. No se relajaron verificaciones de producto.
+- Action `45076629351` en `2147be7`: 37/37 E2E, responsive 1/1, audit/lint/build y cleanup pasaron.
+- Prevención: usar fallos por endpoint en mocks de estado compartido, locators acotados al panel y aserciones de recuperación sobre el error específico esperado.

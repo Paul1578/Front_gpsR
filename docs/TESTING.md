@@ -1,5 +1,7 @@
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
+- Action `45076629351` en SHA `2147be7`: **37/37 E2E** autenticados con API/MySQL efímeros, responsive **1/1**, audit/lint/build y cleanup correctos. Incluye 503 separados para Users y Routes/Vehicles, reintentos recuperables, exportación parcial bloqueada, formulario Driver a 320/768 px y regresión de persistencia parcial Vehicle.
+
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
 - El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.
 - `340eb55` pasó Action `45072015727`: E2E **36/36**, responsive 1/1, backend xUnit 111/111, audit/lint/build y cleanup.

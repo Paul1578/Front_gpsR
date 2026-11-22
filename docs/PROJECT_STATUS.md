@@ -1,7 +1,7 @@
 ## Estado actual — 2026-11-22
 
-- Front `refactor/route-builder`: `340eb55` corrigió Equipos/`teamId` no persistidos, email y campos requeridos de Driver. Action `45072015727` pasó: **36/36 E2E**, responsive 1/1, backend xUnit 111/111, audit/lint/build y cleanup.
-- Cambios locales siguientes añaden estados/reintentos de carga para User/Routes/Vehicles y bloquean exportación parcial; lint/build/audit 0/discovery 37 pasan, Action pendiente.
+- Front `refactor/route-builder`: el HEAD `2147be7` pasó Action `45076629351`: **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup API/MySQL exitosos. Incluye errores 503 independientes con reintentos y prevención de exportación parcial.
+- El formulario Driver del panel se comprobó a 320/768 px; el guardado parcial de Vehicle actualiza la UI cuando persiste detalle pero falla el cambio de estado. E2E integrado queda cubierto por Actions recientes.
 - Front `5d4e290` también pasó Action `45071113746`: 36/36 E2E, responsive 1/1, backend xUnit 110/110 y cleanup.
 - Backend `87b208e` pasó Action `45071475764`: build, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup; adicionalmente smoke local efímero completo.
 - Misión abierta. No hay definición de producto sobre Admin delegado ni desvinculación de User/Driver; móvil nativo aplazado y SMTP/infraestructura de producción son externos.
