@@ -1084,28 +1084,38 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
   }
 });
 
-test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page }) => {
+test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page, request }) => {
   test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.context().grantPermissions(["geolocation"]);
   await page.context().setGeolocation({ latitude: -0.185, longitude: -78.465, accuracy: 10 });
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
-  const adminLogin = await page.request.post("/api/backend/Auth/login", {
+  const adminLogin = await request.post("/api/backend/Auth/login", {
     data: { email, password },
   });
   expect(adminLogin.status()).toBe(200);
   const adminToken = await adminLogin.json();
   const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
   const plate = `E2EQA${suffix}`;
-  const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  let originalDriverVehicleId: string | null = null;
+  const routeName = `E2E QA ruta conductor ${suffix}`;
+
+  try {
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, {
+    headers: adminHeaders,
+  });
+  expect(driverBeforeResponse.status()).toBe(200);
+  originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+  const vehicleResponse = await request.post("/api/backend/Vehicles", {
     headers: adminHeaders,
     data: { plate, brand: "FleetFlow QA", model: "Driver route", year: 2025 },
   });
   expect(vehicleResponse.status()).toBe(201);
-  const vehicleId = (await vehicleResponse.json()).id as string;
-  const routeName = `E2E QA ruta conductor ${suffix}`;
-  const routeResponse = await page.request.post("/api/backend/Routes", {
+  vehicleId = (await vehicleResponse.json()).id as string;
+  const routeResponse = await request.post("/api/backend/Routes", {
     headers: adminHeaders,
     data: {
       name: routeName,
@@ -1119,10 +1129,11 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
       ],
     },
   });
-  expect(routeResponse.status()).toBe(201);
-  const routeId = (await routeResponse.json()).id as string;
+  if (routeResponse.status() !== 201) {
+    throw new Error(`No se pudo crear la ruta QA: HTTP ${routeResponse.status()} ${await routeResponse.text()}`);
+  }
+  routeId = (await routeResponse.json()).id as string;
 
-  try {
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(driverEmail!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
@@ -1218,27 +1229,42 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
-    const cleanupRoute = await page.request.get(`/api/backend/Routes/${routeId}`, {
-      headers: adminHeaders,
-    });
+    if (routeId) {
+    const cleanupRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
     if (cleanupRoute.ok()) {
       const status = (await cleanupRoute.json()).status;
       if (status === 1 || status === "InProgress") {
-        const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+        const cancelRoute = await request.put(`/api/backend/Routes/${routeId}/status`, {
           headers: adminHeaders,
           data: { status: 3 },
         });
         expect(cancelRoute.status()).toBe(204);
       }
-      const deleteRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, {
-        headers: adminHeaders,
-      });
+      const deleteRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
       expect(deleteRoute.status()).toBe(204);
+    }
+    }
+    if (vehicleId) {
+      const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers: adminHeaders });
+      if (driverAfterResponse.ok()) {
+        const currentVehicleId = (await driverAfterResponse.json()).vehicleId as string | null;
+        if (currentVehicleId === vehicleId) {
+          const restoreAssignment = originalDriverVehicleId
+            ? await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+                headers: adminHeaders,
+                data: { vehicleId: originalDriverVehicleId },
+              })
+            : await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers: adminHeaders });
+          expect(restoreAssignment.status()).toBe(204);
+        }
+      }
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
     }
   }
 });
 
-test("un Admin de otra empresa no puede consultar ni modificar recursos de flota ajenos", async ({ page }) => {
+test("un Admin de otra empresa no puede consultar ni modificar recursos de flota ajenos", async ({ page, request }) => {
   test.skip(!email || !password || !otherTenantEmail || !otherTenantPassword || !driverIdFixture || !allowMutations, "Requiere dos empresas y Driver QA locales con FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1258,6 +1284,9 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   let vehicleId: string | undefined;
   const driverId = driverIdFixture!;
   let routeId: string | undefined;
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
 
   try {
     const created = await page.request.post("/api/backend/Vehicles", {
@@ -1383,8 +1412,40 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     expect(ownerPositions.status()).toBe(200);
     expect(await ownerPositions.json()).toHaveLength(1);
   } finally {
-    if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders }).catch(() => undefined);
-    if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders }).catch(() => undefined);
+    if (routeId) {
+      const currentRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders });
+      if (currentRoute.status() === 200) {
+        const status = (await currentRoute.json()).status;
+        if (status === 1 || status === "InProgress") {
+          const cancelRoute = await request.put(`/api/backend/Routes/${routeId}/status`, {
+            headers: ownerHeaders,
+            data: { status: 3 },
+          });
+          expect(cancelRoute.status()).toBe(204);
+        }
+        const deleteRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders });
+        expect(deleteRoute.status()).toBe(204);
+      } else {
+        expect(currentRoute.status()).toBe(404);
+      }
+    }
+    if (vehicleId) {
+      const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+      if (driverAfterResponse.ok()) {
+        const currentVehicleId = (await driverAfterResponse.json()).vehicleId as string | null;
+        if (currentVehicleId === vehicleId) {
+          const restoreAssignment = originalDriverVehicleId
+            ? await request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, {
+                headers: ownerHeaders,
+                data: { vehicleId: originalDriverVehicleId },
+              })
+            : await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: ownerHeaders });
+          expect(restoreAssignment.status()).toBe(204);
+        }
+      }
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
   }
 });
 

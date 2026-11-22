@@ -219,3 +219,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - E2E Admin móvil valida que repetir una placa recibe HTTP 409, muestra el mensaje en español y no duplica la tarjeta.
 - E2E Driver móvil usa geolocalización Playwright conocida, valida `GPS en vivo`, inicia la ruta, comprueba POST y lectura GET de coordenadas persistidas.
 - `npm run lint`, `npm run build`, discovery Playwright **16 tests** y `git diff --check`: correctos. Actions frontend/API/MySQL del nuevo código pendiente.
+
+## Seguimiento de GPS móvil — corrección posterior a Actions 44995899244
+
+- Primera ejecución integrada: **14/16**. La cobertura nueva de GPS reveló que el throttle de 20 s se actualizaba cuando la ruta aún estaba pendiente; el inicio no enviaba posición y expiraba el test. El timeout además impedía cleanup con `page.request`; retries encontraron recursos activos (409).
+- Se movió la guarda de estado antes del throttle y setup/cleanup pasa al request fixture independiente; ambos E2E restauran asignación de Driver y eliminan vehículo/ruta.
+- Nueva repetición integrada pendiente. La corrida anterior no valida el caso GPS.

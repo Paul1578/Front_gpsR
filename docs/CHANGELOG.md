@@ -137,3 +137,8 @@
 - E2E Admin móvil ahora verifica que placa duplicada devuelve conflicto visible sin duplicar la tarjeta.
 - E2E Driver móvil concede GPS determinista, inicia la ruta en UI y valida la posición persistida por API.
 - Validación local: lint/build y discovery 16/16. Integración browser/API/MySQL pendiente.
+
+## 2026-11-22 — GPS se envía al iniciar ruta
+
+- El test móvil encontró que una ubicación capturada mientras la ruta estaba pendiente consumía el throttle y retrasaba el primer envío hasta 20 s después del inicio.
+- `DriverView` ahora sólo actualiza el throttle para rutas en progreso; el E2E usa request independiente y limpia/restaura los recursos aunque falle el navegador. Repetición CI pendiente.

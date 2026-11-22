@@ -607,3 +607,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Desde Front se buscó `fletflow/Api/Controllers/RoutesController.cs`, ruta que sólo existe desde la raíz backend. `rg` indicó archivo inexistente y no cambió nada.
 - Corrección: cambiar el `workdir` a `/home/leonardo/Back_GPS`, localizar primero con `rg --files` y leer `fletflow/Api/Controllers/RoutesController.cs`. El contrato GET/POST de posiciones se confirmó desde el archivo real.
 - Prevención: no asumir rutas relativas entre repositorios; confirmar raíz antes de cada búsqueda cruzada.
+
+## 2026-11-22 — GPS móvil consumía la ventana de envío mientras la ruta estaba pendiente — CORREGIDO, CI PENDIENTE
+
+- Actions `44995899244` ejecutó backend Release y checks frontend, pero terminó 14/16 E2E. El nuevo flujo Driver mostró GPS autorizado, pero el efecto registró la marca temporal de 20 s antes de comprobar que la ruta estuviera en progreso. Al iniciar la ruta, ese límite suprimió el POST; el test esperó hasta el timeout de 30 s.
+- La expiración cerró el contexto de página y la limpieza dependiente de `page.request` no pudo finalizar. Los retries encontraron la ruta activa que quedó de la primera ejecución y respondieron HTTP 409 en la creación; el test de tenant también vio ese conflicto de recurso compartido.
+- Corrección de producto: `DriverView` ahora valida ruta en progreso antes de consumir la ventana de 20 s, por lo que registra la ubicación inmediatamente después de iniciar.
+- Corrección de E2E: setup/cleanup usa fixture `request` independiente; `try/finally` ahora envuelve alta de vehículo/ruta y restaura la asignación original del Driver. También se endureció cleanup del caso cross-tenant: cancelar ruta activa, eliminar ruta, restaurar asignación y quitar vehículo.
+- Lint/build/discovery 16 y `git diff --check` pasan localmente. La repetición Actions debe confirmar las dos rutas de prueba, GPS POST/GET y cleanup sin fixtures residuales.

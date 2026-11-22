@@ -120,23 +120,26 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   }, [activeRoute]);
 
   useEffect(() => {
-    if (!activeRoute?.vehiculoId || !currentLocation || !isUsingGeolocation)
+    if (
+      !activeRoute?.vehiculoId ||
+      activeRoute.estado !== "en_progreso" ||
+      !currentLocation ||
+      !isUsingGeolocation
+    )
       return;
     // This timestamp is intentionally sampled when the location side effect runs.
     // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
     if (now - lastLocationSentRef.current < 20000) return;
     lastLocationSentRef.current = now;
-    if (activeRoute.estado === "en_progreso") {
-      void registerRoutePosition(
-        activeRoute.id,
-        {
-          lat: currentLocation[0],
-          lng: currentLocation[1],
-        },
-        { recordedAt: new Date().toISOString() },
-      );
-    }
+    void registerRoutePosition(
+      activeRoute.id,
+      {
+        lat: currentLocation[0],
+        lng: currentLocation[1],
+      },
+      { recordedAt: new Date().toISOString() },
+    );
   }, [
     activeRoute,
     currentLocation,

@@ -278,3 +278,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Local Front: lint/build, discovery 16 tests y diff-check verdes. Backend `6ec5315`: Release local 59/59 y Actions `44995681296` success con smokes MySQL. Luego probar ambos cambios frontend en el workflow cross-branch.
 - Brecha prioritaria sugerida por auditoría independiente real; agente no hizo modificaciones.
 - Backend corrigió duplicados de placa a HTTP 409: Release 59/59 y Actions `44995681296` success en `6ec5315` con smokes HTTP/MySQL. Front agregó E2E de rechazo visible y de geolocalización Driver móvil; lint/build/discovery 16 pasan localmente. Próximo paso: publicar E2E/documentación, verificar Actions frontend contra backend actualizado, corregir cualquier fallo y seguir con CRUD/responsive restantes.
+
+## Corrección detectada por GPS E2E — 2026-11-22
+
+- Actions `44995899244` terminó **14/16**: no pasó Driver GPS ni el test tenant que reintentó tras conflicto. Causa del primer fallo: el throttle de 20 s se marcaba aun con ruta pendiente, por eso el primer GPS POST tras iniciar quedaba suprimido y el test agotaba 30 s. El timeout cerró `page.request`; los retries heredaron ruta activa y obtuvieron 409.
+- `DriverView` ya exige `estado=en_progreso` antes de consumir el throttle. Driver y tenant ahora usan `request` independiente para cleanup, cancelan rutas activas y restauran la asignación original antes de retirar el vehículo.
+- Lint/build/discovery 16 y `git diff --check` pasan local. Actions nuevo SHA pendiente para verificar GPS/persistencia, ciclo Driver y cleanup entero.

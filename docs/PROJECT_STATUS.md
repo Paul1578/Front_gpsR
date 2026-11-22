@@ -210,3 +210,5 @@ Fecha de actualización: 2026-11-22.
 
 - Backend `chore/stabilize-fleet-platform` alcanzó `029e94d`; Actions `44991181335` pasó build, xUnit y smoke HTTP/MySQL de tenant/Logistics/concurrencia.
 - El frontend conserva los 15 E2E ya validados; se repetirá contra ese HEAD backend para confirmar la integración cruzada final.
+
+- Actions `44995899244`: backend build/xUnit, audit, lint, build, responsive y setup MySQL correctos; E2E **14/16**. El nuevo GPS detectó y permitió corregir el envío inicial bloqueado por el throttle de 20 s; retries revelaron cleanup/aislamiento de Driver incompleto, ahora endurecidos. Repetición del SHA siguiente pendiente.
