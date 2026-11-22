@@ -424,3 +424,4 @@ Fecha de actualización: 2026-11-22.
 
 - Gestión de Vehículos ya no presenta “No hay vehículos registrados” si la petición inicial falla; muestra error/reintento y renderiza la flota después de recuperar.
 - E2E local del archivo de estados de carga **5/5**, lint/build y discovery 23 pasan; Actions integrado pendiente para el nuevo caso.
+- Actions `45038229853` confirmó Front `40bdcea`: 23/23 E2E API/MySQL y responsive/lint/build/audit correctos; incluido error/reintento de Vehículos en 320 px. Backend `b625c28` validó 86/86 xUnit y smokes/cleanup en `45038446662`.

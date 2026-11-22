@@ -331,3 +331,6 @@
 
 - Ante fallo de GET `/Vehicles`, la vista deja de mostrar flota vacía y permite reintentar; E2E 320×844 confirma recuperación con unidad cargada.
 - Local: spec de estados de carga 5/5, lint/build, discovery 23 y diff-check pasan; CI integrado pendiente.
+
+- Actions `45038229853` validó Front `40bdcea`: 23/23 E2E con error/retry Vehicle responsive, backend checkout `4090176`.
+- Actions `45038446662` validó Backend `b625c28`: xUnit 86/86, HTTP/MySQL de tenant/roles/flota, concurrencia y cleanup.

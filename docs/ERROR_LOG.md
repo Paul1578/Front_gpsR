@@ -1043,3 +1043,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Nuevo E2E ejecuta 503 → alerta/no vacío → retry 200 con una unidad QA, confirma que aparece `QA-VEH-01` y comprueba overflow a 320 px.
 - Verificación local: spec completo de errores/carga **5/5**, lint/build y Playwright discovery **23** pasan; Actions integrada pendiente.
 - Prevención: cada pantalla consumidora debe reflejar el error de carga del recurso aunque el dashboard tenga una alerta global; no inferir vacío desde array inicial vacío.
+
+## 2026-11-22 — Gestión de Vehículos error/reintento — Actions RESUELTO
+
+- Actions `45038229853` pasó en Front `40bdcea`: lint/build/audit, responsive **1/1**, E2E autenticado Chrome/API/MySQL **23/23**, cleanup success.
+- El caso de error de carga Vehicles a 320 px quedó validado junto con el resto de carga/retry. El run descargó Backend `4090176` (código de seguridad `94c3e90`).
+- Backend commit posterior `b625c28` agregó sólo la prueba directa de key ring; su Actions `45038446662` pasó Release/xUnit **86/86**, HTTP/MySQL, concurrencia y cleanup. Nuevo Front run contra `b625c28` pendiente tras documentar la actualización.

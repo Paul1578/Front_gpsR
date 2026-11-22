@@ -290,3 +290,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - E2E en 320×844 simula 503 de GET `/Vehicles`, comprueba alerta visible y ausencia de “No hay vehículos registrados”; tras reintentar con 200, valida vehículo renderizado y sin overflow.
 - `npx playwright test e2e/team-management-load-errors.spec.ts`: **5/5**; lint/build y discovery **23** correctos localmente. Actions integrado pendiente.
+- Cierre E2E de Vehículos: Actions [`45038229853`](https://github.com/Paul1578/Front_gpsR/actions/runs/45038229853), Front `40bdcea`, **23/23** API/MySQL, responsive **1/1**, audit/lint/build y cleanup success. Checkout Backend `4090176`.
+- Backend integrado actual `b625c28`: Actions [`45038446662`](https://github.com/Paul1578/Back_GPS/actions/runs/45038446662), xUnit **86/86**, build 0 warnings/0 errors, HTTP/MySQL y concurrencia/cleanup success. Repetir Front contra este SHA tras publicar esta evidencia.

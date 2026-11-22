@@ -573,3 +573,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Corregido en código local: alerta + reintento de `retryFleetData`; bloquea el estado vacío hasta recuperación. E2E nuevo en 320×844: 503, error, retry 200 y unidad `QA-VEH-01` visible.
 - Local: spec de estados de carga **5/5**, lint/build y discovery **23** pasan. Falta commit/push/Actions del caso.
 - La edición se hizo después de Actions `45037929619` (Front docs SHA `2c85d35`); ese run valida el estado previo y no debe tomarse como evidencia del caso nuevo.
+
+## Cierres integrados — estados de carga y key ring
+
+- Front `40bdcea` pasó Actions `45038229853`: **23/23** E2E Chrome/API/MySQL, responsive 1/1, audit/lint/build y cleanup; backend checkout `4090176`. Nuevo error/retry de Gestión de Vehículos a 320 px cubierto.
+- Backend `b625c28` pasó Actions `45038446662`: build 0 warnings/0 errors, xUnit **86/86**, aislamiento/roles/flota HTTP/MySQL, smoke concurrente y cleanup. El test nuevo cifra XML key ring y verifica reinicio.
+- Próximo: generar nueva validación Front para que su workflow descargue backend `b625c28`; actualizar docs con SHA/resultados. Después seguir auditoría; no completar misión por pendientes CRUD/responsive y decisión de Admin delegado.
