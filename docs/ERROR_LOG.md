@@ -7,6 +7,7 @@
 - La interceptación persistente de `/Routes**` hizo determinista el 503; la prueba confirmó el alert y el retry de “Mi Ruta” en la última Action.
 - Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; toda edición requiere el panel visible. La selección de mapa puede también reemplazar el nombre visible, así que aplicar la etiqueta final después de seleccionar. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
 - Action `45053782460` terminó **30/31**; el cleanup funcionó y el único fallo siguió en el nombre de destino, sobrescrito por el click de mapa. El nuevo orden conserva la verificación pendiente, fija coordenadas, y luego aplica el nombre final desde el editor visible. La repetición con ese cambio y los nuevos casos de roles está pendiente.
+- Action integrada `45054550439` comprueba el fix y los E2E nuevos de Manager/Logistics.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 
