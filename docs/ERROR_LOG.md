@@ -776,5 +776,6 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Actions `45007503895` pasó 15/18 y detectó que la nueva UX cambia automáticamente al mapa al agregar/ubicar un punto; el test seguía esperando el botón `Seleccionando` dentro del panel editor oculto. La prueba móvil agotó también su tiempo al limpiar fixtures después del timeout principal.
 - Se cambió la expectativa a `Ver paradas y detalles`, que confirma que el mapa quedó abierto. El helper ya valida el regreso al editor después de fijar un punto.
+- En la ejecución posterior `45008055246` quedó un acceso adicional sin transición: el caso móvil agregaba una parada temporal y luego intentaba quitarla desde el editor, todavía oculto. El test ahora vuelve al editor antes de modificar esa fila.
 - En el mismo run, tracking falló tras `page.reload()` a 768 px porque no se volvió a abrir el drawer; se agregó el clic explícito.
 - Prevención: las pruebas deben observar el panel actualmente visible y cambios de navegación después de reload, no asumir que contenido oculto sigue accionable.

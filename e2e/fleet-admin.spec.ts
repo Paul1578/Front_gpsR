@@ -825,6 +825,7 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     await stopTwo.fill("Entrega y recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
     await page.getByRole("button", { name: "Agregar parada" }).click();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
     const temporaryStop = page.getByTestId("stop-point-2");
     await temporaryStop.getByRole("button", { name: "Eliminar parada" }).click();
     await expect(page.getByTestId("stop-point-2")).toHaveCount(0);
