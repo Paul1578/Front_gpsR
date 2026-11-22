@@ -148,6 +148,7 @@ interface AuthContextType {
   isLoadingUser: boolean;
   updateUserRole: (userId: string, role: UserRole) => Promise<{ ok: boolean; message?: string }>;
   updateUserStatus: (userId: string, isActive: boolean) => Promise<{ ok: boolean; message?: string }>;
+  updateUserProfile: (userId: string, profile: { username: string; firstName: string; lastName: string }) => Promise<{ ok: boolean; message?: string }>;
   getAllUsers: () => User[];
   getTeamUsers: () => User[];
   getManagers: () => User[];
@@ -808,6 +809,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (
+    userId: string,
+    profile: { username: string; firstName: string; lastName: string },
+  ) => {
+    try {
+      await apiFetch<ApiUser>(`/Users/${userId}/profile`, {
+        method: "PUT",
+        body: JSON.stringify(profile),
+      });
+      return { ok: true as const };
+    } catch (error) {
+      return {
+        ok: false as const,
+        message: getApiRequestError(error)?.message ?? "No se pudo actualizar el perfil del usuario",
+      };
+    }
+  };
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string,
@@ -868,6 +887,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoadingUser,
         updateUserRole,
         updateUserStatus,
+        updateUserProfile,
         getAllUsers,
         getTeamUsers,
         refreshTeamUsers,

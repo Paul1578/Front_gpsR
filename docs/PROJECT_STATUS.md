@@ -1,3 +1,7 @@
+## Actualización — edición de miembros — 2026-11-22
+
+Gestión de Equipo permite editar nombres, apellidos y username con backend real; email no editable. Backfill de usuarios Driver existentes y sincronización bilateral User/Driver implementados. Lint/build pasan. Spec de error de carga 2/2 y Playwright integrado 18/18 en Chrome/API/MySQL efímero; runner finalizó código 0. Auditoría integral sigue abierta.
+
 ## Verificación final Driver responsive/autorización — 2026-11-22
 
 - Actions `45003051160` success para Front `cd7f171` + Backend `41c01e7`: audit/lint/build, responsive browser y Playwright API/MySQL 18/18 con cleanup. Incluye `UserId` nullable, Driver sin cuenta, otro conductor, y perfil Driver desactivado/reactivado.

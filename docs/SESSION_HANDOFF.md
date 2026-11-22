@@ -1,3 +1,11 @@
+## Trabajo actual — edición de perfil de equipo — 2026-11-22
+
+- Gestión de Equipo edita nombres, apellidos y username con PUT /Users/{id}/profile; email queda inmutable. AuthContext.updateUserProfile separa guardado y refresco para no afirmar que falló un guardado exitoso.
+- E2E edita miembro regular y valida GET /Users/my-team; edita Driver y comprueba sincronización en ambos sentidos. Tarjetas usan team-user-<id>.
+- Lint/build y discovery Playwright (18 casos) pasan. Dos corridas iniciales dieron 16/18 y 17/18; se corrigieron texto duplicado y selector username obsoleto por testid, además del mock que liberaba 503 antes del alert. La suite autenticada final pasó 18/18 en Chrome/API/MySQL; runner código 0 y DB efímera eliminada.
+- Revisión independiente: selector incorrecto, invalidación de tokenVersion sin revocar refresh (se retiró la invalidación innecesaria para editar datos de presentación), backfill omitido y sincronización de Driver sin filtro propietario; los cuatro quedaron resueltos.
+- Misión no completa: seguir cubriendo CRUD/roles/responsive y no declarar cerrado el criterio de roles hasta resolver política de Admin delegado.
+
 ## Brecha de edición y datos personales de usuarios — pendiente
 
 - Revisión de `TeamManagement` confirma CRUD UI incompleto para miembros: permite alta, estado y rol, pero no edición de cuenta. El formulario captura nombres/apellidos, sin embargo backend `User`/`UserDto` sólo persisten y exponen `Username`/`Email`; el mapper Front espera `firstName/lastName` opcionales y muestra valores vacíos cuando no llegan.

@@ -1937,7 +1937,7 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await duplicateDriverDialog.getByRole("button", { name: "Cancelar" }).click();
 
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
-  const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true });
+  const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true }).first();
   await expect(driverName).toBeVisible();
   const driverCard = driverName.locator("xpath=../..");
   await driverCard.getByRole("combobox").selectOption(vehicleId);
@@ -1974,6 +1974,9 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   const updatedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
   expect(updatedDriver.status()).toBe(200);
   expect((await updatedDriver.json()).firstName).toBe(`${firstName} editado`);
+  const usersAfterDriverEdit = await page.request.get("/api/backend/Users/my-team", { headers });
+  const linkedUserAfterDriverEdit = (await usersAfterDriverEdit.json()).find((member: { id: string }) => member.id === createdUser.id);
+  expect(linkedUserAfterDriverEdit).toMatchObject({ firstName: `${firstName} editado`, lastName });
 
   const updatedDriverCard = page.getByText(`${firstName} editado ${lastName}`, { exact: true }).locator("xpath=../..");
   const deactivatePromise = page.waitForResponse((response) =>
@@ -1999,8 +2002,7 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   expect((await reactivatedDriver.json()).isActive).toBe(true);
 
   const teamMemberCard = page
-    .getByRole("heading", { name: `e2e${suffix}`, exact: true })
-    .locator("xpath=../../../..");
+    .getByTestId(`team-user-${createdUser.id}`);
   const logisticsRolePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
     response.request().method() === "PUT",
@@ -2025,6 +2027,23 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   expect((await activeAfterRoleChange.json()).isActive).toBe(true);
   await expect(updatedDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
 
+  await teamMemberCard.getByRole("button", { name: `Editar usuario e2e${suffix}` }).click();
+  const editDriverUserDialog = page.getByRole("dialog");
+  await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} desde usuario`);
+  await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
+  await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);
+  const updateDriverUserProfilePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/profile`) &&
+    response.request().method() === "PUT",
+  );
+  await editDriverUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  expect((await updateDriverUserProfilePromise).status()).toBe(200);
+  const driverAfterUserProfileEdit = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await driverAfterUserProfileEdit.json())).toMatchObject({
+    firstName: `${firstName} desde usuario`,
+    lastName,
+  });
+
   const deactivateUserPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdUser.id}/status`) &&
     response.request().method() === "PUT",
@@ -2040,9 +2059,7 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
-  const inactiveMemberAfterReload = page
-    .getByRole("heading", { name: `e2e${suffix}`, exact: true })
-    .locator("xpath=../../../..");
+  const inactiveMemberAfterReload = page.getByTestId(`team-user-${createdUser.id}`);
   await expect(inactiveMemberAfterReload.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Crear Usuario" }).click();
@@ -2068,13 +2085,35 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   )).toBe(true);
 
   const regularUserCard = page
-    .getByRole("heading", { name: `user${suffix}`, exact: true })
-    .locator("xpath=../../../..");
+    .getByTestId(`team-user-${createdRegularUser.id}`);
+  await regularUserCard.getByRole("button", { name: `Editar usuario user${suffix}` }).click();
+  const editUserDialog = page.getByRole("dialog");
+  await editUserDialog.getByLabel("Nombres").fill("Nombre actualizado QA");
+  await editUserDialog.getByLabel("Apellidos").fill("Apellido actualizado");
+  await editUserDialog.getByLabel("Usuario").fill(`useredit${suffix}`);
+  const updateProfilePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/profile`) &&
+    response.request().method() === "PUT",
+  );
+  await editUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  expect((await updateProfilePromise).status()).toBe(200);
+  const persistedEditedUserResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(persistedEditedUserResponse.status()).toBe(200);
+  const persistedEditedUser = (await persistedEditedUserResponse.json()).find((member: { id: string }) => member.id === createdRegularUser.id);
+  expect(persistedEditedUser).toMatchObject({
+    username: `useredit${suffix}`,
+    firstName: "Nombre actualizado QA",
+    lastName: "Apellido actualizado",
+    email: regularUserEmail,
+  });
+
+  const editedRegularUserCard = page
+    .getByTestId(`team-user-${createdRegularUser.id}`);
   const deactivateRegularUserPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
     response.request().method() === "PUT",
   );
-  await regularUserCard.getByRole("button", { name: "Activo", exact: true }).click();
+  await editedRegularUserCard.getByRole("button", { name: "Activo", exact: true }).click();
   expect((await deactivateRegularUserPromise).status()).toBe(200);
   const inactiveRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
   expect((await inactiveRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(false);
@@ -2083,7 +2122,7 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
     response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
     response.request().method() === "PUT",
   );
-  await regularUserCard.getByRole("button", { name: "Inactivo", exact: true }).click();
+  await editedRegularUserCard.getByRole("button", { name: "Inactivo", exact: true }).click();
   expect((await reactivateRegularUserPromise).status()).toBe(200);
   const activeRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
   expect((await activeRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(true);

@@ -1,3 +1,9 @@
+## 2026-11-22 — Gestión de perfil de miembros
+
+- Gestión de Equipo incorpora edición de nombres, apellidos y username; correo no editable. Se consulta la API real y se refleja el resultado sincronizado en Drivers.
+- E2E verifica persistencia y sincronización User/Driver. Tarjetas tienen selector data-testid estable.
+- Dos corridas iniciales dieron 16/18 y 17/18; se corrigieron selectores/mocks y el spec de error pasó 2/2. Playwright final pasó 18/18 en Chrome/API/MySQL; runner terminó con código 0 y DB efímera eliminada.
+
 ## 2026-11-22 — Matriz final Driver con tipos nullable
 
 - Actions `45003051160` pasó audit/lint/build, responsive, xUnit y E2E 18/18 con limpieza.

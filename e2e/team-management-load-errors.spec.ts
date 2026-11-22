@@ -133,7 +133,6 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
     }
 
     if (request.method() === "GET" && url.pathname.endsWith("/Routes") && failRouteHistory) {
-      failRouteHistory = false;
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -180,6 +179,7 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
   const historyAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" });
   await expect(historyAlert).toBeVisible();
   await expect(page.getByText("No hay rutas para mostrar")).toHaveCount(0);
+  failRouteHistory = false;
 
   const recoveredHistoryResponse = page.waitForResponse((response) =>
     response.request().method() === "GET" &&

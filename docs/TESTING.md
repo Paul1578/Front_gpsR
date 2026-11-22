@@ -233,3 +233,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - E2E Admin móvil vuelve a enviar el documento con correo nuevo, espera 409/mensaje claro y verifica por GET `/Users/my-team` que el correo no fue creado.
 - `npm run lint`, `npm run build`, discovery **16 tests** y diff-check pasaron. CI browser/API/MySQL integrado pendiente.
 - Resultado de la nueva validación: Actions `44997054375`, Front `1bb7d71` + Back `a7f7c4e`, success con 61/61 xUnit, 16/16 E2E y responsive 1/1. El nuevo caso verifica el 409 y ausencia en el equipo.
+
+## Edición de miembros — 2026-11-22
+
+- npm run lint, npm run build y discovery Playwright (18 tests): correctos.
+- Spec de estados de error/reintento: 2/2. El test Historial conserva 503 hasta observar el alert y luego permite reintentar.
+- Dos primeras E2E API/MySQL dieron 16/18 y 17/18; tras corregir selectores y mock, repetición completa pasó 18/18 en Chrome. Runner local acabó código 0 y eliminó la DB/fixtures efímeros.

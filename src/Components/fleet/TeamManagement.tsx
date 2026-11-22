@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
-import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck } from "lucide-react";
+import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     refreshTeamUsers,
     updateUserRole,
     updateUserStatus,
+    updateUserProfile,
     createUser,
   } = useAuth();
   const {
@@ -29,6 +30,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   } = useFleet();
 
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<{ id: string; username: string; firstName: string; lastName: string } | null>(null);
+  const [isSavingUser, setIsSavingUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
   const [teamLoadError, setTeamLoadError] = useState(false);
@@ -125,6 +128,28 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       }
     } else {
       toast.error(result?.message ?? "No se pudo actualizar el rol");
+    }
+  };
+
+  const handleSaveUserProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingUser) return;
+    setIsSavingUser(true);
+    const result = await updateUserProfile(editingUser.id, {
+      username: editingUser.username,
+      firstName: editingUser.firstName,
+      lastName: editingUser.lastName,
+    });
+    setIsSavingUser(false);
+    if (result.ok) {
+      toast.success("Perfil del usuario actualizado");
+      setEditingUser(null);
+      const refreshResults = await Promise.allSettled([refreshTeamUsers(), refreshDrivers(false)]);
+      if (refreshResults.some((refresh) => refresh.status === "rejected")) {
+        toast.warning("El perfil se guardó, pero no se pudo actualizar toda la información visible.");
+      }
+    } else {
+      toast.error(result.message ?? "No se pudo actualizar el perfil");
     }
   };
 
@@ -543,6 +568,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               {users.map((user) => (
                 <div
                   key={user.id}
+                  data-testid={`team-user-${user.id}`}
                   className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
@@ -561,6 +587,19 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        aria-label={`Editar usuario ${user.usuario}`}
+                        onClick={() => setEditingUser({
+                          id: user.id,
+                          username: user.usuario,
+                          firstName: user.nombres,
+                          lastName: user.apellidos,
+                        })}
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                      >
+                        <Pencil size={13} /> Editar
+                      </button>
                       <button
                         onClick={() => {
                           const next = !user.isActive;
@@ -774,6 +813,35 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               </button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editingUser !== null} onOpenChange={(open) => { if (!open && !isSavingUser) setEditingUser(null); }}>
+        <DialogContent className="sm:max-w-md max-w-[95%] max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>Editar miembro del equipo</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <form onSubmit={handleSaveUserProfile} className="mt-4 space-y-4">
+              <label className="block text-sm text-gray-700">
+                Nombres
+                <input required maxLength={100} value={editingUser.firstName} onChange={(event) => setEditingUser({ ...editingUser, firstName: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              </label>
+              <label className="block text-sm text-gray-700">
+                Apellidos
+                <input required maxLength={100} value={editingUser.lastName} onChange={(event) => setEditingUser({ ...editingUser, lastName: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              </label>
+              <label className="block text-sm text-gray-700">
+                Usuario
+                <input required maxLength={100} value={editingUser.username} onChange={(event) => setEditingUser({ ...editingUser, username: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              </label>
+              <p className="text-xs text-gray-500">El correo de acceso se mantiene sin cambios.</p>
+              <div className="flex justify-end gap-2">
+                <button type="button" disabled={isSavingUser} onClick={() => setEditingUser(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm">Cancelar</button>
+                <button type="submit" disabled={isSavingUser} className="rounded-lg bg-[#3271a4] px-4 py-2 text-sm text-white disabled:opacity-50">{isSavingUser ? "Guardando…" : "Guardar cambios"}</button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </>

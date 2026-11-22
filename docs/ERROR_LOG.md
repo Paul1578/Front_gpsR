@@ -744,3 +744,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: tipar `UserId` como nullable, presentar “Sin usuario vinculado” si falta, conservar username/ID abreviado cuando existe y ampliar el E2E para confirmar el render del Driver sin usuario.
 - Prevención: cubrir entidades opcionalmente asociadas con sus estados nulos en las vistas que consumen listas completas.
 - Verificación: fix y aserción agregados; lint/build/discovery pasan. Actions integrada `45002920723` pasó Playwright 18/18 con cleanup; el ajuste de tipos `cd7f171` se repite en Actions `45003051160`.
+
+## 2026-11-22 — E2E inicial de edición de miembros — CORREGIDO Y VERIFICADO (18/18)
+
+- Primera suite API/MySQL obtuvo 16/18. El flujo Driver encontró el mismo texto de nombre en Gestión de Choferes y tarjeta de usuario. Se agregaron selectores data-testid por ID; el texto de la sección de Drivers se acotó al primer resultado.
+- El test de Historial recibió 503 pero no mostró el alert antes del siguiente fetch. La causa era resetear el flag al contestar; se conserva el 503 hasta que el test observa el alert y luego se permite reintentar.
+- El spec de error pasa 2/2; la suite integrada final pasó 18/18 en Chrome/API/MySQL, runner código 0.
+- La segunda suite dio 17/18: tras recargar, otro tramo del mismo E2E seguía buscando el username como encabezado, aunque el diseño muestra el nombre legal. Se reemplazó también ese selector por el testid del perfil.
+- Prevención: usar IDs para selectores de tarjetas y no liberar mocks antes de observar el estado UI ejercitado.
