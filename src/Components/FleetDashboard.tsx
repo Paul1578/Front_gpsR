@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield } from "lucide-react";
+import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield, ContactRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MainDashboard } from "./fleet/MainDashboard";
 import { VehiclesManagement } from "./fleet/VehiclesManagement";
 import { RoutesManagement } from "./fleet/RoutesManagement";
 import { TeamManagement } from "./fleet/TeamManagement";
+import { DriversManagement } from "./fleet/DriversManagement";
 import { DriverView } from "./fleet/DriverView";
 import { RouteHistory } from "./fleet/RouteHistory";
 import { ProfileView } from "./fleet/ProfileView";
@@ -27,7 +28,7 @@ const MapView = dynamic(
   }
 );
 
-export type ViewType = "home" | "map" | "vehicles" | "routes" | "team" | "driver" | "history" | "profile" | "superadmin";
+export type ViewType = "home" | "map" | "vehicles" | "drivers" | "routes" | "team" | "driver" | "history" | "profile" | "superadmin";
 
 export function FleetDashboard() {
   const { user, logout } = useAuth();
@@ -96,6 +97,7 @@ export function FleetDashboard() {
     { id: "routes", label: "Gestión de Rutas", icon: Route, permission: user.permissions.canCreateRoutes },
     { id: "history", label: "Historial de Rutas", icon: History, permission: user.permissions.canViewMap || user.permissions.canCreateRoutes },
     { id: "vehicles", label: "Gestión de Vehículos", icon: Truck, permission: user.permissions.canManageVehicles },
+    { id: "drivers", label: "Gestión de Conductores", icon: ContactRound, permission: user.permissions.canManageDrivers },
     { id: "team", label: "Gestión de Equipo", icon: Users, permission: user.permissions.canManageTeam },
     { id: "driver", label: "Mi Ruta", icon: Route, permission: user.permissions.canViewOwnRoute },
   ].filter((item): item is typeof item & { id: ViewType } => !!item.permission);
@@ -109,6 +111,7 @@ export function FleetDashboard() {
       case "profile": return <ProfileView onBack={handleBack} />;
       case "map": return <MapView onBack={handleBack} />;
       case "vehicles": return <VehiclesManagement onBack={handleBack} />;
+      case "drivers": return <DriversManagement onBack={handleBack} />;
       case "routes": return <RoutesManagement onBack={handleBack} />;
       case "history": return <RouteHistory onBack={handleBack} />;
       case "team": return <TeamManagement onBack={handleBack} />;

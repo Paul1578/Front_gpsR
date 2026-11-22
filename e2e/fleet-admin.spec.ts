@@ -1128,11 +1128,13 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
-test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", async ({ page, browser }) => {
+test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async ({ page, browser }) => {
   test.skip(
     !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations,
     "Requiere fixtures QA de Admin, User y Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
+  test.setTimeout(120_000);
+  page.setDefaultTimeout(8_000);
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   type AuthHeaders = { Authorization: string };
@@ -1295,6 +1297,7 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
     expect(managerRoutes.status()).toBe(200);
 
     let managerVehicleId: string | undefined;
+    let managerUiDriverId: string | undefined;
     try {
       const managerVehicle = await page.request.post("/api/backend/Vehicles", {
         headers: managerHeaders,
@@ -1342,6 +1345,12 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
     managerVehicleId = undefined;
     const uiPlate = `E2EQAM${suffix}UI`;
     try {
+      let managerTeamRequests = 0;
+      managerPage.on("request", (request) => {
+        if (new URL(request.url()).pathname.endsWith("/api/backend/Users/my-team")) {
+          managerTeamRequests += 1;
+        }
+      });
       await managerPage.setViewportSize({ width: 390, height: 844 });
       await managerPage.goto("/login");
       await managerPage.getByLabel("Correo electrónico").fill(driverEmail!);
@@ -1351,6 +1360,7 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
       await managerPage.getByRole("button", { name: "Abrir menú" }).click();
       await expect(managerPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
       await expect(managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toBeVisible();
       await expect(managerPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
       await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
       await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
@@ -1359,8 +1369,11 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
         const dimensions = await managerPage.evaluate(() => ({
           viewport: document.documentElement.clientWidth,
           content: document.documentElement.scrollWidth,
+          mainClient: document.querySelector("main")?.clientWidth ?? 0,
+          mainScroll: document.querySelector("main")?.scrollWidth ?? 0,
         }));
         expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+        expect(dimensions.mainScroll).toBeLessThanOrEqual(dimensions.mainClient);
       };
       await managerPage.setViewportSize({ width: 320, height: 844 });
       await expectManagerNoOverflow();
@@ -1406,11 +1419,97 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
       expect(await persistedManagerUiVehicle.json()).toMatchObject({ plate: uiPlate, brand: "Manager editado", status: 2 });
       await expect(managerCard).toContainText("Mantenimiento");
 
-      await managerCard.getByRole("button").nth(1).click();
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.locator("select").selectOption("disponible");
+      const restoreManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}/status`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await restoreManagerVehicle).status()).toBe(204);
+      await expect(managerCard).toContainText("Disponible");
+
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await managerPage.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Conductores" })).toBeVisible();
+      await managerPage.setViewportSize({ width: 320, height: 844 });
+      await expectManagerNoOverflow();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager ${suffix}`);
+      await managerPage.getByLabel("Apellidos del conductor").fill("Chofer");
+      const managerDriverDocument = `E2EQA${suffix}M`;
+      await managerPage.getByLabel("Documento del conductor").fill(managerDriverDocument);
+      await managerPage.getByLabel("Teléfono del conductor").fill("0990000077");
+      const createManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Drivers") && response.request().method() === "POST",
+      );
+      await managerPage.getByRole("button", { name: "Crear conductor" }).click();
+      const createManagerDriverResponse = await createManagerDriver;
+      expect(createManagerDriverResponse.status()).toBe(201);
+      managerUiDriverId = (await createManagerDriverResponse.json()).id as string;
+      let managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager ${suffix} Chofer`);
+      await expectManagerNoOverflow();
+      const driverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
+      expect(driverCardDimensions.scroll).toBeLessThanOrEqual(driverCardDimensions.client);
+      const managerDriverAuthHeaders = { Authorization: `Bearer ${await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` };
+      const managerDriverRead = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(managerDriverRead.status()).toBe(200);
+      expect(await managerDriverRead.json()).toMatchObject({ documentNumber: managerDriverDocument, userId: null, vehicleId: null });
+
+      await managerDriverCard.getByRole("button", { name: "Editar" }).click();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager editado ${suffix}`);
+      const saveManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}`) && response.request().method() === "PUT",
+      );
+      await managerPage.getByRole("button", { name: "Guardar cambios" }).click();
+      expect((await saveManagerDriver).status()).toBe(200);
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager editado ${suffix}`);
+
+      await managerDriverCard.getByLabel(`Vehículo para E2E QA Manager editado ${suffix}`).selectOption(managerVehicleId!);
+      const assignManagerDriverVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      expect((await assignManagerDriverVehicle).status()).toBe(204);
+      const assignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await assignedManagerDriver.json()).vehicleId).toBe(managerVehicleId);
+
+      const unassignManagerDriverVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Quitar" }).click();
+      expect((await unassignManagerDriverVehicle).status()).toBe(204);
+      const unassignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await unassignedManagerDriver.json()).vehicleId).toBeNull();
+
+      const deactivateManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      expect((await deactivateManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard).toHaveCount(0);
+      await managerPage.getByRole("button", { name: "Mostrar bajas" }).click();
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText("Inactivo");
+      const reactivateManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Reactivar" }).click();
+      expect((await reactivateManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+      expect(managerTeamRequests).toBe(0);
+
+      await managerPage.setViewportSize({ width: 768, height: 1024 });
+      await expectManagerNoOverflow();
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
       const managerDeleteDialog = managerPage.getByRole("alertdialog");
       const deleteManagerUiVehicle = managerPage.waitForResponse((response) =>
         new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}`) && response.request().method() === "DELETE",
       );
+      await managerCard.getByRole("button").nth(1).click();
       await managerDeleteDialog.getByRole("button", { name: "Sí, eliminar" }).click();
       expect((await deleteManagerUiVehicle).status()).toBe(204);
       managerVehicleId = undefined;
@@ -1418,6 +1517,22 @@ test("API deniega mutaciones y Manager gestiona vehículos desde la interfaz", a
       await managerPage.setViewportSize({ width: 390, height: 844 });
       await expectManagerNoOverflow();
     } finally {
+      if (managerUiDriverId) {
+        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        if (token) {
+          const headers = { Authorization: `Bearer ${token}` };
+          const currentDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers }).catch(() => null);
+          if (currentDriver?.ok()) {
+            const driverData = await currentDriver.json().catch(() => null);
+            if (driverData?.vehicleId) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`, { headers }).catch(() => undefined);
+            }
+            if (driverData?.isActive) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerUiDriverId}/status`, { headers, data: { isActive: false } }).catch(() => undefined);
+            }
+          }
+        }
+      }
       if (managerVehicleId) {
         const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
         if (token) {
@@ -1501,6 +1616,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
     await expect(logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
     await expect(logisticsPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toHaveCount(0);
     await expect(logisticsPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
 
     const logisticsToken = await logisticsPage.evaluate(() => {

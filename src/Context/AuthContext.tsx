@@ -98,6 +98,7 @@ export interface UserPermissions {
   canViewMap: boolean;
   canCreateRoutes: boolean;
   canManageVehicles: boolean;
+  canManageDrivers: boolean;
   canManageTeam: boolean;
   canViewOwnRoute: boolean;
   canAccessSuperAdmin?: boolean;
@@ -189,6 +190,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: true,
     canCreateRoutes: true,
     canManageVehicles: true,
+    canManageDrivers: true,
     canManageTeam: true,
     canViewOwnRoute: true,
     canAccessSuperAdmin: false,
@@ -200,6 +202,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: true,
     canCreateRoutes: true,
     canManageVehicles: true,
+    canManageDrivers: true,
     canManageTeam: true,
     canViewOwnRoute: true,
     canAccessSuperAdmin: false,
@@ -211,6 +214,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: true,
     canCreateRoutes: true,
     canManageVehicles: true,
+    canManageDrivers: true,
     canManageTeam: false,
     canViewOwnRoute: false,
     canAccessSuperAdmin: false,
@@ -222,6 +226,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: true,
     canCreateRoutes: true,
     canManageVehicles: false,
+    canManageDrivers: false,
     canManageTeam: false,
     canViewOwnRoute: false,
     canAccessSuperAdmin: false,
@@ -233,6 +238,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: false,
     canCreateRoutes: false,
     canManageVehicles: false,
+    canManageDrivers: false,
     canManageTeam: false,
     canViewOwnRoute: true,
     canAccessSuperAdmin: false,
@@ -244,6 +250,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewMap: false,
     canCreateRoutes: false,
     canManageVehicles: false,
+    canManageDrivers: false,
     canManageTeam: false,
     canViewOwnRoute: false,
     canAccessSuperAdmin: false,
@@ -319,7 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && user?.role !== "chofer") {
+    if (isAuthenticated && (user?.role === "gerente" || user?.role === "superadmin")) {
       void refreshTeamUsers().catch((error) => {
         console.error("Error obteniendo equipo:", error);
       });

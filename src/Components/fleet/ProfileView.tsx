@@ -60,6 +60,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     canViewMap: "Ver Mapa en Tiempo Real",
     canCreateRoutes: "Crear y Gestionar Rutas",
     canManageVehicles: "Gestionar Vehículos",
+    canManageDrivers: "Gestionar Conductores",
     canManageTeam: "Gestionar Equipo",
     canViewOwnRoute: "Ver Mi Ruta",
     canAccessSuperAdmin: "Acceso a Panel Super Admin",

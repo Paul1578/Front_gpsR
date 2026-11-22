@@ -239,6 +239,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     canViewMap: "Ver Mapa en Tiempo Real",
     canCreateRoutes: "Crear y Gestionar Rutas",
     canManageVehicles: "Gestionar Vehículos",
+    canManageDrivers: "Gestionar Conductores",
     canManageTeam: "Gestionar Equipo",
     canViewOwnRoute: "Ver Su Propia Ruta",
     canAccessSuperAdmin: "Acceso a Panel Super Admin",

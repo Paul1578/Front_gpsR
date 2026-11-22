@@ -246,3 +246,9 @@
 - El E2E integrado reveló que ambos roles backend compartían el rol UI `logistica`; Manager perdía el menú de Vehículos pese a tener CRUD API.
 - Añadido rol UI `manager` / etiqueta “Gestor de flota”, permisos de vehículo y rutas sin administración de usuarios; selección disponible en gestión de equipo y panel de organización.
 - Actions `45014430986` pasó con Front `7bf1955` + Back `648b23f`: audit/lint/build, responsive 1/1, E2E autenticado 18/18 y cleanup.
+
+# 2026-11-22 — Gestión de Conductores para Manager
+
+- Separada de Gestión de Equipo: Admin y Manager acceden a la pantalla Drivers; Manager puede crear conductores sin cuenta vinculada, editar, asignar/quitar vehículos y cambiar estado. Gestión de usuarios queda sólo para Admin.
+- AuthContext deja de solicitar `/Users/my-team` a Manager/Logistics. E2E integrado añade el ciclo de Driver y la matriz UI; validación CI pendiente.
+- Contrato documento/teléfono unificado a 20 caracteres entre formulario, API y persistencia; responsive E2E ahora comprueba el panel y tarjeta creada a 320 px.

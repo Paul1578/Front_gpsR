@@ -7,6 +7,13 @@
 
 # Registro de errores y decisiones
 
+## 2026-11-22 — Formulario Driver aceptaba documento/teléfono sobre el límite y E2E medía overflow incompleto — CORREGIDO
+
+- La revisión independiente encontró que el formulario permitía 100 caracteres de documento y 30 de teléfono, pero MySQL admite 20 para ambos; altas podían fallar en persistencia y ediciones eran rechazadas por API.
+- Se fijó `maxLength=20` en ambos campos y el comando de creación backend valida longitudes y campos obligatorios antes de persistir; hay pruebas unitarias para el límite, su aceptación exacta y el trim.
+- La revisión responsive medía sólo el documento antes de crear una tarjeta. El E2E ahora mide `main.scrollWidth/clientWidth` y la tarjeta del Driver creado en 320 px.
+- Verificación local pendiente para este SHA; repetir E2E integrado/API/MySQL en Actions.
+
 ## 2026-11-21 — Playwright autenticado local omitido por falta de entorno QA
 
 - El caso del constructor se invocó de forma aislada; Playwright inició Next, pero lo marcó skipped porque no estaban configurados Admin QA/`FLETFLOW_E2E_ALLOW_MUTATIONS` ni Driver fixture. La API local tampoco respondía en Swagger (`HTTP 000`). No se realizaron mutaciones.
@@ -834,3 +841,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: modelar `manager` como rol UI propio, con vehículos/rutas y sin administración de usuarios; separar su etiqueta “Gestor de flota” de “Logística”; incluirlo en altas/cambios de rol y badges. Mantener backend como autoridad.
 - Prevención: conservar cada rol de backend como identidad independiente cuando su matriz de permisos difiere; E2E por rol debe comparar navegación UI además de autorización HTTP.
 - Actions `45014430986` confirmó la corrección: 18/18 E2E, responsive 1/1, audit/lint/build y cleanup API/MySQL exitosos con Backend `648b23f`.
+
+## 2026-11-22 — Manager sin pantalla de Drivers y llamadas 403 a usuarios — CORRECCIÓN EN CURSO
+
+- Auditoría independiente encontró que Manager tiene permisos backend para crear/editar/desactivar Drivers y asignar vehículos, pero los controles estaban dentro de Gestión de Equipo, restringida a Admin. Manager tampoco debe ver usuarios; `/Users/my-team` sólo admite Admin y el AuthContext lo solicitaba a Logistics/Manager.
+- Solución en curso: permiso visual `canManageDrivers` separado, pantalla de Gestión de Conductores para Admin/Manager que opera conductores independientes de cuenta, Admin mantiene Gestión de Equipo; la carga automática de usuarios queda sólo para Admin. Logistics/Driver/User no ven la pantalla.
+- E2E amplía Manager UI con crear/editar/asignar/desasignar/baja/reactivación de Driver y verificación de persistencia/ausencia de 403 de equipo; CI integrada pendiente.
+- Prevención: no agrupar entidades con matrices de autorización distintas en una sola pantalla; evitar solicitar endpoints no autorizados desde el arranque.
+- Error de edición del test: dos parches de contexto esperaban que la secuencia de status/baja fuese distinta de la que había en el spec; `apply_patch` los rechazó sin aplicar cambios. Se volvió a leer el bloque actual y se dividieron las ediciones con anclas exactas antes de lint/build.

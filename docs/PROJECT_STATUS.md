@@ -325,3 +325,11 @@ Fecha de actualización: 2026-11-22.
 - Vistas cubiertas a 320×844, 390×844 y 768×1024 con aserción de overflow; lint/build/discovery de 18 pasan localmente.
 - Actions `45013936721` pasó 17/18: el CRUD API Manager pasó, pero la UI ocultó Vehículos. Causa: Front colapsaba Manager y Logistics; se separó el rol UI `manager` con permisos de flota sin gestión de equipo.
 - Cierre: Actions `45014430986` pasó con Front `7bf1955` + Back `648b23f`: audit/lint/build, responsive 1/1, E2E autenticado **18/18** y cleanup. Lint/build/discovery 18 pasan localmente.
+
+## CRUD de Drivers para Manager — en validación — 2026-11-22
+
+- Auditoría encontró que Manager tenía CRUD Driver en API, pero los controles estaban dentro de Gestión de Equipo junto a funciones Admin-only; AuthContext además solicitaba `/Users/my-team` a Manager/Logistics y recibía 403.
+- Implementación local agrega permiso/pantalla de Drivers a Admin/Manager, evita la consulta no autorizada de usuarios y permite a Manager crear conductor sin cuenta, editar, asignar/desasignar y baja/reactivación. Logistics no ve la pantalla.
+- E2E extendido para ciclo Driver desde UI a 320/390/768 px, persistencia API y ausencia de 403 de Users. Local `npm run lint`, `npm run build`, discovery 18 y `git diff --check` pasan; Actions pendiente.
+- Auditoría adicional detectó límites UI/backend distintos para documento/teléfono y una medición responsive que no examinaba `main` ni la tarjeta nueva. Límites fijados a 20 en ambos lados y E2E ampliado.
+- Verificación local del SHA actual: `npm run lint`, `npm run build`, discovery Playwright **18 tests** y `git diff --check` pasan. Actions API/MySQL pendiente.
