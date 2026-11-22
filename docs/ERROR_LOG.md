@@ -1,3 +1,24 @@
+# 2026-11-22 — Crear/editar rutas mostraba coordenadas de Quito sin seleccionar punto — CORREGIDO
+
+- Síntoma: al escribir un nombre en origen/destino sin elegir una ubicación, el formulario podía mostrar/persistir las coordenadas predeterminadas de Quito como si fueran reales.
+- Causa: el cambio de nombre inicializaba `origin`/`destination` desde un punto geográfico real por defecto; la vista también trataba cualquier objeto como una ubicación fijada.
+- Solución: se retiró `DEFAULT_POINT`; los puntos sin selección tienen coordenadas `NaN`, el indicador usa `validPoint`, y la validación impide avanzar hasta definir origen/destino. E2E verifica el estado pendiente, bloqueo de avance y selección real posterior en mapa.
+- Prevención: no usar coordenadas reales como placeholders. Los nombres de ubicaciones y su geometría sólo pasan a estado válido después de un evento de mapa/búsqueda que entregue coordenadas.
+- También se muestra error/reintento de `assignment-options` en la lista, los IDs sin etiqueta no se anuncian como “sin vehículo/conductor”, y la confirmación de cancelación evita prometer disponibilidad incompatible con mantenimiento.
+- Validación local: lint/build correctos, Playwright discovery **31**, E2E de carga/error **9/9**. E2E API/MySQL integrado del constructor y CRUD tablet pendiente de Actions.
+
+# 2026-11-22 — Action E2E falló por supuestos de alertas y locator ambiguo — CORREGIDO EN TESTS
+
+- Actions `45050067540`: backend, auditoría de dependencias, lint, build y responsive pasaron; E2E **28/30**.
+- Caso “Mi Ruta”: el test esperaba el fallo en Dashboard, pero las rutas se solicitan al abrir “Mi Ruta”. El rol `alert` global resolvía al anuncio accesible de Next. Solución: entrar primero a Mi Ruta y localizar `role=alert` filtrando por el texto esperado.
+- Caso de evidencia: el locator `name: "Nota"` también coincidía con “Agregar Nota”. Solución: botón selector por nombre exacto.
+- Prevención: afirmar cuándo y qué pantalla solicita la API; en apps con anuncios accesibles, filtrar los roles por contenido; usar `exact: true` cuando un botón comparte prefijo con su acción.
+
+# Error local de TypeScript — narrowing de punto nullable — CORREGIDO
+
+- El primer build del cambio geográfico falló porque TypeScript no infiere que `point` deja de ser `null` al llamar `validPoint(point)`.
+- La rama de render ahora comprueba explícitamente `point && validPoint(point)` antes de acceder a `lat/lng`. Build posterior pasó.
+
 # 2026-11-22 — Historial de Logística fallaba por una consulta administrativa — CORREGIDO Y VALIDADO
 
 - Síntoma: una cuenta Logistics podía leer `/Routes` pero Historial mostraba error al cargar.

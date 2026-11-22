@@ -878,8 +878,13 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
 
     const map = page.locator(".leaflet-container");
     await page.getByRole("button", { name: "Seleccionando" }).waitFor();
-    await clickMapAwayFromMarkers(map);
     const origin = page.getByPlaceholder("¿Desde dónde sale?");
+    await origin.fill("Origen E2E desde mapa");
+    await expect(page.getByTestId("origin-point-0")).toContainText("Ubicación pendiente");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await expect(page.getByText("Define un origen y un destino para continuar")).toBeVisible();
+    await clickMapAwayFromMarkers(map);
     await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
     await origin.fill("Origen E2E desde mapa");
     await page.getByRole("button", { name: "Agregar parada" }).click();
@@ -907,8 +912,10 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
     await destinationRow.getByRole("button", { name: "Ubicar" }).click();
     await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
-    await clickMapAwayFromMarkers(map);
     const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.fill("Destino E2E desde mapa");
+    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
+    await clickMapAwayFromMarkers(map);
     await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
     await destination.fill("Destino E2E desde mapa");
 
@@ -1768,6 +1775,17 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await expect(managerPage.getByLabel("Teléfono del conductor")).toBeVisible();
       const tabletDriverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
       expect(tabletDriverCardDimensions.scroll).toBeLessThanOrEqual(tabletDriverCardDimensions.client);
+      await managerDriverCard.getByRole("button", { name: "Editar" }).click();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager tablet ${suffix}`);
+      const saveTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}`) && response.request().method() === "PUT",
+      );
+      await managerPage.getByRole("button", { name: "Guardar cambios" }).click();
+      expect((await saveTabletManagerDriver).status()).toBe(200);
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager tablet ${suffix}`);
+      const persistedTabletManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(await persistedTabletManagerDriver.json()).toMatchObject({ firstName: `E2E QA Manager tablet ${suffix}` });
       await managerPage.getByRole("button", { name: "Abrir menú" }).click();
       await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
       await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
@@ -2200,12 +2218,12 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
   await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("alert")).toContainText("No se pudieron cargar tus rutas");
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("No se pudieron cargar tus rutas");
+  const routeLoadAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar tus rutas" });
+  await expect(routeLoadAlert).toBeVisible();
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Reintentar" }).click();
+  await routeLoadAlert.getByRole("button", { name: "Reintentar" }).click();
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
 });
 
@@ -2387,7 +2405,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect((await startSecondaryStop).status()).toBe(200);
   await secondaryStop.getByRole("button", { name: "Evidencia" }).click();
   const secondaryEvidenceDialog = page.getByRole("dialog");
-  await secondaryEvidenceDialog.getByRole("button", { name: "Nota" }).click();
+  await secondaryEvidenceDialog.getByRole("button", { name: "Nota", exact: true }).click();
   await secondaryEvidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recogida secundaria confirmada");
   const secondaryEvidence = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/2/evidence`) && response.request().method() === "POST",

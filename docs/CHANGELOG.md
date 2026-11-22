@@ -1,3 +1,11 @@
+## 2026-11-22 — Constructor de rutas sin ubicaciones ficticias
+
+- El constructor no asigna coordenadas de Quito al escribir el nombre de un origen/destino; mantiene ubicación pendiente hasta selección real y bloquea avanzar sin coordenadas válidas.
+- La lista de rutas informa error y reintento cuando falla la carga de opciones de asignación; IDs cuyo nombre no está disponible ya no se anuncian como ausencia de asignación.
+- Se corrigió la promesa de disponibilidad en la confirmación de cancelación.
+- E2E cubre coordenadas pendientes, recuperación de etiquetas y edición Driver persistida a 768 px. Dos selectores E2E fallidos en Action `45050067540` se corrigieron; causa en `ERROR_LOG.md`.
+- Validación local: lint/build, discovery **31**, estados de carga/error **9/9**. Action integrada de este lote pendiente.
+
 ## 2026-11-22 — Fix de Historial para Logistics y cobertura de contraseña
 
 - Historial muestra vehículo desde el DTO de ruta, sin depender del endpoint `/Vehicles` reservado a roles administrativos.

@@ -332,6 +332,84 @@ test("Gestión de Rutas muestra carga antes de error/vacío y recupera rutas al 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("Gestión de Rutas distingue asignaciones no cargadas y permite recuperar etiquetas", async ({ page }) => {
+  let assignmentOptionsFail = true;
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "routes-assignment-error-admin", email: "admin@example.test", username: "admin@example.test", firstName: "Admin", lastName: "QA", roles: ["Admin"], isActive: true }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      if (assignmentOptionsFail) {
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            vehicles: [{ id: "vehicle-route-fixture", plate: "QA-VEH-01", brand: "Fleet QA", model: "Van", year: 2025, status: 1 }],
+            drivers: [{ id: "driver-route-fixture", firstName: "Conductor", lastName: "QA", isActive: true }],
+          }),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{ id: "route-assignment-fixture", name: "QA ruta asignada", vehicleId: "vehicle-route-fixture", driverId: "driver-route-fixture", points: [], status: 0, isActive: true, createdAtUtc: "2026-11-22T12:00:00Z" }]),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({ accessToken: "playwright-test-access-token", refreshToken: "playwright-test-refresh-token" }));
+  });
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+
+  const assignmentAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar todas las opciones de asignación" });
+  await expect(assignmentAlert).toBeVisible();
+  const routeCard = page.locator(".grid > div").filter({ hasText: "QA ruta asignada" });
+  await expect(routeCard).toContainText("No disponible temporalmente");
+  await expect(routeCard).not.toContainText("Sin vehículo asignado");
+  await expect(routeCard).not.toContainText("Sin conductor asignado");
+
+  assignmentOptionsFail = false;
+  const recoveredAssignments = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Routes/assignment-options") &&
+    response.status() === 200,
+  );
+  await assignmentAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredAssignments;
+  await expect(assignmentAlert).toHaveCount(0);
+  await expect(routeCard).toContainText("QA-VEH-01 · Fleet QA Van");
+  await expect(routeCard).toContainText("Conductor QA");
+
+  const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("FleetContext descarta una respuesta pendiente de una cuenta anterior", async ({ page }) => {
   let releaseAccountAVehicles: () => void = () => {};
   let notifyAccountAVehiclesRequest: () => void = () => {};

@@ -1,3 +1,14 @@
+## Session handoff — Constructor de rutas y CRUD Driver responsive — 2026-11-22
+
+- Ramas activas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; no cambios en `main`.
+- Action previa `45050067540`: 28/30 E2E. Selectores de alerta en Mi Ruta y botón “Nota” corregidos; causas/preventivos registrados en `ERROR_LOG.md`.
+- Front en trabajo: retirado `DEFAULT_POINT` de Quito. Escribir origen/destino deja ubicación pendiente y bloquea avance hasta mapa/búsqueda; E2E integrado modificado para probarlo. Error/reintento de assignment-options ahora se informa en la lista y rutas con IDs no se presentan como sin asignar. Confirmación de cancelación ya no promete disponibilidad incompatible con mantenimiento.
+- La prueba Manager/Drivers existente completa alta/edición/asignación/desasignación/baja/reactivación a 320 px; se añadió edición y lectura persistida a 768 px.
+- Local: lint/build pasan; Playwright discovery **31**; `e2e/team-management-load-errors.spec.ts` **9/9**; `git diff --check` por repetir tras doc. Action integrada API/MySQL/Chrome de este lote aún pendiente.
+- Próximo paso: revisar diff/estado, commit y push a la rama Front, observar Action exacta y arreglar cualquier fallo antes de continuar auditoría.
+- Backend `2045b18` con 97/97 xUnit y smoke de fila-lock/driver-rutas; docs commit `280a0c8`. Backend Action `45050058627` pasó; el Front debe integrarse contra backend actual.
+- Objetivo completo sigue abierto: continuar criterios alcanzables CRUD/roles/responsive/seguridad; Admin delegado requiere decisión de política, SMTP vigente e infraestructura/PFX son externas; nativo móvil diferido por el usuario.
+
 ## Session handoff — Mi Ruta y auditoría de sesiones — 2026-11-22
 
 - Front `refactor/route-builder`, backend `chore/stabilize-fleet-platform`; no cambios en main.

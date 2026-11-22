@@ -1,8 +1,9 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `c4c5a10`: Action `45048803279` ejecutó 28 E2E: **26 pasaron, 2 fallaron** por usar selector de hamburger móvil en viewport desktop. El selector quedó corregido con viewport explícito 390×844; hay E2E y fixes nuevos de Mi Ruta aún sin CI. La iteración actual añade 2 E2E más (30 total).
-- Lint y build de los cambios actuales pasan; Playwright discovery lista **30 pruebas**. Pendiente Action integrada que incluya backend actual y pruebas nuevas de logout/offboarding, prioridad Driver, 503/reintento y siguiente parada.
+- Front `52d3e28` + Backend `2045b18`: Action `45050067540` pasó build, auditoría, lint y responsive; Playwright **28/30**. Los dos fallos de selectores quedaron corregidos/documentados en `ERROR_LOG.md`.
+- Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
+- Verificación local actual: lint y build pasan, discovery **31**, suite de carga/error **9/9**. Falta Action API/MySQL/Chrome del commit actual.
 - Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
 
 # Estado actual — 2026-11-22

@@ -1,3 +1,12 @@
+# Actualización 2026-11-22 — constructor, asignaciones y tablet
+
+- `npm run lint`: correcto.
+- `npm run build`: correcto (Next.js 16.4.6, TypeScript y páginas estáticas).
+- `npx playwright test --list`: **31 casos** descubiertos.
+- `npx playwright test e2e/team-management-load-errors.spec.ts`: **9/9**; incluye 503/reintento de assignment-options en Rutas y etiqueta temporal que no se confunde con vehículo/conductor ausente.
+- E2E de API/MySQL: Action `45050067540` pasó **28/30** en el SHA anterior. Sus dos fallos de selector fueron corregidos. Este lote añade puntos de mapa no seleccionados y CRUD Driver en 768 px; resultado integrado pendiente.
+- El primer build del cambio produjo TS18047 por acceso a `point.lat/lng` nullable; se añadió guard explícito `point && validPoint(point)` y el build final pasó. Ver registro y prevención en `ERROR_LOG.md`.
+
 # Validación integrada pendiente — Historial Logistics y cambio de contraseña — 2026-11-22
 
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**21 tests**) y `git diff --check` pasan localmente.

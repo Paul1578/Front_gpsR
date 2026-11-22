@@ -34,11 +34,6 @@ interface RoutesManagementProps {
 type RouteStatus = Route["estado"];
 type Target = { type: "origin" | "stop" | "destination"; index?: number };
 type SearchResult = { lat: number; lon: number; display_name: string };
-const DEFAULT_POINT: PickerPoint = {
-  lat: -0.1807,
-  lng: -78.4678,
-  nombre: "Quito",
-};
 
 const validPoint = (point: PickerPoint | null) =>
   !!point &&
@@ -104,6 +99,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   });
   const hasActiveRouteFilters = routeSearch.trim().length > 0 ||
     statusFilter !== "all" || vehicleFilter !== "all" || driverFilter !== "all";
+  const assignmentOptionsUnavailable = loadErrors.includes("opciones de asignación");
   const clearRouteFilters = () => {
     setRouteSearch("");
     setStatusFilter("all");
@@ -112,15 +108,15 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   };
   const vehicleName = (id: string) => {
     const vehicle = routeAssignmentVehicles.find((item) => item.id === id) ?? vehicles.find((item) => item.id === id);
-    return vehicle
-      ? `${vehicle.placa} · ${vehicle.marca} ${vehicle.modelo}`
-      : "Sin vehículo";
+    if (vehicle) return `${vehicle.placa} · ${vehicle.marca} ${vehicle.modelo}`;
+    if (id && assignmentOptionsUnavailable) return "No disponible temporalmente";
+    return id ? "Vehículo no disponible" : "Sin vehículo asignado";
   };
   const driverName = (id: string) => {
     const driver = routeAssignmentDrivers.find((item) => item.id === id);
-    return driver
-      ? `${driver.firstName} ${driver.lastName}`.trim()
-      : "Sin conductor";
+    if (driver) return `${driver.firstName} ${driver.lastName}`.trim();
+    if (id && assignmentOptionsUnavailable) return "No disponible temporalmente";
+    return id ? "Conductor no disponible" : "Sin conductor asignado";
   };
 
   const setPoint = (target: Target, point: PickerPoint) => {
@@ -377,6 +373,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
         </div>
         <div className="flex-1 overflow-auto p-5 md:p-8">
           {loadErrors.includes("rutas") && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>No se pudieron cargar las rutas. Los datos mostrados pueden estar incompletos.</span><button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button></div>}
+          {assignmentOptionsUnavailable && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><span>No se pudieron cargar todas las opciones de asignación. Algunos nombres pueden aparecer temporalmente incompletos.</span><button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button></div>}
           <div className="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4">
             <label className="text-xs font-medium text-slate-600">Buscar ruta
               <input value={routeSearch} onChange={(event) => setRouteSearch(event.target.value)} placeholder="Nombre de ruta" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -514,7 +511,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
           }
         }}
         title="Cancelar ruta pendiente"
-        description={`¿Confirmas la cancelación de “${cancelConfirmRoute?.nombre ?? "esta ruta"}”? El vehículo y el conductor volverán a estar disponibles.`}
+        description={`¿Confirmas la cancelación de “${cancelConfirmRoute?.nombre ?? "esta ruta"}”? La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.`}
         confirmText="Sí, cancelar ruta"
         cancelText="Seguir con la ruta"
         variant="destructive"
@@ -648,14 +645,14 @@ function RouteBuilder({
                     ...p,
                     origin: p.origin
                       ? { ...p.origin, nombre: value }
-                      : { ...DEFAULT_POINT, nombre: value },
+                      : { lat: Number.NaN, lng: Number.NaN, nombre: value },
                   }));
                 else if (type === "destination")
                   setFormData((p: any) => ({
                     ...p,
                     destination: p.destination
                       ? { ...p.destination, nombre: value }
-                      : { ...DEFAULT_POINT, nombre: value },
+                      : { lat: Number.NaN, lng: Number.NaN, nombre: value },
                   }));
                 else
                   setFormData((p: any) => ({
@@ -675,10 +672,10 @@ function RouteBuilder({
               className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
             />
             <p
-              className={`mt-0.5 truncate text-xs ${point ? "font-medium text-emerald-700" : "text-slate-500"}`}
+              className={`mt-0.5 truncate text-xs ${validPoint(point) ? "font-medium text-emerald-700" : "text-slate-500"}`}
               aria-live="polite"
             >
-              {point
+              {point && validPoint(point)
                 ? `Ubicación fijada · ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`
                 : "Ubicación pendiente"}
             </p>
@@ -863,12 +860,11 @@ function RouteBuilder({
                         stops: [
                           ...p.stops,
                           {
-                            ...DEFAULT_POINT,
-                            lat: NaN,
-                            lng: NaN,
-                            nombre: `Parada ${index + 1}`,
-                            operation: "delivery",
-                            status: "pending",
+                              lat: Number.NaN,
+                              lng: Number.NaN,
+                              nombre: `Parada ${index + 1}`,
+                              operation: "delivery",
+                              status: "pending",
                           },
                         ],
                       }));
