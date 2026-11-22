@@ -292,7 +292,8 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     await page.locator("select").nth(1).selectOption(driverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
-    await expect(page.getByText(/4 puntos/)).toBeVisible();
+    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..");
+    await expect(routeSummary).toContainText("4 puntos");
 
     const createRoutePromise = page.waitForResponse((response) =>
       response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
