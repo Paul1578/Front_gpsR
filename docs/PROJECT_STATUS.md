@@ -1,10 +1,10 @@
 ## Estado actual — 2026-11-22
 
-- Diagnóstico CI: `45082924174` (un worker) observó otra vez SQL `VehicleId=NULL`; lectura backend identificó actualización perdida cuando el PUT de edición Driver guarda un `VehicleId` antiguo. Backend `f8edbcd` publicó fix; xUnit Release **113/113**, Action Backend `45084368819` success; rama runner `387b62f` corrige el fixture UserId y Action `45084501616` sigue en curso.
+- El fix Backend `f8edbcd` pasó xUnit **113/113** y Action `45084368819`; frontend `45084368342` y `45084699175` pasaron **38/39 E2E**: CRUD Driver/asignación, alta de administración de empresa y búsqueda responsive pasaron. El único fallo fue Manager mapa: navegación móvil usada en desktop y fixture Driver compartido; se corrigió localmente con fixtures dedicados/idempotencia.
 - `45083215716` confirmó además dos errores de aserción E2E: documento ausente del DTO User y locator que eligió un nodo responsive oculto. UI omite ID vacío, el test usa username y tarjetas Driver por ID. Nueva validación integrada pendiente.
 - E2E nuevo Manager mapa (`manager-map.spec.ts`) cubre ruta/vehículo reales y viewports desktop/tablet/móvil web; localmente el test omitió por falta de API/credenciales. El run integrado debe confirmar ejecución real.
 - Al revisar el runner se detectó y corrigió que faltaba exportar `FLETFLOW_E2E_DRIVER_USER_ID`; verifica que el Action no marque Manager mapa skipped.
-- Estado de ramas: Front `refactor/route-builder` (`1035ae6` publicado); Backend `chore/stabilize-fleet-platform` (`387b62f` publicado); `main` intacta. Front lint/build/discovery **39** pasan. Action Front `45084368342` sigue en ejecución y se inició antes de publicar el último cambio del runner; repetir tras su conclusión para confirmar Manager mapa sin skipped.
+- Estado de ramas: Front `refactor/route-builder` (`baa0288` remoto + fix Manager local); Backend `chore/stabilize-fleet-platform` (`44d224a` remoto + fixtures Manager locales); `main` intacta. Front lint/build/discovery **39** pasan. Falta publicar el aislamiento Manager y ejecutar una Action Front con `manager-map` verde.
 
 - Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Commit `f07d37d` añade E2E de creación Driver, lecturas persistidas User/Driver y UI/SMTP; lint/build/discovery 38 pasan, Action `45083215716` pendiente.
 

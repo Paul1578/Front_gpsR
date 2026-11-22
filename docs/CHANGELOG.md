@@ -6,6 +6,7 @@
 - Alta Driver desde administración se verifica con User y perfil Driver persistidos; la lista omite `ID:` vacío si el DTO no trae identificación.
 - Búsqueda E2E de choferes usa ID de Driver y `data-testid` por registro; se añade E2E Manager mapa desktop/tablet/móvil web con fixtures API.
 - Validación Front local: lint/build/discovery 39/diff-check pasan. xUnit Release y CI integrada pendientes.
+- Actions `45084368342` y `45084699175` pasaron los otros **38 E2E**, incluidos alta empresa, búsqueda responsive y CRUD/asignación SQL Driver; el test Manager mapa se está aislando de fixture compartido y la navegación responsive.
 
 - Resolución integrada en Action `45076629351` (`2147be7`): **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL correctos. Los fallos 503 de usuarios y flota permanecen independientes hasta sus respectivos reintentos.
 - El panel Driver se prueba sin mutaciones a 320/768 px; los estados de error no se convierten en ceros.

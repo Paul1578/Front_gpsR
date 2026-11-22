@@ -12,6 +12,13 @@
 - La asignación de Driver continuaba siendo flaky en ambas Actions y motivó la corrección backend registrada arriba. Tras cada arreglo se debe correr el suite integrado; no inferir éxito desde estado optimista.
 - Prevención: al verificar campos de usuario respetar el DTO que realmente devuelve la API; en E2E usar el contenedor de la entidad por ID, no texto global duplicable por responsive.
 
+## 2026-11-22 — E2E Manager mapa esperaba menú móvil en desktop y compartía Driver de otros tests — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- Actions `45084368342` y `45084699175` ejecutaron **38/39 E2E**; los demás casos, incluido el CRUD Driver y su asignación SQL, pasaron. Manager mapa agotó 90 s al abrir la navegación como si el viewport desktop fuera móvil. El retry encontró el rol del mismo Driver ya cambiado a Manager y el primer intento había dejado recursos Pending porque expiró antes de cleanup.
+- Corrección: el runner prepara una cuenta Manager dedicada y un Driver de ruta dedicado. El E2E navega directamente por la opción de escritorio, conserva móvil/tablet sólo para aserciones responsive y usa un sufijo estable para limpiar recursos de un retry anterior antes/después del escenario.
+- Se añadió limpieza SQL de la cuenta `fletflow.e2e.manager.map.*`; Driver/Vehicle/Ruta usan los prefijos QA ya cubiertos. `bash -n`, lint/build/discovery 39 y diff-check pasan local; requiere Action autenticada nueva.
+- Prevención: no operar el hamburger mobile-only en desktop; no mutar fixtures de rol compartidos entre tests; timeout nunca debe dejar estado que invalide un retry.
+
 ## 2026-11-22 — Runner E2E no suministraba UserId a Manager mapa — CORREGIDO EN RUNNER
 
 - Al auditar la nueva prueba se detectó que esperaba `FLETFLOW_E2E_DRIVER_USER_ID`, pero `run-e2e-local.sh` sólo exportaba DriverId. Eso habría omitido el test de Manager aunque el suite terminara verde.

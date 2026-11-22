@@ -5,10 +5,9 @@
 - Ramas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; main sin cambios.
 - Actions `45082924174` (1 worker) y `45083215716` reprodujeron asignación inestable: MySQL vio `Drivers.VehicleId=NULL` tras éxito UI. Causa: `UpdateDriverCommand` podía guardar un objeto previo al lock y sobrescribir el VehicleId concurrente. Backend fix `f8edbcd` publicado, regresión interleaving y Release xUnit **113/113**; Action `45084368819` pasó.
 - La Action `45083215716` también mostró que DTO User de `my-team` no incluye documento y la UI generaba `ID:` vacío; UI omite ese campo sin valor, E2E valida username y mantiene prueba Driver API. `team-search` usa testid de tarjeta identificada por API.
-- Se creó `e2e/manager-map.spec.ts` para Manager con API real, ruta/vehículo, selección y desktop/tablet/móvil web. El agente ejecutó lint/build/discovery/diff-check; E2E local quedó skipped por API/fixtures ausentes. Integrar en Action autenticada.
-- Se corrigió el runner backend para exportar `FLETFLOW_E2E_DRIVER_USER_ID`; volver a ejecutar Front Action después del commit runner y confirmar el caso Manager como ejecutado, no skipped.
-- Front `1035ae6` publicado: lint/build/discovery **39 tests** y diff-check pasan. Action `45084368342` está en curso. Backend runner `387b62f` publicó exportación `FLETFLOW_E2E_DRIVER_USER_ID`; después del Action en curso, ejecutar Action Front de nuevo con `gh workflow run ... --ref refactor/route-builder` y confirmar que Manager mapa se ejecuta y pasa.
-- Backend test inicial con `/usr/bin/dotnet` falló porque el host global no tiene runtime; usar `/tmp/fletflow-dotnet/dotnet` para la suite.
+- E2E Manager mapa ya ejecutó en Actions, pero `45084368342` y `45084699175` quedaron 38/39 por el hamburger mobile-only y fixture compartido de rol. Se sustituyeron por Manager y Driver de ruta dedicados, navegación desktop directa y cleanup idempotente por sufijo estable.
+- Front `baa0288` ya incorporó el resto de fixes (asignación SQL, alta Driver, testid de tarjeta y documento opcional); 38 casos pasaron en `45084699175`. El cambio actual Runner/Spec/cleanup tiene lint/build/discovery **39**, `bash -n` y diff-check locales; publicar ambos y repetir Actions.
+- Backend fix `f8edbcd` pasó Release xUnit **113/113**, HTTP/MySQL y concurrencia; runner `387b62f` pasó su Action. `44d224a` registra esos resultados.
 - No marcar misión completa: quedan matriz CRUD/roles/responsive, SMTP productivo externo, móvil nativo pospuesto y decisiones pendientes de Admin delegado/desvincular User↔Driver.
 
 ## Auditoría de Administración de empresa — alta Driver con API/MySQL

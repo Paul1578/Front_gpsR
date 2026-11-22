@@ -7,8 +7,8 @@
 
 - Front local tras los fixes actuales: lint/build correctos, discovery **39 tests**, diff-check correcto. El E2E Manager mapa se descubrió y usa API real; ejecución local se omitió sin API/fixtures QA.
 - Actions `45082924174` y `45083215716` demostraron que un único worker no evita la escritura perdida; ambas llegaron a leer SQL `VehicleId=NULL` tras el éxito visual. Backend `f8edbcd` corrigió el mutador y pasó 113/113 xUnit; Action `45084368819` success.
-- `45083215716` completó 35 E2E, con errores en documento mostrado desde DTO User y localizador de Driver oculto; se corrigió presentación/selector. Nueva ejecución integrada debe comprobar también alta Driver desde Administración de empresa y mapa Manager.
-- El E2E Manager requiere `FLETFLOW_E2E_DRIVER_USER_ID`; runner `387b62f` ya exporta ese ID. Action `45084368342` se inició antes de ese cambio y no prueba el escenario; ejecutar nueva Action tras su conclusión.
+- `45084368342` y `45084699175`: **38/39 E2E**. Pasaron asignación Driver comprobada por SQL, CRUD dedicado, alta de Driver empresa y búsqueda responsive. Manager mapa fue el único fallo: menú mobile-only en desktop y fixture compartido tras retry.
+- Fix local sustituye fixture por Manager/Driver dedicados y hace setup/cleanup idempotentes. Lint/build/discovery **39**, `bash -n` y diff-check pasan; nueva Action debe validar Manager mapa.
 
 ## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente
 
