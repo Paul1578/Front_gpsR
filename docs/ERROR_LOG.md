@@ -1049,3 +1049,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `45038229853` pasó en Front `40bdcea`: lint/build/audit, responsive **1/1**, E2E autenticado Chrome/API/MySQL **23/23**, cleanup success.
 - El caso de error de carga Vehicles a 320 px quedó validado junto con el resto de carga/retry. El run descargó Backend `4090176` (código de seguridad `94c3e90`).
 - Backend commit posterior `b625c28` agregó sólo la prueba directa de key ring; su Actions `45038446662` pasó Release/xUnit **86/86**, HTTP/MySQL, concurrencia y cleanup. Nuevo Front run contra `b625c28` pendiente tras documentar la actualización.
+
+## 2026-11-22 — Gestión de Vehículos + Backend de seguridad actualizado — Actions RESUELTO
+
+- Revalidación cruzada Front Actions `45038687601` pasó con Front `f972e19` y Backend `b625c28`: Release/xUnit **86/86**, audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **23/23** y cleanup.
+- Incluye error/reintento de GET `/Vehicles` a 320 px y el backend con key ring cifrado, test-email restringido y rate limit atómico.

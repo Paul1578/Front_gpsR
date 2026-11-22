@@ -579,3 +579,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `40bdcea` pasó Actions `45038229853`: **23/23** E2E Chrome/API/MySQL, responsive 1/1, audit/lint/build y cleanup; backend checkout `4090176`. Nuevo error/retry de Gestión de Vehículos a 320 px cubierto.
 - Backend `b625c28` pasó Actions `45038446662`: build 0 warnings/0 errors, xUnit **86/86**, aislamiento/roles/flota HTTP/MySQL, smoke concurrente y cleanup. El test nuevo cifra XML key ring y verifica reinicio.
 - Próximo: generar nueva validación Front para que su workflow descargue backend `b625c28`; actualizar docs con SHA/resultados. Después seguir auditoría; no completar misión por pendientes CRUD/responsive y decisión de Admin delegado.
+
+### CI actual Front + Backend
+
+- Front Actions `45038687601` pasó con Front `f972e19`, checkout Backend exacto `b625c28`: build/tests Release, xUnit **86/86**, audit, lint, build, responsive **1/1**, E2E Chrome/API/MySQL **23/23**, cleanup success.
+- Incluye Gestión de Vehículos con error/reintento en viewport 320; backend con rate limit y email diagnóstico endurecidos y test de key ring cifrado/restart.
+- Decisión Admin delegado continúa pendiente; móvil nativo aplazado y SMTP real requiere credenciales. No declarar la misión completa.
