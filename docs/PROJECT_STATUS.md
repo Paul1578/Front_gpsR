@@ -12,6 +12,7 @@ Fecha de actualización: 2026-11-22.
 - En Actions `44992464372`, el timeout acotado identificó un segundo error de test: esperaba el botón móvil Abrir menú a 768 px; el lateral ya está expandido en tablet. Se corrigió navegando directamente por Gestión de Rutas; 15 E2E restantes y cleanup del caso pasaron. Repetición pendiente.
 - Actions `44992803081` llegó al paso de recursos; el vehículo creado por API no estaba en la lista previamente cargada por FleetContext. Se agregó reload antes de abrir el constructor; 15 casos restantes y cleanup pasaron. Revalidación completa pendiente.
 - Actions `44993132771` avanzó hasta revisión; la pantalla no lista el nombre de cada parada y solo muestra cantidad, origen/destino y recursos. La aserción ahora comprueba “3 puntos”; nombre y `PickupAndDelivery` se validarán tras persistencia API. Los otros 15 y cleanup pasaron; repetir CI.
+- Actions `44993456874` ejecutó 16/16 E2E y responsive 1/1, incluida persistencia exacta tablet; falló solo la limpieza SQL porque el prefijo `E2E QA tablet` no coincidía con `E2E QA ruta %`. Se corrigió el prefijo y falta CI confirmatorio de cleanup completo.
 
 ## Ramas
 

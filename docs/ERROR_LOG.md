@@ -576,3 +576,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44993132771` completó los pasos de mapa y asignación, pero falló al buscar el nombre de parada dentro de “Revisa y crea”. El componente de revisión muestra el conteo de puntos, origen/destino y recursos; no lista nombres individuales de paradas en esa etapa.
 - Corrección: comprobar `3 puntos` en la fila Recorrido y mantener la verificación del nombre y `PickupAndDelivery` en el GET de ruta guardada, que sí es la fuente persistida.
 - Los otros 15 E2E y cleanup pasaron. La ruta del test tablet no se guardó; la siguiente ejecución debe verificar creación/persistencia antes de contar el caso.
+
+# 2026-11-22 — Ruta E2E tablet no coincidía con el prefijo de limpieza MySQL — CORREGIDO
+
+- Actions `44993456874` pasó los **16/16 E2E** (incluida creación/persistencia de la parada tablet) y responsive 1/1, pero el runner terminó fallando al limpiar MySQL. La ruta nueva usaba `E2E QA tablet ...`, mientras `scripts/cleanup-e2e.sql` retira rutas únicamente con `Name LIKE 'E2E QA ruta %'`; el SQL de limpieza conservó la ruta y su vehículo en la DB de ese job.
+- Corrección: renombrar el fixture a `E2E QA ruta tablet ...`, para que el cleanup probado incluya esa ruta y elimine en orden Positions→Routes→Vehicles.
+- La base pertenece a un servicio MySQL efímero del workflow y se destruye al terminar el job. Repetir CI para demostrar Playwright 16/16 y cleanup SQL exitoso antes de marcar el lote validado.

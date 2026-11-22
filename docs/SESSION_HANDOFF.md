@@ -15,6 +15,7 @@
 - La repetición `44992464372` precisó el locator: `Abrir menú` sólo aparece en móvil; en 768 px se navega directamente desde el sidebar. Esa selección ya se corrigió. El cleanup del vehículo pasó incluso tras el error UI; volver a ejecutar Actions y validar guardado/cleanup normal.
 - Actions `44992803081` superó ese paso y encontró que el vehículo creado por API no estaba en el snapshot anterior de FleetContext. Se agregó reload tras crearlo; 15 E2E pasaron, cleanup cumplió. Siguiente: repetir Actions y comprobar el GET de ruta, overflow por etapa y cleanup normal.
 - Actions `44993132771` llegó a revisión y reportó que el nombre de parada no forma parte del resumen visible. Se corrigió para validar tres puntos allí y operación/nombres por GET después de crear. Los 15 E2E existentes y el cleanup pasaron; volver a correr para confirmar POST, persistencia exacta y cleanup normal.
+- Actions `44993456874` confirmó E2E 16/16 y responsive 1/1 (ruta tablet creada y persistida), pero falló la limpieza MySQL porque el nombre del fixture no respetaba `E2E QA ruta %`. Nombre corregido; volver a Actions y confirmar que el runner termina sin fixtures residuales.
 - Auditoría independiente de huecos confirma que CRUD básico UI (vehículo, Driver, User y ruta), matriz parcial de roles y mobile responsive ya están cubiertos; siguen pendientes pruebas CRUD negativas, matriz HTTP exhaustiva, más vistas responsive tablet y acceso a rutas por Driver entre alcances.
 
 ## E2E de orden y operación de paradas — 2026-11-22

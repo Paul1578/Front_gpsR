@@ -601,7 +601,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
-  const routeName = `E2E QA tablet ${suffix}`;
+  const routeName = `E2E QA ruta tablet ${suffix}`;
   let vehicleId: string | undefined;
   let routeId: string | undefined;
   const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
