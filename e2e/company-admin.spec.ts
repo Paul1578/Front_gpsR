@@ -72,7 +72,7 @@ test("Administración distingue fallos de carga de una empresa vacía y permite 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeDisabled();
   await expect(page.getByRole("heading", { name: "Resumen de Datos" })).toBeVisible();
-  await expect(page.getByText("—", { exact: true })).toHaveCount(3);
+  await expect(page.getByRole("heading", { name: "Resumen de Datos" }).locator("..").getByText("—", { exact: true })).toHaveCount(3);
 
   shouldFail = false;
   await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();

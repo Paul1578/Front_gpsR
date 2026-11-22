@@ -3,6 +3,7 @@
 - Action `45072706025` sobre `7f4841c` terminó **35/37**. Falló el E2E de Exportar por localizarlo en Resumen y el E2E de Gestión de Equipo porque un error de carga Driver se ocultaba entre solicitudes paralelas. Ambos fallos registrados en `docs/ERROR_LOG.md` y corregidos localmente.
 - E2E corregido: navega a Gestión de Datos, verifica los tres `—`, recupera `/Users/my-team` desde Usuarios y hace un solo reintento conjunto de rutas/vehículos. Gestión de Equipo combina error local con el compartido de FleetContext. El resumen ya no muestra ceros engañosos.
 - Se agregó protección de secuencia para que respuestas tardías de `/Users/my-team` no sobrescriban solicitudes más nuevas; solicitudes pendientes se invalidan al cambiar a rol no administrador.
+- Action `45073324431` en `147ba89` pasó **36/37**: el único error nuevo fue que el `getByText` global encontró siete guiones de toda la página. La aserción ahora cuenta dentro de “Resumen de Datos”; repetir Action.
 - Local: `npm run lint`, `npm run build` correctos; `npm run test:e2e -- --list` descubre 37. Repetir Action integrada con API/MySQL efímeros después de commit/push.
 - Decisiones de producto pendientes del usuario: política para otorgar Admin y si se necesita desvincular User↔Driver reteniendo ambos registros. App nativa pospuesta por usuario.
 

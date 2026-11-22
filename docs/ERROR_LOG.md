@@ -10,6 +10,12 @@
 - Gestión de Equipo combina el resultado local con el error de recurso del contexto. Una respuesta obsoleta no oculta el error de la solicitud actual; al recuperar exitosamente, el contexto limpia el error y se muestra el estado vacío real.
 - Prevención: consumidores con cargas duplicadas deben mostrar el estado del recurso compartido; probar carreras además de respuestas HTTP aisladas.
 
+## 2026-11-22 — Aserción de valores de exportación contaba métricas ajenas — CORREGIDO LOCALMENTE
+
+- Action `45073324431` pasó **36/37**; el único fallo fue esperar exactamente tres guiones buscando en toda la página. El DOM incluye otros indicadores “—” de métricas del resumen, fuera de la tarjeta de exportación.
+- La aserción ahora se limita al contenedor encabezado “Resumen de Datos”, que contiene únicamente los tres conteos de exportación. No se cambió el comportamiento visual.
+- Prevención: acotar aserciones E2E al componente/contenedor cuyo estado se está verificando; datos similares pueden aparecer en widgets vecinos.
+
 ## 2026-11-22 — Administración mostraba cero cuando fallaba la carga y exportaba datos parciales — CORREGIDO LOCALMENTE
 
 - El panel tomaba arreglos vacíos tras fallos de `/Users/my-team`, `/Vehicles` o `/Routes` y los mostraba como cero. La exportación generaba archivo aunque faltaran consultas; al crear usuario tampoco actualizaba la lista visible.

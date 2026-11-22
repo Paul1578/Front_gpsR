@@ -4,6 +4,7 @@
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.
 - La Action `45072706025` del SHA anterior terminó **35/37**; detectó también que Gestión de Equipo podía perder el error de Drivers cuando se solapaban dos cargas. La vista ahora consume el error compartido de FleetContext además del error local.
 - Verificación local: lint y build correctos; discovery Playwright 37. E2E integrado completo pendiente en una Action del parche actual.
+- Action `45073324431` sobre `147ba89` pasó **36/37**; el único fallo fue un conteo global de guiones (siete en toda la página vs. tres en la tarjeta). Locator acotado a “Resumen de Datos”; nueva Action requerida.
 
 # 2026-11-22 — Estados de carga y error en administración de empresa
 
