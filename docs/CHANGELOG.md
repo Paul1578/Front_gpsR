@@ -193,3 +193,7 @@
 
 - La matriz API agrega PUT /Users/{id}/profile a las mutaciones denegadas para User, Driver, Logistics y Manager. Validación integrada pendiente.
 - Actions 45005400590 pasó el commit anterior: build, audit/lint, responsive 1/1 y E2E 18/18 con backend e54d3c8.
+
+## 2026-11-22 — Responsive adicional para dashboard e Historial a 320 px
+
+- El test de navegación ahora cambia de tablet a móvil estrecho, comprueba Dashboard Principal e Historial y verifica ausencia de overflow. Actions `45005853556` pasó en el commit previo con E2E 18/18; esta ampliación se valida en la próxima ejecución.

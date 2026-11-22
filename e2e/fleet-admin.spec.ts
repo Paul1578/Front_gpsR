@@ -144,6 +144,24 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  const assertMobileWidth = async () => {
+    const mobileWidths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(mobileWidths.content).toBeLessThanOrEqual(mobileWidths.viewport);
+  };
+  await assertMobileWidth();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Dashboard Principal", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await assertMobileWidth();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Historial de Rutas", exact: true })).toBeVisible();
+  await assertMobileWidth();
 });
 
 test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ page }) => {

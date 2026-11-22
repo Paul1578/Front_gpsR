@@ -50,6 +50,14 @@
 
 # Session handoff
 
+## Corte más reciente — 2026-11-22
+
+- Front `refactor/route-builder` incluye `fe86bfa`; Back `chore/stabilize-fleet-platform` incluye `4695e79`. Actions frontend `45005853556` pasó: backend tests, audit, lint/build, responsive browser y Playwright API/MySQL **18/18**, cleanup exitoso.
+- E2E añade denegación de edición de perfil para User/Driver/Logistics/Manager y cubre persistencia/sincronización de miembros y Drivers.
+- En trabajo local: extender navegación Dashboard/Historial a viewport 320×844 con control de overflow; lint/build/discovery pasan, falta integrar este cambio con API/MySQL en Actions.
+- Próximo: commit/push de prueba responsive, esperar Actions, incorporar hallazgos del agente de auditoría y seleccionar siguiente brecha CRUD/roles/responsive. La política de promoción de miembros a Admin delegado sigue pendiente de respuesta del usuario.
+- No marcar misión completa: cobertura de CRUD/roles/responsive no exhaustiva; SMTP depende de credenciales externas y móvil nativo está pospuesto.
+
 ## Estado integrado actual — 2026-11-22
 
 - Ramas actuales y limpias antes de este registro: frontend `refactor/route-builder` en `8b59308`; backend `chore/stabilize-fleet-platform` en `029e94d`. No modificar `main`.

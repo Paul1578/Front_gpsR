@@ -1,3 +1,10 @@
+## Edición de miembros y pruebas de roles — 2026-11-22
+
+- Front `fe86bfa` + Back `4695e79`: Actions frontend `45005853556` success; backend Release/xUnit, audit, lint/build, responsive browser y E2E autenticado API/MySQL **18/18**, cleanup correcto.
+- La matriz cubre rechazo de `PUT /Users/{id}/profile` para User, Driver, Logistics y Manager; backend prueba validaciones y límites de tenant/root. Cambios de perfil de miembro regular y Driver persisten y sincronizan.
+- Se añadió al E2E navegación Dashboard e Historial a 320×844 con control de overflow; el caso aún requiere Actions sobre el nuevo commit.
+- Auditoría continúa abierta: faltan más operaciones CRUD, matriz de privilegios Admin y pruebas responsive de las vistas restantes. SMTP necesita configuración externa; móvil nativo pospuesto.
+
 ## Actualización — edición de miembros — 2026-11-22
 
 Gestión de Equipo permite editar nombres, apellidos y username con backend real; email no editable. Backfill de usuarios Driver existentes y sincronización bilateral User/Driver implementados. Lint/build pasan. Spec de error de carga 2/2 y Playwright integrado 18/18 en Chrome/API/MySQL efímero; runner finalizó código 0. Auditoría integral sigue abierta.

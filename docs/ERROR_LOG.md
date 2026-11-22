@@ -758,3 +758,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La primera llamada a request_user_input_async incluyó question; esta interfaz sólo acepta title y options, así que rechazó la solicitud antes de mostrarla.
 - Se reintentó con el esquema válido; la respuesta sobre el alcance del rol Admin sigue pendiente.
 - Prevención: confirmar el esquema de herramienta activo antes de construir la pregunta.
+
+## 2026-11-22 — Parche responsive insertado inicialmente en el test equivocado — CORREGIDO
+
+- Al ampliar dashboard/Historial a 320 px, un parche basado sólo en un bloque común de medición de ancho se insertó primero en el test de login.
+- Se detectó revisando el contexto y los nombres de test antes de ejecutar Playwright; el bloque se movió al test de navegación de dashboard/rutas. No se ejecutó ni integró el estado incorrecto.
+- Prevención: anclar parches al nombre del caso y al heading cercano, no a bloques genéricos repetidos.
