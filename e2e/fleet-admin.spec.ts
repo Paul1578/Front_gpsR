@@ -1917,11 +1917,11 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Gestión de Rutas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Información de la ruta" })).toBeVisible();
     await page.getByRole("button", { name: "Cancelar creación" }).click();
-    await expect(page.getByRole("heading", { name: "Gestión de Rutas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
   } finally {
     await setRole("Driver");
   }
