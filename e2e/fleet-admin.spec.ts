@@ -703,7 +703,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
     response.request().method() === "PUT",
   );
   await stopCard.getByRole("button", { name: "Marcar completada" }).click();
-  expect((await completeStopPromise).status()).toBe(204);
+  expect((await completeStopPromise).status()).toBe(200);
   await expect(stopCard).toContainText("Completada");
   await expect(stopCard).toContainText("Recibido por cliente E2E");
 

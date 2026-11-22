@@ -98,3 +98,5 @@
 - Se corrigió E2E Driver: aserción del endpoint de parada alineada a HTTP 200 y cleanup garantizado si falla el flujo; repetir CI antes de validar.
 
 - Dialogs ahora se muestran por encima de controles Leaflet; el E2E Driver verificará evidencia sobre mapa y limpia de forma explícita la ruta temporal.
+
+- Ajustada segunda aserción del E2E Driver al HTTP 200 del endpoint de estado de paradas.
