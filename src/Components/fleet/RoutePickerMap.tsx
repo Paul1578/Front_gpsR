@@ -1,12 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useRef, type MutableRefObject } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject } from "react";
 import {
   CircleMarker,
   MapContainer,
   Marker,
   Polyline,
   TileLayer,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import type { LatLngExpression, Map as LeafletMap } from "leaflet";
@@ -57,17 +58,46 @@ function MapViewport({
       const map = mapRef.current;
       if (!map) return;
       map.invalidateSize();
-      if (points.length === 1) map.setView([points[0].lat, points[0].lng], 13);
+      map.stop();
+      if (points.length === 1)
+        map.setView([points[0].lat, points[0].lng], 13, { animate: false });
       if (points.length > 1) {
         const bounds = points.map(
           (point) => [point.lat, point.lng] as [number, number],
         );
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        map.fitBounds(bounds, {
+          padding: [40, 40],
+          maxZoom: 14,
+          animate: false,
+        });
       }
     }, 80);
     return () => window.clearTimeout(timer);
   }, [isOpen, mapRef, points]);
 
+  return null;
+}
+
+function MapClickHandler({
+  activeTarget,
+  onMapClick,
+}: Pick<RoutePickerMapProps, "activeTarget" | "onMapClick">) {
+  const activeTargetRef = useRef(activeTarget);
+  const onMapClickRef = useRef(onMapClick);
+  useLayoutEffect(() => {
+    activeTargetRef.current = activeTarget;
+    onMapClickRef.current = onMapClick;
+  }, [activeTarget, onMapClick]);
+  const handlers = useMemo(() => ({
+    click: (event: { latlng: { lat: number; lng: number } }) => {
+      if (activeTargetRef.current)
+        onMapClickRef.current({
+          lat: event.latlng.lat,
+          lng: event.latlng.lng,
+        });
+    },
+  }), []);
+  useMapEvents(handlers);
   return null;
 }
 
@@ -87,19 +117,6 @@ export default function RoutePickerMap({
     ? [planned[0].lat, planned[0].lng]
     : [-0.1807, -78.4678];
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const handleClick = (event: { latlng: { lat: number; lng: number } }) => {
-      if (activeTarget)
-        onMapClick({ lat: event.latlng.lat, lng: event.latlng.lng });
-    };
-    map.on("click", handleClick);
-    return () => {
-      map.off("click", handleClick);
-    };
-  }, [activeTarget, onMapClick]);
-
   return (
     <MapContainer
       ref={mapRef}
@@ -112,6 +129,7 @@ export default function RoutePickerMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution="&copy; OpenStreetMap contributors"
       />
+      <MapClickHandler activeTarget={activeTarget} onMapClick={onMapClick} />
       <MapViewport points={planned} isOpen={isOpen} mapRef={mapRef} />
 
       {origin && isValidPoint(origin) && (

@@ -17,10 +17,11 @@ declare module "leaflet" {
     on(event: "click" | "dragstart" | "zoomstart", handler: (event: LeafletMouseEvent) => void): this;
     off(event: "click" | "dragstart" | "zoomstart", handler: (event: LeafletMouseEvent) => void): this;
     invalidateSize(): this;
-    setView(center: LatLngExpression, zoom?: number): this;
+    stop(): this;
+    setView(center: LatLngExpression, zoom?: number, options?: { animate?: boolean }): this;
     fitBounds(
       bounds: LatLngBounds | Array<[number, number]>,
-      options?: { padding?: [number, number]; maxZoom?: number },
+      options?: { padding?: [number, number]; maxZoom?: number; animate?: boolean },
     ): this;
   }
 
@@ -72,6 +73,10 @@ declare module "react-leaflet" {
     ref?: Ref<LeafletMap>;
     children?: ReactNode;
   }
+
+  export function useMapEvents(handlers: {
+    click?: (event: import("leaflet").LeafletMouseEvent) => void;
+  }): LeafletMap;
 
   export interface TileLayerProps {
     url: string;

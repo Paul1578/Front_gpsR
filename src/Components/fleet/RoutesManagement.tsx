@@ -567,6 +567,7 @@ function RouteBuilder({
     };
     return (
       <div
+        data-testid={`${type}-point-${index ?? 0}`}
         className={`rounded-xl border p-3 ${selected ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white"}`}
       >
         <div className="flex flex-wrap items-center gap-3">
@@ -615,9 +616,12 @@ function RouteBuilder({
               }
               className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
             />
-            <p className="mt-0.5 truncate text-xs text-slate-500">
+            <p
+              className={`mt-0.5 truncate text-xs ${point ? "font-medium text-emerald-700" : "text-slate-500"}`}
+              aria-live="polite"
+            >
               {point
-                ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`
+                ? `Ubicación fijada · ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`
                 : "Ubicación pendiente"}
             </p>
           </div>

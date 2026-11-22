@@ -123,3 +123,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - La primera preparación omitió exportar `MYSQL_PWD` y abortó antes de crear el esquema; se corrigió exportando el secreto local, sin cambios en datos. Tras la prueba, la API local se reinició explícitamente y Swagger responde.
 - Pendiente: ejecutar ambos workflows remotos después de publicar las ramas/PR; cerrar cobertura visual de vistas/acciones aún no cubiertas y SMTP externo.
 - Las ramas ya se publicaron y existen PRs borrador frontend #2 y backend #5. El backend Actions pasó; el primer frontend Actions falló sólo en el precheck de Next antes de crear fixtures. Se corrigió y actualizó runtime de actions; revisar la siguiente ejecución.
+
+## E2E móvil de constructor corregido — 2026-11-21
+
+- El test calculaba clics antes de desplazar el mapa a una posición visible y la aserción apuntaba a un padre DOM que no contenía coordenadas; `NaN, NaN` quedaba como falso positivo.
+- La prueba hace scroll del mapa, elige un espacio libre de marcadores y valida cada tarjeta por `data-testid`, rechazando ubicación pendiente y `NaN`. Leaflet cancela el movimiento anterior y recentra sin animación; el handler conserva refs actuales con `useLayoutEffect`.
+- Frontend `npm run lint && npm run build`: correcto. E2E autenticado Chrome/API/MySQL local en bases efímeras `fletflow_ci_validation_06` y `fletflow_ci_validation_07`: **8/8** en la repetición final; la base fue descartada por cleanup.
+- Los fallos de preparación de esta sesión (ruta DLL, URL de API, servidor web, tipos Leaflet y aserción) constan en `docs/ERROR_LOG.md` con sus soluciones.
+- Siguiente: revisar diff/audit, publicar el commit en `refactor/route-builder`, comprobar Actions frontend/backend y continuar CRUD/roles/responsive aún no cubiertos. No cerrar la misión.

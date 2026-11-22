@@ -424,3 +424,15 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se cambió el precheck: API obligatoria siempre; URL frontend obligatoria sólo en ejecución local. En CI se deja que Playwright inicie Next.
 - GitHub Actions también avisó que checkout/setup-dotnet/setup-node usaban runtime Node 20. Se actualizaron a checkout v7, setup-dotnet v6 y setup-node v7 (runtime Node 24).
 - Pendiente repetir el workflow remoto para comprobar el arreglo.
+
+## 2026-11-21 — E2E móvil del mapa aceptaba una parada sin coordenadas — CORREGIDO
+
+- El escenario esperaba cuatro puntos, pero llegaba al resumen con tres. La aserción usaba el padre DOM incorrecto, así que no detectaba `NaN, NaN` en la fila de una parada.
+- Solución: cada tarjeta tiene `data-testid`; la prueba desplaza el mapa a la vista antes de calcular el clic, evita marcadores y rechaza coordenadas pendientes o `NaN`. Leaflet cancela movimientos previos y recentra sin animación; el handler conserva el target actual durante los renders.
+- Verificación: Chrome/API/MySQL autenticado, bases descartables `fletflow_ci_validation_06` y `fletflow_ci_validation_07`: **8/8** en ambas ejecuciones; los cuatro puntos y operaciones se persistieron y cleanup eliminó la base.
+
+## 2026-11-21 — Preparación local de E2E usó rutas y contratos incorrectos — CORREGIDO
+
+- Se apuntó al directorio incorrecto del DLL; corregido a `Back_GPS/bin/Release/net8.0`. El runner sólo acepta `FLETFLOW_API_URL` sin `/api`; se configuró `http://127.0.0.1:5048`. Para que Playwright iniciara Next como en CI se usó `CI=true`.
+- Cambios intermedios del API de mapa dejaron un build inválido por tipos Leaflet incompletos y un lint por mutar refs durante render. Se completaron los tipos locales y la actualización de refs pasó a `useLayoutEffect`; lint/build quedaron limpios.
+- Los intentos usaron exclusivamente las bases `fletflow_ci_validation_06` y `fletflow_ci_validation_07`, eliminadas por `trap`; no se alteró la base local normal.

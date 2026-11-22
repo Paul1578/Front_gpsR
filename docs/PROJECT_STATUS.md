@@ -82,3 +82,9 @@ Fecha de actualización: 2026-11-21.
 - Frontend: workflow ahora clona la rama backend de estabilización, levanta MySQL/API aislados y corre los ocho escenarios Playwright autenticados, además de lint/build/audit. La ejecución local de ese runner pasó 8/8; falta publicar ramas y comprobar Actions.
 - SMTP requiere credenciales vigentes del entorno. App nativa móvil pospuesta por el usuario; web responsive continúa en alcance.
 - PRs borrador publicados: frontend #2, backend #5. Backend Actions pasó; primer frontend run reveló precheck de Next prematuro y actions con runtime Node 20 deprecado; correcciones ya empujadas están pendientes de nueva ejecución.
+
+## Actualización CI y mapa — 2026-11-21
+
+- Playwright autenticado local Chrome/API/MySQL volvió a pasar **8/8** en una base efímera; el cleanup eliminó el esquema. El caso móvil valida origen, dos paradas y destino, incluyendo recogida y recogida+entrega.
+- Se corrigió la falsa seguridad de la aserción de coordenadas y se estabilizó el encuadre del mapa durante las selecciones. Lint y build de producción pasan.
+- Pendiente: publicar los cambios para que Actions repita el frontend; ampliar pruebas visuales de CRUD, roles y vistas responsive no cubiertas. SMTP requiere credenciales externas vigentes. App nativa móvil pospuesta por decisión del usuario.

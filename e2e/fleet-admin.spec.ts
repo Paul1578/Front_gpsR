@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -8,6 +8,43 @@ const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
+
+async function clickMapAwayFromMarkers(map: Locator) {
+  await map.scrollIntoViewIfNeeded();
+  const bounds = await map.boundingBox();
+  if (!bounds) throw new Error("El mapa de selección no tiene dimensiones visibles.");
+
+  const markerCenters = await map.locator(".leaflet-marker-icon").evaluateAll((markers) => {
+    const mapElement = markers[0]?.closest(".leaflet-container");
+    if (!mapElement) return [];
+    const mapRect = mapElement.getBoundingClientRect();
+    return markers.map((marker) => {
+      const rect = marker.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - mapRect.left,
+        y: rect.top + rect.height / 2 - mapRect.top,
+      };
+    });
+  });
+  const candidates = [0.18, 0.32, 0.5, 0.68, 0.82].flatMap((x) =>
+    [0.32, 0.46, 0.6, 0.74].map((y) => ({
+      x: bounds.width * x,
+      y: bounds.height * y,
+    })),
+  );
+  const safeSpot = candidates
+    .map((candidate) => ({
+      ...candidate,
+      clearance: markerCenters.length
+        ? Math.min(...markerCenters.map((marker) => Math.hypot(candidate.x - marker.x, candidate.y - marker.y)))
+        : Number.POSITIVE_INFINITY,
+    }))
+    .sort((left, right) => right.clearance - left.clearance)
+    .find((candidate) => candidate.clearance > 36);
+
+  if (!safeSpot) throw new Error("No se encontró un área libre de marcadores para seleccionar el punto.");
+  await map.click({ position: { x: safeSpot.x, y: safeSpot.y } });
+}
 
 test("formulario de inicio de sesión se adapta a móvil sin desbordarse", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -270,21 +307,32 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
 
     const map = page.locator(".leaflet-container");
-    await map.click({ position: { x: 90, y: 120 } });
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
     const origin = page.getByPlaceholder("¿Desde dónde sale?");
+    await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
     await origin.fill("Origen E2E desde mapa");
     await page.getByRole("button", { name: "Agregar parada" }).click();
-    await map.click({ position: { x: 180, y: 170 } });
-    await page.getByPlaceholder("Parada 1").fill("Recogida E2E");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    const stopOne = page.getByPlaceholder("Parada 1");
+    await expect(page.getByTestId("stop-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await stopOne.fill("Recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("pickup");
     await page.getByRole("button", { name: "Agregar parada" }).click();
-    await map.click({ position: { x: 260, y: 230 } });
-    await page.getByPlaceholder("Parada 2").fill("Entrega y recogida E2E");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    const stopTwo = page.getByPlaceholder("Parada 2");
+    await expect(page.getByTestId("stop-point-1")).not.toContainText(/Ubicación pendiente|NaN/);
+    await stopTwo.fill("Entrega y recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
     const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
     await destinationRow.getByRole("button", { name: "Ubicar" }).click();
-    await map.click({ position: { x: 310, y: 300 } });
-    await page.getByPlaceholder("¿A dónde llega?").fill("Destino E2E desde mapa");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await destination.fill("Destino E2E desde mapa");
 
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
@@ -292,7 +340,7 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     await page.locator("select").nth(1).selectOption(driverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
-    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..");
+    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..", { has: page.getByText(/puntos ·/) });
     await expect(routeSummary).toContainText("4 puntos");
 
     const createRoutePromise = page.waitForResponse((response) =>
