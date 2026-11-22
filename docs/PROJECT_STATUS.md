@@ -1,5 +1,10 @@
 ## Actualización — 2026-11-22
 
+- Actions `45001695962` success para Front `1c108cc` + Backend `923072b`: responsive E2E CRUD vehículo a 320 y 768 px, Playwright API/MySQL y cleanup.
+- Está en curso ampliar el E2E de Driver para ruta de otro conductor (todas las acciones operativas) y perfil operativo inactivo; backend corregido en `2fdc9e0`. Lint/build/discovery local pasan; Actions integrada pendiente.
+
+## Actualización — 2026-11-22
+
 - Responsive E2E CRUD Vehicle ampliado: viewport estrecho 320×844 y tablet 768×1024, chequeo de overflow y límites del modal. Lint/build/discovery 18 tests pasan localmente; integración UI/API/MySQL pendiente de Actions.
 - Alta Driver concurrente: smoke adaptado al status actual 200/409 y conserva verificación SQL de una sola cuenta/conductor/token. Backend Release 61/61 y shell syntax/diff-check pasan; Actions `45001599626` en ejecución al actualizar este documento.
 - Siguen pendientes cobertura progresiva de los CRUD, matriz de roles y responsive; no declarar auditoría completa. SMTP real externo, app nativa pospuesta y decisiones de despliegue permanecen fuera de alcance técnico local.

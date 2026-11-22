@@ -1377,8 +1377,12 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   const adminToken = await adminLogin.json();
   const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
   const plate = `E2EQA${suffix}`;
+  const foreignPlate = `E2EQA${suffix.slice(-5)}F`;
   let vehicleId: string | undefined;
+  let foreignVehicleId: string | undefined;
+  let foreignDriverId: string | undefined;
   let routeId: string | undefined;
+  let foreignRouteId: string | undefined;
   let originalDriverVehicleId: string | null = null;
   const routeName = `E2E QA ruta conductor ${suffix}`;
 
@@ -1502,12 +1506,117 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect(persistedVehicle.status()).toBe(200);
   expect((await persistedVehicle.json()).status).toBe(0);
 
+  const deactivateDriver = await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+    headers: adminHeaders,
+    data: { isActive: false },
+  });
+  expect(deactivateDriver.status()).toBe(204);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers })).status()).toBe(403);
+  expect((await page.request.post(`/api/backend/Routes/${routeId}/positions`, {
+    headers,
+    data: { latitude: -0.185, longitude: -78.465 },
+  })).status()).toBe(403);
+  const reactivateDriver = await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+    headers: adminHeaders,
+    data: { isActive: true },
+  });
+  expect(reactivateDriver.status()).toBe(204);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers })).status()).toBe(200);
+
+  const foreignVehicleResponse = await request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate: foreignPlate, brand: "FleetFlow QA", model: "Foreign driver route", year: 2025 },
+  });
+  expect(foreignVehicleResponse.status()).toBe(201);
+  foreignVehicleId = (await foreignVehicleResponse.json()).id as string;
+  const foreignDriverResponse = await request.post("/api/backend/Drivers", {
+    headers: adminHeaders,
+    data: { firstName: "Foreign", lastName: "Driver QA", documentNumber: `E2EQA${suffix}`, phoneNumber: "0990000002" },
+  });
+  expect(foreignDriverResponse.status()).toBe(201);
+  foreignDriverId = (await foreignDriverResponse.json()).id as string;
+  const foreignRouteResponse = await request.post("/api/backend/Routes", {
+    headers: adminHeaders,
+    data: {
+      name: `E2E QA ruta conductor ajeno ${suffix}`,
+      cargoDescription: "Aislamiento Driver",
+      vehicleId: foreignVehicleId,
+      driverId: foreignDriverId,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen ajeno", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Parada ajena", operation: 3 },
+        { lat: -0.2, lng: -78.48, name: "Destino ajeno", operation: 0 },
+      ],
+    },
+  });
+  expect(foreignRouteResponse.status()).toBe(201);
+  foreignRouteId = (await foreignRouteResponse.json()).id as string;
+
+  const driverForeignRoute = await page.request.get(`/api/backend/Routes/${foreignRouteId}`, { headers });
+  expect(driverForeignRoute.status()).toBe(403);
+  const driverRouteList = await page.request.get(`/api/backend/Routes?vehicleId=${foreignVehicleId}`, { headers });
+  expect(driverRouteList.status()).toBe(200);
+  expect(await driverRouteList.json()).toEqual([]);
+  expect((await page.request.put(`/api/backend/Routes/${foreignRouteId}/status`, {
+    headers,
+    data: { status: 3 },
+  })).status()).toBe(404);
+  expect((await page.request.put(`/api/backend/Routes/${foreignRouteId}/points/1/status`, {
+    headers,
+    data: { status: 1 },
+  })).status()).toBe(404);
+  expect((await page.request.post(`/api/backend/Routes/${foreignRouteId}/points/1/evidence`, {
+    headers,
+    data: { type: "note", content: "No autorizado", description: "Prueba negativa" },
+  })).status()).toBe(404);
+  expect((await page.request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers })).status()).toBe(403);
+  expect((await page.request.post(`/api/backend/Routes/${foreignRouteId}/positions`, {
+    headers,
+    data: { latitude: -0.185, longitude: -78.465 },
+  })).status()).toBe(403);
+  const unchangedForeignRoute = await request.get(`/api/backend/Routes/${foreignRouteId}`, { headers: adminHeaders });
+  expect(unchangedForeignRoute.status()).toBe(200);
+  const unchangedForeignRouteBody = await unchangedForeignRoute.json();
+  expect(unchangedForeignRouteBody.status).toBe(0);
+  expect(unchangedForeignRouteBody.points[1].status).toBe(0);
+  expect(unchangedForeignRouteBody.points[1].evidence).toEqual([]);
+  expect((await request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers: adminHeaders })).status()).toBe(200);
+  expect(await (await request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers: adminHeaders })).json()).toEqual([]);
+
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
+    await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+      headers: adminHeaders,
+      data: { isActive: true },
+    }).catch(() => undefined);
+    if (foreignRouteId) {
+      const removeForeignRoute = await request.delete(`/api/backend/Routes/${foreignRouteId}`, { headers: adminHeaders }).catch(() => null);
+      if (removeForeignRoute && ![204, 404].includes(removeForeignRoute.status())) {
+        throw new Error(`No se pudo limpiar la ruta ajena: HTTP ${removeForeignRoute.status()}`);
+      }
+    }
+    if (foreignDriverId) {
+      const unassignForeignDriver = await request.put(`/api/backend/Drivers/${foreignDriverId}/unassign-vehicle`, {
+        headers: adminHeaders,
+      }).catch(() => null);
+      if (unassignForeignDriver && ![204, 404].includes(unassignForeignDriver.status())) {
+        throw new Error(`No se pudo liberar la asignación del Driver ajeno: HTTP ${unassignForeignDriver.status()}`);
+      }
+      await request.put(`/api/backend/Drivers/${foreignDriverId}/status`, {
+        headers: adminHeaders,
+        data: { isActive: false },
+      }).catch(() => undefined);
+    }
+    if (foreignVehicleId) {
+      const removeForeignVehicle = await request.delete(`/api/backend/Vehicles/${foreignVehicleId}`, { headers: adminHeaders }).catch(() => null);
+      if (removeForeignVehicle && ![204, 404].includes(removeForeignVehicle.status())) {
+        throw new Error(`No se pudo limpiar el vehículo ajeno: HTTP ${removeForeignVehicle.status()}`);
+      }
+    }
     if (routeId) {
     const cleanupRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
     if (cleanupRoute.ok()) {

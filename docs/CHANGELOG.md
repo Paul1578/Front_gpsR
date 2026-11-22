@@ -1,3 +1,7 @@
+## 2026-11-22 — Matriz de autorización Driver en E2E
+
+- E2E ahora intenta desde Driver las operaciones de ruta, paradas, evidencia y GPS de un recurso asignado a otro conductor, compara persistencia para confirmar ausencia de mutación, y verifica bloqueo GPS con perfil desactivado. Lint/build y discovery 18 correctos; E2E real pendiente de Actions.
+
 ## 2026-11-22 — Responsive CRUD de vehículos
 
 - E2E Admin amplía el ciclo de vehículo a 320×844 y 768×1024, incluyendo assert de overflow y encaje de diálogos. El CRUD sigue validando persistencia vía API. Lint/build/discovery 18 correctos localmente; Actions end-to-end pendiente.

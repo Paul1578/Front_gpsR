@@ -1,3 +1,10 @@
+## Autorización de Driver y responsive de vehículos — 2026-11-22
+
+- Actions `45001695962` pasó para Front `1c108cc` + Backend `923072b`: audit, lint/build, responsive browser, suite autenticada y cleanup en MySQL; el ciclo CRUD del vehículo comprobó 320×844 y 768×1024.
+- Se extendió ahora el E2E Driver: denegación de lista/detalle/estado/paradas/evidencia/GPS para ruta de otro Driver; verifica estado/evidencia/GPS sin mutaciones y desactiva/reactiva el perfil Driver con JWT vigente para comprobar bloqueo GPS. Backend fix correspondiente está en `2fdc9e0`; integración de esta ampliación pendiente de Actions.
+- El test crea recursos etiquetados `E2EQA`/`E2E QA ruta` que el runner de CI elimina en su cleanup SQL. El perfil Driver original se reactiva en `finally`, incluso si falla una aserción.
+- Local tras agregar la matriz: lint/build, discovery de 18 pruebas y diff-check pasaron. Falta Actions para validar HTTP real y limpieza.
+
 ## Validación responsive CRUD de vehículos — 2026-11-22
 
 - El E2E Admin de vehículos ahora prueba el CRUD en 320×844 y 768×1024, mide overflow horizontal y confirma que los diálogos de alta/estado caben dentro del viewport. El ciclo de negocio mantiene alta, placa duplicada, edición, mantenimiento/disponible, baja y reactivación reales por UI/API.

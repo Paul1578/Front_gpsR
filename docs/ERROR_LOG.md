@@ -1,3 +1,10 @@
+# 2026-11-22 — Lectura de archivos E2E desde el repositorio equivocado — CORREGIDO
+
+- Síntoma: dos comandos de inspección buscaron `e2e/fleet-admin.spec.ts`/runner en el repositorio Backend; devolvieron “No such file” o `rg` IO error.
+- Causa: se ejecutó el comando con el cwd del otro repositorio, confundiendo paths hermanos Front/Back.
+- Solución: localizar el archivo con `rg --files` desde cada raíz y repetir la lectura en `/home/leonardo/Front_gpsR` o `/home/leonardo/Back_GPS` según corresponda.
+- Prevención: especificar `workdir` correcto al leer recursos hermanos; verificar `pwd`/`rg --files` antes de consultas dependientes del cwd.
+
 # Registro de errores y decisiones
 
 ## 2026-11-21 — Playwright autenticado local omitido por falta de entorno QA
