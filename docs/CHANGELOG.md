@@ -1,3 +1,7 @@
+## 2026-11-22 — Contrato Driver con usuario opcional
+
+- Los tipos Front reflejan `UserId` opcional/null como admite backend, y el listado mantiene fallback accesible. Lint/build pasan; integración final pendiente.
+
 ## 2026-11-22 — Render seguro de Drivers no vinculados a User
 
 - Gestión de Equipo muestra fallback cuando un Driver no tiene `UserId`, sin bloquear el listado completo. E2E de regresión añadido; CI pendiente.

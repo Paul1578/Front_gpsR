@@ -99,7 +99,7 @@ export interface Driver {
   phoneNumber: string;
   isActive?: boolean;
   vehicleId?: string;
-  userId: string;
+  userId?: string | null;
 }
 
 interface FleetContextType {
@@ -237,7 +237,7 @@ type ApiDriver = {
   phoneNumber: string;
   isActive?: boolean;
   vehicleId?: string;
-  userId: string;
+  userId?: string | null;
 };
 
 type ActionResult = { ok: boolean; message?: string };

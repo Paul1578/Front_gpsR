@@ -1,3 +1,7 @@
+## Contrato nullable de Driver — 2026-11-22
+
+- Además del fallback visual, el frontend ahora tipa `userId` como opcional y nullable en `Driver` y `ApiDriver`, en concordancia con el backend. Lint/build locales pasan; Actions `45002920723` está validando el fix de UI anterior y no contiene el ajuste de tipos. Se disparará nueva validación tras este commit.
+
 ## Fix de render para Drivers sin usuario vinculado — 2026-11-22
 
 - Las Actions `45002306327`, `45002396041` y `45002610099` detectaron que mostrar bajas tras crear el Driver de prueba no encontraba el registro. Causa confirmada: `TeamManagement` ejecutaba `.slice` sobre `driver.userId` nullable y rompía el render al listar un Driver creado sin cuenta asociada.
