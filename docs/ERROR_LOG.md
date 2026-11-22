@@ -514,6 +514,12 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El contrato backend actualmente expone Admin, Driver, Manager, User y Logistics; no hay rol SystemAdmin/SuperAdmin ni permisos de plataforma globales. La interfaz no puede validar de forma real ese escenario y no debe elevar Admin ni inventar un rol.
 - Hace falta definir si se requiere administración global multiempresa y diseñar ese rol y sus controles en backend antes de añadir una prueba de autorización Super Admin. Los roles existentes sí se prueban en los recorridos cubiertos.
 
+## 2026-11-22 — E2E de Dashboard sin fixture `request` — CORREGIDO
+
+- El build de producción detectó TS2552: la nueva comprobación de KPIs consultaba Routes/Vehicles por API, pero el test sólo recibía `page`.
+- Solución: inyectar el fixture `request` de Playwright en la firma del test. Después pasan lint, build, discovery (18) y `git diff --check`.
+- Prevención: al ampliar un test para API, declarar explícitamente los fixtures usados en el callback.
+
 ## 2026-11-21 — Alta de usuario convertía cualquier fallo en “usuario duplicado” — CORREGIDO
 
 - `createUser` devolvía sólo `ok=false`, y Gestión de Equipo mostraba “El nombre de usuario ya existe” aunque la API respondiera otro error. Se propaga el mensaje de servidor como parte del resultado y cada formulario lo muestra con un fallback genérico.

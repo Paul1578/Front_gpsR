@@ -136,7 +136,7 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
-test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ page }) => {
+test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ page, request }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin.");
 
   await page.setViewportSize({ width: 768, height: 1024 });
@@ -145,6 +145,46 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText("Rutas Activas", { exact: true })).toBeVisible();
+
+  const dashboardToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(dashboardToken).toBeTruthy();
+  const dashboardHeaders = { Authorization: `Bearer ${dashboardToken}` };
+  const [routesResponse, vehiclesResponse] = await Promise.all([
+    request.get("/api/backend/Routes", { headers: dashboardHeaders }),
+    request.get("/api/backend/Vehicles", { headers: dashboardHeaders }),
+  ]);
+  expect(routesResponse.status()).toBe(200);
+  expect(vehiclesResponse.status()).toBe(200);
+  const apiRoutes = await routesResponse.json() as { status: string | number; isActive?: boolean }[];
+  const apiVehicles = await vehiclesResponse.json() as { status: string | number; isActive?: boolean }[];
+  const routeState = (status: string | number) => {
+    const value = String(status).toLowerCase();
+    if (value === "1" || value.includes("progress")) return "in_progress";
+    if (value === "2" || value.includes("complet")) return "completed";
+    if (value === "3" || value.includes("cancel")) return "cancelled";
+    return "pending";
+  };
+  const vehicleState = (status: string | number) => {
+    const value = String(status).toLowerCase();
+    if (value === "1" || value.includes("route")) return "in_route";
+    if (value === "2" || value.includes("maint")) return "maintenance";
+    return "available";
+  };
+  const visibleRoutes = apiRoutes.filter((route) => route.isActive !== false);
+  const visibleVehicles = apiVehicles.filter((vehicle) => vehicle.isActive !== false);
+  const expectDashboardStat = async (label: string, value: number) => {
+    const card = page.getByText(label, { exact: true }).locator("xpath=..");
+    await expect(card.locator("p").nth(1)).toHaveText(String(value));
+  };
+  await expectDashboardStat("Rutas Activas", visibleRoutes.filter((route) => routeState(route.status) === "in_progress").length);
+  await expectDashboardStat("Vehículos Disponibles", visibleVehicles.filter((vehicle) => vehicleState(vehicle.status) === "available").length);
+  await expectDashboardStat("Rutas Pendientes", visibleRoutes.filter((route) => routeState(route.status) === "pending").length);
+  await expectDashboardStat("Rutas Completadas", visibleRoutes.filter((route) => routeState(route.status) === "completed").length);
+
   await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
