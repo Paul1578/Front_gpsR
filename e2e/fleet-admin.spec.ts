@@ -1983,7 +1983,20 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       await expect(historyCardHeading).toBeVisible();
     }
     await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
-    await expect(logisticsPage.getByRole("dialog")).toContainText(`E2EQA${suffix}`);
+    const historyDialog = logisticsPage.getByRole("dialog");
+    await expect(historyDialog).toContainText(`E2EQA${suffix}`);
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      const dialogBounds = await historyDialog.boundingBox();
+      expect(dialogBounds).toBeTruthy();
+      expect(dialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(dialogBounds!.x + dialogBounds!.width).toBeLessThanOrEqual(width);
+    }
   } finally {
     if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
     if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
