@@ -6,6 +6,7 @@
 - Corrección en progreso: fijar timeout individual de 8 s en el escenario de mapa para identificar el locator que se atasca; interceptar `/Routes**` y mantener 503 hasta que el alert sea visible, liberándolo sólo antes del botón Reintentar. El flujo seguirá comprobando que el retry llega a la lista vacía real.
 - Prevención añadida: conservar `test-results/` como artifact de cinco días cuando falle E2E para poder inspeccionar `trace.zip` en la próxima ejecución.
 - No marcar corregido hasta que Action integrada pase y confirme cleanup.
+- Action de repetición `45053076619` corre sobre `514c0b9`.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 
