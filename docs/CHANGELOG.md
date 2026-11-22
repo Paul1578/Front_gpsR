@@ -322,3 +322,5 @@
 - Añadida cobertura E2E del 503 y recuperación de `Routes/assignment-options`, cifra no disponible, alerta y conteo recuperado.
 - El caso confirma que Logistics no solicita GET `/Vehicles` y que el dashboard no desborda a 390 px.
 - Validación local: lint/build, discovery 22, E2E enfocado 1/1 y diff-check correctos; CI integrado pendiente.
+
+- Front `a75914f` validado por Actions `45036661541`: nuevo E2E de reintento Logistics; total **22/22**, responsive 1/1, audit/lint/build y cleanup success.

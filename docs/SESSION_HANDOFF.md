@@ -556,3 +556,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Actions Front `45036249291` valida HEAD `4e3ddc8` y seguía ejecutando E2E cuando se empezó este cambio. No cubre el caso nuevo porque aún no está publicado; consultar run antes de publicar el nuevo commit.
 - Próximo: publicar el caso nuevo después de confirmar resultado del run previo; ejecutar Actions integrado y documentar resultado. Seguir auditando CRUD/roles/responsive; no cerrar misión.
 - Límites actuales: móvil nativo diferido por decisión del usuario; SMTP real requiere credenciales actualizadas; la política de Admin delegado necesita decisión de producto.
+
+### Confirmación Front posterior a `a75914f`
+
+- Actions `45036661541` terminó success: audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **22/22**, cleanup success. El caso de error/reintento de `Routes/assignment-options` quedó validado integrado.
+- Actions `45036249291` también terminó success para `4e3ddc8`, E2E **21/21**. Ambos resultados quedaron registrados.

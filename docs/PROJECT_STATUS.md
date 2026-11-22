@@ -416,3 +416,5 @@ Fecha de actualización: 2026-11-22.
 - Lint/build/discovery 22 y caso enfocado 1/1 pasan localmente; Actions integrado pendiente.
 - En Backend, CRUD de Driver para Manager y pruebas de aislamiento multiempresa quedaron validadas por Actions `45036129217` sobre SHA `54c1bba`; xUnit y smokes HTTP/MySQL/concurrencia pasaron.
 - Pendiente global: continuar con acciones CRUD/responsive no cubiertas; decisión de producto para Admin delegado; credenciales SMTP vigentes. Móvil nativo sigue aplazado por el usuario.
+
+- Cierre integrado Front `a75914f`: Actions `45036661541` success; Playwright Chrome/API/MySQL **22/22**, responsive browser 1/1, audit/lint/build y cleanup correctos. Incluye la regresión de error/reintento del dashboard Logistics.

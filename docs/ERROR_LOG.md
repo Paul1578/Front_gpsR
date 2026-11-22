@@ -1019,3 +1019,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El caso también comprueba que Logistics no solicite GET `/Vehicles` y que la página no desborde a 390×844.
 - Ejecución local: caso enfocado **1/1**; lint, build, discovery **22** y `git diff --check` correctos. Actions integrada aún pendiente para el commit de esta prueba.
 - Prevención: para cada recurso restringido, comprobar estados error/recuperación y la fuente autorizada de datos, además del resultado normal.
+
+## 2026-11-22 — Dashboard Logistics: error/retry — Actions RESUELTO
+
+- Actions `45036661541` pasó para Front `a75914f`: suite Playwright autenticada contra API/MySQL **22/22**, responsive browser **1/1**, audit, lint y build success; el workflow también limpió API/contenedor.
+- El E2E nuevo de options 503 → alerta/`—` → retry con un vehículo forma parte de los 22 casos. No hubo fallos de test.
