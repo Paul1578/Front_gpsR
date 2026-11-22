@@ -917,15 +917,14 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await page.getByTestId("stop-point-1").getByRole("button", { name: "Subir parada" }).click();
     await expect(page.getByPlaceholder("Parada 1")).toHaveValue("Entrega y recogida E2E");
     await expect(page.getByPlaceholder("Parada 2")).toHaveValue("Recogida E2E");
-    const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
-    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
-    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
     const destination = page.getByPlaceholder("¿A dónde llega?");
     await destination.fill("Destino E2E desde mapa");
+    const destinationRow = destination.locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
     await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
     await clickMapAwayFromMarkers(map);
     await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
-    await destination.fill("Destino E2E desde mapa");
 
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();

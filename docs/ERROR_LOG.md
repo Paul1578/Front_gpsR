@@ -1,12 +1,11 @@
-# 2026-11-22 — Action 45051977357: E2E mapa móvil y retry de Mi Ruta — EN CORRECCIÓN
+# 2026-11-22 — Actions 45051977357/45053076619: E2E de mapa móvil — EN CORRECCIÓN
 
-- Action validó Release/xUnit del backend, audit, lint, build y browser responsive; el suite autenticado quedó **29/31**.
-- El alta completa desde mapa a 320 px alcanzó el timeout de 90 s; como el tiempo de prueba se agotó, también vencieron las llamadas de cleanup. Aún no se conoce el paso exacto del bloqueo: el test no tenía timeout individual de locator ni trazas descargables en CI.
-- Mi Ruta no encontró el `role=alert` tras la respuesta simulada 503. El test sólo interceptaba la URL exacta `/Routes` una vez; la carga inicial y la navegación pueden competir y la ruta también puede incluir query string.
-- Corrección en progreso: fijar timeout individual de 8 s en el escenario de mapa para identificar el locator que se atasca; interceptar `/Routes**` y mantener 503 hasta que el alert sea visible, liberándolo sólo antes del botón Reintentar. El flujo seguirá comprobando que el retry llega a la lista vacía real.
-- Prevención añadida: conservar `test-results/` como artifact de cinco días cuando falle E2E para poder inspeccionar `trace.zip` en la próxima ejecución.
-- No marcar corregido hasta que Action integrada pase y confirme cleanup.
-- Action de repetición `45053076619` corre sobre `514c0b9`.
+- Action `45051977357` pasó Release/xUnit del backend, audit, lint/build y browser responsive; E2E **29/31**. El mapa agotó 90 s y el cleanup; Mi Ruta no mostró el alert 503.
+- En `45053076619` pasó Mi Ruta y el suite mejoró a **30/31**. El timeout individual capturó la causa del mapa: la prueba abrió la vista de mapa móvil con “Ubicar destino” y luego intentó llenar el input de destino, oculto mientras el mapa permanece abierto. El trace confirma `Ubicando destino` y el botón “Ver paradas y detalles”.
+- Corrección aplicada: llenar el nombre del destino en el editor antes de abrir el mapa, luego fijar coordenadas y continuar. Se quitó el segundo fill innecesario después de regresar del mapa.
+- La interceptación persistente de `/Routes**` hizo determinista el 503; la prueba confirmó el alert y el retry de “Mi Ruta” en la última Action.
+- Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; completar la edición textual antes de abrirlo. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
+- Action del orden corregido pendiente; confirmar **31/31** y cleanup antes de cerrar este registro.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 

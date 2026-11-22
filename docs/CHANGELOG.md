@@ -374,6 +374,7 @@
 - El caso de Mi Ruta mantiene 503 en GET `/Routes` hasta que se compruebe el estado de error y permite el retry explícitamente.
 - CI preserva traces Playwright cuando falla la suite, con retención de cinco días.
 - Action `45051977357` dejó **29/31**; estas correcciones aún requieren verificación integrada.
+- Action `45053076619` pasó **30/31**; Mi Ruta ya pasó. El trace mostró el campo de destino oculto al abrir mapa móvil. La prueba ahora escribe el nombre antes de entrar al mapa; validar esta corrección en la siguiente Action.
 
 # 2026-11-22 — Mi Ruta: responsive tablet
 

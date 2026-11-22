@@ -23,7 +23,8 @@
 ## Comandos y resultados
 
 - 2026-11-21, rama aislada `test/route-builder-persistence`: `npm ci` correcto (0 vulnerabilidades), `npm run lint` correcto, `npm run build` correcto y `npm run test:e2e -- --list` descubre 14 casos.
-- Action `45051977357`, SHA `bffe183`: backend Release/xUnit, audit, lint/build y responsive pasan; suite integrada **29/31**. El test de mapa 320 px se agotó a 90 s (cleanup también agotado); “Mi Ruta” no encontró el alert 503. Correcciones en `514c0b9`: timeout individual de 8 s, intercept persistente hasta mostrar el estado de error y artifacts Playwright en Actions fallidas. Action repetida `45053076619` está en curso.
+- Action `45051977357`, SHA `bffe183`: backend Release/xUnit, audit, lint/build y responsive pasan; suite integrada **29/31**.
+- Action `45053076619`, SHA `514c0b9`: backend, audit, lint/build y responsive pasan; E2E **30/31**. La falla de Mi Ruta quedó corregida y pasó; trace del mapa identificó el fill del destino cuando el editor estaba oculto. Orden corregido localmente: editar nombre antes de abrir mapa. Repetir la suite integrada para validar **31/31** y cleanup.
 - Constructor de rutas: el caso existente agrega tres paradas, elimina una, reordena otra y crea la ruta desde el navegador. La aserción API ahora compara cada punto persistido por nombre y operación en orden exacto (incluye origen/destino sin operación), lo que demuestra que la parada eliminada no quedó y que los tipos siguieron a sus paradas al reordenar. El `finally` verifica las respuestas de limpieza de la ruta y vehículo.
 - Intento Playwright autenticado local: `CI=true npm run test:e2e -- --grep "Admin crea una ruta desde el mapa móvil"` arrancó Next y reportó 1 skipped; faltaban credenciales QA/mutaciones y API no estaba activa (Swagger local HTTP 000). No se crearon fixtures; para resultado funcional se requiere el runner con API/MySQL descartables y variables QA.
 
