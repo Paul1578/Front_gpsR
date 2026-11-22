@@ -47,7 +47,7 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
     return <div className="flex h-full items-center justify-center p-6"><div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center"><h1 className="text-xl font-semibold text-slate-900">Hola, {user.nombres}</h1><p className="mt-2 text-sm text-slate-600">Tu cuenta no tiene permisos operativos asignados. Contacta al administrador de tu empresa.</p></div></div>;
   }
 
-  // Si es Super Admin, mostrar dashboard especial
+  // Compatibilidad visual para cuentas administrativas heredadas.
   if (user?.role === "superadmin") {
     const allUsers = getAllUsers();
     const allRoutes = routes;
@@ -63,10 +63,10 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                 <Shield size={40} className="text-white" />
               </div>
               <h1 className="text-2xl md:text-3xl text-gray-900 dark:text-white mb-2">
-                Bienvenido Super Admin, {user?.nombres} 👋
+                Administración de la empresa, {user?.nombres} 👋
               </h1>
               <p className="text-gray-600 dark:text-slate-300">
-                Panel de administración del sistema FleetTrack
+                Consulta la operación y los miembros de tu empresa.
               </p>
             </div>
 
@@ -116,20 +116,18 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                   <Shield size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg mb-2">Panel de Super Admin</h3>
+                  <h3 className="text-lg mb-2">Administración de la empresa</h3>
                   <p className="text-red-100 mb-4">
-                    Como Super Admin, eres el administrador del sistema. Puedes gestionar todos los usuarios,
-                    exportar datos y configurar el sistema.
+                    Administra miembros de tu empresa y consulta las rutas y vehículos disponibles para tu cuenta.
                   </p>
                   <p className="text-red-100 mb-4">
-                    Para crear rutas o gestionar vehículos, los gerentes de cada equipo deben hacerlo desde sus
-                    propias cuentas. Usa el Panel Super Admin para gestionar usuarios y equipos.
+                    Los datos mostrados respetan el alcance de tu empresa y los permisos de tu cuenta.
                   </p>
                   <button
                     onClick={() => onNavigate("superadmin")}
                     className="px-6 py-3 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    Ir al Panel Super Admin
+                    Abrir administración
                   </button>
                 </div>
               </div>
@@ -151,12 +149,12 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 }[] = [
   {
     id: "superadmin",
-    title: "Panel Super Admin",
-    description: "Acceso completo a la administración del sistema",
+    title: "Administración de la empresa",
+    description: "Gestiona miembros y consulta datos operativos de tu empresa",
     icon: Shield,
     color: "from-red-500 to-red-600",
     permission: user?.permissions.canAccessSuperAdmin,
-    stats: "Acceso total",
+    stats: "Empresa",
   },
   {
     id: "map",

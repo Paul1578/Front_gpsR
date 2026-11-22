@@ -1,13 +1,11 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `50bf9d0` Action [`45058535602`](https://github.com/Paul1578/Front_gpsR/actions/runs/45058535602) pasó: backend Release/xUnit, audit, lint/build, responsive **1/1**, E2E integrado **33/33**, cleanup.
-- Backend `22c2fb6` Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) pasó: build/test, tenant HTTP/MySQL, concurrencia y cleanup.
-- `FleetContext` ahora carga opciones de ruta para Manager. El E2E crea/persiste una ruta Manager, comprueba edición/cancelación móvil y creación de cuentas/responsive a 320/768 px.
-- Validación local: lint/build correctos, `npm audit` 0 vulnerabilidades, 33 pruebas descubiertas y E2E autenticado API/MySQL efímero **33/33** con cleanup.
-- Los fallos intermedios y su solución están documentados en `docs/ERROR_LOG.md`.
-- Pendientes globales: CRUD/roles/responsive de otras superficies; definir si Admin delegado puede asignar Admin; app nativa aplazada por el usuario. SMTP real, PFX/keys y despliegue productivo dependen de configuración externa.
-- Acciones remotas sobre estos commits están verdes. Pendiente ampliar CRUD/roles/responsive de otras superficies; la misión global no está completa.
+- Front `57e44c6` pasó Action [`45066249833`](https://github.com/Paul1578/Front_gpsR/actions/runs/45066249833): Backend Release/xUnit **107/107**, audit, lint/build, responsive **1/1**, E2E integrado Chrome/API/MySQL **33/33** y cleanup.
+- Backend `52d7e46` pasó Action [`45066082294`](https://github.com/Paul1578/Back_GPS/actions/runs/45066082294): Release build, xUnit **107/107**, registro neutral/tiempo y smoke HTTP/MySQL. Documentación backend `029011e` pasó Action [`45066471076`](https://github.com/Paul1578/Back_GPS/actions/runs/45066471076), incluidos aislamiento tenant y concurrencia.
+- En trabajo local Front se amplía edición/cancelación de rutas a 320/768 px, se convierte el panel “Super Admin” en administración de la empresa con datos reales y se agregan búsquedas de miembros/conductores; requiere nueva integración.
+- Reauditoría detectó que el panel no tenía API global: importación, reinicio y actividad eran placeholders. También faltaban búsquedas y pruebas completas de CRUD Driver, vínculo User↔Driver por HTTP y ciclos positivos de vehículo en smoke.
+- Pendiente: validar e integrar el lote local, continuar CRUD/roles/responsive y cerrar la política de Admin delegado. SMTP, certificado/key ring de producción e infraestructura son externos; app nativa aplazada por el usuario.
 
 # Estado actual — 2026-11-22
 

@@ -41,6 +41,14 @@ El usuario aclaró que la app móvil nativa queda para después. Esta fase requi
 
 ## Actualización integrada — 2026-11-22
 
+### Corte actual de las ramas — 2026-11-22
+
+- Backend `52d7e46` pasó Action `45066082294` con build/xUnit 107/107 y registro neutral; documentación `029011e` pasó `45066471076` con HTTP/MySQL tenant y concurrencia.
+- Front `57e44c6` pasó Action `45066249833`: audit/lint/build, responsive 1/1, backend 107/107, E2E API/MySQL 33/33 y cleanup.
+- Backend `7614ad5` amplía localmente el smoke MySQL de vehículo: edición, estado operativo separado de `IsActive`, baja y reactivación; smoke efímero, bash syntax y cleanup pasaron. CI pendiente.
+- Front agrega búsquedas de equipo/conductores, hace accesible al Admin de empresa el panel acotado a tenant (sin import/reset/logs falsos) y prueba edición/cancelación de rutas a 320/768. Lint/build/audit y discovery 35 pasan; E2E autenticado del nuevo lote pendiente.
+- Sigue sin resolver la política de promoción a Admin delegado; no cambiarla sin decisión. También continúa cobertura HTTP/MySQL de vínculo manual User↔Driver. SMTP/infra productiva son externos y app nativa está aplazada.
+
 - Front `50bf9d0` Action `45058535602`: audit/lint/build, responsive **1/1**, backend Release/xUnit, Playwright API/MySQL **33/33** y cleanup pasaron.
 - Backend `22c2fb6` Action `45058536309`: Release build/xUnit, aislamiento tenant HTTP/MySQL, concurrencia y cleanup pasaron. Localmente xUnit **99/99** y smokes tenant/concurrency exit 0.
 - Cerrados este pase: Manager crea desde UI una ruta multi-punto con Delivery y la persiste; constructor móvil 320/tablet 768; alta Manager/Logistics responsive; edición/estado User a 320; logout no revoca refresh ajeno.

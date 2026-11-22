@@ -453,3 +453,11 @@
 
 - Registro ya no crea una sesión automáticamente. La respuesta uniforme lleva al usuario a Login; el E2E compara alta y email duplicado y luego autentica la empresa nueva.
 - Action Front `45065745273` verificó 33/33 E2E con el backend neutral `825bbed`; el backend añade luego un piso temporal y requiere otra corrida integrada.
+
+## 2026-11-22 — Administración empresarial, búsqueda y cobertura responsive
+
+- Front Action `45066249833` confirmó SHA `57e44c6`: backend xUnit 107/107, lint/build/audit, responsive y 33/33 E2E con API/MySQL efímero y cleanup.
+- Auditoría encontró estadísticas “globales”, actividad inventada y botones de importar/reiniciar sin operación. Panel ahora se limita a la empresa, muestra estados explícitos y elimina placeholders. No cambia la política de rol Admin.
+- Gestión de Equipo ahora permite buscar miembros y conductores por nombre/usuario/documento/teléfono; E2E nuevos prueban resultados reales y estado sin coincidencias.
+- Ruta E2E ahora modifica a 320 y 768 px, verifica persistencia y overflow, y cancela en ambos tamaños.
+- Backend amplía smoke de vehículo (editar, mantenimiento, baja/reactivación con API y SQL). MySQL efímero local y cleanup pasan; nueva integración CI pendiente.

@@ -91,7 +91,7 @@ export function FleetDashboard() {
     permission: boolean;
   }[] = [
     { id: "home", label: "Dashboard Principal", icon: Home, permission: true },
-    { id: "superadmin", label: "Super Admin", icon: Shield, permission: user.permissions.canAccessSuperAdmin || false },
+    { id: "superadmin", label: "Administración de la empresa", icon: Shield, permission: user.permissions.canAccessSuperAdmin || false },
     { id: "profile", label: "Mi Perfil", icon: UserCircle, permission: true },
     { id: "map", label: "Mapa en Tiempo Real", icon: Map, permission: user.permissions.canViewMap },
     { id: "routes", label: "Gestión de Rutas", icon: Route, permission: user.permissions.canCreateRoutes },

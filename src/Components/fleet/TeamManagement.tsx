@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
-import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil } from "lucide-react";
+import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -39,6 +39,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const [driversLoadError, setDriversLoadError] = useState(false);
   const [showDriversSection, setShowDriversSection] = useState(false);
   const [showInactiveDrivers, setShowInactiveDrivers] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [driverSearch, setDriverSearch] = useState("");
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [driverEditForm, setDriverEditForm] = useState({
     firstName: "",
@@ -48,7 +50,20 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   });
 
   const users = getTeamUsers();
-  const visibleDrivers = drivers.filter((driver) => showInactiveDrivers || driver.isActive !== false);
+  const normalizedDriverSearch = driverSearch.trim().toLocaleLowerCase();
+  const visibleDrivers = drivers
+    .filter((driver) => showInactiveDrivers || driver.isActive !== false)
+    .filter((driver) => {
+      if (!normalizedDriverSearch) return true;
+      const linkedUser = users.find((user) => user.id === driver.userId);
+      return [driver.firstName, driver.lastName, driver.documentNumber, driver.phoneNumber, linkedUser?.usuario]
+        .some((value) => value?.toLocaleLowerCase().includes(normalizedDriverSearch));
+    });
+  const normalizedTeamSearch = teamSearch.trim().toLocaleLowerCase();
+  const visibleUsers = users.filter((user) =>
+    [user.nombres, user.apellidos, user.usuario, user.identificacion, user.role]
+      .some((value) => value?.toLocaleLowerCase().includes(normalizedTeamSearch)),
+  );
 
   const loadTeamUsers = async () => {
     setIsLoadingTeam(true);
@@ -252,7 +267,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     canManageDrivers: "Gestionar Conductores",
     canManageTeam: "Gestionar Equipo",
     canViewOwnRoute: "Ver Su Propia Ruta",
-    canAccessSuperAdmin: "Acceso a Panel Super Admin",
+    canAccessSuperAdmin: "Administración de la empresa",
     canManageAllOrganizations: "Gestionar Todas las Organizaciones",
     canViewSystemLogs: "Ver Logs del Sistema",
     canExportData: "Exportar Datos del Sistema",
@@ -414,6 +429,18 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 </button>
               </div>
 
+              <label className="relative mb-4 block">
+                <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  aria-label="Buscar choferes"
+                  value={driverSearch}
+                  onChange={(event) => setDriverSearch(event.target.value)}
+                  placeholder="Buscar por nombre, documento o teléfono"
+                  className="w-full min-w-0 rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
+
               <form onSubmit={handleCreateDriver} className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
                 <select
                   aria-label="Usuario vinculado al chofer"
@@ -492,7 +519,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               ) : isLoadingDrivers ? (
                 <p className="text-sm text-gray-500">Cargando choferes...</p>
               ) : visibleDrivers.length === 0 ? (
-                <p className="text-sm text-gray-500">No hay choferes registrados</p>
+                <p className="text-sm text-gray-500">{drivers.length === 0 ? "No hay choferes registrados" : "No hay choferes que coincidan con la búsqueda"}</p>
               ) : (
                 <div className="space-y-3">
                   {visibleDrivers.map((driver) => {
@@ -607,7 +634,20 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             </div>
           ) : (
             <div className="space-y-4">
-              {users.map((user) => (
+              <label className="relative block">
+                <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  aria-label="Buscar miembros del equipo"
+                  value={teamSearch}
+                  onChange={(event) => setTeamSearch(event.target.value)}
+                  placeholder="Buscar por nombre, usuario, documento o rol"
+                  className="w-full min-w-0 rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
+              {visibleUsers.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">No hay miembros que coincidan con la búsqueda.</p>
+              ) : visibleUsers.map((user) => (
                 <div
                   key={user.id}
                   data-testid={`team-user-${user.id}`}

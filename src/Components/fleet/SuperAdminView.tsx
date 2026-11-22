@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, Users, Database, Activity, Download, Upload, AlertTriangle, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Shield, Users, Database, Download, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
 import { useAuth, UserRole } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
@@ -12,9 +12,8 @@ interface SuperAdminViewProps {
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const { getAllUsers, updateUserRole, getManagers, createUser } = useAuth();
   const { vehicles, routes } = useFleet();
-  const [activeTab, setActiveTab] = useState<"overview" | "teams" | "users" | "create" | "data" | "logs">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "teams" | "users" | "create" | "data">("overview");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const [createUserForm, setCreateUserForm] = useState({
@@ -30,22 +29,27 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const users = getAllUsers();
   const managers = getManagers();
 
-  // La API devuelve recursos del propietario autenticado, no del sistema completo.
+  // Los contextos entregan los recursos visibles para la empresa autenticada.
   const allRoutes = routes;
   const allVehicles = vehicles;
 
-  // Estadísticas del sistema para uso/actividad
+  // Todos los datos provienen del ámbito de empresa entregado por los contextos.
   const stats = {
     totalUsers: users.length,
-    superAdmins: users.filter(u => u.role === "superadmin").length,
     managers: users.filter(u => u.role === "gerente").length,
+    fleetManagers: users.filter(u => u.role === "manager").length,
     logistics: users.filter(u => u.role === "logistica").length,
     drivers: users.filter(u => u.role === "chofer").length,
+    regularUsers: users.filter(u => u.role === "usuario").length,
     totalRoutes: allRoutes.length,
+    pendingRoutes: allRoutes.filter((r) => r.estado === "pendiente").length,
     activeRoutes: allRoutes.filter((r) => r.estado === "en_progreso").length,
     completedRoutes: allRoutes.filter((r) => r.estado === "completada").length,
+    cancelledRoutes: allRoutes.filter((r) => r.estado === "cancelada").length,
     totalVehicles: allVehicles.length,
-    activeVehicles: allVehicles.filter((v) => v.estado === "en_ruta").length,
+    availableVehicles: allVehicles.filter((v) => v.estado === "disponible").length,
+    vehiclesOnRoute: allVehicles.filter((v) => v.estado === "en_ruta").length,
+    vehiclesInMaintenance: allVehicles.filter((v) => v.estado === "mantenimiento").length,
     totalTeams: managers.length,
   };
 
@@ -103,22 +107,13 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fleettrack-backup-${timestamp}.json`;
+    a.download = `fletflow-empresa-${timestamp}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast.success("Datos exportados exitosamente");
-  };
-
-  const handleImportData = () => {
-    toast.info("La importacion de datos se gestiona desde el backend");
-  };
-
-  const handleResetSystem = () => {
-    toast.info("El reseteo del sistema se realiza desde el backend");
-    setShowResetConfirm(false);
   };
 
   const getRoleColor = (role: string) => {
@@ -134,7 +129,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "superadmin": return "Super Admin";
+      case "superadmin": return "Administrador";
       case "gerente": return "Gerente";
       case "manager": return "Gestor de flota";
       case "logistica": return "Logística";
@@ -179,11 +174,11 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <p className="text-2xl">{stats.totalUsers}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Rutas en curso de la empresa</p>
+              <p className="text-red-100 text-xs mb-1">Rutas en curso</p>
               <p className="text-2xl">{stats.activeRoutes}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Vehículos de la empresa</p>
+              <p className="text-red-100 text-xs mb-1">Vehículos</p>
               <p className="text-2xl">{stats.totalVehicles}</p>
             </div>
           </div>
@@ -203,7 +198,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               }`}
             >
               <BarChart3 size={18} />
-              Estadísticas de Uso
+              Resumen
             </button>
             <button
               onClick={() => setActiveTab("teams")}
@@ -225,7 +220,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               }`}
             >
               <Users size={18} />
-              Todos los Usuarios
+              Usuarios de la empresa
             </button>
             <button
               onClick={() => setActiveTab("create")}
@@ -249,17 +244,6 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <Database size={18} />
               Gestión de Datos
             </button>
-            <button
-              onClick={() => setActiveTab("logs")}
-              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === "logs"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <Activity size={18} />
-              Actividad del Sistema
-            </button>
           </div>
         </div>
       </div>
@@ -272,21 +256,24 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
                   <BarChart3 size={20} />
-                  Estadísticas de Uso del Sistema
+                  Operación de la empresa
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Usuarios */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Distribución de Usuarios</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Usuarios</h4>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Super Admins</span>
-                        <span className="text-lg text-red-600">{stats.superAdmins}</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Total</span>
+                        <span className="text-lg text-gray-900">{stats.totalUsers}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">Gerentes</span>
                         <span className="text-lg text-blue-600">{stats.managers}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Gestores de flota</span>
+                        <span className="text-lg text-cyan-700">{stats.fleetManagers}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                         <span className="text-sm text-gray-700">Logística</span>
@@ -296,91 +283,58 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                         <span className="text-sm text-gray-700">Choferes</span>
                         <span className="text-lg text-green-600">{stats.drivers}</span>
                       </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Usuarios</span>
+                        <span className="text-lg text-gray-900">{stats.regularUsers}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Rutas */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Estado de Rutas</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Estado de rutas</h4>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
                         <span className="text-lg text-gray-900">{stats.totalRoutes}</span>
                       </div>
+                      <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Pendientes</span>
+                        <span className="text-lg text-yellow-700">{stats.pendingRoutes}</span>
+                      </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-gray-700">En Progreso</span>
+                        <span className="text-sm text-gray-700">En curso</span>
                         <span className="text-lg text-blue-600">{stats.activeRoutes}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Completadas</span>
                         <span className="text-lg text-green-600">{stats.completedRoutes}</span>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Pendientes</span>
-                        <span className="text-lg text-yellow-600">
-                          {stats.totalRoutes - stats.activeRoutes - stats.completedRoutes}
-                        </span>
+                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Canceladas</span>
+                        <span className="text-lg text-red-600">{stats.cancelledRoutes}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Vehículos */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Estado de Vehículos</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Estado de vehículos</h4>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
                         <span className="text-lg text-gray-900">{stats.totalVehicles}</span>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-gray-700">En Ruta</span>
-                        <span className="text-lg text-blue-600">{stats.activeVehicles}</span>
-                      </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Disponibles</span>
-                        <span className="text-lg text-green-600">
-                          {stats.totalVehicles - stats.activeVehicles}
-                        </span>
+                        <span className="text-lg text-green-600">{stats.availableVehicles}</span>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* System Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-sm text-gray-600 mb-3">Información del Sistema</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Versión</span>
-                      <span className="text-sm text-gray-900">FleetTrack v1.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Estado</span>
-                      <span className="text-sm text-green-600">Operativo</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Equipos Activos</span>
-                      <span className="text-sm text-gray-900">{stats.totalTeams}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-sm text-gray-600 mb-3">Almacenamiento</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Usuarios</span>
-                      <span className="text-sm text-gray-900">{users.length} registros</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Rutas</span>
-                      <span className="text-sm text-gray-900">{allRoutes.length} registros</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Vehículos</span>
-                      <span className="text-sm text-gray-900">{allVehicles.length} registros</span>
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <span className="text-sm text-gray-700">En ruta</span>
+                        <span className="text-lg text-blue-600">{stats.vehiclesOnRoute}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                        <span className="text-sm text-gray-700">En mantenimiento</span>
+                        <span className="text-lg text-orange-700">{stats.vehiclesInMaintenance}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -488,7 +442,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                             }
                             className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
                           >
-                            <option value="superadmin">Super Admin</option>
+                            <option value="superadmin">Administrador</option>
                             <option value="gerente">Gerente</option>
                             <option value="manager">Gestor de flota</option>
                             <option value="logistica">Logística</option>
@@ -515,7 +469,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-4">Crear Nuevo Usuario</h3>
                 <p className="text-sm text-gray-600 mb-6">
-                  Como Super Admin, puedes crear usuarios asignándolos a equipos específicos.
+                  Crea usuarios para tu empresa y asígnalos a un equipo cuando corresponda.
                 </p>
 
                 <div className="space-y-4">
@@ -599,7 +553,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                               : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          {role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+                          {getRoleLabel(role)}
                         </button>
                       ))}
                     </div>
@@ -649,7 +603,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
                   <Database size={20} />
-                  Gestión de Datos del Sistema
+                  Datos de la empresa
                 </h3>
 
                 <div className="space-y-4">
@@ -670,68 +624,6 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                         >
                           Exportar Ahora
                         </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Import Data */}
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Upload size={20} className="text-green-600 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="text-sm text-gray-900 mb-1">
-                          Importar Datos
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-3">
-                          Restaura el sistema desde un archivo de respaldo JSON
-                        </p>
-                        <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm cursor-pointer inline-block">
-                          Seleccionar Archivo
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleImportData}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reset System */}
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle size={20} className="text-red-600 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="text-sm text-gray-900 mb-1">
-                          Reiniciar Sistema
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-3">
-                          Elimina todos los datos del sistema. Esta acción no se puede deshacer.
-                        </p>
-                        {!showResetConfirm ? (
-                          <button
-                            onClick={handleResetSystem}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                          >
-                            Reiniciar Sistema
-                          </button>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={handleResetSystem}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                            >
-                              Confirmar Reinicio
-                            </button>
-                            <button
-                              onClick={() => setShowResetConfirm(false)}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -759,47 +651,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
             </div>
           )}
 
-          {activeTab === "logs" && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
-                <Activity size={20} />
-                Actividad del Sistema
-              </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">Sistema iniciado</p>
-                      <p className="text-xs text-gray-500">{new Date().toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">
-                        {stats.totalUsers} usuarios registrados
-                      </p>
-                      <p className="text-xs text-gray-500">Estado actual</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">
-                        {stats.activeRoutes} rutas activas en el sistema
-                      </p>
-                      <p className="text-xs text-gray-500">En progreso</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     </div>

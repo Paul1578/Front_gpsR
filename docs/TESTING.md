@@ -1,3 +1,10 @@
+# Actualización 2026-11-22 — administración de empresa, búsquedas y responsive
+
+- Front Action previo `45066249833` sobre `57e44c6`: Release backend/xUnit 107/107, audit/lint/build, responsive browser 1/1, Playwright autenticado API/MySQL 33/33 y cleanup.
+- El lote local añade navegación Admin al panel de empresa, remueve operaciones simuladas, búsqueda de miembros/conductores y cobertura de edición/cancelación de rutas a 320/768 px.
+- Validación local del lote: lint/build/discovery 35/npm audit/diff-check; Action autenticada debe confirmar los E2E nuevos.
+- El frontend local responde 200 en :3000, pero API :5048 responde HTTP 000; no se ejecutó una suite funcional local sin API/fixtures. CI usa API y MySQL descartables.
+
 # Actualización 2026-11-22 — constructor, asignaciones y tablet
 
 - `npm run lint`: correcto.

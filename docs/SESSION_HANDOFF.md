@@ -1,3 +1,14 @@
+## Continuación de auditoría — datos reales, búsqueda y responsive — 2026-11-22
+
+- Ramas: Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` intacta.
+- Front `57e44c6` pasó Action `45066249833`: audit, lint/build, responsive 1/1, backend Release/xUnit 107/107, Playwright API/MySQL 33/33 y cleanup. Backend `52d7e46` fue el código integrado.
+- Backend docs `029011e` pasó Action `45066471076`: build/xUnit, HTTP/MySQL tenant y concurrencia.
+- Cambios pendientes de validación integrada: edit/cancel de rutas a 320/768; panel empresarial con métricas explícitas y sin import/reset/logs ficticios; búsqueda local de miembros y conductores; E2E nuevo de búsqueda y de panel.
+- Backend smoke amplía el ciclo HTTP/MySQL de vehículo (edición, estado, baja lógica y reactivación) y pasó `bash -n`, `git diff --check` y MySQL efímero local con cleanup; Actions del nuevo diff aún pendiente.
+- Reauditoría backend: siguen sin smoke HTTP positivo el vínculo manual User↔Driver y sin matriz de política para promover Admin delegado. La última necesita decisión del usuario antes de cerrar.
+- Próximo: revisar los diffs, ejecutar lint/build/discovery, ejecutar/confirmar smoke aislado, documentar hallazgos y subir ambas ramas; esperar Actions integradas y corregir cualquier fallo.
+- Límites externos: SMTP vigente, certificado/key ring e infraestructura productiva; app móvil nativa aplazada por el usuario.
+
 ## Session handoff — Manager crea rutas y CRUD responsive — 2026-11-22
 
 - Ramas Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` intacta.

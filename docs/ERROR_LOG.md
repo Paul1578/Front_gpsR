@@ -1237,3 +1237,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La suite integrada volvió a medir `main.scrollWidth=363` a 320 px; `min-w-0` solo no limitó el área desplazable interna del mapa. Se añade ancho `w-full/max-w-full` y `overflow-hidden` al contenedor del mapa y a su layout.
 - Historial ya normalizaba la respuesta real: la operación E2E agrega dos notas y una foto, por eso la tarjeta mostraba **3 evidencias**, no 1. Se corrige la expectativa manteniendo aserciones de foto/descrición en el detalle.
 - Acción fallida: `45063487802`, **31/33**. La corrección pasó los 33 E2E autenticados en Action `45064475585`.
+
+## 2026-11-22 — Panel empresarial mostraba funciones del sistema no disponibles — CORREGIDO; NUEVA CI PENDIENTE
+
+- Reauditoría detectó que el panel visible para Admin presentaba cifras como si fueran globales, aunque la API está confinada a su empresa. El resumen también inventaba una versión, estado operativo y eventos de actividad; importación y reinicio sólo mostraban un toast y no ejecutaban operaciones.
+- Se limitó el panel a administración empresarial, se quitaron versiones/logs y acciones no implementadas, y los totales ahora cuentan explícitamente roles y estados reales de ruta/vehículo. La exportación disponible conserva alcance de empresa.
+- La política de asignar rol Admin a otro miembro continúa sin decisión; este cambio no modifica permisos ni endpoints.
+- La misma auditoría encontró búsqueda ausente en Equipo/Conductores y faltaba ejercitar edición/cancelación de ruta en ambos anchos. Se añadieron búsquedas y pruebas Playwright nuevas; la suite autenticada integrada del nuevo SHA sigue pendiente.
+
+## 2026-11-22 — Comandos de inspección/documentación con sintaxis o anclas incorrectas — SIN CAMBIOS DE PRODUCTO
+
+- Una consulta shell terminó con `unexpected end of file` por un `&&` final; se repitió sin el operador sobrante.
+- Dos parches documentales fueron rechazados porque las líneas ancla supuestas no coincidían con el contenido real. No cambiaron archivos; se leyó el contexto exacto y se aplicó el contenido usando las líneas existentes.
+- Prevención: leer el bloque literal antes de formular un hunk y no cerrar una cadena de comandos con un operador de control sin comando siguiente.

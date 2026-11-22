@@ -715,6 +715,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const routeName = `E2E QA ruta ${suffix}`;
   const updatedName = `${routeName} editada`;
+  const mobileUpdatedName = `${updatedName} móvil`;
   let vehicleId: string | undefined;
   let routeId: string | undefined;
 
@@ -752,12 +753,39 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await search.fill(routeName);
     const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
     await expect(routeHeading).toBeVisible();
-    const routeCard = routeHeading.locator("xpath=../../../..");
-    await page.setViewportSize({ width: 320, height: 844 });
+    await page.setViewportSize({ width: 768, height: 1024 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const routeCard = routeHeading.locator("xpath=../../../..");
     await routeCard.getByRole("button", { name: "Editar ruta" }).click();
 
     await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedName);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(page.getByText(/E2E QA Driver/)).toBeVisible();
+    const tabletUpdateResponsePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) &&
+      response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
+    expect((await tabletUpdateResponsePromise).status()).toBe(200);
+    const tabletPersistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(tabletPersistedResponse.status()).toBe(200);
+    const tabletPersistedRoute = await tabletPersistedResponse.json();
+    expect(tabletPersistedRoute.name).toBe(updatedName);
+    const tabletPersistedPoints = tabletPersistedRoute.points as Array<{ operation: number | string }>;
+    expect(tabletPersistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const updatedRouteHeading = page.getByRole("heading", { name: updatedName, exact: true });
+    await expect(updatedRouteHeading).toBeVisible();
+    await updatedRouteHeading.locator("xpath=../../../..").getByRole("button", { name: "Editar ruta" }).click();
+
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(mobileUpdatedName);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
     await page.getByRole("button", { name: "Continuar" }).click();
@@ -775,35 +803,66 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
     expect(persistedResponse.status()).toBe(200);
     const persistedRoute = await persistedResponse.json();
-    expect(persistedRoute.name).toBe(updatedName);
+    expect(persistedRoute.name).toBe(mobileUpdatedName);
     const persistedPoints = persistedRoute.points as Array<{ operation: number | string }>;
     expect(persistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
 
     await page.getByLabel("Estado").selectOption("pendiente");
     await page.getByLabel("Vehículo").selectOption(vehicleId);
     await page.getByLabel("Conductor").selectOption(driverIdFixture!);
-    await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
-    await search.fill(`${updatedName} sin coincidencia`);
+    await expect(page.getByRole("heading", { name: mobileUpdatedName, exact: true })).toBeVisible();
+    await search.fill(`${mobileUpdatedName} sin coincidencia`);
     await expect(page.getByText("Ninguna ruta coincide con esos filtros.")).toBeVisible();
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
-    await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: mobileUpdatedName, exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    const cancelRouteCard = page.getByRole("heading", { name: updatedName, exact: true }).locator("xpath=../../../..");
-    await cancelRouteCard.getByRole("button", { name: `Cancelar ruta ${updatedName}` }).click();
+    const tabletCancelRouteCard = page.getByRole("heading", { name: mobileUpdatedName, exact: true }).locator("xpath=../../../..");
+    await tabletCancelRouteCard.getByRole("button", { name: `Cancelar ruta ${mobileUpdatedName}` }).click();
+    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    const cancelDialog = page.getByRole("alertdialog");
+    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
+    const tabletDialogDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      dialog: document.querySelector('[role="alertdialog"]')?.getBoundingClientRect().width ?? 0,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(tabletDialogDimensions.dialog).toBeLessThanOrEqual(tabletDialogDimensions.viewport);
+    expect(tabletDialogDimensions.document).toBeLessThanOrEqual(tabletDialogDimensions.viewport);
+    await page.keyboard.press("Escape");
+    await expect(cancelDialog).toBeHidden();
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const mobileCancelRouteCard = page.getByRole("heading", { name: mobileUpdatedName, exact: true }).locator("xpath=../../../..");
+    await mobileCancelRouteCard.getByRole("button", { name: `Cancelar ruta ${mobileUpdatedName}` }).click();
+    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
+    const mobileDialogDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      dialog: document.querySelector('[role="alertdialog"]')?.getBoundingClientRect().width ?? 0,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(mobileDialogDimensions.dialog).toBeLessThanOrEqual(mobileDialogDimensions.viewport);
+    expect(mobileDialogDimensions.document).toBeLessThanOrEqual(mobileDialogDimensions.viewport);
     const cancellationPromise = page.waitForResponse((response) =>
       response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
       response.request().method() === "PUT",
     );
-    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
-    const cancelDialog = page.getByRole("alertdialog");
-    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
     await page.getByRole("button", { name: "Sí, cancelar ruta" }).click();
     expect((await cancellationPromise).status()).toBe(204);
     const cancelledRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
     expect(cancelledRouteResponse.status()).toBe(200);
     expect((await cancelledRouteResponse.json()).status).toBe(3);
+    const mobileCancellationDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(mobileCancellationDimensions.document).toBeLessThanOrEqual(mobileCancellationDimensions.viewport);
+    expect(mobileCancellationDimensions.mainContent).toBeLessThanOrEqual(mobileCancellationDimensions.main);
 
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
@@ -828,7 +887,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(narrowHistoryDimensions.document).toBeLessThanOrEqual(narrowHistoryDimensions.viewport);
     expect(narrowHistoryDimensions.mainContent).toBeLessThanOrEqual(narrowHistoryDimensions.main);
     await page.getByRole("button", { name: "Canceladas", exact: true }).click();
-    const historyHeading = page.getByRole("heading", { name: updatedName, exact: true });
+    const historyHeading = page.getByRole("heading", { name: mobileUpdatedName, exact: true });
     await expect(historyHeading).toBeVisible();
     const historyCard = historyHeading.locator("xpath=../../../..");
     await expect(historyCard).toContainText("Cancelada");
@@ -839,7 +898,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
     const historyDialog = page.getByRole("dialog");
     await expect(historyDialog.getByRole("heading", { name: "Detalles de la Ruta" })).toBeVisible();
-    await expect(historyDialog).toContainText(updatedName);
+    await expect(historyDialog).toContainText(mobileUpdatedName);
     await expect(historyDialog).toContainText("Cancelada");
     await expect(historyDialog).toContainText("E2E QA Driver");
     await expect(historyDialog).toContainText("Inicio planificado");

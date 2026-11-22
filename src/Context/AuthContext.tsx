@@ -213,7 +213,7 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canManageDrivers: true,
     canManageTeam: true,
     canViewOwnRoute: true,
-    canAccessSuperAdmin: false,
+    canAccessSuperAdmin: true,
     canManageAllOrganizations: false,
     canViewSystemLogs: false,
     canExportData: false,

@@ -64,7 +64,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     canManageDrivers: "Gestionar Conductores",
     canManageTeam: "Gestionar Equipo",
     canViewOwnRoute: "Ver Mi Ruta",
-    canAccessSuperAdmin: "Acceso a Panel Super Admin",
+    canAccessSuperAdmin: "Administración de la empresa",
     canManageAllOrganizations: "Gestionar Todas las Organizaciones",
     canViewSystemLogs: "Ver Logs del Sistema",
     canExportData: "Exportar Datos del Sistema",
