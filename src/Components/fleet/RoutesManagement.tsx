@@ -7,6 +7,7 @@ import { useFleet, Route } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
 import {
   ArrowLeft,
+  Ban,
   Check,
   ChevronDown,
   ChevronUp,
@@ -60,6 +61,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [cancelConfirmRoute, setCancelConfirmRoute] = useState<Route | null>(null);
   const [step, setStep] = useState(1);
   const [activeTarget, setActiveTarget] = useState<Target | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -458,6 +460,16 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
                       <Edit size={15} />
                       Editar ruta
                     </button>
+                    {route.estado === "pendiente" && (
+                      <button
+                        onClick={() => setCancelConfirmRoute(route)}
+                        className="flex items-center justify-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                        aria-label={`Cancelar ruta ${route.nombre}`}
+                      >
+                        <Ban size={15} />
+                        <span className="hidden sm:inline">Cancelar</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => setDeleteConfirm(route.id)}
                       className="rounded-lg bg-red-50 px-3 py-2 text-red-600 hover:bg-red-100"
@@ -472,6 +484,25 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={!!cancelConfirmRoute}
+        onClose={() => setCancelConfirmRoute(null)}
+        onConfirm={async () => {
+          if (!cancelConfirmRoute) return;
+          const result = await updateRoute(cancelConfirmRoute.id, { estado: "cancelada" });
+          if (result.ok) {
+            setCancelConfirmRoute(null);
+            toast.success(result.message ?? "Ruta cancelada");
+          } else {
+            toast.error(result.message ?? "No se pudo cancelar la ruta");
+          }
+        }}
+        title="Cancelar ruta pendiente"
+        description={`¿Confirmas la cancelación de “${cancelConfirmRoute?.nombre ?? "esta ruta"}”? El vehículo y el conductor volverán a estar disponibles.`}
+        confirmText="Sí, cancelar ruta"
+        cancelText="Seguir con la ruta"
+        variant="destructive"
+      />
       <ConfirmDialog
         open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}

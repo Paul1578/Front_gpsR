@@ -694,3 +694,27 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El parche para cerrar estados de onboarding mezcló un párrafo que ya contenía el resultado CI con otro hunk de handoff distinto; la verificación falló antes de completar el conjunto.
 - Corrección: releer cada destino y actualizar títulos/estado con reemplazos acotados; `git diff --check` pasó.
 - Prevención: revisar los fragmentos actuales inmediatamente antes de agrupar parches entre repositorios.
+
+## 2026-11-22 — E2E de cancelación redeclaró `routeCard` — CORREGIDO
+
+- El build detectó `TS2451` en `fleet-admin.spec.ts`: el flujo de edición ya declaraba `routeCard` y la nueva acción de cancelar volvió a usar el mismo identificador en el mismo bloque.
+- Corrección: renombrar la referencia de la acción a `cancelRouteCard`.
+- Prevención: al ampliar un test largo, revisar nombres locales existentes antes de introducir nuevas variables.
+
+## 2026-11-22 — Parche de cancelación esperaba una frase de handoff desactualizada — CORREGIDO
+
+- Un parche de documentación agrupado esperaba una frase de onboarding que ya había sido modificada; `apply_patch` rechazó el conjunto y no editó esos documentos.
+- Corrección: inspeccionar el contenido actual y añadir las secciones por destino, usando una operación idempotente; `git diff --check` pendiente de repetición.
+- Prevención: aplicar los cambios documentales en hunks pequeños cuando los historiales de ramas difieren.
+
+## 2026-11-22 — Parámetro inválido al solicitar aclaración de negocio — CORREGIDO
+
+- La herramienta de preguntas esperaba `title` y `options`, pero la primera llamada incluyó `question`; rechazó la solicitud antes de enviarla.
+- Corrección: repetir usando `title` con el texto de la pregunta y opciones válidas.
+- Prevención: validar la forma del esquema antes de llamar herramientas con campos similares.
+
+## 2026-11-22 — Se dejaron líneas en blanco dobles al final al añadir documentación — CORREGIDO
+
+- `git diff --check` detectó whitespace al final en PROJECT_STATUS, SESSION_HANDOFF, CHANGELOG y ERROR_LOG después de concatenar secciones.
+- Corrección: normalizar EOF a una sola línea final; repetir diff-check.
+- Prevención: revisar whitespace después de añadir documentación mediante scripts.

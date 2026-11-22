@@ -149,3 +149,8 @@
 - La UI automatizada verifica HTTP 409/mensaje y consulta el equipo para confirmar que no se creó usuario cuando el documento ya está en uso.
 - Backend local 61/61; Front lint/build/discovery 16 correctos. Integración CI pendiente.
 - Actions `44997054375` validó el E2E de documento duplicado: Front `1bb7d71` + Back `a7f7c4e`, xUnit 61/61, E2E 16/16, responsive 1/1 y cleanup exitosos.
+
+## 2026-11-22 — Cancelación visible de rutas pendientes
+
+- Gestión de Rutas incorpora cancelación con confirmación; usa el endpoint existente de estado y sólo comunica éxito si el backend acepta la transición.
+- El E2E de edición/historial ahora cancela desde la UI y consulta persistencia e historial. Actions integrado pendiente.

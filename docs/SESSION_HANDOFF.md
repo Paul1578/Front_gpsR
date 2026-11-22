@@ -316,3 +316,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Validación integrada: Actions `44999716080` pasó en Front `e2cdcb1` con Backend `3620cc2`: xUnit 61/61, audit/lint/build, responsive 1/1 y Playwright **18/18**, API/MySQL y cleanup success.
 - Alta móvil confirmó redirección al Dashboard con sesión Admin, `/Auth/me`, lista propia vacía y navegación a Vehículos/Rutas; E2E comprobó ancho sin overflow. Ambos workflows manuales concluyeron en verde.
 - Errores de investigación y decisión/corrección de la contradicción están en `ERROR_LOG.md` de ambos repositorios.
+
+## Cancelación desde Gestión de Rutas — pendiente de Actions
+
+- Brecha UX: el E2E cancelaba por API; la lista de rutas no tenía acción de cancelación.
+- `RoutesManagement.tsx` muestra acción con confirmación sólo para rutas pendientes; llama `updateRoute(..., { estado: "cancelada" })` y reporta según resultado del backend.
+- El E2E móvil existente cancela mediante UI, confirma HTTP 204, lee el estado persistido y comprueba Historial. Lint/build, discovery (18) y diff-check pasan localmente.
+- Error inicial TypeScript por variable `routeCard` redeclarada corregido y registrado en `ERROR_LOG.md`; falta Actions con API/MySQL real.

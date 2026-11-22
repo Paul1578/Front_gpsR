@@ -647,11 +647,15 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
     await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
 
-    const cancelledResponse = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
-      headers,
-      data: { status: 3 },
-    });
-    expect(cancelledResponse.status()).toBe(204);
+    const cancelRouteCard = page.getByRole("heading", { name: updatedName, exact: true }).locator("xpath=../../../..");
+    await cancelRouteCard.getByRole("button", { name: `Cancelar ruta ${updatedName}` }).click();
+    const cancellationPromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    await page.getByRole("button", { name: "Sí, cancelar ruta" }).click();
+    expect((await cancellationPromise).status()).toBe(204);
     const cancelledRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
     expect(cancelledRouteResponse.status()).toBe(200);
     expect((await cancelledRouteResponse.json()).status).toBe(3);
