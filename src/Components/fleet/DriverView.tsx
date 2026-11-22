@@ -543,7 +543,12 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
                           </button>
                         )}
                         {point.status === "pending" && (
-                          <button onClick={() => void handleStopStatus(pointIndex, "skipped")} className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700">
+                          <button
+                            disabled={!point.evidence?.length}
+                            onClick={() => void handleStopStatus(pointIndex, "skipped")}
+                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title={!point.evidence?.length ? "Adjunta evidencia para omitir" : undefined}
+                          >
                             Omitir
                           </button>
                         )}

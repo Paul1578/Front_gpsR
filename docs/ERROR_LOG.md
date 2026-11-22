@@ -1,3 +1,10 @@
+## 2026-11-22 — API permitía cerrar parada sin evidencia y dejar ruta atascada — CORREGIDO LOCAL; ACTION PENDIENTE
+
+- `Route.UpdatePointStatus` aceptaba Completed/Skipped con cero evidencia; luego `AddPointEvidence` rechazaba la parada cerrada y `ChangeStatus(Completed)` rechazaba la ruta, dejándola imposible de finalizar. La interfaz bloqueaba Completar, pero Omitir también podía crear la inconsistencia.
+- Dominio ahora rechaza terminales sin evidencia antes de mutar; DriverView deshabilita Omitir. xUnit cubre ambos rechazos y Skip válido con evidencia; Release **110/110**.
+- Smoke tenant HTTP + MySQL 8 efímero exit 0. Snapshot de Routes.Status, EndedAt, PointsJson y Vehicles.Status idéntico tras los tres HTTP 400; cleanup cero. Front lint/build/audit/discovery 36 correctos. Action nueva pendiente.
+- Prevención: validar transiciones terminales en API/dominio, comprobar no mutación en DB y no confiar sólo en UI.
+
 # 2026-11-22 — Manager no recibía opciones para crear rutas — CORREGIDO Y VALIDADO LOCALMENTE
 
 - Síntoma: Manager podía abrir el constructor, pero los selectores de vehículo/conductor quedaban vacíos.

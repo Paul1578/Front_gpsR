@@ -2649,12 +2649,46 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
 
   const stopCard = page.locator("article").filter({ hasText: "Entrega E2E" });
   await expect(stopCard).toContainText("Recogida y entrega");
+  await expect(stopCard.getByRole("button", { name: "Omitir" })).toBeDisabled();
   const startStopPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
     response.request().method() === "PUT",
   );
   await stopCard.getByRole("button", { name: "Iniciar parada" }).click();
   expect((await startStopPromise).status()).toBe(200);
+
+  const completeStopWithoutEvidence = await page.request.put(`/api/backend/Routes/${routeId}/points/1/status`, {
+    headers,
+    data: { status: 2 },
+  });
+  expect(completeStopWithoutEvidence.status()).toBe(400);
+  const unchangedStop = await page.request.get(`/api/backend/Routes/${routeId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedStop.status()).toBe(200);
+  const unchangedStopState = await unchangedStop.json();
+  expect(unchangedStopState.status).toBe(1);
+  expect(unchangedStopState.points[1].status).toBe(1);
+  expect(unchangedStopState.points[1].evidence).toHaveLength(0);
+
+  const completeWithoutEvidence = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+    headers,
+    data: { status: 2 },
+  });
+  expect(completeWithoutEvidence.status()).toBe(400);
+  const unchangedIncompleteRoute = await page.request.get(`/api/backend/Routes/${routeId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedIncompleteRoute.status()).toBe(200);
+  const incompleteRouteState = await unchangedIncompleteRoute.json();
+  expect(incompleteRouteState.status).toBe(1);
+  expect(incompleteRouteState.points[1].status).toBe(1);
+  expect(incompleteRouteState.points[1].evidence).toHaveLength(0);
+  const unchangedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedVehicle.status()).toBe(200);
+  expect((await unchangedVehicle.json()).status).toBe(1);
 
   await stopCard.getByRole("button", { name: "Evidencia" }).click();
   const evidenceDialog = page.getByRole("dialog");

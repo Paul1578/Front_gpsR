@@ -1,3 +1,9 @@
+## Evidencia obligatoria por parada — validado local; CI pendiente
+
+- Se corrigió API que permitía Completed/Skipped sin evidencia y dejaba la operación atascada. El dominio exige evidencia; DriverView deshabilita Omitir sin evidencia.
+- Backend xUnit **110/110**, smoke HTTP/MySQL descartable y cleanup cero. Smoke confirma 400 sin cambios al omitir/completar parada y cerrar ruta, luego el ciclo válido funciona.
+- Front lint/build/audit 0/discovery 36 pasan; Action E2E para el fix pendiente.
+
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.

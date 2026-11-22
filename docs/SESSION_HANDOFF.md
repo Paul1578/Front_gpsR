@@ -1,3 +1,10 @@
+## Hallazgo crítico — cierre de parada sin evidencia — fix local; CI pendiente
+
+- Auditoría descubrió que API aceptaba `Pending→Skipped` y `InProgress→Completed` sin evidencia; luego no se permitía agregarla y la ruta quedaba imposible de finalizar.
+- `Route.UpdatePointStatus` requiere evidencia antes de Completed/Skipped. Unit tests Release **110/110**. Smoke HTTP/MySQL efímero confirma 400 y snapshots SQL inalterados para Skip, Complete y cierre de ruta sin evidencia; camino válido y cleanup cero pasaron.
+- Front deshabilita Omitir sin evidencia; E2E intenta ambas mutaciones por HTTP y verifica GET sin cambios, luego sigue el flujo válido. Lint/build/audit 0/discovery 36 pasan local. Actions integradas del fix pendientes.
+- Archivos: Backend Route.cs, RoutePointTests.cs, smoke-tenant-http.sh; Front DriverView.tsx, fleet-admin.spec.ts. Publicar en ramas actuales y repetir Actions integradas.
+
 ## Continuación — búsqueda de conductores y E2E fallido corregido — 2026-11-22
 
 - Ramas Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; no usar `main`.

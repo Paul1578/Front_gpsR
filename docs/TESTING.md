@@ -1,3 +1,9 @@
+# Evidencia obligatoria para cierre de parada/ruta — 2026-11-22
+
+- E2E intenta por API cerrar parada `InProgress→Completed` sin evidencia y cerrar ruta sin evidencia; espera HTTP 400, vuelve a leer y comprueba ruta/parada abiertas, evidencia vacía y vehículo OnRoute. Luego completa el camino positivo con evidencia.
+- Smoke backend prueba `Pending→Skipped` sin evidencia, `InProgress→Completed` sin evidencia y cierre ruta; compara en MySQL status, fecha de cierre, JSON completo de puntos y vehículo antes/después. Smoke completo y cleanup cero pasaron.
+- Backend unit tests Release: **110/110**. Front lint/build/audit (0 vulnerabilidades)/discovery 36, `bash -n` y diff-check pasan local. API local Front no está disponible; los nuevos E2E quedan para Action autenticada con DB efímera.
+
 # Validación de búsqueda de conductores y corrección E2E — 2026-11-22
 
 - Front lint y build correctos; `npm audit --audit-level=low`: 0 vulnerabilidades; Playwright descubre **36 tests** en 5 archivos; `git diff --check` correcto.

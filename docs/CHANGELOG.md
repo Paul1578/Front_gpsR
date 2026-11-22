@@ -1,3 +1,9 @@
+# 2026-11-22 — Cierre de parada sin evidencia podía bloquear la ruta — FIX LOCAL APROBADO; CI PENDIENTE
+
+- Auditoría detectó que API aceptaba `InProgress→Completed`/`Pending→Skipped` sin evidencia aunque `AddPointEvidence` luego rechaza paradas cerradas; la ruta podía quedar imposible de finalizar. La interfaz bloqueaba completar, pero permitía omitir sin evidencia.
+- Backend exige evidencia antes de completar u omitir; UI deshabilita Omitir hasta adjuntar evidencia. Unit tests **110/110**, smoke HTTP/MySQL descartable exit 0 y cleanup sin fixtures.
+- Lint/build/audit 0/discovery 36 pasan local. E2E API verifica HTTP 400 y estado sin cambios, luego sigue el flujo positivo; Actions de ambos repos nuevos pendientes.
+
 # 2026-11-22 — Búsqueda operativa de conductores y selectores E2E robustos
 
 - Gestión de Conductores permite buscar por nombre, apellido, documento y teléfono, sin sensibilidad a mayúsculas ni tildes; mantiene el filtro de inactivos y distingue vacío real de búsqueda sin resultados.
