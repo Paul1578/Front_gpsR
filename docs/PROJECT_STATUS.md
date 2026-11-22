@@ -1,12 +1,11 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `b1823db` + Backend `2045b18`: Action `45053782460` pasó Release/xUnit, audit, lint/build y responsive; E2E **30/31** y cleanup completo. Trace identificó que la selección del mapa reemplaza el nombre de destino por su etiqueta genérica. Se corrige escribiendo el nombre después de fijar coordenadas.
-- Front `a2c1ca1` + Backend `2045b18`: Action `45054550439` validó la etiqueta final y el alta de roles Manager/Logistics (**32/33**). El E2E Manager llegó a la vista Rutas; falló por esperar encabezado incorrecto. Locator corregido para usar el h1 “Rutas”; suite integrada pendiente.
-- Front `1a893c9`: lint/build/discovery 33 pasan; Action `45055100816` valida el selector corregido y repite 33 E2E contra MySQL descartable.
+- Front actual `67df420` + Backend `2045b18`. Action `45055100816` sobre Front `1a893c9` pasó Release/xUnit, audit, lint/build, responsive **1/1**, E2E **33/33** y cleanup de MySQL descartable.
+- El suite integrado ya verifica el nombre y coordenadas de destino, alta directa Manager/Logistics y navegación/responsive Manager a Gestión de Rutas/constructor. El cambio pendiente de esta rama es solamente actualizar `upload-artifact` a v7.0.2; aún no ha tenido que ejecutarse porque el último Action pasó.
 - Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
-- Verificación local en `a2c1ca1`: lint/build, discovery **33**. Incluye test de alta directa Manager/Logistics, y dashboard responsive Manager con apertura/cancelación del constructor. Action `45054550439` está en curso para validar esos cambios y la etiqueta final del destino.
-- Auditoría multiagente del frontend: persisten dos brechas alcanzables ahora cubiertas en specs locales (creación directa Manager/Logistics y navegación Manager a rutas); falta validar en CI. Super Admin requiere definir alcance/permisos globales. El móvil nativo fue aplazado por el usuario.
+- Verificación local del HEAD: lint/build/discovery **33**. La corrida autenticada `45055100816` prueba los cambios con datos reales QA y confirma limpieza de la base desechable.
+- Auditoría multiagente del frontend: brechas de creación directa Manager/Logistics y navegación/responsive Manager están cubiertas y probadas. Super Admin requiere definir alcance/permisos globales. El móvil nativo fue aplazado por el usuario.
 - Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
 
 # Estado actual — 2026-11-22

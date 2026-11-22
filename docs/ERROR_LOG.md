@@ -1,4 +1,4 @@
-# 2026-11-22 — Actions 45051977357/45053076619: E2E de mapa móvil — EN CORRECCIÓN
+# 2026-11-22 — Actions 45051977357/45053076619: E2E de mapa móvil — CORREGIDO Y VALIDADO
 
 - Action `45051977357` pasó Release/xUnit del backend, audit, lint/build y browser responsive; E2E **29/31**. El mapa agotó 90 s y el cleanup; Mi Ruta no mostró el alert 503.
 - En `45053076619` pasó Mi Ruta y el suite mejoró a **30/31**. El timeout individual capturó la causa del mapa: la prueba abrió la vista de mapa móvil con “Ubicar destino” y luego intentó llenar el input de destino, oculto mientras el mapa permanece abierto. El trace confirma `Ubicando destino` y el botón “Ver paradas y detalles”.
@@ -7,10 +7,9 @@
 - La interceptación persistente de `/Routes**` hizo determinista el 503; la prueba confirmó el alert y el retry de “Mi Ruta” en la última Action.
 - Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; toda edición requiere el panel visible. La selección de mapa puede también reemplazar el nombre visible, así que aplicar la etiqueta final después de seleccionar. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
 - Action `45053782460` terminó **30/31**; el cleanup funcionó y el único fallo siguió en el nombre de destino, sobrescrito por el click de mapa. El nuevo orden conserva la verificación pendiente, fija coordenadas, y luego aplica el nombre final desde el editor visible. La repetición con ese cambio y los nuevos casos de roles está pendiente.
-- Action integrada `45054550439` comprueba el fix y los E2E nuevos de Manager/Logistics.
-- Action `45054550439` pasó **32/33**, incluido el E2E de altas Manager/Logistics. El nuevo flujo Manager ingresó a Rutas, pero el test esperaba heading “Gestión de Rutas”; el h1 real es “Rutas”. Causa: selector E2E no coincide con el texto accesible real, no error de permisos ni UI. Corregido el locator a `heading: Rutas` para la lista y al cancelar el constructor. Repetir Action completa.
-- Action de repetición `45055100816` sobre `1a893c9` en curso.
-- Actions `45053076619` y posteriores emitieron warning deprecando Node 20 de `upload-artifact@v4`, aunque los artifacts se cargaron correctamente. Actualizado a `actions/upload-artifact@v7.0.2` (versión estable actual consultada en GitHub Releases); validar que el workflow y artifact funcionen en la siguiente corrida.
+- Action `45054550439` pasó **32/33**, incluido el E2E de altas Manager/Logistics. Manager llegó a Rutas, pero el test esperaba heading “Gestión de Rutas”; el h1 real es “Rutas”. Causa: selector E2E no coincide con el texto accesible real, no error de permisos ni UI. Corregido el locator a `heading: Rutas` para la lista y al cancelar el constructor.
+- Action `45055100816` sobre `1a893c9` pasó **33/33**, además de backend Release/xUnit, audit, lint/build, responsive y cleanup. Confirmó el heading corregido, creación Manager/Logistics, navegación Manager y constructor móvil con nombre/geometría persistidos.
+- Actions `45053076619` y `45054550439` emitieron warning por Node 20 en `upload-artifact@v4`; los artifacts sí se cargaron y traces se descargaron. Actualizado a `actions/upload-artifact@v7.0.2` (release actual consultada en GitHub); esa versión aún requiere ejecutarse en un workflow fallido para comprobar la subida condicional.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 

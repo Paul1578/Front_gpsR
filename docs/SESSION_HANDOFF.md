@@ -1,10 +1,10 @@
 ## Session handoff — Constructor de rutas y CRUD Driver responsive — 2026-11-22
 
 - Ramas activas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; no cambios en `main`.
-- Action `45054550439` sobre `a2c1ca1`: **32/33**, backend Release/xUnit, audit, lint/build y responsive pasan; cleanup completo. Test de punto conservó el nombre y altas Manager/Logistics pasaron. El test Manager llegó a Rutas, pero esperaba heading “Gestión de Rutas”; h1 real “Rutas”. Locator corregido en `1a893c9`, lint/build/discovery 33 pasan; Action `45055100816` está en curso. Artifact `playwright-traces-45054550439-1`.
+- Action `45055100816` sobre Front `1a893c9`: pasó **33/33 E2E**, responsive **1/1**, backend Release/xUnit, audit/lint/build y cleanup. Confirmó mapa a 320 px, alta directa Manager/Logistics y entrada Manager a rutas/constructor en 320/768. Head Front actual `67df420` (actualización docs + upload-artifact v7.0.2); Backend `2045b18`, ramas limpias.
 - Front: retirado `DEFAULT_POINT` de Quito. Escribir origen/destino deja ubicación pendiente y bloquea avance hasta mapa/búsqueda; test autenticado valida el flujo. Error/reintento de assignment-options se informa en la lista; rutas con IDs desconocidos no se presentan como sin asignar; cancelación respeta mantenimiento/otras rutas.
 - Cobertura responsive existente incluye ciclo User a 768 px, roles a 320 px, Driver a 768 px y edición/cancelación de rutas a 320/768 px. Los nuevos tests manager quedan pendientes de ejecución autenticada.
-- La repetición siguiente debe validar ruta móvil y los casos añadidos de roles Manager/Logistics y navegación responsive Manager. Push directo no dispara CI; usar workflow_dispatch en branch.
+- Próximo: continuar matriz CRUD/roles/responsive fuera de pantallas cubiertas. No esperar la corrida nueva por `upload-artifact@v7.0.2` hasta que exista un fallo que active esa subida condicional.
 - Backend `2045b18` con 97/97 xUnit y smoke de fila-lock/driver-rutas; docs commit `280a0c8`. Backend Action `45050058627` pasó; el Front debe integrarse contra backend actual.
 - Objetivo completo sigue abierto: continuar criterios alcanzables CRUD/roles/responsive/seguridad; Admin delegado requiere decisión de política, SMTP vigente e infraestructura/PFX son externas; nativo móvil diferido por el usuario.
 
