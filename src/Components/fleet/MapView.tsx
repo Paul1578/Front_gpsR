@@ -213,7 +213,7 @@ export function MapView({ onBack }: MapViewProps) {
 
   // --------- UI ---------
   return (
-    <div className="flex h-full min-w-0 flex-col bg-white border border-gray-200 rounded-2xl shadow-sm">
+    <div className="flex h-full w-full min-w-0 max-w-full flex-col overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">
       {/* HEADER */}
       <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
         <div className="flex items-center gap-3">
@@ -262,7 +262,7 @@ export function MapView({ onBack }: MapViewProps) {
       )}
 
       {/* CONTENIDO */}
-      <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50 lg:flex-row">
+      <div className="flex w-full min-w-0 max-w-full flex-1 flex-col gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50 lg:flex-row">
         {/* MAPA */}
         <div className="relative min-w-0 flex-1">
           {/* Panel flotante con info de la ruta seleccionada */}

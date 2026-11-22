@@ -447,3 +447,4 @@
 
 - Se limitaron anchos mínimos en el layout flex del Mapa para evitar overflow interno en 320 px. Historial normaliza evidencia del contrato real `points[].evidence`, incluyendo foto y descripción.
 - E2E agrega comprobación de detalle Admin a 768 px. Causas de CI y prevención en `docs/ERROR_LOG.md`.
+- Tras Action `45063487802`, el wrapper del mapa fuerza `w-full max-w-full overflow-hidden` y el test verifica las tres evidencias reales del flujo. Lint/build, discovery de 33 y diff-check pasan localmente; Action nueva pendiente.

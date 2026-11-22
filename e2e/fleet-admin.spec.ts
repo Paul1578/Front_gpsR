@@ -2696,7 +2696,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   await expect(historyPage.getByRole("heading", { name: "Historial de Rutas" })).toBeVisible();
   await historyPage.getByRole("button", { name: "Completadas", exact: true }).click();
   const historyCard = historyPage.getByText(routeName, { exact: true }).locator("xpath=../../../..");
-  await expect(historyCard).toContainText("1 evidencia(s)");
+  await expect(historyCard).toContainText("3 evidencia(s)");
   await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
   const historyDialog = historyPage.getByRole("dialog");
   await expect(historyDialog.getByAltText("Evidencia")).toBeVisible();

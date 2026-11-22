@@ -514,3 +514,5 @@ Fecha de actualización: 2026-11-22.
 
 - Front Action `45062280254` llegó a **31/33**. Detectó 363 px de contenido en `<main>` del mapa a 320 px y que el resumen del Historial omitía evidencia guardada dentro de `points[].evidence`.
 - Fix en rama: `min-w-0` en ancestros del Mapa y normalización de evidencia por parada en Historial; E2E extiende el detalle Admin a 768 px. Lint/build/discovery (33) pasan localmente; Action integrada del nuevo SHA pendiente.
+
+- Front Action `45063487802` repitió overflow del `<main>` a 363 px; el wrapper aún debía recortar el ancho interno del mapa. La evidencia apareció y fueron 3 eventos (dos notas + foto), por lo que se corrigió la expectativa de tarjeta de 1 a 3. Action quedó 31/33; nuevo SHA pendiente.

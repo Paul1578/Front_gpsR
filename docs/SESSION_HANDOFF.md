@@ -731,3 +731,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Las dos ramas permanecen separadas de `main`; no cerrar misión. SMTP/producción y app nativa delimitados, política Admin delegado sigue siendo decisión de producto pendiente.
 
 - Nueva corrección del lote: Mapa usa `min-w-0` en flex ancestors y paneles; Historial construye evidencia desde `RouteApiDto.points[].evidence` antes de pintar resumen/detalle. E2E mide diálogo Admin a 768×1024. Validación local final: lint/build, discovery 33, diff-check.
+
+- Action `45063487802` volvió a fallar 2/33. Trace confirmó `main.scrollWidth=363` a viewport 320; añadido `w-full max-w-full overflow-hidden` al root y layout interno MapView. Historial mostraba 3 evidencias reales (dos notas + una foto), así que la aserción “1 evidencia” se actualizó a 3; conserva detalle de foto y descripción.
