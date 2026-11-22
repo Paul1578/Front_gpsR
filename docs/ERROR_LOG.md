@@ -1109,3 +1109,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: el E2E ahora valida vista y acción iniciales, ausencia de overflow, límites y controles del diálogo de evidencia en 320/768 px, y estado final a 768 px.
 - No se ejecutó localmente por ausencia de fixture/credenciales Driver QA; CI sí ejecuta el flujo con API/MySQL descartables. Actions `45043898907` pasó el commit `0dd5099`: E2E 26/26, responsive 1/1, build/audit y cleanup.
 - Prevención: la matriz responsive debe cubrir cada rol operativo y las acciones principales, no sólo la navegación y las pantallas administrativas.
+
+
+## 2026-11-22 — Auditoría no aislaba el filtro de estado y el mapa/lista Logistics — COBERTURA AMPLIADA
+
+- El E2E previo filtraba dos rutas Pending por vehículo y Driver; el estado Pending estaba aplicado pero una regresión que ignorara estado podía pasar porque recursos distintos ya excluían la otra ruta.
+- Solución: una ruta fixture se cancela; los selectores del segundo recurso con estado Pending deben devolver cero, y sólo `Cancelada` muestra esa ruta. Se prueban ambos anchos con filtros activos y overflow de documento/main.
+- Logistics ya cubría selectores de asignación e historial a 320/768 px, pero mapa y lista no. Ampliado el E2E para medir mapa/editor a 320/768 y lista/main tras crear ruta. CI autenticada queda pendiente para el nuevo SHA.

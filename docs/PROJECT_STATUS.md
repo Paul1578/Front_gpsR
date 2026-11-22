@@ -1,3 +1,11 @@
+## Estado actual de estabilización — 2026-11-22
+
+- Ramas: Front `refactor/route-builder`; backend `chore/stabilize-fleet-platform`; `main` intacta.
+- Actions Front `45045460102` pasó `a761674`: Release backend, audit/lint/build, responsive, E2E API/MySQL **26/26** y cleanup. E2E ampliados después de esa SHA requieren corrida nueva.
+- Backend `190f284` pasó `45045070288`: build/test Release, xUnit **88/88**, smoke HTTP/MySQL tenant/flota, concurrencia y cleanup. Docs `e24e371` pasó `45045329470`.
+- Validación local del lote actual: Front lint/build/discovery **26**; Backend Release/xUnit **89/89**, test enfocado 1/1, `bash -n` y diff-check. E2E autenticado y smoke MySQL de los cambios sin commit quedan para CI.
+- Permanecen brechas alcanzables de CRUD/roles/responsive y seguridad de concurrencia bajo revisión. Política para Admin delegado requiere decisión de producto; SMTP/PFX productivos externos; app nativa aplazada por el usuario.
+
 ## Iteración en curso — Historial de Logística y cambio de contraseña — 2026-11-22
 
 - E2E de cambio de contraseña añadió persistencia, revocación de refresh/clave anterior y nuevo login. Actions `45033318956` falló 20/21 por un locator Playwright ambiguo (no llegó a ejecutar el endpoint); causa/corrección documentadas en `ERROR_LOG.md`, selector corregido.

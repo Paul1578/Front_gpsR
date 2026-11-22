@@ -1229,6 +1229,12 @@ test("Admin combina filtros de rutas y restablece la lista", async ({ page }) =>
       fixture.routes.push({ id: (await route.json()).id as string, name: routeNames[index] });
     }
 
+    const cancelSecondRoute = await page.request.put(`/api/backend/Routes/${fixture.routes[1].id}/status`, {
+      headers,
+      data: { status: 3 },
+    });
+    expect(cancelSecondRoute.status()).toBe(204);
+
     await page.reload();
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
@@ -1241,6 +1247,28 @@ test("Admin combina filtros de rutas y restablece la lista", async ({ page }) =>
     const secondRouteHeading = page.getByRole("heading", { name: routeNames[1], exact: true });
     await expect(firstRouteHeading).toBeVisible();
     await expect(secondRouteHeading).toHaveCount(0);
+
+    // Isolate the status filter: same resource filters must expose the cancelled
+    // route only after changing status, proving all selected criteria are applied.
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[1]);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[1]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Estado").selectOption("cancelada");
+    await expect(secondRouteHeading).toBeVisible();
+
+    for (const width of [320, 768]) {
+      await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+      expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.main);
+      await expect(secondRouteHeading).toBeVisible();
+    }
+
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
     await expect(firstRouteHeading).toBeVisible();
     await expect(secondRouteHeading).toBeVisible();
@@ -1913,10 +1941,28 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       await logisticsPage.getByRole("button", { name: "Continuar" }).click();
       const map = logisticsPage.locator(".leaflet-container");
       await logisticsPage.getByRole("button", { name: "Seleccionando" }).waitFor();
+      await logisticsPage.setViewportSize({ width: 320, height: 844 });
+      const originMapDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(originMapDimensions.document).toBeLessThanOrEqual(originMapDimensions.viewport);
+      expect(originMapDimensions.mainContent).toBeLessThanOrEqual(originMapDimensions.main);
       await clickMapAwayFromMarkers(map);
       await logisticsPage.getByPlaceholder("¿Desde dónde sale?").fill("Origen Logistics E2E");
       const destinationRow = logisticsPage.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
       await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+      await logisticsPage.setViewportSize({ width: 768, height: 1024 });
+      const destinationMapDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(destinationMapDimensions.document).toBeLessThanOrEqual(destinationMapDimensions.viewport);
+      expect(destinationMapDimensions.mainContent).toBeLessThanOrEqual(destinationMapDimensions.main);
       await clickMapAwayFromMarkers(map);
       await logisticsPage.getByPlaceholder("¿A dónde llega?").fill("Destino Logistics E2E");
       await logisticsPage.getByRole("button", { name: "Continuar" }).click();
@@ -1957,6 +2003,18 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     });
 
     const routeCard = logisticsPage.getByRole("heading", { name: routeName, exact: true }).locator("xpath=../../../..");
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const routeListDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(routeListDimensions.document).toBeLessThanOrEqual(routeListDimensions.viewport);
+      expect(routeListDimensions.mainContent).toBeLessThanOrEqual(routeListDimensions.main);
+      await expect(logisticsPage.getByRole("heading", { name: routeName, exact: true })).toBeVisible();
+    }
     await routeCard.getByRole("button", { name: `Cancelar ruta ${routeName}` }).click();
     const cancelDialog = logisticsPage.getByRole("alertdialog");
     await expect(logisticsPage.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();

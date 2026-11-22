@@ -364,3 +364,10 @@
 
 - El E2E de Driver ahora mide la vista inicial/acción y el diálogo de evidencia a 768×1024 además de 320×844; comprueba overflow del documento y área principal y confirma que el estado final se mantiene en tablet.
 - Lint/build/discovery 26 pasan localmente. El E2E autenticado se omite sin fixture local; Actions `45043898907` validó este cambio: E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup.
+
+
+## 2026-11-22 — Preservar mantenimiento y reforzar cobertura de filtros/Logistics
+
+- Backend ya no libera un vehículo al cancelar ruta Pending: sólo se libera en transición terminal que parte de InProgress. Regresión SQLite verifica ruta Cancelled y vehículo aún Maintenance; smoke HTTP/MySQL repite el caso con lectura SQL y luego restaura Available.
+- E2E de filtros distingue Pending/Cancelled y verifica el filtro de estado aunque se seleccionen los recursos de la ruta cancelada; comprueba lista/main a 320/768 px con filtros activos. Logistics prueba mapa en 320/768 y lista en ambos anchos.
+- Validación local: Front lint/build/discovery 26; backend test dirigido 1/1 y suite Release 89/89; shell syntax/diff-check. Corrida integrada de los nuevos cambios pendiente.

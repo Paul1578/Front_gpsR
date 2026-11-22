@@ -641,3 +641,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Auditoría backend encontró que se podía iniciar una ruta de Driver cuyo usuario vinculado estaba inactivo, dejando vehículo `OnRoute`; también se podía desactivar la cuenta durante ruta `InProgress`. Backend `190f284` bloquea ambas operaciones bajo locks transaccionales y comprueba que no haya mutaciones indebidas. Release xUnit 88/88 y Actions `45045070288` pasó smoke tenant/flota, concurrencia y cleanup.
 - Docs backend `e24e371` tiene Actions `45045329470` en curso al último chequeo. Debe completarse además una corrida Front integrada con el backend `190f284` (rama backend se resuelve al HEAD publicado).
 - Documentación del hallazgo y prevención en Front `ERROR_LOG.md`; la cuenta de prueba local se dejó intacta. Misión abierta: seguir cubriendo CRUD, permisos/roles y responsive; móvil nativo aplazado; SMTP y aprovisionamiento productivo externos.
+
+
+## Continuación — mapa y filtros probados por rol — 2026-11-22
+
+- Front ya distingue el filtro de estado de los filtros de vehículo/Driver usando una ruta Pending y otra Cancelled; valida sólo segunda al cambiar el estado y vuelve a ambas al limpiar. Mientras filtra verifica documento/main en 320/768. Logistics mide editor/mapa en esos anchos y su lista después de guardar. `npm run lint`, `npm run build`, discovery Playwright **26** pasan; falta Actions con API/MySQL efímero.
+- Acción Front `45045460102` pasó la SHA anterior `a761674` con 26/26 y cleanup; no cubre las nuevas aserciones.
+- Fix backend separado mantiene Maintenance al cancelar ruta Pending; backend Release xUnit **89/89**, test focal 1/1, `bash -n` y diff-check. Smoke MySQL extendido pendiente de CI.
