@@ -403,6 +403,9 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
   const routeName = `E2E QA ruta mapa ${suffix}`;
   let vehicleId: string | undefined;
   let routeId: string | undefined;
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
 
   try {
     const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
@@ -521,6 +524,20 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     if (routeId) {
       const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
       expect([200, 204, 404]).toContain(cleanupRoute.status());
+    }
+    if (vehicleId) {
+      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+      expect(currentDriverResponse.status()).toBe(200);
+      const currentDriverVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
+      if (currentDriverVehicleId === vehicleId) {
+        const restoreAssignment = originalDriverVehicleId
+          ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+              headers,
+              data: { vehicleId: originalDriverVehicleId },
+            })
+          : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+        expect(restoreAssignment.status()).toBe(204);
+      }
     }
     if (vehicleId) {
       const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });

@@ -163,3 +163,8 @@ Fecha de actualización: 2026-11-22.
 - Errores intermedios y soluciones están en `docs/ERROR_LOG.md`.
 - Pendiente: ampliar CRUD, matriz de mutaciones por rol y cobertura visual responsive de pantallas/acciones restantes. SMTP depende de credenciales externas vigentes; app nativa móvil está aplazada por decisión del usuario.
 - La auditoría continúa activa; estos resultados no cubren todos los criterios de aceptación.
+
+## Validación de orden de paradas — 2026-11-22
+
+- El E2E ahora agrega, quita y reordena paradas, y comprueba orden y operación exactos desde GET API. El primer Actions `44986079119` detectó que su cleanup dejaba el vehículo asignado al Driver (409); la prueba fue corregida para restaurar la asignación original antes de borrar.
+- Lint/build/diff check locales pasan. Ejecución integrada de la corrección pendiente; no se cuenta como cubierta hasta que pase Chrome/API/MySQL.

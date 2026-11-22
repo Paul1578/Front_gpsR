@@ -214,3 +214,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Documenté el contrato HTTP incorrecto asumido por la prueba y el z-index que bloqueaba el modal en `ERROR_LOG.md`; ambos están corregidos y verificados por CI.
 - Siguiente: cerrar cobertura real de reordenar/quitar paradas, matriz backend de permisos tras cambios de rol, CRUD y responsive de pantallas restantes. Dos agentes trabajan en checkout aislado: prueba del constructor frontend y revocación por cambio de rol backend; revisar e integrar resultados antes de publicar.
 - No declarar completa la misión. SMTP necesita credenciales externas vigentes; app nativa fue pospuesta por el usuario; Super Admin requiere definición de producto porque no existe en el contrato backend.
+
+## Reordenamiento de paradas: corrección del cleanup — 2026-11-22
+
+- Integré la prueba en `refactor/route-builder` (commit `69bdd31`); agrega/retira/reordena paradas y compara vía API los cuatro puntos y operaciones persistidos. La ejecución local se omitió por no tener servicios/credenciales QA; Actions `44986079119` sí la ejecutó y detectó que la limpieza de vehículo recibía 409.
+- Causa: crear ruta asigna su vehículo al Driver; tras borrar la ruta, ese vínculo sigue vigente. El test ahora captura el `vehicleId` previo y en `finally` lo restaura (o desasigna) antes de eliminar el vehículo de prueba.
+- Lint, build y `git diff --check` pasan tras el cambio. Pendiente publicar y repetir Actions Chrome/API/MySQL; no contar aún este E2E como aprobado.

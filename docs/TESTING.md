@@ -153,3 +153,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Actions `44985541718` en SHA `1f3a24c`: audit, lint y build correctos; backend Release **56/56** sin warnings/errores; responsive Chrome **1/1**; Playwright autenticado Chrome/API/MySQL **14/14**.
 - El E2E Driver inicia y completa una ruta móvil con evidencia de nota, y verifica por API que el vehículo vuelve a `Available`. CI usó MySQL desechable.
 - Las aserciones HTTP quedaron alineadas a 200 según el contrato observado; la ruta se limpia desde `finally`. El modal sobre Leaflet quedó comprobado en la ejecución integrada.
+
+## Limpieza de fixture de reordenar paradas — 2026-11-22
+
+- Actions `44986079119` ejecutó la nueva persistencia del orden/tipos, pero el `finally` falló con 409 al borrar el vehículo: la ruta había asignado ese vehículo al Driver.
+- Se corrigió el cleanup para restaurar la asignación previa del Driver tras borrar la ruta y antes de borrar el vehículo. `npm run lint`, `npm run build` y `git diff --check` pasan; la repetición autenticada de Chrome/API/MySQL está pendiente.
