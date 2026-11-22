@@ -1,3 +1,11 @@
+## Validación responsive CRUD de vehículos — 2026-11-22
+
+- El E2E Admin de vehículos ahora prueba el CRUD en 320×844 y 768×1024, mide overflow horizontal y confirma que los diálogos de alta/estado caben dentro del viewport. El ciclo de negocio mantiene alta, placa duplicada, edición, mantenimiento/disponible, baja y reactivación reales por UI/API.
+- Local: `npm run lint`, `npm run build`, discovery Playwright (18 tests) y `git diff --check` pasaron. El test API/MySQL real queda sujeto a Actions.
+- Backend smoke por alta Driver concurrente: primer Actions `45001352585` halló expectativa incorrecta de HTTP 201 frente a contrato 200/409. Corregido para admitir 200 o 201 sólo para la petición ganadora, manteniendo 409 y aserción de persistencia atómica. Actions repetido `45001599626`, estado pendiente al último chequeo.
+- Se intentó dispatch con `backend-ci.yml` inexistente (404); el workflow real `ci.yml` se disparó correctamente. Error registrado en backend `docs/ERROR_LOG.md`.
+- Siguiente: confirmar ambas Actions; revisar hallazgos y elegir el siguiente vacío de CRUD/roles/responsive. Misión aún abierta.
+
 # Session handoff
 
 ## Estado integrado actual — 2026-11-22

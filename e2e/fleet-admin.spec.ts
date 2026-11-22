@@ -400,7 +400,7 @@ test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async
   }
 });
 
-test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ page }) => {
+test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -414,13 +414,31 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
   await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
 
+  const expectNoHorizontalOverflow = async () => {
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  };
+  const expectDialogFitsViewport = async (dialog: Locator) => {
+    const bounds = await dialog.boundingBox();
+    expect(bounds, "El formulario debe ser visible en el viewport actual").not.toBeNull();
+    const viewportWidth = page.viewportSize()!.width;
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewportWidth + 1);
+  };
+
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const plate = `E2EQA${suffix}`;
   let vehicleId: string | undefined;
 
   try {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expectNoHorizontalOverflow();
     await page.getByRole("button", { name: "Agregar Vehículo" }).click();
     const dialog = page.getByRole("dialog");
+    await expectDialogFitsViewport(dialog);
     await dialog.getByPlaceholder("ABC-123").fill(plate);
     await dialog.getByPlaceholder("Toyota").fill("FleetFlow QA");
     await dialog.getByPlaceholder("Hilux").fill("Browser test");
@@ -467,8 +485,11 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     expect((await updated).status()).toBe(200);
     await expect(card).toContainText("FleetFlow QA Editado Browser test");
 
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expectNoHorizontalOverflow();
     await card.getByRole("button", { name: "Editar" }).click();
     const maintenanceDialog = page.getByRole("dialog");
+    await expectDialogFitsViewport(maintenanceDialog);
     await maintenanceDialog.locator("select").selectOption("mantenimiento");
     await expect(maintenanceDialog.locator("select")).toHaveValue("mantenimiento");
     const maintenanceUpdate = page.waitForResponse((response) =>
@@ -487,6 +508,7 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     expect(maintenanceVehicle.status()).toBe(200);
     expect((await maintenanceVehicle.json()).status).toBe(2);
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole("button", { name: "Abrir menú" }).click();
@@ -537,11 +559,8 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
     await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("FleetFlow QA Editado Browser test");
 
-    const widths = await page.evaluate(() => ({
-      viewport: document.documentElement.clientWidth,
-      content: document.documentElement.scrollWidth,
-    }));
-    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expectNoHorizontalOverflow();
   } finally {
     if (vehicleId) {
       const token = await page.evaluate(() => {

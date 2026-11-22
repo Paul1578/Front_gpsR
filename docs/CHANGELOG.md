@@ -1,3 +1,7 @@
+## 2026-11-22 — Responsive CRUD de vehículos
+
+- E2E Admin amplía el ciclo de vehículo a 320×844 y 768×1024, incluyendo assert de overflow y encaje de diálogos. El CRUD sigue validando persistencia vía API. Lint/build/discovery 18 correctos localmente; Actions end-to-end pendiente.
+
 # Changelog
 
 ## 2026-11-21 — E2E móvil de rutas, conductores y roles
