@@ -18,6 +18,13 @@
 - Dashboard Logistics verifica la cifra de vehículos disponibles contra `/Routes/assignment-options`, además de garantizar que el navegador no llame `GET /Vehicles`. Actions `45035807218` pasó **21/21** Chrome/API/MySQL, responsive browser **1/1**, backend tests y cleanup; incluye diálogo de detalle Historial en 320/768 px y cambio real de contraseña.
 - Historial Logistics usa placa/marca/modelo del DTO de ruta, sin GET administrativo `/Vehicles`.
 
+# Validación integrada local — creación Manager responsive — 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npx playwright test --list` (**33**) y `git diff --check`: correctos.
+- Runner `scripts/run-e2e-local.sh` contra API y MySQL 8 efímero: **33/33** Chrome/API/MySQL; incluye creación Manager de ruta con punto Delivery, persistencia, edición/cancelación, alta Manager/Logistics en 320/768 px y ciclo User a 320 px. Cleanup final sin residuos.
+- E2E Manager aislado pasó **1/1** antes de la suite completa.
+- La primera corrida integrada fue 32/33. Se corrigieron guardas de rol, fixture Driver no asignable, selector Editar, aria-label de edición y prefijo del cleanup SQL; el primer cleanup falló por FK en el contenedor descartable, que se eliminó completamente. El siguiente pase focal y el suite final pasaron.
+
 # Pruebas frontend
 
 ## Comandos y resultados

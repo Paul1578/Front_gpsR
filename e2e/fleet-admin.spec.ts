@@ -1897,14 +1897,49 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
     expect(response.status(), `el fixture adopta el rol ${roleName}`).toBe(200);
   };
 
+  let vehicleId: string | undefined;
+  let routeDriverId: string | undefined;
+  let routeId: string | undefined;
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  let headers: { Authorization: string } | undefined;
   await setRole("Manager");
   try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers: adminHeaders,
+      data: { plate: `E2EQAM${suffix}`, brand: "FleetFlow QA", model: "Manager route", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+    const routeDriverResponse = await page.request.post("/api/backend/Drivers", {
+      headers: adminHeaders,
+      data: {
+        firstName: `E2E Manager ${suffix}`,
+        lastName: "Chofer de ruta",
+        documentNumber: `E2EQAM${suffix}`,
+        phoneNumber: "0990000018",
+        userId: null,
+      },
+    });
+    expect(routeDriverResponse.status()).toBe(201);
+    routeDriverId = (await routeDriverResponse.json()).id as string;
+
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/login");
     await page.getByLabel("Correo electrónico").fill(driverEmail!);
     await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
+    const managerToken = await page.evaluate(() => {
+      const serialized = localStorage.getItem("auth_tokens");
+      return serialized ? JSON.parse(serialized).accessToken as string : null;
+    });
+    expect(managerToken).toBeTruthy();
+    headers = { Authorization: `Bearer ${managerToken}` };
+    const assignmentOptionsResponse = await page.request.get("/api/backend/Routes/assignment-options", { headers });
+    expect(assignmentOptionsResponse.status(), await assignmentOptionsResponse.text()).toBe(200);
+    const assignmentOptions = await assignmentOptionsResponse.json();
+    expect(assignmentOptions.vehicles.some((vehicle: { id: string }) => vehicle.id === vehicleId)).toBe(true);
+    expect(assignmentOptions.drivers.some((driver: { id: string }) => driver.id === routeDriverId)).toBe(true);
 
     for (const [width, height] of [[320, 844], [768, 1024]] as const) {
       await page.setViewportSize({ width, height });
@@ -1914,15 +1949,96 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
       )).toBe(true);
     }
 
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 320, height: 844 });
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Información de la ruta" })).toBeVisible();
+    const routeName = `E2E QA ruta Manager UI ${suffix}`;
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Ruta Manager con dos operaciones");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+
+    const map = page.locator(".leaflet-container");
+    const origin = page.getByPlaceholder("¿Desde dónde sale?");
+    await origin.fill("Origen Manager QA");
+    await clickMapAwayFromMarkers(map);
+    await origin.fill("Origen Manager QA");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    const stop = page.getByPlaceholder("Parada 1");
+    await stop.fill("Entrega Manager QA");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("delivery");
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.fill("Destino Manager QA");
+    const destinationRow = destination.locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino Manager QA");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId!);
+    await page.locator("select").nth(1).selectOption(routeDriverId!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const createRoute = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createdRoute = await createRoute;
+    expect(createdRoute.status()).toBe(201);
+    routeId = (await createdRoute.json()).id as string;
+    const persistedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedRouteResponse.status()).toBe(200);
+    const persistedRoute = await persistedRouteResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.points).toHaveLength(3);
+    expect(persistedRoute.points[1]).toMatchObject({ name: "Entrega Manager QA", operation: 2 });
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const managerRouteHeading = page.getByRole("heading", { name: routeName, exact: true });
+    const managerRouteCard = managerRouteHeading.locator("xpath=../../../..");
+    await managerRouteCard.getByRole("button", { name: "Editar ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Editar ruta" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancelar edición" }).click();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(`E2E QA ruta tablet ${suffix}`);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Responsive tablet QA");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.getByRole("button", { name: "Cancelar creación" }).click();
     await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+
+    const deleteRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+    expect([200, 204]).toContain(deleteRoute.status());
+    routeId = undefined;
   } finally {
+    if (routeId && headers) {
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+      expect([200, 204, 404]).toContain(cleanupRoute.status());
+    }
+    if (vehicleId) {
+      if (routeDriverId) {
+        const unassign = await page.request.put(`/api/backend/Drivers/${routeDriverId}/unassign-vehicle`, { headers: adminHeaders });
+        expect([204, 404]).toContain(unassign.status());
+        const deactivateDriver = await page.request.put(`/api/backend/Drivers/${routeDriverId}/status`, {
+          headers: adminHeaders,
+          data: { isActive: false },
+        });
+        expect([204, 404]).toContain(deactivateDriver.status());
+      }
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
     await setRole("Driver");
   }
 });
@@ -2889,13 +3005,17 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
 
   for (const account of [
-    { roleLabel: "Gestor de flota", roleName: "Manager", emailPrefix: "manager" },
-    { roleLabel: "Logistica", roleName: "Logistics", emailPrefix: "logistics" },
+    { roleLabel: "Gestor de flota", roleName: "Manager", emailPrefix: "manager", viewport: 320 },
+    { roleLabel: "Logistica", roleName: "Logistics", emailPrefix: "logistics", viewport: 768 },
   ]) {
+    await page.setViewportSize({ width: account.viewport, height: account.viewport === 320 ? 844 : 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const username = `${account.emailPrefix}${suffix}`;
     const accountEmail = `fletflow.e2e.user.${account.emailPrefix}.${suffix}@example.test`;
     await page.getByRole("button", { name: "Crear Usuario" }).click();
     const dialog = page.getByRole("dialog");
+    const dialogWidth = await dialog.evaluate((element) => element.getBoundingClientRect().width);
+    expect(dialogWidth).toBeLessThanOrEqual(account.viewport);
     await dialog.getByPlaceholder("Juan").fill(`E2E ${account.roleName}`);
     await dialog.getByPlaceholder("Pérez").fill("Cuenta de prueba");
     await dialog.getByRole("textbox", { name: "jperez", exact: true }).fill(username);
@@ -3255,8 +3375,11 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 
   const regularUserCard = page
     .getByTestId(`team-user-${createdRegularUser.id}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await regularUserCard.getByRole("button", { name: `Editar usuario user${suffix}` }).click();
   const editUserDialog = page.getByRole("dialog");
+  expect(await editUserDialog.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(320);
   await editUserDialog.getByLabel("Nombres").fill("Nombre actualizado QA");
   await editUserDialog.getByLabel("Apellidos").fill("Apellido actualizado");
   await editUserDialog.getByLabel("Usuario").fill(`useredit${suffix}`);

@@ -675,7 +675,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshRouteAssignmentOptions = useCallback(async () => {
-    if (!apiFetch || !user || !["gerente", "logistica"].includes(user.role)) return;
+    if (!apiFetch || !user || !["gerente", "manager", "logistica"].includes(user.role)) return;
     try {
       const options = await apiFetchForOwner<ApiRouteAssignmentOptions>("/Routes/assignment-options");
       setRouteAssignmentVehicles(options.vehicles.map((vehicle) => ({
@@ -695,7 +695,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   }, [apiFetch, apiFetchForOwner, isAuthError, setResourceError, user]);
 
   useEffect(() => {
-    if (!apiFetch || isLoadingUser || !isAuthenticated || !user || !["gerente", "logistica"].includes(user.role)) return;
+    if (!apiFetch || isLoadingUser || !isAuthenticated || !user || !["gerente", "manager", "logistica"].includes(user.role)) return;
     void refreshRouteAssignmentOptions().catch((error) => {
       if (!isAuthError(error)) console.error("Error cargando opciones de asignación", error);
     });
@@ -943,7 +943,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const retryFleetData = async () => {
     const ownerSession = captureOwnerSession();
     const failures: string[] = [];
-    if (["gerente", "logistica"].includes(user?.role ?? "")) {
+    if (["gerente", "manager", "logistica"].includes(user?.role ?? "")) {
       try { await refreshRouteAssignmentOptions(); } catch { failures.push("opciones de asignación"); }
       if (!isCurrentOwnerSession(ownerSession)) return;
     }

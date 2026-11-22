@@ -1,3 +1,11 @@
+## 2026-11-22 — Constructor de rutas Manager y cobertura responsive
+
+- `FleetContext` solicita opciones de asignación para el rol Manager; refresco/reintento incluyen el mismo rol.
+- E2E real crea y persiste ruta Manager con parada Delivery y comprueba edición/cancelación móvil.
+- Alta Manager/Logistics probada a 320/768 px; edición/estado de User a 320 px.
+- Etiqueta accesible de salida distingue edición de creación; runner E2E acepta args Playwright.
+- Local: 33/33 E2E, lint/build/audit correctos. Incidencias y resoluciones en `ERROR_LOG.md`.
+
 ## 2026-11-22 — Constructor de rutas sin ubicaciones ficticias
 
 - El constructor no asigna coordenadas de Quito al escribir el nombre de un origen/destino; mantiene ubicación pendiente hasta selección real y bloquea avanzar sin coordenadas válidas.

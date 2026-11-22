@@ -1,12 +1,12 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front actual `67df420` + Backend `2045b18`. Action `45055100816` sobre Front `1a893c9` pasó Release/xUnit, audit, lint/build, responsive **1/1**, E2E **33/33** y cleanup de MySQL descartable.
-- El suite integrado ya verifica el nombre y coordenadas de destino, alta directa Manager/Logistics y navegación/responsive Manager a Gestión de Rutas/constructor. El cambio pendiente de esta rama es solamente actualizar `upload-artifact` a v7.0.2; aún no ha tenido que ejecutarse porque el último Action pasó.
-- Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
-- Verificación local del HEAD: lint/build/discovery **33**. La corrida autenticada `45055100816` prueba los cambios con datos reales QA y confirma limpieza de la base desechable.
-- Auditoría multiagente del frontend: brechas de creación directa Manager/Logistics y navegación/responsive Manager están cubiertas y probadas. Super Admin requiere definir alcance/permisos globales. El móvil nativo fue aplazado por el usuario.
-- Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
+- Último pase remoto previo a este lote: Front `1a893c9` Action `45055100816` pasó 33/33. La validación local actual ya cubre cambios todavía no integrados.
+- `FleetContext` ahora carga opciones de ruta para Manager. El E2E crea/persiste una ruta Manager, comprueba edición/cancelación móvil y creación de cuentas/responsive a 320/768 px.
+- Validación local: lint/build correctos, `npm audit` 0 vulnerabilidades, 33 pruebas descubiertas y E2E autenticado API/MySQL efímero **33/33** con cleanup.
+- Los fallos intermedios y su solución están documentados en `docs/ERROR_LOG.md`.
+- Pendientes globales: CRUD/roles/responsive de otras superficies; definir si Admin delegado puede asignar Admin; app nativa aplazada por el usuario. SMTP real, PFX/keys y despliegue productivo dependen de configuración externa.
+- Actions remotas para este lote y revisión restante siguen pendientes; la misión no está completa.
 
 # Estado actual — 2026-11-22
 

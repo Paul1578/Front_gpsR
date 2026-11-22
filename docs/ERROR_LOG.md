@@ -1,3 +1,15 @@
+# 2026-11-22 — Manager no recibía opciones para crear rutas — CORREGIDO Y VALIDADO LOCALMENTE
+
+- Síntoma: Manager podía abrir el constructor, pero los selectores de vehículo/conductor quedaban vacíos.
+- Evidencia: `GET /Routes/assignment-options` devolvía recursos válidos; el trace del navegador no mostraba ninguna solicitud a ese endpoint. `FleetContext` sólo solicitaba opciones para `gerente` y `logistica`, aunque el rol backend `Manager` se normaliza como `manager`.
+- Corrección: incluir `manager` en carga, actualización y reintento. La prueba crea recursos QA aislados, Manager crea una ruta con varios puntos, confirma persistencia y edita/cancela en móvil; también abre el constructor en tablet.
+- El Driver vinculado del fixture general no aparecía como asignable; se sustituyó por un Driver QA independiente sin usuario, evitando depender de otro fixture.
+- Errores de prueba corregidos: el estado del Driver se envió primero como query y dio 415; se cambió a JSON `{ isActive: false }`. El botón real dice “Editar ruta”, no “Editar <nombre>”. El botón de salida de edición anunciaba “Cancelar creación”; ahora anuncia “Cancelar edición”.
+- En la primera ampliación tablet, el test no avanzó de Información porque omitió nombre y descripción obligatorios. El formulario se comportó correctamente; se completaron los campos antes de Continuar y el escenario Manager volvió a pasar.
+- El primer nombre no coincidía con el patrón `E2E QA ruta %` del limpiador SQL y la FK impidió eliminar el Driver QA. Se alineó el prefijo y se descartó el contenedor MySQL efímero completo; no se modificó la base persistente.
+- Validación final: E2E Manager aislado **1/1**, suite API/MySQL **33/33** y cleanup; lint/build/audit (0 vulnerabilidades) y discovery **33** pasan.
+- Prevención: agregar roles a todas las guardas de carga/reintento; nombrar fixtures con los prefijos del limpiador y comprobar el contrato de cada endpoint en E2E.
+
 # 2026-11-22 — Actions 45051977357/45053076619: E2E de mapa móvil — CORREGIDO Y VALIDADO
 
 - Action `45051977357` pasó Release/xUnit del backend, audit, lint/build y browser responsive; E2E **29/31**. El mapa agotó 90 s y el cleanup; Mi Ruta no mostró el alert 503.

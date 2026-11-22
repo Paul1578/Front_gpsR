@@ -741,7 +741,7 @@ function RouteBuilder({
           <button
             onClick={onCancel}
             className="rounded-lg p-2 hover:bg-slate-100"
-            aria-label="Cancelar creación"
+            aria-label={editingRoute ? "Cancelar edición" : "Cancelar creación"}
           >
             <ArrowLeft size={20} />
           </button>
