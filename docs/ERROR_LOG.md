@@ -5,7 +5,7 @@
 - Corrección aplicada: llenar el nombre del destino en el editor antes de abrir el mapa, luego fijar coordenadas y continuar. Se quitó el segundo fill innecesario después de regresar del mapa.
 - La interceptación persistente de `/Routes**` hizo determinista el 503; la prueba confirmó el alert y el retry de “Mi Ruta” en la última Action.
 - Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; completar la edición textual antes de abrirlo. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
-- Action del orden corregido pendiente; confirmar **31/31** y cleanup antes de cerrar este registro.
+- Action del orden corregido `45053782460` sobre `b1823db` en curso; confirmar **31/31** y cleanup antes de cerrar este registro.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 
