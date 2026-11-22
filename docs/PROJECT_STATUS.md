@@ -171,4 +171,4 @@ Fecha de actualización: 2026-11-22.
 
 ## Responsive móvil estrecho — 2026-11-22
 
-- Amplié el E2E Admin de Perfil para comprobar el formulario de cambio de contraseña a 320×844, además de los breakpoints ya cubiertos 390×844 y 768×1024. Lint, build y discovery de 14 tests pasan; la nueva aserción está pendiente de Actions integrado.
+- Amplié el E2E Admin de Perfil para comprobar el formulario de cambio de contraseña a 320×844, además de los breakpoints ya cubiertos 390×844 y 768×1024. Actions `44987222908` para `18ca8f0` pasó responsive 1/1 y Playwright autenticado 14/14; el perfil quedó accesible sin overflow. Backend Release 57/57.

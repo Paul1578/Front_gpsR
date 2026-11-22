@@ -95,8 +95,15 @@
 
 - E2E móvil cubre ruta asignada, recogida/entrega, evidencia obligatoria y disponibilidad del vehículo al completar.
 
-- Se corrigió E2E Driver: aserción del endpoint de parada alineada a HTTP 200 y cleanup garantizado si falla el flujo; repetir CI antes de validar.
+- Se corrigió E2E Driver: aserción del endpoint de parada alineada a HTTP 200 y cleanup garantizado si falla el flujo; Actions `44985541718` verificó 14/14.
 
 - Dialogs ahora se muestran por encima de controles Leaflet; el E2E Driver verificará evidencia sobre mapa y limpia de forma explícita la ruta temporal.
 
 - Ajustada segunda aserción del E2E Driver al HTTP 200 del endpoint de estado de paradas.
+
+## 2026-11-22 — E2E de paradas, cleanup y responsive
+
+- El constructor E2E agrega, elimina y reordena paradas; la API se comprueba con orden y operaciones exactos tras persistir.
+- Cleanup restaura la asignación previa del Driver, cancela rutas activas si la prueba se interrumpe, intenta las operaciones restantes y reporta fallos acumulados.
+- Perfil amplía la comprobación responsive a 320×844.
+- Actions `44987222908` para `18ca8f0`: backend 57/57, responsive 1/1, Playwright autenticado 14/14, lint/build/audit correctos; Release sin warnings/errores.

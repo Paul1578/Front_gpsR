@@ -230,4 +230,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 ## Responsive de Perfil a 320 px — 2026-11-22
 
 - Amplié el recorrido autenticado Admin para abrir Perfil y reducir el viewport a 320×844 antes de abrir el formulario de cambio de contraseña; se conserva la aserción de ancho y visibilidad.
-- Lint, build, test discovery (14) y diff check pasan localmente. Cambio aún sin publicar; requiere Actions integrado antes de contar el breakpoint como cubierto.
+- Lint, build, test discovery (14) y diff check pasan localmente. Actions `44987222908` para `18ca8f0` validó responsive 1/1 y E2E 14/14 con API/MySQL descartables; backend Release 57/57. Breakpoint validado en Chrome.

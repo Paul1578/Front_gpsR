@@ -161,4 +161,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 ## Breakpoint de 320 px — 2026-11-22
 
-- El E2E Admin responsive ahora reduce Mi Perfil a 320×844 y comprueba que el cambio de contraseña sigue visible sin overflow. Validación local: lint/build y descubrimiento 14/14; esperar Actions para considerar el viewport validado en navegador remoto.
+- El E2E Admin responsive ahora reduce Mi Perfil a 320×844 y comprueba que el cambio de contraseña sigue visible sin overflow. Actions `44987222908` validó el navegador: responsive 1/1, Playwright autenticado 14/14; backend Release 57/57 y build sin warnings/errores.
