@@ -2,7 +2,7 @@
 
 - Historial muestra vehículo desde el DTO de ruta, sin depender del endpoint `/Vehicles` reservado a roles administrativos.
 - E2E de Logistics recorre historial/detalle y verifica 320/768 px; el E2E User valida cambio de contraseña, invalidación de sesión anterior y nuevo login.
-- Fallo de locator ambiguo corregido y registrado; Actions integrado de los cambios nuevos pendiente.
+- Fallos de locator ambiguo y aserción global de alertas corregidos y registrados. Actions `45034387245` pasó 21/21 E2E, responsive 1/1 y cleanup.
 
 ## 2026-11-22 — Gestión de perfil de miembros
 

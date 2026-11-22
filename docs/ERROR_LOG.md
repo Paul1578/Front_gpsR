@@ -1,23 +1,23 @@
-# 2026-11-22 — Historial de Logística fallaba por una consulta administrativa — CORREGIDO; E2E EN VALIDACIÓN
+# 2026-11-22 — Historial de Logística fallaba por una consulta administrativa — CORREGIDO Y VALIDADO
 
 - Síntoma: una cuenta Logistics podía leer `/Routes` pero Historial mostraba error al cargar.
 - Causa: `RouteHistory` esperaba que `/Routes` y `/Vehicles` terminaran correctamente con `Promise.all`; `/Vehicles` devuelve 403 a Logistics. El DTO de rutas ya incluye placa, marca y modelo.
 - Solución: el Historial usa los datos de vehículo incluidos en el DTO de cada ruta y deja de pedir el listado administrativo de vehículos. El E2E de Logistics ahora abre Historial, comprueba placa/detalle y revisa 320 y 768 px.
-- Validación local: lint y build pasan; Playwright descubre 21 casos. Falta probar este flujo con API/MySQL real en Actions.
+- Validación: lint/build pasan; Actions `45034387245` confirmó historial/detalle responsive dentro de **21/21 E2E** Chrome/API/MySQL y cleanup.
 
-# 2026-11-22 — E2E Logistics contaba alertas ajenas al Historial — CORREGIDO; REPETICIÓN PENDIENTE
+# 2026-11-22 — E2E Logistics contaba alertas ajenas al Historial — CORREGIDO Y VALIDADO
 
 - Síntoma: Actions `45033927966` pasó 20/21. El E2E llegó a encontrar la ruta y su placa, pero `getByRole("alert").toHaveCount(0)` falló al encontrar otro elemento accesible como alerta.
 - Causa: el assert global no diferenciaba el error de carga del Historial de otras alertas de la pantalla.
 - Solución: comprobar sólo la alerta con el texto exacto `No se pudieron cargar las rutas`; el test ya comprueba que la ruta y su vehículo se muestran.
-- Repetir Actions integrado para verificar que el Historial funciona y que el login/cambio de contraseña también pasan juntos.
+- Actions `45034387245` pasó **21/21** con el assert específico; ruta, vehículo y detalle visibles sin error del Historial.
 
-# 2026-11-22 — Selector E2E ambiguo al cambiar contraseña — CORREGIDO; REPETICIÓN PENDIENTE
+# 2026-11-22 — Selector E2E ambiguo al cambiar contraseña — CORREGIDO Y VALIDADO
 
 - Síntoma: Actions `45033318956` pasó backend, auditoría, lint, build y responsive; falló 20/21 E2E en el flujo nuevo de contraseña antes del POST.
 - Causa: `getByPlaceholder("Nueva contraseña")` también coincidía con “Confirmar nueva contraseña” y Playwright activó strict mode.
 - Solución: localizar ambos campos por nombre exacto de textbox.
-- Prevención: al usar locators por placeholder, revisar prefijos compartidos; preferir nombres accesibles exactos en formularios con campos similares. Repetir Actions con la suite actualizada.
+- Prevención: al usar locators por placeholder, revisar prefijos compartidos; preferir nombres accesibles exactos en formularios con campos similares. Actions `45034387245` pasó **21/21** y verificó cambio, revocación de refresh/clave antigua y nuevo login.
 
 # 2026-11-22 — Lectura de archivos E2E desde el repositorio equivocado — CORREGIDO
 

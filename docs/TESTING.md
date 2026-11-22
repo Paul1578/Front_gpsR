@@ -2,8 +2,9 @@
 
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**21 tests**) y `git diff --check` pasan localmente.
 - Actions `45033061272` pasó 20/20 E2E autenticados, responsive 1/1 y cleanup. Actions `45033318956` ejecutó backend Release/xUnit, audit/lint/build y responsive con éxito; E2E **20/21** por locator ambiguo del caso de contraseña, luego corregido.
-- Actions `45033927966` validó la ruta y placa en Historial Logistics, backend/audit/lint/build y responsive; **20/21** porque el assert global de `role=alert` encontraba un alerta no relacionada. El assert ahora filtra `No se pudieron cargar las rutas`; repetir suite descartable.
-- Historial Logistics ahora lee placa/marca/modelo del DTO de ruta, no consulta `/Vehicles`; el test comprueba ruta/vehículo/detalle y ancho 320/768 px. Falta Actions Chrome/API/MySQL con los fixes a ambos E2E.
+- Actions `45033927966` validó ruta/placa pero falló **20/21** porque el assert global `role=alert` encontró una alerta no relacionada. El assert quedó limitado a `No se pudieron cargar las rutas`.
+- Actions `45034387245` pasó backend Release/xUnit, audit/lint/build, responsive browser **1/1**, E2E Chrome/API/MySQL **21/21** y cleanup. Incluye Historial Logistics en 320/768 px, cambio de contraseña, revocación del refresh/password anterior y nuevo login.
+- Historial Logistics usa placa/marca/modelo del DTO de ruta, sin GET administrativo `/Vehicles`.
 
 # Pruebas frontend
 
