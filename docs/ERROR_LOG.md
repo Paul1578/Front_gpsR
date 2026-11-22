@@ -520,6 +520,13 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: inyectar el fixture `request` de Playwright en la firma del test. Después pasan lint, build, discovery (18) y `git diff --check`.
 - Prevención: al ampliar un test para API, declarar explícitamente los fixtures usados en el callback.
 
+## 2026-11-22 — `PlannedStart` se mostraba como fecha de creación — CORREGIDO EN FRONT; API EN VALIDACIÓN
+
+- Gestión de Rutas llamaba “Creada el” a la fecha planificada y, si no existía, FleetContext inventaba `new Date()`; el backend no guardaba CreatedAt y `/Routes` no garantizaba orden cronológico.
+- Front ahora consume `createdAtUtc`, no fabrica fechas para registros legacy, muestra “No registrada” cuando falta y ordena actividad por fecha de creación o timestamps reales de operación.
+- El E2E de rutas creadas exige `createdAtUtc` y el dashboard compara cifras/primera actividad con API. Lint/build/discovery 18 pasan. La migración/MySQL y Actions integrada quedan pendientes.
+- Prevención: no etiquetar fechas planificadas como eventos reales ni generar timestamps de respaldo en mapeadores.
+
 ## 2026-11-21 — Alta de usuario convertía cualquier fallo en “usuario duplicado” — CORREGIDO
 
 - `createUser` devolvía sólo `ok=false`, y Gestión de Equipo mostraba “El nombre de usuario ya existe” aunque la API respondiera otro error. Se propaga el mensaje de servidor como parte del resultado y cada formulario lo muestra con un fallback genérico.

@@ -30,6 +30,11 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
         point.operation !== "none" &&
         point.status === "completed",
     ).length;
+  const recentRoutes = [...routes].sort((left, right) => {
+    const leftDate = left.createdAtUtc ?? left.fechaFinReal ?? left.fechaInicioReal ?? "";
+    const rightDate = right.createdAtUtc ?? right.fechaFinReal ?? right.fechaInicioReal ?? "";
+    return rightDate.localeCompare(leftDate);
+  });
 
   if (user?.role === "usuario") {
     return <div className="flex h-full items-center justify-center p-6"><div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center"><h1 className="text-xl font-semibold text-slate-900">Hola, {user.nombres}</h1><p className="mt-2 text-sm text-slate-600">Tu cuenta no tiene permisos operativos asignados. Contacta al administrador de tu empresa.</p></div></div>;
@@ -400,7 +405,7 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
               </div>
             ) : (
               <div className="space-y-3">
-                {routes.slice(0, 5).map((route) => {
+                {recentRoutes.slice(0, 5).map((route) => {
                   const vehicle = vehicles.find(v => v.id === route.vehiculoId);
                   const driver = users.find(u => u.id === route.conductorId);
                   

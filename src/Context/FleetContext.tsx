@@ -81,6 +81,7 @@ export interface Route {
   // paradas intermedias
   estado: "pendiente" | "en_progreso" | "completada" | "cancelada";
   fechaCreacion: string;
+  createdAtUtc?: string | null;
   fechaInicio?: string;
   fechaFin?: string;
   fechaInicioReal?: string;
@@ -243,6 +244,7 @@ type ApiRoute = {
   plannedEnd?: string;
   startedAt?: string;
   endedAt?: string;
+  createdAtUtc?: string | null;
   status?: string | number;
   isActive?: boolean;
 };
@@ -481,7 +483,8 @@ const mapApiRoute = (apiRoute: ApiRoute): Route => {
     puntos,
     evidencias,
     estado: normalizeStatus(apiRoute.status),
-    fechaCreacion: apiRoute.plannedStart ?? new Date().toISOString(),
+    fechaCreacion: apiRoute.createdAtUtc ?? "",
+    createdAtUtc: apiRoute.createdAtUtc ?? null,
     fechaInicio: apiRoute.plannedStart,
     fechaFin: apiRoute.plannedEnd,
     fechaInicioReal: apiRoute.startedAt,
@@ -994,20 +997,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             }
           : undefined,
         cargoDescription: merged.carga ?? "",
-        plannedStart:
-          merged.fechaInicio ??
-          merged.fechaCreacion ??
-          new Date().toISOString(),
-        plannedEnd:
-          merged.fechaFin ??
-          new Date(
-            new Date(
-              merged.fechaInicio ??
-                merged.fechaCreacion ??
-                new Date().toISOString(),
-            ).getTime() +
-              60 * 60 * 1000,
-          ).toISOString(),
+        plannedStart: merged.fechaInicio ?? null,
+        plannedEnd: merged.fechaFin ?? (merged.fechaInicio
+          ? new Date(new Date(merged.fechaInicio).getTime() + 60 * 60 * 1000).toISOString()
+          : null),
         status: stateToApiStatusNumber(merged.estado),
         isActive: true,
       };

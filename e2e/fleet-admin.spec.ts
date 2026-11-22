@@ -159,7 +159,7 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   ]);
   expect(routesResponse.status()).toBe(200);
   expect(vehiclesResponse.status()).toBe(200);
-  const apiRoutes = await routesResponse.json() as { status: string | number; isActive?: boolean }[];
+  const apiRoutes = await routesResponse.json() as { name: string; status: string | number; isActive?: boolean; createdAtUtc?: string | null; endedAt?: string | null; startedAt?: string | null }[];
   const apiVehicles = await vehiclesResponse.json() as { status: string | number; isActive?: boolean }[];
   const routeState = (status: string | number) => {
     const value = String(status).toLowerCase();
@@ -184,6 +184,14 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   await expectDashboardStat("Vehículos Disponibles", visibleVehicles.filter((vehicle) => vehicleState(vehicle.status) === "available").length);
   await expectDashboardStat("Rutas Pendientes", visibleRoutes.filter((route) => routeState(route.status) === "pending").length);
   await expectDashboardStat("Rutas Completadas", visibleRoutes.filter((route) => routeState(route.status) === "completed").length);
+  const latestKnownRoute = visibleRoutes
+    .filter((route) => route.createdAtUtc || route.endedAt || route.startedAt)
+    .sort((left, right) => (right.createdAtUtc ?? right.endedAt ?? right.startedAt ?? "")
+      .localeCompare(left.createdAtUtc ?? left.endedAt ?? left.startedAt ?? ""))[0];
+  if (latestKnownRoute) {
+    const activity = page.getByRole("heading", { name: "Actividad Reciente" }).locator("xpath=..");
+    await expect(activity.locator(".space-y-3 > div").first()).toContainText(latestKnownRoute.name);
+  }
 
   await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
   await page.getByRole("button", { name: "Abrir menú" }).click();
@@ -893,6 +901,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     const createRoutePromise = page.waitForResponse((response) =>
       response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
     );
+    const createStartedAt = Date.now();
     await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
     const createResponse = await createRoutePromise;
     expect(createResponse.status()).toBe(201);
@@ -902,6 +911,9 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     expect(persistedResponse.status()).toBe(200);
     const persistedRoute = await persistedResponse.json();
     expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.createdAtUtc).toBeTruthy();
+    expect(Date.parse(persistedRoute.createdAtUtc)).toBeGreaterThanOrEqual(createStartedAt - 5_000);
+    expect(Date.parse(persistedRoute.createdAtUtc)).toBeLessThanOrEqual(Date.now() + 5_000);
     const persistedPoints = persistedRoute.points as Array<{ name?: string; operation: number | string }>;
     expect(persistedPoints).toHaveLength(4);
     const operationNames: Record<number, string> = {
@@ -924,8 +936,10 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
 
     const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
     await expect(routeHeading).toBeVisible();
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const routeCard = routeHeading.locator("xpath=../../../..");
+    await expect(routeCard).toContainText("Creada el");
+    await expect(routeCard).not.toContainText("No registrada");
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await routeCard.getByRole("button", { name: `Eliminar ${routeName}` }).click();
     const confirmation = page.getByRole("alertdialog");
     await expect(confirmation.getByText("Eliminar ruta")).toBeVisible();

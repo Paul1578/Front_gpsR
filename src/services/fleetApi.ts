@@ -47,6 +47,7 @@ export interface RouteApiDto {
   plannedEnd?: string | null;   // ISO
   startedAt?: string | null; // inicio real de la ruta
   endedAt?: string | null; // cierre real de la ruta
+  createdAtUtc?: string | null; // fecha real de creación; rutas antiguas pueden no tenerla
   status: number;       // RouteStatus en el backend
   isActive: boolean;
 }

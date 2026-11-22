@@ -295,12 +295,13 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       [stops[index], stops[target]] = [stops[target], stops[index]];
       return { ...previous, stops };
     });
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("es-EC", {
+  const formatDate = (date?: string | null) => date
+    ? new Date(date).toLocaleDateString("es-EC", {
       day: "numeric",
       month: "short",
       year: "numeric",
-    });
+    })
+    : "No registrada";
 
   if (showForm) {
     return (
@@ -421,7 +422,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
                           {route.nombre}
                         </h2>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          Creada el {formatDate(route.fechaCreacion)}
+                          Creada el {formatDate(route.createdAtUtc)}
                         </p>
                       </div>
                     </div>
