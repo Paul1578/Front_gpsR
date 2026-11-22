@@ -150,3 +150,5 @@ Fecha de actualización: 2026-11-21.
 - Lint/build y listado Playwright pasan localmente. Falta el run integrado después del push para comprobar el recorrido Chrome/API/MySQL.
 
 - Primer run del nuevo E2E Driver (`44984300436`) detectó contrato incorrecto del test (esperaba 204; API devuelve 200) y falta de cleanup tras fallo; ambas causas se corrigieron y están en `ERROR_LOG.md`. Lint/build/discovery pasan; Actions debe repetirse antes de contar el flujo como cubierto.
+
+- Trace de `44984722584` confirmó además un defecto visual real: controles Leaflet tapaban el modal de evidencia. `DialogOverlay` y `DialogContent` se elevaron sobre el mapa; cleanup ahora verifica cancelación/baja. Validación local lint/build/discovery pasa; repetir integración.

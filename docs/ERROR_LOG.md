@@ -516,3 +516,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Al fallar la aserción antes de completar la ruta, quedaba una ruta InProgress en el MySQL de esa ejecución. El retry y el test cross-tenant intentaban usar el mismo Driver y recibían 409 por conflicto de agenda; no fue una regresión de backend.
 - Se añadió `finally` que cancela y da de baja la ruta temporal aun cuando falle la prueba. Los nombres/placas mantienen el prefijo del cleanup existente.
 - Actions `44984300436` falló sólo en este nuevo caso y en los casos posteriores afectados por ese residuo. Corregido localmente; lint/build/discovery pasan. Pendiente repetir Actions en el siguiente SHA.
+
+### Causa visual adicional — Leaflet interceptaba el diálogo de evidencia
+
+- El trace de `44984722584` muestra que el diálogo `z-50` quedaba debajo de los controles Leaflet (`z-index` superior), por eso el botón “Nota” era visible pero el mapa interceptaba el clic.
+- `DialogOverlay`/`DialogContent` ahora usan capas 2000/2001; el mapa no debe cubrir el modal. La limpieza ahora lee el estado real de la ruta y exige respuesta exitosa al cancelarla y darla de baja, sin tragarse errores.
+- Lint/build y discovery pasan localmente; nuevo Actions pendiente.

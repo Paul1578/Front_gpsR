@@ -728,13 +728,23 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
-    await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+    const cleanupRoute = await page.request.get(`/api/backend/Routes/${routeId}`, {
       headers: adminHeaders,
-      data: { status: 3 },
-    }).catch(() => undefined);
-    await page.request.delete(`/api/backend/Routes/${routeId}`, {
-      headers: adminHeaders,
-    }).catch(() => undefined);
+    });
+    if (cleanupRoute.ok()) {
+      const status = (await cleanupRoute.json()).status;
+      if (status === 1 || status === "InProgress") {
+        const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+          headers: adminHeaders,
+          data: { status: 3 },
+        });
+        expect(cancelRoute.status()).toBe(204);
+      }
+      const deleteRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, {
+        headers: adminHeaders,
+      });
+      expect(deleteRoute.status()).toBe(204);
+    }
   }
 });
 

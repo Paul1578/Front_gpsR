@@ -139,3 +139,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Viewport 390×844. Lint, build y discovery de 14 tests pasan localmente; MySQL/Chrome integrado queda pendiente de Actions del nuevo SHA.
 
 - Run `44984300436`: suite 14 tuvo fallo nuevo en Driver por espera 204 en endpoint de parada, cuyo contrato entrega 200. La ruta InProgress residual provocó 409 en retry y en el test siguiente. Aserción corregida y cleanup `finally` añadido. No contabilizar como pase; Actions nuevo pendiente.
+
+- Trace del fallo reveló modal de evidencia tapado por controles del mapa (`z-50`); se corrigió elevando Dialog a z-index 2000/2001. Cleanup de ruta ahora comprueba las respuestas de cancelación/baja. Prueba integral pendiente.

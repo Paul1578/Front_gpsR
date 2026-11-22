@@ -193,3 +193,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` pasan; debe publicarse y esperarse Actions integrado. Fallos deben quedar registrados aquí y en `ERROR_LOG.md`.
 
 - E2E de Driver pendiente de repetición: run `44984300436` falló porque la prueba esperaba 204 en status de parada (contrato real 200) y dejó ruta activa, causando 409 en retry y tenant test. Aserción actualizada y `finally` cancela/baja la ruta. Confirmar siguiente run verde y si el cleanup permite cross-tenant posterior.
+
+- Hallazgo adicional del trace: Leaflet (z-index de controles) interceptaba el botón “Nota” del modal. Se subió el z-index común del overlay/contenido a 2000/2001. Cleanup exige cancelación y baja exitosas. Nuevo E2E debe pasar y no contaminar cross-tenant.
