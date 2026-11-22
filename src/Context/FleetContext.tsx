@@ -763,8 +763,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     id: string,
     vehicleData: Partial<Vehicle>,
   ): Promise<ActionResult> => {
+    const current = vehicles.find((v) => v.id === id);
+    let detailsSaved = false;
     try {
-      const current = vehicles.find((v) => v.id === id);
       const nextEstado = vehicleData.estado ?? current?.estado;
 
       if (
@@ -786,6 +787,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           method: "PUT",
           body: JSON.stringify(payload),
         });
+        detailsSaved = true;
+        setVehicles((previous) => previous.map((item) =>
+          item.id === id
+            ? { ...item, ...vehicleData, estado: current?.estado ?? item.estado }
+            : item,
+        ));
       }
 
       if (nextEstado && current?.estado !== nextEstado) {
@@ -804,6 +811,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       return { ok: true, message: "Vehiculo actualizado" };
     } catch (error) {
       console.error("Error al actualizar vehiculo:", error);
+      if (detailsSaved) {
+        return {
+          ok: false,
+          message: `Los datos del vehículo se guardaron, pero no se pudo cambiar su estado. ${resolveApiMessage(error, "Inténtalo nuevamente.")}`,
+        };
+      }
       return {
         ok: false,
         message: resolveApiMessage(error, "No se pudo actualizar el vehiculo"),

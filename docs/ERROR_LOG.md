@@ -16,6 +16,12 @@
 - La aserción ahora se limita al contenedor encabezado “Resumen de Datos”, que contiene únicamente los tres conteos de exportación. No se cambió el comportamiento visual.
 - Prevención: acotar aserciones E2E al componente/contenedor cuyo estado se está verificando; datos similares pueden aparecer en widgets vecinos.
 
+## 2026-11-22 — Edición de vehículo podía ocultar una actualización parcial — CORREGIDO LOCALMENTE
+
+- Auditoría independiente confirmó que el frontend envía datos generales y estado a endpoints distintos. Si `/Vehicles/{id}` respondía 200 y `/Vehicles/{id}/status` fallaba, la base ya tenía marca/modelo nuevos, pero la UI conservaba el objeto viejo y reportaba un fallo total sin explicar que hubo persistencia parcial.
+- Tras guardar datos generales, la UI actualiza inmediatamente esos campos conservando el estado previo. Si falla el endpoint de estado, devuelve un mensaje explícito de actualización parcial. E2E de edición intercepta el segundo PUT con 409 y compara toast, tarjeta y API GET para probar los valores realmente persistidos; luego continúa el ciclo válido del vehículo.
+- Prevención: no presentar una secuencia de endpoints como operación atómica; probar fallo del segundo paso y comparar pantalla con lectura backend.
+
 ## 2026-11-22 — Administración mostraba cero cuando fallaba la carga y exportaba datos parciales — CORREGIDO LOCALMENTE
 
 - El panel tomaba arreglos vacíos tras fallos de `/Users/my-team`, `/Vehicles` o `/Routes` y los mostraba como cero. La exportación generaba archivo aunque faltaran consultas; al crear usuario tampoco actualizaba la lista visible.

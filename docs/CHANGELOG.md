@@ -6,6 +6,11 @@
 - Verificación local: lint y build correctos; discovery Playwright 37. E2E integrado completo pendiente en una Action del parche actual.
 - Action `45073324431` sobre `147ba89` pasó **36/37**; el único fallo fue un conteo global de guiones (siete en toda la página vs. tres en la tarjeta). Locator acotado a “Resumen de Datos”; nueva Action requerida.
 
+# 2026-11-22 — Sincronización de edición parcial de vehículo
+
+- Si se guardan atributos de vehículo pero el endpoint de estado falla, la lista ahora refleja inmediatamente los atributos ya persistidos y conserva el estado anterior; el mensaje explica claramente el resultado parcial.
+- E2E integrado fuerza 409 sólo en el cambio de estado, comprueba UI y API, y sigue probando cambios válidos, baja y reactivación. Action de `ad4a678` reportó 36/37 por selector de “Resumen de Datos”; locator acotado en el siguiente cambio. Acción para este parche aún pendiente.
+
 # 2026-11-22 — Estados de carga y error en administración de empresa
 
 - Administración distingue carga/fallo de consultas User, Route y Vehicle; muestra reintentos, no presenta errores como conteos cero y bloquea exportación parcial.

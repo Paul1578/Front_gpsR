@@ -71,6 +71,7 @@
 - `npm run test:e2e -- --list`: descubre 37 escenarios. Incluye fallo HTTP 503, retry de usuarios y recuperación conjunta de rutas/vehículos; la Action del SHA actualizado debe ejecutar el flujo autenticado con API/MySQL efímeros.
 - Action `45072706025` (SHA `7f4841c`): **35/37 E2E**. Fallaron (1) el test buscaba Exportar en Resumen, donde no se renderiza y (2) Gestión de Equipo no veía un error Driver compartido cuando una carga local obsoleta se descartaba por carrera. Ambos corregidos en el siguiente cambio; aún sin ejecución integrada.
 - Action `45073324431` (`147ba89`): **36/37 E2E**; sólo falló el conteo global de `—` (7 encontrados frente a 3 esperados) porque métricas ajenas también usan el valor. Selector acotado a la tarjeta “Resumen de Datos”; repetir Action.
+- E2E de vehículo amplía ahora ciclo real para provocar HTTP 409 en el segundo endpoint (estado) tras persistir los campos generales; verifica respuesta visible, tarjeta y GET real antes de continuar la operación válida. La prueba integrada de este parche está pendiente.
 - QA independiente detectó que el segundo clic de retry también apuntaba a una alerta ya retirada. El test ahora ejecuta un solo retry conjunto. El resumen de datos muestra `—`/carga durante fallos en vez de arrays vacíos como ceros.
 
 # Pruebas frontend

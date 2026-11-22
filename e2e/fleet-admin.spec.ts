@@ -622,6 +622,36 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     expect((await updated).status()).toBe(200);
     await expect(card).toContainText("FleetFlow QA Editado Browser test");
 
+    await card.getByRole("button", { name: "Editar" }).click();
+    const partialEditDialog = page.getByRole("dialog");
+    await partialEditDialog.getByPlaceholder("Toyota").fill("FleetFlow QA Parcial");
+    await partialEditDialog.locator("select").selectOption("mantenimiento");
+    await page.route(`**/api/backend/Vehicles/${vehicleId}/status`, (route) =>
+      route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ message: "Estado rechazado para prueba" }) }),
+    );
+    const partialDetailsUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}`) &&
+      response.request().method() === "PUT",
+    );
+    const rejectedStatusUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await partialEditDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    expect((await partialDetailsUpdate).status()).toBe(200);
+    expect((await rejectedStatusUpdate).status()).toBe(409);
+    await expect(page.getByText(/Los datos del vehículo se guardaron, pero no se pudo cambiar su estado/)).toBeVisible();
+    await expect(card).toContainText("FleetFlow QA Parcial Browser test");
+    await expect(card).toContainText("Disponible");
+    await page.unroute(`**/api/backend/Vehicles/${vehicleId}/status`);
+    const authHeaders = {
+      Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}`,
+    };
+    const partialVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(partialVehicle.status()).toBe(200);
+    expect((await partialVehicle.json()).brand).toBe("FleetFlow QA Parcial");
+    await partialEditDialog.getByRole("button", { name: "Cancelar" }).click();
+
     await page.setViewportSize({ width: 768, height: 1024 });
     await expectNoHorizontalOverflow();
     await card.getByRole("button", { name: "Editar" }).click();
@@ -638,9 +668,6 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     expect(maintenanceResponse.status()).toBe(204);
     expect(maintenanceResponse.request().postDataJSON()).toEqual({ status: 2 });
     await expect(card).toContainText("Mantenimiento");
-    const authHeaders = {
-      Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}`,
-    };
     const maintenanceVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
     expect(maintenanceVehicle.status()).toBe(200);
     expect((await maintenanceVehicle.json()).status).toBe(2);
@@ -682,7 +709,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     await page.getByRole("button", { name: "Mostrar bajas" }).click();
     const inactiveVehicles = page.getByRole("region", { name: "Vehículos dados de baja" });
     const inactiveCard = inactiveVehicles.locator("div.rounded-lg.border").filter({ hasText: plate });
-    await expect(inactiveCard).toContainText("FleetFlow QA Editado Browser test");
+    await expect(inactiveCard).toContainText("FleetFlow QA Parcial Browser test");
     const reactivated = page.waitForResponse((response) =>
       response.url().includes(`/api/backend/Vehicles/${vehicleId}/reactivate`) &&
       response.request().method() === "POST",
@@ -694,7 +721,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     });
     expect(vehicleAfterReactivation.status()).toBe(200);
     expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
-    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("FleetFlow QA Editado Browser test");
+    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("FleetFlow QA Parcial Browser test");
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await expectNoHorizontalOverflow();
