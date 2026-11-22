@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -161,6 +162,23 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   await driverCard.getByRole("button", { name: "Asignar" }).click();
   await expect(driverCard).toContainText(vehiclePlate);
   const apiOrigin = (process.env.FLETFLOW_API_URL ?? "http://127.0.0.1:5048").replace(/\/api\/?$/, "").replace(/\/$/, "");
+  if (process.env.DB_NAME) {
+    const persistedVehicleId = execFileSync("mysql", [
+      "--protocol=TCP",
+      "--host", process.env.MYSQL_HOST ?? process.env.DB_HOST ?? "127.0.0.1",
+      "--port", process.env.MYSQL_PORT ?? process.env.DB_PORT ?? "3306",
+      "--user", process.env.MYSQL_USER ?? process.env.DB_USER ?? "root",
+      process.env.DB_NAME,
+      "--batch",
+      "--skip-column-names",
+      "-e",
+      `SELECT COALESCE(CAST(VehicleId AS CHAR), 'NULL') FROM Drivers WHERE Id='${createdDriverId}';`,
+    ], {
+      encoding: "utf8",
+      env: { ...process.env, MYSQL_PWD: process.env.MYSQL_PWD ?? process.env.DB_PASSWORD ?? "" },
+    }).trim();
+    expect(persistedVehicleId, "MySQL debe persistir la asignación antes de que el API responda 204").toBe(createdVehicleId);
+  }
   const assignedDriverDirect = await page.request.get(`${apiOrigin}/api/Drivers/${createdDriverId}`, { headers });
   expect(assignedDriverDirect.status()).toBe(200);
   expect((await assignedDriverDirect.json()).vehicleId).toBe(createdVehicleId);

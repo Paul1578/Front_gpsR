@@ -8,6 +8,7 @@
 - Action Front `45080069469` falló 37/38: UI reflejó placa por estado optimista pero GET Driver retornó `vehicleId:null` después de PUT 204. La Action `45080342001` para `e18ea0f` pasó con 37 y marcó 1 flaky en el mismo paso (falló primer intento, retry pasó). No declarar persistencia validada; revisar causa backend/DB/concurrencia con traces; detalle `ERROR_LOG.md`.
 - `team-search.spec.ts` amplía búsqueda de miembros a 320 px y Driver a 768 px además de 390 px; overflow verificado. Lint/build/discovery 38 pasan; Action `45080342001` pasó la suite, incluido el caso responsive.
 - Worktree Front incluye cambio local sin commit para comparar asignación por API directa y por rewrite Next; aún falta lint/build/discovery, commit/push y Action integrada. Smoke backend asigna a Driver sin UserId y valida GET/DB, pero no explica la flakiness del E2E.
+- Action `45081264602` falló/flaky en GET directo también (`vehicleId:null`), descartando rewrite como causa. Test local añade consulta SQL a MySQL efímero antes de GET para separar escritura de lectura; aún validar local lint/build/discovery, publicar y seguir Action.
 - Error local de TypeScript por redeclarar `persistedDriver` durante la corrección del locator quedó renombrado a `createdDriver` y registrado en `ERROR_LOG.md`.
 - Mantener misión abierta: cubrir CRUD/roles/responsive progresivamente. Admin delegado y desvinculación User↔Driver esperan respuesta; app nativa diferida y SMTP/infra productiva externas.
 
