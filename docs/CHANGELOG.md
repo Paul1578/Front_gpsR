@@ -34,9 +34,9 @@
 
 # Changelog
 
-## 2026-11-22 — Selector evita vehículos ya asignados a otro conductor
+## 2026-11-22 — Selector evita vehículos ya asignados a otro conductor — VALIDADO
 
-- Gestión de Conductores refleja la regla de exclusividad vigente; el E2E Manager verifica retirada y disponibilidad posterior a desasignar. CI pendiente.
+- Gestión de Conductores refleja la regla de exclusividad vigente; el E2E Manager verifica retirada y disponibilidad posterior a desasignar. Actions `45031929936`: responsive 1/1 y Playwright autenticado 20/20, cleanup correcto.
 
 ## 2026-11-21 — E2E móvil de rutas, conductores y roles
 

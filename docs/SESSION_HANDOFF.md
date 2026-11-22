@@ -2,7 +2,7 @@
 
 - Auditoría real encontró que Gestión de Conductores ofrecía vehículos disponibles ya vinculados a otro conductor; ahora el selector excluye asignaciones ajenas y mantiene el vehículo propio visible.
 - E2E Manager crea un segundo conductor y comprueba que el vehículo no aparezca mientras está asignado al primero; después de desasignar, verifica que vuelva a estar disponible. El test integrado previo cubre el ciclo responsive 320/390/768 px.
-- `npm run lint`, `npm run build` y Playwright discovery **20** pasan localmente. Runner local se detuvo seguro porque no había cuenta Admin QA bootstrap; no se tocó la DB local. Actions provisiona credenciales y MySQL efímeros para E2E autenticado.
+- `npm run lint`, `npm run build` y Playwright discovery **20** pasan localmente. Runner local se detuvo seguro porque no había cuenta Admin QA bootstrap; no se tocó la DB local. Actions `45031929936` pasó para Front `0da263b`: audit/lint/build, responsive y E2E autenticado Chrome/API/MySQL **20/20**, cleanup correcto. El backend checkout fue `2ad8471`.
 - Auditoría backend encontró que crear/editar ruta omitía la exclusividad de asignación. Ambos comandos ahora consultan relación después del lock y devuelven 409 sin mutar; xUnit Release **82/82** pasa. Smoke MySQL y Actions integradas quedan pendientes.
 - La primera suite backend completa dio 81/82 porque el fixture de doble inicio intentaba asociar dos conductores al mismo vehículo. Se corrigió para usar dos rutas del mismo conductor; causa y prevención están en `docs/ERROR_LOG.md`.
 - Ramas aisladas: Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`. No declarar misión completa.
