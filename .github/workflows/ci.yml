@@ -131,7 +131,7 @@ jobs:
 
       - name: Preserve Playwright traces for failed E2E runs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: playwright-traces-${{ github.run_id }}-${{ github.run_attempt }}
           path: test-results/

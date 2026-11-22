@@ -379,6 +379,7 @@
 - Añadidos E2E para alta de roles Manager/Logistics desde Equipo y para el dashboard/responsive Manager con acceso a Gestión de Rutas y su constructor. Local lint/build/discovery 33 correctos; Action integrada pendiente.
 - Action `45054550439` pasó **32/33**; altas directas de Manager/Logistics y punto móvil pasaron. El único fallo fue esperar el h1 “Gestión de Rutas”, cuando la lista muestra “Rutas”; selector corregido y Action repetida pendiente.
 - Action `45055100816` repite los **33** escenarios después del fix; pendiente.
+- CI actualiza `actions/upload-artifact` a `v7.0.2` tras el warning de retiro de Node 20 en v4; confirmar la carga de traces en la siguiente falla E2E.
 
 # 2026-11-22 — Mi Ruta: responsive tablet
 
