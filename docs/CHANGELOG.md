@@ -371,3 +371,11 @@
 - Backend ya no libera un vehículo al cancelar ruta Pending: sólo se libera en transición terminal que parte de InProgress. Regresión SQLite verifica ruta Cancelled y vehículo aún Maintenance; smoke HTTP/MySQL repite el caso con lectura SQL y luego restaura Available.
 - E2E de filtros distingue Pending/Cancelled y verifica el filtro de estado aunque se seleccionen los recursos de la ruta cancelada; comprueba lista/main a 320/768 px con filtros activos. Logistics prueba mapa en 320/768 y lista en ambos anchos.
 - Validación local: Front lint/build/discovery 26; backend test dirigido 1/1 y suite Release 89/89; shell syntax/diff-check. Corrida integrada de los nuevos cambios pendiente.
+
+- Actions `45046312974` pasó Front `d05dcf8`: E2E 26/26, responsive 1/1, Release backend, audit/lint/build y cleanup.
+
+
+## 2026-11-22 — Integración de seguridad backend — Action pendiente
+
+- Front `d05dcf8` quedó validado en Action `45046312974` (E2E 26/26, responsive 1/1 y cleanup).
+- Backend `a207c08` incorpora serialización de sesión/reset, autorización GPS bajo lock y fixture aislado de mantenimiento; xUnit local 91/91 y build sin warnings/errores. Action `45047226328` está en cola.

@@ -1,6 +1,14 @@
 ## Estado actual de estabilización — 2026-11-22
 
 - Ramas: Front `refactor/route-builder`; backend `chore/stabilize-fleet-platform`; `main` intacta.
+- Actions Front `45046312974` pasó `d05dcf8`: Release backend, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26** y cleanup. Incluyó filtros reales Pending/Cancelled y Logistics mapa/lista a 320/768 px.
+- Backend `190f284` pasó Actions `45045070288`; docs `e24e371` pasó `45045329470`. Backend `0a057ee` encontró 409 de agenda en el fixture temporal; aislado. El fix extendido está en `a207c08`, Action `45047226328` en cola.
+- Local Front lint/build/discovery **26** pasan; Front `d05dcf8` pasó Actions `45046312974` con E2E **26/26**. Backend local Release xUnit **91/91**, build 0 warnings/0 errors, `bash -n` y diff-check; smoke MySQL del fixture aislado y nuevas regresiones quedan a Action `45047226328`.
+- Misión abierta: siguen pendientes criterios alcanzables de CRUD/roles y seguridad adicional. Política Admin delegado requiere respuesta de producto; SMTP/PFX productivos e infraestructura dependen de configuración externa. App nativa está aplazada.
+
+## Estado actual de estabilización — 2026-11-22
+
+- Ramas: Front `refactor/route-builder`; backend `chore/stabilize-fleet-platform`; `main` intacta.
 - Actions Front `45045460102` pasó `a761674`: Release backend, audit/lint/build, responsive, E2E API/MySQL **26/26** y cleanup. E2E ampliados después de esa SHA requieren corrida nueva.
 - Backend `190f284` pasó `45045070288`: build/test Release, xUnit **88/88**, smoke HTTP/MySQL tenant/flota, concurrencia y cleanup. Docs `e24e371` pasó `45045329470`.
 - Validación local del lote actual: Front lint/build/discovery **26**; Backend Release/xUnit **89/89**, test enfocado 1/1, `bash -n` y diff-check. E2E autenticado y smoke MySQL de los cambios sin commit quedan para CI.

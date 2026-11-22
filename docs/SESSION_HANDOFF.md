@@ -648,3 +648,16 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front ya distingue el filtro de estado de los filtros de vehículo/Driver usando una ruta Pending y otra Cancelled; valida sólo segunda al cambiar el estado y vuelve a ambas al limpiar. Mientras filtra verifica documento/main en 320/768. Logistics mide editor/mapa en esos anchos y su lista después de guardar. `npm run lint`, `npm run build`, discovery Playwright **26** pasan; falta Actions con API/MySQL efímero.
 - Acción Front `45045460102` pasó la SHA anterior `a761674` con 26/26 y cleanup; no cubre las nuevas aserciones.
 - Fix backend separado mantiene Maintenance al cancelar ruta Pending; backend Release xUnit **89/89**, test focal 1/1, `bash -n` y diff-check. Smoke MySQL extendido pendiente de CI.
+
+
+## Continuación — E2E filtros/Logistics validado — 2026-11-22
+
+- Front `d05dcf8` pasó Actions `45046312974`: audit/lint/build, responsive browser **1/1**, Playwright autenticado API/MySQL **26/26**, cleanup. Incluye ruta Pending/Cancelled para comprobar filtro de estado y mapa/lista Logistics a 320/768.
+- Nueva corrida será necesaria al cruzar este frontend con el siguiente backend SHA de seguridad y regresión de estado.
+
+
+## Integración pendiente contra backend a207c08 — 2026-11-22
+
+- Front Action `45046312974` validó `d05dcf8` con E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup.
+- Backend `a207c08` contiene locks de cambio contraseña/baja y refresh, compare-and-set de reset token, registro/lectura GPS bajo lock, y smoke maintenance con recursos aislados. Backend Action `45047226328` está en cola; revisar el smoke HTTP/MySQL y cleanup.
+- Tras éxito backend, crear commit de documentación Front (este estado se actualizará con SHA/resultado) para disparar el E2E integrado que checkout la rama backend actual. Si falla, usar logs del step exacto, corregir y volver a ejecutar.
