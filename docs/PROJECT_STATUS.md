@@ -115,7 +115,7 @@ Fecha de actualización: 2026-11-22.
 
 ## Pendiente
 
-1. Completar E2E visual de otras vistas/acciones CRUD; la suite actual tiene 15/15 en CI, pero no cubre cada vista ni cada acción de equipo/rutas.
+1. Completar E2E visual de otras vistas/acciones CRUD; la suite actual descubre 18 casos, pero no cubre cada vista ni cada acción de equipo/rutas.
 2. Configurar SMTP con credenciales vigentes; las credenciales DB/JWT locales ya fueron rotadas en backend. Validar cualquier entorno remoto por separado.
 3. Ampliar vistas/acciones responsive no cubiertas y mover fotos de JSON a almacenamiento de objetos antes de producción a escala. E2E frontend/API/MySQL ya pasó en Actions con fixtures efímeros.
 
@@ -319,8 +319,9 @@ Fecha de actualización: 2026-11-22.
 - FleetContext ahora consulta `/Routes/assignment-options` para gerente/Logistics y RoutesManagement consume conductores activos independientes de cuentas de usuario. El paso de asignación muestra error y reintento si el endpoint falla.
 - E2E extiende caso Logistics: comprueba 403 en `/Vehicles` y `/Drivers`, 200 en opciones mínimas sin documento/teléfono, disponibilidad de recursos en selectores, creación y cancelación UI.
 - Actions `45012698648` pasó para Front `4117342` + Backend `6def8fa`: audit/lint/build, responsive 1/1, E2E API/MySQL 18/18 y cleanup. Confirmado: Logistics consulta opciones sin PII y crea/cancela ruta; mocks actualizados y todos los fixtures MySQL retirados.
-# Cobertura de rol Manager desde UI — en validación — 2026-11-22
+# Cobertura de rol Manager desde UI — validada — 2026-11-22
 
 - Auditoría Front detectó que Manager tenía CRUD Vehicle validado por API, pero no E2E de menú/pantalla. El caso de matriz ahora inicia sesión como Manager y comprueba rutas/vehículos visibles, Equipo oculto, alta/edición/estado mantenimiento/baja y persistencia.
-- Vistas cubiertas a 320×844, 390×844 y 768×1024 con aserción de overflow. Local lint/build/discovery de 18 pasa; API/MySQL E2E Actions pendiente.
-- Actions `45013936721` pasó 17/18: el CRUD API Manager pasó, pero la UI ocultó Vehículos. Causa: Front colapsaba Manager y Logistics; se agregó el rol UI `manager` distinto con permisos de flota sin gestión de equipo. E2E integrado debe repetirse.
+- Vistas cubiertas a 320×844, 390×844 y 768×1024 con aserción de overflow; lint/build/discovery de 18 pasan localmente.
+- Actions `45013936721` pasó 17/18: el CRUD API Manager pasó, pero la UI ocultó Vehículos. Causa: Front colapsaba Manager y Logistics; se separó el rol UI `manager` con permisos de flota sin gestión de equipo.
+- Cierre: Actions `45014430986` pasó con Front `7bf1955` + Back `648b23f`: audit/lint/build, responsive 1/1, E2E autenticado **18/18** y cleanup. Lint/build/discovery 18 pasan localmente.

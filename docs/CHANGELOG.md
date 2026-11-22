@@ -244,4 +244,5 @@
 # 2026-11-22 — Separación visual de Manager y Logistics
 
 - El E2E integrado reveló que ambos roles backend compartían el rol UI `logistica`; Manager perdía el menú de Vehículos pese a tener CRUD API.
-- Añadido rol UI `manager` / etiqueta “Gestor de flota”, permisos de vehículo y rutas sin administración de usuarios; selección disponible en gestión de equipo y panel de organización. CI integrado pendiente.
+- Añadido rol UI `manager` / etiqueta “Gestor de flota”, permisos de vehículo y rutas sin administración de usuarios; selección disponible en gestión de equipo y panel de organización.
+- Actions `45014430986` pasó con Front `7bf1955` + Back `648b23f`: audit/lint/build, responsive 1/1, E2E autenticado 18/18 y cleanup.

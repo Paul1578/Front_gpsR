@@ -437,8 +437,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 ## Iteración siguiente en curso — Manager UI y opciones asignables — 2026-11-22
 
 - Nueva auditoría frontend identificó CRUD vehículos de Manager cubierto sólo por API. Se amplió la prueba de matriz en `e2e/fleet-admin.spec.ts`: cuenta Manager inicia navegador, verifica menú (Rutas/Vehículos sí, Equipo no), alta/edición/mantenimiento/baja con persistencia, overflow 320/390/768; branch `refactor/route-builder` sin publicar este lote aún.
-- `npm run lint`, `npm run build`, discovery Playwright **18** y diff-check pasan localmente. Falta ejecutar flujo API/MySQL en Actions.
-- Auditoría backend encontró que options devolvía estado vehículo no asignable/cuenta de Driver inactiva. Código local en Back agrega status Available, `GetAssignableAsync` por tenant y User activo, prueba xUnit y smoke SQL del Driver vinculado desactivado. Release 65/65 y build 0 warnings/errors; smoke/Actions pendiente.
+- `npm run lint`, `npm run build`, discovery Playwright **18** y diff-check pasan localmente.
+- Auditoría backend encontró recursos no asignables en options. Back `648b23f` implementó filtro disponible/asignable; Actions `45014146500` success con Release build, xUnit 65/65, smoke HTTP/MySQL y concurrencia, cleanup sin residuos.
 - Política de Admin delegado preguntada vía herramienta (primer intento falló por esquema y quedó registrado en ERROR_LOG); continuar cambios independientes mientras se espera respuesta.
-- Actions Front `45013936721` ejecutó 17/18, falló Manager UI al no mostrar Vehículos. Causa raíz: roles API Manager/Logistics colapsados en Front. Fix local separa rol `manager`, permisos y etiquetas; ahora se incluye en altas/cambios de rol. Ejecutar lint/build/discovery y repetir Actions después del push.
+- Actions Front `45013936721` ejecutó 17/18, falló Manager UI al no mostrar Vehículos. Causa raíz: roles API Manager/Logistics colapsados en Front. Fix `7bf1955` separa rol/etiqueta/permisos y lo incluye en altas/cambios.
 - Backend run `45014146500` success en SHA `648b23f`: build, xUnit 65/65, smoke HTTP/MySQL de tenant/elegibilidad y concurrencia; cleanup pasó tras borrar Driver antes del User y verificar cero residuos.
+- Actions Front `45014430986` success para Front `7bf1955` + Back `648b23f`: backend Release/xUnit 65/65, audit/lint/build, responsive 1/1, E2E Chrome/API/MySQL 18/18 y cleanup.
