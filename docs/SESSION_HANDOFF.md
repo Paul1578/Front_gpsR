@@ -595,3 +595,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - La revisión de seguridad halló dos tareas backend en curso con agente: concurrencia real en test del rate limit y descifrado del key ring en rotación de certificado. Revisar/validar su commit antes de integrar.
 - Actions Front `45039219806` para Front `52761b4` seguía en progreso al guardar esta nota; confirmar resultado y documentar.
 - No cambiar la concesión de rol Admin delegado hasta recibir respuesta de producto. SMTP actualizado y certificado/volumen de producción son dependencias externas; móvil nativo está pospuesto.
+
+- Actions Front `45039605708` pasó para `36f9bd8`: backend checks, audit/lint/build, responsive 1/1, E2E Chrome/API/MySQL 23/23 y cleanup. Incluye carga pendiente → error → retry en Gestión de Vehículos.

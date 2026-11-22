@@ -1062,3 +1062,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El E2E retiene deliberadamente la respuesta inicial; comprueba que aparece “Cargando vehículos…” y no el estado vacío, luego libera un 503 y prueba error → reintento 200 → unidad visible a 320 px.
 - Pruebas locales: el caso enfocado pasó 1/1; spec completo de errores/carga 5/5; `npm run lint`, `npm run build`, discovery Playwright 23 y `git diff --check` pasan. CI de este cambio aún pendiente.
 - Prevención: probar carga pendiente, fallo y recuperación por separado; una lista inicial vacía no demuestra que la carga haya concluido.
+
+## 2026-11-22 — Estado de carga inicial de Vehículos — Actions VALIDADO
+
+- Actions `45039605708` validó Front `36f9bd8`: backend Release/xUnit y smokes, audit de dependencias, lint/build, responsive **1/1**, E2E autenticado Chrome/API/MySQL **23/23** y cleanup success.
+- Incluye el nuevo E2E de carga pendiente → 503 → retry → datos visibles a 320 px.
