@@ -379,3 +379,8 @@
 
 - Front `d05dcf8` quedó validado en Action `45046312974` (E2E 26/26, responsive 1/1 y cleanup).
 - Backend `a207c08` incorpora serialización de sesión/reset, autorización GPS bajo lock y fixture aislado de mantenimiento; xUnit local 91/91 y build sin warnings/errores. Action `45047226328` está en cola.
+
+
+## 2026-11-22 — Backend a207c08 validado en MySQL
+
+- Actions `45047226328` pasó xUnit 91/91, build Release, smoke tenant HTTP/MySQL y concurrencia de rutas. Cleanup confirmó cero rutas/posiciones/vehicles, cero fixtures Manager y tenant A/B.

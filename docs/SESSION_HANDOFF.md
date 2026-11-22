@@ -659,5 +659,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 ## Integración pendiente contra backend a207c08 — 2026-11-22
 
 - Front Action `45046312974` validó `d05dcf8` con E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup.
-- Backend `a207c08` contiene locks de cambio contraseña/baja y refresh, compare-and-set de reset token, registro/lectura GPS bajo lock, y smoke maintenance con recursos aislados. Backend Action `45047226328` está en cola; revisar el smoke HTTP/MySQL y cleanup.
-- Tras éxito backend, crear commit de documentación Front (este estado se actualizará con SHA/resultado) para disparar el E2E integrado que checkout la rama backend actual. Si falla, usar logs del step exacto, corregir y volver a ejecutar.
+- Backend `a207c08` pasó Action `45047226328`: xUnit **91/91**, smoke HTTP/MySQL, concurrencia y cleanup. Validó la fixture maintenance aislada. El siguiente lote backend agrega supresión de reset-email obsoleto (test focal 3/3; full suite local 92/92, build clean) y requiere nueva CI.
+- Crear/pushear documentación Front para disparar E2E integrado contra `a207c08`; luego, una vez integrado el siguiente worker backend, repetir Front contra su SHA actual. Si falla, usar logs del step exacto, corregir y volver a ejecutar.

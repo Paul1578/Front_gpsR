@@ -2,8 +2,8 @@
 
 - Ramas: Front `refactor/route-builder`; backend `chore/stabilize-fleet-platform`; `main` intacta.
 - Actions Front `45046312974` pasó `d05dcf8`: Release backend, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26** y cleanup. Incluyó filtros reales Pending/Cancelled y Logistics mapa/lista a 320/768 px.
-- Backend `190f284` pasó Actions `45045070288`; docs `e24e371` pasó `45045329470`. Backend `0a057ee` encontró 409 de agenda en el fixture temporal; aislado. El fix extendido está en `a207c08`, Action `45047226328` en cola.
-- Local Front lint/build/discovery **26** pasan; Front `d05dcf8` pasó Actions `45046312974` con E2E **26/26**. Backend local Release xUnit **91/91**, build 0 warnings/0 errors, `bash -n` y diff-check; smoke MySQL del fixture aislado y nuevas regresiones quedan a Action `45047226328`.
+- Backend `a207c08` pasó Actions `45047226328`: xUnit **91/91**, smoke HTTP/MySQL y concurrencia, cleanup completo. Esta corrida también valida fixture de mantenimiento aislado. El nuevo Worker de email aún no está integrado.
+- Local Front lint/build/discovery **26** pasan; Front `d05dcf8` pasó Actions `45046312974` con E2E **26/26**. Backend local Release xUnit **92/92**, build 0 warnings/0 errors, `bash -n` y diff-check. La nueva supresión de reset emails obsoletos ya pasa test enfocado; necesita Action nueva.
 - Misión abierta: siguen pendientes criterios alcanzables de CRUD/roles y seguridad adicional. Política Admin delegado requiere respuesta de producto; SMTP/PFX productivos e infraestructura dependen de configuración externa. App nativa está aplazada.
 
 ## Estado actual de estabilización — 2026-11-22
