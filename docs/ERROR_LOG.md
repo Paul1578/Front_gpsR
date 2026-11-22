@@ -1029,3 +1029,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Un recuento secundario `rg` buscó la carpeta `BackEnd_Gps.Tests` mientras el directorio de trabajo era Front; devolvió error de ruta y no encontró tests.
 - Solución: conservar la búsqueda de specs Front desde este repo y ejecutar recuentos backend en `/home/leonardo/Back_GPS`; nunca interpretar salida de raíz ajena como cobertura cero.
+
+## 2026-11-22 — Revisión de cobertura Front lanzada desde raíz Backend — CORREGIDO
+
+- Una búsqueda que combinaba los specs Front y tests backend se ejecutó desde `/home/leonardo/Back_GPS`; los paths `e2e` y `src` no existían en ese repo, por lo que `rg` devolvió esos errores aunque sí listó tests backend.
+- Solución: separar búsquedas por repositorio y ejecutar specs Front bajo `/home/leonardo/Front_gpsR`.
+- Prevención: no construir búsquedas de auditoría con raíces de ambos repositorios en una sola ejecución.
