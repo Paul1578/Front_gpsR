@@ -115,6 +115,8 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   };
 
+  await assertNoHorizontalOverflow();
+
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
@@ -133,6 +135,24 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
   await assertNoHorizontalOverflow();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await page.getByRole("button", { name: "Cambiar contraseña" }).click();
+  await expect(page.getByPlaceholder("Contraseña actual")).toBeVisible();
+  await assertNoHorizontalOverflow();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoHorizontalOverflow();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/backend/Auth/logout-all", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+  });
+  await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+  await expect(page.getByText("Servicio temporalmente no disponible")).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
 });
 
 test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ page }) => {
@@ -949,6 +969,27 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
     .getByRole("heading", { name: `e2e${suffix}`, exact: true })
     .locator("xpath=../../../..");
   await expect(inactiveMemberAfterReload.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const userDialog = page.getByRole("dialog");
+  await userDialog.getByPlaceholder("Juan").fill(`Usuario QA ${suffix}`);
+  await userDialog.getByPlaceholder("Pérez").fill("Sin flota");
+  await userDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`user${suffix}`);
+  const regularUserEmail = `fletflow.e2e.user.ui.${suffix}@example.test`;
+  await userDialog.getByPlaceholder("jperez@empresa.com").fill(regularUserEmail);
+  await userDialog.getByRole("button", { name: /^Usuario Consulta/ }).click();
+  const createRegularUserResponsePromise = page.waitForResponse((response) =>
+    response.url().includes("/api/backend/Users") && response.request().method() === "POST",
+  );
+  await userDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const createRegularUserResponse = await createRegularUserResponsePromise;
+  expect(createRegularUserResponse.status()).toBe(200);
+  expect((await createRegularUserResponse.json()).role).toBe("User");
+  const teamUsersAfterCreate = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamUsersAfterCreate.status()).toBe(200);
+  expect((await teamUsersAfterCreate.json()).some((member: { email: string; roles: string[] }) =>
+    member.email === regularUserEmail && member.roles.includes("User"),
+  )).toBe(true);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

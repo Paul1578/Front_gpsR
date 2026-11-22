@@ -106,8 +106,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
   };
 
   const handleLogoutAll = async () => {
-    await logoutAll();
-    toast.success("Cerraste sesión en todos los dispositivos");
+    const result = await logoutAll();
+    if (result.ok) toast.success("Cerraste sesión en todos los dispositivos");
+    else toast.error(result.message ?? "No se pudo cerrar sesión en los demás dispositivos");
   };
 
   const isDark = scheme === "dark";

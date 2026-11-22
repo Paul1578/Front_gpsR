@@ -158,3 +158,14 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Evidencia local backend: Release xUnit 50/50, build 0 warnings/0 errores. Smoke tenant/auth e invariantes reales MySQL pasó, incluida revocación, HTTP 409 ante operaciones incompatibles, reactivación y dos updates simultáneos de parada. Bases efímeras se descartaron.
 - Errores y correcciones de la preparación (contraseña `DB_PASSWORD` desincronizada, DLL previo, identificadores QA demasiado largos, mock 503 consumido por GET inicial) constan en `docs/ERROR_LOG.md` de cada repo.
 - Próximo paso: revisar diff de endpoints/contratos, ejecutar lint/build/test de corte, actualizar docs de seguridad/reglas, commit/push en ambas ramas y comprobar Actions con commit exacto. Continuar matriz HTTP por roles y responsive/CRUD restantes. Super Admin global requiere definición de producto/backend; SMTP real externo; app nativa aplazada por el usuario.
+
+## Continuación de roles, sesiones y responsive — 2026-11-21
+
+- Rama frontend: `refactor/route-builder`; se agregó el rol `Usuario` al alta y edición de miembros. La prueba autenticada crea una cuenta real y comprueba `roles: ["User"]` en `/Users/my-team`.
+- El cierre de sesiones ahora sólo cierra la sesión local cuando el API confirma la revocación; un error HTTP muestra su mensaje y conserva la sesión para reintentar.
+- Playwright en Chrome/API/MySQL real: **14/14**, incluida navegación móvil/tablet, perfil responsive, error de logout-all, CRUD de vehículos/rutas/conductores, User/Driver/Logistics, aislamiento entre empresas y persistencia de paradas. Esquema QA temporal eliminado.
+- `npm run lint`, `npm run build` y `npm audit --omit=dev` pasan después de las modificaciones; Playwright final 14/14.
+- Errores de pruebas documentados en `ERROR_LOG.md`: la prueba de alta encontró un nombre accesible compuesto y el contrato del equipo devuelve `roles[]`, no `role`; se corrigieron selector y aserción tras inspeccionar DOM/API.
+- Falta hacer commit/push de este lote y verificar Actions con su SHA. Pendientes reales: ampliar CRUD/responsive en pantallas aún sin cobertura, decidir alcance de Super Admin con backend/producto y credenciales SMTP. App nativa móvil aplazada por el usuario.
+- Backend HTTP smoke extendido y pasado: Manager crea Vehicle/Driver/Route y edita rutas; Logistics edita/elimina rutas, sin crear vehículos/conductores; User y Driver no crean rutas. MySQL temporal se descartó.
+- El smoke comprobó además registro anónimo que pide Admin (persistió User y recibió 403 en flota) y logout-all real (200, refresh revocado).

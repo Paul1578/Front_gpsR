@@ -69,3 +69,9 @@
 - Playwright verifica listados y operaciones cruzadas de Vehicles, Drivers y Routes, y evita enlazar recursos de otra empresa al crear ruta.
 - Se persistió GPS de ruta en progreso: propietario lee la posición y tenant ajeno recibe `200 []`; POST de GPS ajeno responde 404.
 - Suite autenticada Chrome/API/MySQL pasó 8/8; cero fixtures al cerrar.
+
+## 2026-11-21 — Roles, cierre de sesiones y responsive
+
+- Gestión de Equipo permite crear/cambiar el rol Usuario.
+- Mi Perfil informa el fallo de logout-all sin perder la sesión actual.
+- Playwright cubre persistencia de rol, error de sesión, vistas responsive y CRUD; Chrome/API/MySQL pasó 14/14 con DB temporal eliminada.

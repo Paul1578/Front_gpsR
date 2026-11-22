@@ -503,3 +503,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una primera repetición usó el DLL previo al último cambio del comando de desactivación y observó HTTP 200 con la cuenta todavía activa. Se recompiló desde el código actual y la repetición confirmó 401 para access y refresh.
 - El primer smoke de bajas excedió el máximo de longitud de Plate; se cambiaron las placas/documentos QA a sufijos breves. La repetición final de ambos smokes pasó.
 - Una primera suite completa dio 13/14: el test de Historial activaba el mock 503 mientras aún había un GET `/Routes` inicial en curso, por lo que el fallo podía consumirse antes de entrar a Historial. Se espera explícitamente la respuesta inicial, `networkidle` y luego la respuesta 503/200 del flujo Historial. Caso aislado y suite final 14/14.
+
+## 2026-11-21 — Pruebas E2E de rol Usuario asumieron un nombre accesible y contrato incorrectos — CORREGIDO
+
+- El selector `getByRole(button, {name:"Usuario", exact:true})` no encontraba la tarjeta porque su nombre accesible incluye también la descripción. Se inspeccionó el snapshot DOM y se usó una expresión regular que valida el prefijo del nombre completo.
+- La prueba de persistencia buscaba `member.role`; `/Users/my-team` entrega `roles: string[]`. Se alineó la aserción al DTO real y se comprobó que la lista contiene `User`.
+- Verificación tras ambas correcciones: suite Playwright autenticada Chrome/API/MySQL **14/14**, incluyendo alta UI y lectura persistida. Base efímera eliminada.

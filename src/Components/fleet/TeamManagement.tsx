@@ -16,7 +16,6 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     updateUserRole,
     updateUserStatus,
     createUser,
-    isSuperAdmin,
   } = useAuth();
   const {
     drivers,
@@ -587,10 +586,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <div className="mb-4">
                     <label className="block text-xs text-gray-500 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(isSuperAdmin()
-                        ? (["gerente", "logistica", "chofer"] as UserRole[])
-                        : (["gerente", "logistica", "chofer"] as UserRole[])
-                      ).map((role) => (
+                      {(["gerente", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           onClick={() => handleRoleChange(user.id, role)}
@@ -726,10 +722,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <span className="text-xs text-gray-500">Selecciona el rol para el nuevo usuario</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(isSuperAdmin()
-                  ? (["gerente", "logistica", "chofer"] as UserRole[])
-                  : (["gerente", "logistica", "chofer"] as UserRole[])
-                ).map((role) => {
+                {(["gerente", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => {
                   const active = createUserForm.role === role;
                   const roleLabel =
                     role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1);
@@ -740,7 +733,9 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                       ? "Administra equipos y rutas"
                       : role === "logistica"
                       ? "Gestiona operaciones diarias"
-                      : "Conduce y reporta";
+                      : role === "chofer"
+                      ? "Conduce y reporta"
+                      : "Consulta su cuenta sin permisos operativos de flota";
                   return (
                     <button
                       key={role}

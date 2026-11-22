@@ -107,3 +107,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Frontend lint/build correctos; `npm audit --audit-level=low`: cero vulnerabilidades. Playwright autenticado sobre Chrome/API/MySQL: **14/14**, incluyendo mensaje de error de alta, baja/reactivación de usuario Driver, gestión móvil de vehículos con reactivación, mapa/equipo en móvil/tablet, filtros, reordenar/quitar paradas e Historial. E2E limpió fixtures y se descartó el esquema temporal.
 - Una corrida intermedia obtuvo 13/14 por una carrera del propio mock 503 del Historial; se corrigió sincronizando respuesta inicial y resultado esperado. Repetición final completa: 14/14.
 - La corrida de backend remota nueva y la de frontend para este lote quedan pendientes de publicar los commits siguientes.
+
+## Corte de roles y sesiones — 2026-11-21
+
+- `npm run lint`, `npm run build` y `npm audit --omit=dev`.
+- Runner `Back_GPS/scripts/run-e2e-local.sh`, API y MySQL temporales: **14/14 Playwright**. Incluye crear una cuenta `User`, comprobar el arreglo de roles persistido, error simulado de `POST /Auth/logout-all` sin cerrar la sesión local, y overflow de perfil/equipo/mapa en móvil/tablet.
+- El cleanup retiró los fixtures QA y descartó el esquema. Backend smoke de tenant/roles y concurrencia también pasó en su DB aislada.
+- Actions remoto para estos cambios locales: pendiente de commit/push y ejecución.
+- Backend MySQL autenticado verificó también que registro público no eleva rol (Admin pedido → User/403) y logout-all invalida el refresh (200→401).

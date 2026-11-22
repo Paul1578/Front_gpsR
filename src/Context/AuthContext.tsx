@@ -133,7 +133,7 @@ interface AuthContextType {
     newPassword: string,
     confirmNewPassword: string
   ) => Promise<{ ok: boolean; message?: string }>;
-  logoutAll: () => Promise<void>;
+  logoutAll: () => Promise<{ ok: boolean; message?: string }>;
   createUser: (
     data: RegisterData & {
       role: UserRole;
@@ -843,10 +843,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({}),
       });
-    } catch (error) {
-      console.error("Error al cerrar sesión en todos los dispositivos:", error);
-    } finally {
       await logout();
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        message: getApiRequestError(error)?.message ?? "No se pudo cerrar sesión en los demás dispositivos",
+      };
     }
   };
 

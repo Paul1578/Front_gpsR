@@ -112,3 +112,13 @@ Fecha de actualización: 2026-11-21.
 - Validación local actual: backend Release **50/50**, build 0 warnings/0 errors; smoke tenant/auth e invariantes/concurrencia MySQL aprobados; frontend lint/build y npm audit (0 vulnerabilidades) correctos; Playwright Chrome/API/MySQL **14/14**, base descartada.
 - Commit anterior `dc8b697` pasó Frontend Actions run `44977358352`; este conjunto posterior aún debe commit/push y validar Actions en ambas ramas.
 - Pendientes: matriz HTTP exhaustiva de roles Manager/Logistics/Driver en mutaciones, CRUD y responsive de vistas/acciones aún no recorridas; Super Admin global no está definido por el backend. SMTP necesita credenciales externas válidas; app nativa móvil está pospuesta.
+
+## Corte adicional de validación — 2026-11-21
+
+- Gestión de Equipo permite asignar el rol `Usuario` al crear o cambiar una cuenta.
+- Mi Perfil informa errores de `logout-all` y conserva la sesión local cuando el backend no confirma la revocación.
+- Playwright autenticado Chrome/API/MySQL: **14/14**; rol Usuario creado y verificado en persistencia, perfil responsive y error de revocación cubiertos. Base efímera descartada.
+- Lint, build Next.js y auditoría npm sin vulnerabilidades confirmados después del último cambio de selector; Playwright final autenticado pasó 14/14.
+- Pendiente validar este SHA en Actions y continuar cobertura de otros CRUD/responsive; SMTP requiere credenciales externas y la app nativa está pospuesta. La misión sigue abierta.
+- Backend HTTP smoke extendido y pasado: Manager crea flota/ruta y edita rutas; Logistics puede gestionar rutas pero no vehículos/conductores; User/Driver no crean rutas. MySQL temporal se descartó.
+- Registro público con intento Admin queda como User (403 en flota); logout-all real responde 200 y revoca refresh (401).
