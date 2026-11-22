@@ -1210,3 +1210,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: el runner crea un Driver operativo independiente para el flujo de Mi Ruta/foto; el E2E de aislamiento tenant crea su propio Driver sin asignación y lo desactiva al limpiar. Conductores añade `min-w-0` a la sección/contenedor/formulario para permitir el encogimiento en móvil.
 - Se revisó el diff y `npx playwright test --list` descubre 33 escenarios. `npm run lint`, `npm run build` y `git diff --check` pasan localmente. La repetición API/MySQL integrada sigue pendiente.
 - Prevención: no compartir recursos con exclusión de agenda entre E2E paralelos; medir el formulario completo y sus ancestros flex/grid al validar overflow responsive. Tratar errores de cleanup después de timeout como secundarios y arreglar primero la condición inicial que bloqueó el caso.
+
+## 2026-11-22 — Segunda CI: evidencia seleccionaba “Nota” y el formulario móvil heredaba ancho del layout — CORREGIDO; CI PENDIENTE
+
+- Action `45061522878` terminó 31/33. La traza mostró que el test subía desde “Nota” y buscaba el placeholder de fotografía; el diálogo conserva el tipo de evidencia de la apertura anterior, por lo que nunca aparecía ese campo. El timeout dejó una ruta Pending; el retry reutilizó el Driver aislado y recibió 409. El cleanup secundario también falló porque Playwright ya había cerrado el contexto al vencer los 30 s.
+- Solución: el E2E elige explícitamente “Foto” antes de completar descripción/cargar PNG. Así el flujo avanza y el teardown normal elimina la ruta. El test mantiene una cuenta Driver independiente para evitar interferencia con otros escenarios.
+- El segundo fallo estaba en “Gestión de Equipo”, dentro de su ciclo CRUD Driver: el `<main>` flex y los contenedores de Equipo/chofer no permitían encoger; el formulario medía 413 px en viewport 320 px. Se añadió `min-w-0` a los ancestros flex/grid y `w-full min-w-0` al formulario de edición.
+- Repetir lint/build, discovery y Action integrada; todavía no declarar estos dos escenarios validados.
+- Prevención: para diálogos reusados, seleccionar explícitamente cada modo antes de interactuar con campos específicos; un retry Playwright no garantiza estado de base limpio después de timeout si el test abandonó una mutación pendiente.

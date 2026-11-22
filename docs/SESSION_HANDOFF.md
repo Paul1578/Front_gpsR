@@ -714,3 +714,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Fix local: fixture Driver independiente para Mi Ruta/foto; tenant isolation crea su Driver propio; `DriversManagement` permite encogimiento con `min-w-0`. Backend `scripts/run-e2e-local.sh` crea/expone el fixture Driver operativo para CI. El runner extrae IDs usando Node, sin agregar dependencia jq.
 - Front local lint/build/discovery 33/diff-check pasan. Backend runner `bash -n` y diff-check pasan; backend Release xUnit 100/100 y Action `45060714338` pasó antes del cambio de fixture.
 - Pendiente inmediato: commit/push de ambos branches y seguir Actions integrados; corregir y repetir cualquier fallo. Misión sigue abierta, con cobertura CRUD/roles/responsive por completar y límites externos ya registrados.
+
+## Continuación — evidencia fotográfica y CRUD móvil en Equipo — 2026-11-22
+
+- Front Action `45061522878` pasó audit/lint/build/responsive pero terminó Playwright **31/33**. Trazas descargadas y revisadas: el test no cambiaba el diálogo de Nota a Foto, se agotaba a 30 s y el retry encontraba ruta Pending de ese intento (409); el otro caso midió formulario de edición Driver de Equipo en 413 px a 320.
+- Correcciones locales no publicadas: click explícito “Foto” en E2E; `min-w-0` en main/layout/Equipo/chofer y `w-full min-w-0` en form. `DriversManagement.tsx` también conserva su fix del caso móvil.
+- Backend `3f87af8` validado por Action `45061524504` (build/tests Release, tenant HTTP/MySQL, concurrencia/cleanup); documentación nueva `000dabc` registra evidencia. Branch frontend todavía requiere lint/build/discovery tras este parche y una Action nueva.
+- Sigue misión: no cerrar hasta validar los fixes y completar restantes CRUD/roles/responsive; móvil nativo aplazado, decisión de política Admin delegado pendiente, SMTP/infra productiva externos.

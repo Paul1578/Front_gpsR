@@ -2616,6 +2616,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   await stopCard.getByRole("button", { name: "Evidencia" }).click();
   const photoDialog = page.getByRole("dialog");
   await expect(photoDialog.getByRole("button", { name: "Foto", exact: true })).toBeVisible();
+  await photoDialog.getByRole("button", { name: "Foto", exact: true }).click();
   await photoDialog.getByPlaceholder("Ej: Entrega en puerta principal").fill(photoDescription);
   const photoEvidencePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&

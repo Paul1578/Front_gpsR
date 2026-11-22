@@ -184,7 +184,7 @@ export function FleetDashboard() {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
             <div className="flex items-center gap-3">
               <button
@@ -208,7 +208,7 @@ export function FleetDashboard() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">
+          <main className="min-w-0 flex-1 overflow-auto">
             {renderView()}
           </main>
         </div>

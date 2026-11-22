@@ -342,3 +342,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Action `45060482928`: 30/33. Dos escenarios recibieron HTTP 409 porque compartían el mismo Driver de QA y solicitaron rutas activas en paralelo; el formulario de Driver excedió el viewport 320 px (413 px).
 - Correcciones posteriores: fixtures Driver independientes para escenarios operativos y aislamiento tenant; ancho mínimo corregido en `DriversManagement.tsx`. `npm run lint`, `npm run build`, `npx playwright test --list` (33) y `git diff --check` pasan localmente.
 - Estado: no declarar E2E integrados como aprobados hasta repetir Actions con frontend/backend actualizados.
+
+## Acción Front `45061522878` — 31/33; nueva repetición requerida
+
+- Evidencia: el diálogo conservó modo “Nota” cuando el test esperaba el campo de foto. Venció el límite de 30 s; el retry vio la ruta pendiente del primer intento y recibió 409 para el mismo Driver. Las trazas Playwright están descargadas y la causa quedó confirmada.
+- El segundo caso de Equipo midió el formulario CRUD de Driver a 413 px en viewport 320 px. Se añadieron `min-w-0` en sus ancestros y `w-full min-w-0` al form; la prueba selecciona explícitamente el modo Foto.
+- Estado de este fix: local y Actions pendientes.

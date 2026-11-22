@@ -437,3 +437,8 @@
 
 - Se aisló el fixture de conductor de rutas operativas para evitar conflictos de agenda entre pruebas paralelas y se corrigió el ancho mínimo del formulario de conductores en móvil.
 - Registro de la falla inicial y mitigaciones en `docs/ERROR_LOG.md`; Actions integrados pendientes.
+
+## 2026-11-22 — Corrección de evidencia de Driver y CRUD de Equipo a 320 px
+
+- El test fotográfico selecciona ahora el modo Foto de forma explícita. Dashboard/Equipo limita el mínimo de ancho de ancestros flex y el formulario CRUD Driver ocupa el ancho disponible en móvil.
+- La traza de la falla, causa y prevención se registran en `docs/ERROR_LOG.md`; repetir CI antes de considerar verificado.

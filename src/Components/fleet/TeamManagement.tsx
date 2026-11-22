@@ -344,7 +344,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white">
+      <div className="flex h-full min-w-0 flex-col bg-white">
         {/* Header */}
         <div className="p-4 md:p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -375,7 +375,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
         </div>
 
         {/* Team List */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
           <div className="flex items-center justify-end mb-4">
             <button
               onClick={() => setShowDriversSection((prev) => !prev)}
@@ -386,7 +386,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
           </div>
 
           {showDriversSection && (
-            <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4">
+            <div className="mb-6 min-w-0 bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg text-gray-900">Choferes</h3>
@@ -507,9 +507,9 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     return (
                       <div
                         key={driver.id}
-                        className="p-3 border border-gray-200 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                        className="min-w-0 p-3 border border-gray-200 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                       >
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900">
                             {driver.firstName} {driver.lastName}
                             {!driver.isActive && <span className="ml-2 text-xs font-normal text-red-600">Inactivo</span>}
@@ -570,7 +570,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                           </>}
                         </div>
                         {editingDriverId === driver.id && (
-                          <form onSubmit={handleSaveDriver} className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:col-span-2">
+                          <form onSubmit={handleSaveDriver} className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:col-span-2">
                             <input aria-label="Nombres del conductor" required maxLength={100} value={driverEditForm.firstName} onChange={(event) => setDriverEditForm({ ...driverEditForm, firstName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                             <input aria-label="Apellidos del conductor" required maxLength={100} value={driverEditForm.lastName} onChange={(event) => setDriverEditForm({ ...driverEditForm, lastName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                             <input aria-label="Documento del conductor" required maxLength={20} value={driverEditForm.documentNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, documentNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />

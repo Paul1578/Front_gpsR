@@ -504,3 +504,8 @@ Fecha de actualización: 2026-11-22.
 
 - La primera corrida integrada de 33 E2E (`45060482928`) terminó 30/33: dos conflictos 409 por compartir Driver entre operaciones concurrentes y un ancho de formulario de 413 px en viewport 320 px.
 - Se aislaron los fixtures Driver de rutas y tenant; se corrigió el ancho mínimo del contenedor/formulario responsive. Lint, build, discovery (33) y diff-check pasan localmente. Requiere nueva Action antes de validar.
+
+## Repetición E2E: causas diagnosticadas y correcciones — CI PENDIENTE
+
+- Action `45061522878` ejecutó 31/33. La foto falló porque el diálogo aún estaba en modo Nota; el timeout dejó una ruta y el retry chocó con ella (409), no era una colisión entre los dos drivers que se atribuyó inicialmente. El ciclo Driver en Equipo detectó 413 px a 320 px.
+- Se corrigió selección del modo Foto y el layout flex/grid de Dashboard/Equipo/Conductores. Falta nueva Action completa para verificar ambas correcciones.
