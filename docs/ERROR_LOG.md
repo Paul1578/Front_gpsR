@@ -582,3 +582,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44993456874` pasó los **16/16 E2E** (incluida creación/persistencia de la parada tablet) y responsive 1/1, pero el runner terminó fallando al limpiar MySQL. La ruta nueva usaba `E2E QA tablet ...`, mientras `scripts/cleanup-e2e.sql` retira rutas únicamente con `Name LIKE 'E2E QA ruta %'`; el SQL de limpieza conservó la ruta y su vehículo en la DB de ese job.
 - Corrección: renombrar el fixture a `E2E QA ruta tablet ...`, para que el cleanup probado incluya esa ruta y elimine en orden Positions→Routes→Vehicles.
 - La base pertenece a un servicio MySQL efímero del workflow y se destruye al terminar el job. Repetir CI para demostrar Playwright 16/16 y cleanup SQL exitoso antes de marcar el lote validado.
+
+- Resultado de corrección: Actions `44993827707` completó success con 16/16 Playwright; el cleanup SQL pasó y no reportó fixtures retenidos.

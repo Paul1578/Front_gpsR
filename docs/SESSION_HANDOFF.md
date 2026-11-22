@@ -17,6 +17,8 @@
 - Actions `44993132771` llegó a revisión y reportó que el nombre de parada no forma parte del resumen visible. Se corrigió para validar tres puntos allí y operación/nombres por GET después de crear. Los 15 E2E existentes y el cleanup pasaron; volver a correr para confirmar POST, persistencia exacta y cleanup normal.
 - Actions `44993456874` confirmó E2E 16/16 y responsive 1/1 (ruta tablet creada y persistida), pero falló la limpieza MySQL porque el nombre del fixture no respetaba `E2E QA ruta %`. Nombre corregido; volver a Actions y confirmar que el runner termina sin fixtures residuales.
 - Auditoría independiente de huecos confirma que CRUD básico UI (vehículo, Driver, User y ruta), matriz parcial de roles y mobile responsive ya están cubiertos; siguen pendientes pruebas CRUD negativas, matriz HTTP exhaustiva, más vistas responsive tablet y acceso a rutas por Driver entre alcances.
+- Actions `44993827707` terminó verde para Front `2932aa0` + Back `029e94d`: Release/xUnit **57/57**, audit/lint/build verdes, responsive **1/1**, E2E **16/16** y cleanup MySQL exitoso. La ruta creada en tablet está ahora verificada end-to-end.
+- Se añadió al E2E de vehículo el cambio `Mantenimiento`/`Disponible`, con lectura API y persistencia UI luego de reload; requiere nueva Actions integrada antes de contarse probado.
 
 ## E2E de orden y operación de paradas — 2026-11-22
 

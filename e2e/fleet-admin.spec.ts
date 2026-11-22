@@ -206,6 +206,40 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     expect((await updated).status()).toBe(200);
     await expect(card).toContainText("FleetFlow QA Editado Browser test");
 
+    await card.getByRole("button", { name: "Editar" }).click();
+    const maintenanceDialog = page.getByRole("dialog");
+    await maintenanceDialog.locator("select").selectOption("mantenimiento");
+    const maintenanceUpdate = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) && response.request().method() === "PUT",
+    );
+    await maintenanceDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    expect((await maintenanceUpdate).status()).toBe(200);
+    await expect(card).toContainText("Mantenimiento");
+    const authHeaders = {
+      Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}`,
+    };
+    const maintenanceVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(maintenanceVehicle.status()).toBe(200);
+    expect((await maintenanceVehicle.json()).status).toBe(2);
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("Mantenimiento");
+    await page.locator(".grid > div").filter({ hasText: plate }).getByRole("button", { name: "Editar" }).click();
+    const availableDialog = page.getByRole("dialog");
+    await availableDialog.locator("select").selectOption("disponible");
+    const availableUpdate = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) && response.request().method() === "PUT",
+    );
+    await availableDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    expect((await availableUpdate).status()).toBe(200);
+    const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(availableVehicle.status()).toBe(200);
+    expect((await availableVehicle.json()).status).toBe(0);
+    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("Disponible");
+
     await card.getByRole("button").nth(1).click();
     const confirmation = page.getByRole("alertdialog");
     await expect(confirmation.getByText("Eliminar Vehículo")).toBeVisible();
@@ -228,7 +262,7 @@ test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ pag
     await inactiveCard.getByRole("button", { name: "Reactivar" }).click();
     expect((await reactivated).status()).toBe(204);
     const vehicleAfterReactivation = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, {
-      headers: { Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` },
+      headers: authHeaders,
     });
     expect(vehicleAfterReactivation.status()).toBe(200);
     expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
