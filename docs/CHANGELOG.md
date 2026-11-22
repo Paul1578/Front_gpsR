@@ -375,6 +375,8 @@
 - CI preserva traces Playwright cuando falla la suite, con retención de cinco días.
 - Action `45051977357` dejó **29/31**; estas correcciones aún requieren verificación integrada.
 - Action `45053076619` pasó **30/31**; Mi Ruta ya pasó. El trace mostró el campo de destino oculto al abrir mapa móvil. La prueba ahora escribe el nombre antes de entrar al mapa; validar esta corrección en la siguiente Action.
+- La selección del mapa reemplazaba también el nombre por la etiqueta genérica “Destino”. El E2E verifica pendiente, fija punto y vuelve a escribir el nombre después de regresar al editor.
+- Añadidos E2E para alta de roles Manager/Logistics desde Equipo y para el dashboard/responsive Manager con acceso a Gestión de Rutas y su constructor. Local lint/build/discovery 33 correctos; Action integrada pendiente.
 
 # 2026-11-22 — Mi Ruta: responsive tablet
 

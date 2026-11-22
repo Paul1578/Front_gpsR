@@ -919,11 +919,12 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await expect(page.getByPlaceholder("Parada 2")).toHaveValue("Recogida E2E");
     const destination = page.getByPlaceholder("¿A dónde llega?");
     await destination.fill("Destino E2E desde mapa");
+    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
     const destinationRow = destination.locator("xpath=../..");
     await destinationRow.getByRole("button", { name: "Ubicar" }).click();
     await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
-    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
     await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino E2E desde mapa");
     await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
 
     await page.getByRole("button", { name: "Continuar" }).click();
@@ -1874,6 +1875,58 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
   }
 });
 
+test("Manager usa el constructor de rutas desde móvil y dashboard responsive", async ({ page }) => {
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures QA Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(60_000);
+  page.setDefaultTimeout(8_000);
+  const adminLogin = await page.request.post("/api/backend/Auth/login", { data: { email, password } });
+  expect(adminLogin.status()).toBe(200);
+  const adminToken = await adminLogin.json();
+  const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
+  const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+  expect(teamResponse.status()).toBe(200);
+  const driverUser = (await teamResponse.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
+  expect(driverUser?.id).toBeTruthy();
+
+  const setRole = async (roleName: "Driver" | "Manager") => {
+    const response = await page.request.put(`/api/backend/Users/${driverUser.id}/role`, {
+      headers: adminHeaders,
+      data: { roleName },
+    });
+    expect(response.status(), `el fixture adopta el rol ${roleName}`).toBe(200);
+  };
+
+  await setRole("Manager");
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(driverEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+      await page.setViewportSize({ width, height });
+      await expect.poll(() => page.evaluate(() =>
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+      )).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Gestión de Rutas" })).toBeVisible();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Información de la ruta" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancelar creación" }).click();
+    await expect(page.getByRole("heading", { name: "Gestión de Rutas" })).toBeVisible();
+  } finally {
+    await setRole("Driver");
+  }
+});
+
 test("Logistics ve rutas pero no vehículos ni administración de equipo", async ({ page, browser }) => {
   test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
   test.setTimeout(90_000);
@@ -2809,6 +2862,61 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
       const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
       expect([200, 204, 404]).toContain(cleanupVehicle.status());
     }
+  }
+});
+
+test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(60_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+
+  for (const account of [
+    { roleLabel: "Gestor de flota", roleName: "Manager", emailPrefix: "manager" },
+    { roleLabel: "Logistica", roleName: "Logistics", emailPrefix: "logistics" },
+  ]) {
+    const username = `${account.emailPrefix}${suffix}`;
+    const accountEmail = `fletflow.e2e.user.${account.emailPrefix}.${suffix}@example.test`;
+    await page.getByRole("button", { name: "Crear Usuario" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByPlaceholder("Juan").fill(`E2E ${account.roleName}`);
+    await dialog.getByPlaceholder("Pérez").fill("Cuenta de prueba");
+    await dialog.getByRole("textbox", { name: "jperez", exact: true }).fill(username);
+    await dialog.getByPlaceholder("jperez@empresa.com").fill(accountEmail);
+    await dialog.getByRole("button", { name: new RegExp(account.roleLabel) }).click();
+    await expect(dialog.getByPlaceholder("DNI / ID")).toHaveCount(0);
+
+    const createResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Users") && response.request().method() === "POST",
+    );
+    await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(200);
+    const createdAccount = await createResponse.json();
+    expect(createdAccount.role).toBe(account.roleName);
+
+    const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+    expect(teamResponse.status()).toBe(200);
+    const persistedAccount = (await teamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+    expect(persistedAccount).toMatchObject({ email: accountEmail, username, roles: [account.roleName] });
+    await expect(page.getByTestId(`team-user-${createdAccount.id}`)).toBeVisible();
   }
 });
 

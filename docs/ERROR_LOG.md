@@ -2,10 +2,11 @@
 
 - Action `45051977357` pasó Release/xUnit del backend, audit, lint/build y browser responsive; E2E **29/31**. El mapa agotó 90 s y el cleanup; Mi Ruta no mostró el alert 503.
 - En `45053076619` pasó Mi Ruta y el suite mejoró a **30/31**. El timeout individual capturó la causa del mapa: la prueba abrió la vista de mapa móvil con “Ubicar destino” y luego intentó llenar el input de destino, oculto mientras el mapa permanece abierto. El trace confirma `Ubicando destino` y el botón “Ver paradas y detalles”.
-- Corrección aplicada: llenar el nombre del destino en el editor antes de abrir el mapa, luego fijar coordenadas y continuar. Se quitó el segundo fill innecesario después de regresar del mapa.
+- El siguiente intento confirmó que el `onMapClick` asigna la etiqueta genérica “Destino”. Por eso el nombre escrito antes de abrir el mapa también se reemplazaba al fijar coordenadas.
+- Corrección aplicada: verificar que el campo escrito sin coordenadas se muestre pendiente; abrir el mapa y seleccionar ubicación; al regresar al editor, escribir el nombre final con las coordenadas ya persistidas.
 - La interceptación persistente de `/Routes**` hizo determinista el 503; la prueba confirmó el alert y el retry de “Mi Ruta” en la última Action.
-- Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; completar la edición textual antes de abrirlo. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
-- Action del orden corregido `45053782460` sobre `b1823db` en curso; confirmar **31/31** y cleanup antes de cerrar este registro.
+- Prevención: cuando el mapa móvil está abierto, los campos del editor quedan ocultos; toda edición requiere el panel visible. La selección de mapa puede también reemplazar el nombre visible, así que aplicar la etiqueta final después de seleccionar. El timeout individual identifica rápido futuros fallos de visibilidad. CI conserva traces cinco días.
+- Action `45053782460` terminó **30/31**; el cleanup funcionó y el único fallo siguió en el nombre de destino, sobrescrito por el click de mapa. El nuevo orden conserva la verificación pendiente, fija coordenadas, y luego aplica el nombre final desde el editor visible. La repetición con ese cambio y los nuevos casos de roles está pendiente.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 

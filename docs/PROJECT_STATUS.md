@@ -1,9 +1,10 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `b1823db` + Backend `2045b18`: Action `45053076619` pasó Release/xUnit backend, audit, lint/build y responsive; E2E **30/31**. Mi Ruta pasó; trace encontró que el test llenaba el input de destino mientras el editor estaba oculto por el mapa móvil. Orden de interacción corregido; Action `45053782460` está en curso.
+- Front `b1823db` + Backend `2045b18`: Action `45053782460` pasó Release/xUnit, audit, lint/build y responsive; E2E **30/31** y cleanup completo. Trace identificó que la selección del mapa reemplaza el nombre de destino por su etiqueta genérica. Se corrige escribiendo el nombre después de fijar coordenadas.
 - Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
-- Verificación local: lint/build, discovery **31** y estados de carga/error **9/9** antes de los últimos fixes; lint/build/discovery siguen pasando. Cambios responsive de usuarios, conductores y rutas están en `bffe183`; la suite autenticada requiere repetición con fixes de `ERROR_LOG.md`.
+- Verificación local en trabajo: lint/build, discovery **33**. Se añadió un test para alta directa de Manager/Logistics, y otro para dashboard responsive de Manager y apertura/cancelación del constructor. Suite autenticada de estos casos y el fix final del nombre pendiente.
+- Auditoría multiagente del frontend: persisten dos brechas alcanzables ahora cubiertas en specs locales (creación directa Manager/Logistics y navegación Manager a rutas); falta validar en CI. Super Admin requiere definir alcance/permisos globales. El móvil nativo fue aplazado por el usuario.
 - Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
 
 # Estado actual — 2026-11-22
