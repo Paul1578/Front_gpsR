@@ -197,3 +197,4 @@
 ## 2026-11-22 — Responsive adicional para dashboard e Historial a 320 px
 
 - El test de navegación ahora cambia de tablet a móvil estrecho, comprueba Dashboard Principal e Historial y verifica ausencia de overflow. Actions `45005853556` pasó en el commit previo con E2E 18/18; esta ampliación se valida en la próxima ejecución.
+- Mi Ruta añade viewport de 320 px, verifica que distintivos GPS/vehículo no se solapen y mide el encaje del diálogo de evidencia. Lint, discovery (18) y diff-check pasan; E2E API/MySQL pendiente.

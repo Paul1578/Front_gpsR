@@ -55,6 +55,8 @@
 - Front `refactor/route-builder` incluye `fe86bfa`; Back `chore/stabilize-fleet-platform` incluye `4695e79`. Actions frontend `45005853556` pasó: backend tests, audit, lint/build, responsive browser y Playwright API/MySQL **18/18**, cleanup exitoso.
 - E2E añade denegación de edición de perfil para User/Driver/Logistics/Manager y cubre persistencia/sincronización de miembros y Drivers.
 - En trabajo local: extender navegación Dashboard/Historial a viewport 320×844 con control de overflow; lint/build/discovery pasan, falta integrar este cambio con API/MySQL en Actions.
+- Se amplió también Mi Ruta a 320×844: comprobar overflow, no-solapamiento entre insignias GPS/vehículo y límites horizontales del diálogo de evidencia. Lint/discovery/diff-check pasan; commit/Actions pendientes.
+- Auditoría subagente: sidebar fijo de 256 px a 768 px comprime el área útil; constructor mapa/formulario secuencial bajo 1024 px causa desplazamiento repetido; Mi Ruta carecía prueba 320 px. Priorizar prueba/ajuste del menú tablet, luego flujo constructor.
 - Próximo: commit/push de prueba responsive, esperar Actions, incorporar hallazgos del agente de auditoría y seleccionar siguiente brecha CRUD/roles/responsive. La política de promoción de miembros a Admin delegado sigue pendiente de respuesta del usuario.
 - No marcar misión completa: cobertura de CRUD/roles/responsive no exhaustiva; SMTP depende de credenciales externas y móvil nativo está pospuesto.
 

@@ -1441,6 +1441,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Mi Ruta", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toHaveCount(0);
@@ -1460,6 +1461,19 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
   await expect(page.getByText(routeName, { exact: true })).toBeVisible();
   await expect(page.getByText("GPS en vivo", { exact: true })).toBeVisible();
+  const assertDriverViewport = async () => {
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  };
+  await assertDriverViewport();
+  const gpsBadge = await page.getByText("GPS en vivo", { exact: true }).locator("xpath=..").boundingBox();
+  const vehicleBadge = await page.locator(".absolute.top-4.right-4").boundingBox();
+  expect(gpsBadge).not.toBeNull();
+  expect(vehicleBadge).not.toBeNull();
+  expect(gpsBadge!.x + gpsBadge!.width).toBeLessThanOrEqual(vehicleBadge!.x);
   const positionResponsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${routeId}/positions`) &&
     response.request().method() === "POST",
@@ -1492,6 +1506,12 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
 
   await stopCard.getByRole("button", { name: "Evidencia" }).click();
   const evidenceDialog = page.getByRole("dialog");
+  await expect(evidenceDialog).toBeVisible();
+  const evidenceBounds = await evidenceDialog.boundingBox();
+  expect(evidenceBounds).not.toBeNull();
+  expect(evidenceBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(evidenceBounds!.x + evidenceBounds!.width).toBeLessThanOrEqual(320);
+  await assertDriverViewport();
   await evidenceDialog.getByRole("button", { name: "Nota" }).click();
   await evidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recibido por cliente E2E");
   const evidencePromise = page.waitForResponse((response) =>

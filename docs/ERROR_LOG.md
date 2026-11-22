@@ -763,4 +763,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Al ampliar dashboard/Historial a 320 px, un parche basado sólo en un bloque común de medición de ancho se insertó primero en el test de login.
 - Se detectó revisando el contexto y los nombres de test antes de ejecutar Playwright; el bloque se movió al test de navegación de dashboard/rutas. No se ejecutó ni integró el estado incorrecto.
+- En la ampliación posterior de Mi Ruta, otro parche con contexto genérico de login cayó inicialmente en el test de registro; se detectó con `rg` antes de correr Playwright y se reubicó dentro del test Driver.
 - Prevención: anclar parches al nombre del caso y al heading cercano, no a bloques genéricos repetidos.
