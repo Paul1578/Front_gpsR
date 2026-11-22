@@ -223,3 +223,13 @@
 ## 2026-11-22 — Rutas UI para Logistics y breakpoint 320 px — validación pendiente
 
 - Logistics ahora tiene un recorrido UI de creación y cancelación de ruta con persistencia consultada por API. Constructor móvil de Admin se amplía a 320×844; checks locales lint/build y discovery 18 correctos. Espera Actions integrada.
+
+
+## 2026-11-22 — Corrección de aislamiento de fixtures E2E — pendiente de repetición
+
+- Actions `45009790973` detectó timeout de 90 s en creación de ruta Logistics, Driver compartido inactivo al restaurar rol y una aserción dependiente de “Foreign Driver QA” de otro caso. Correcciones locales: restaurar explícitamente `Driver.IsActive`, validar el Driver creado en el mismo test y etiquetar la creación en `test.step`. La repetición aún debe verificar el resultado.
+# 2026-11-22 — Recursos de asignación de rutas para Logistics
+
+- Constructor y filtros de rutas usan opciones activas de vehículo/Driver desde `/Routes/assignment-options`, incluyendo Drivers sin cuenta de usuario.
+- Se distingue el error de carga con reintento; Logistics conserva el acceso restringido a CRUD de vehículos y Drivers.
+- E2E agregado para autorización mínima, omisión de PII, creación/cancelación y selectores con recursos reales. CI integrado pendiente.

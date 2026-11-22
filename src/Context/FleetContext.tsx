@@ -102,10 +102,28 @@ export interface Driver {
   userId?: string | null;
 }
 
+export interface RouteAssignmentVehicle {
+  id: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  anio: number;
+  estado: Vehicle["estado"];
+}
+
+export interface RouteAssignmentDriver {
+  id: string;
+  firstName: string;
+  lastName: string;
+  userId: string | null;
+}
+
 interface FleetContextType {
   vehicles: Vehicle[];
   routes: Route[];
   drivers: Driver[];
+  routeAssignmentVehicles: RouteAssignmentVehicle[];
+  routeAssignmentDrivers: RouteAssignmentDriver[];
   loadErrors: string[];
   retryFleetData: () => Promise<void>;
 
@@ -238,6 +256,23 @@ type ApiDriver = {
   isActive?: boolean;
   vehicleId?: string;
   userId?: string | null;
+};
+
+type ApiRouteAssignmentOptions = {
+  vehicles: Array<{
+    id: string;
+    plate: string;
+    brand: string;
+    model: string;
+    year: number;
+    status: number;
+  }>;
+  drivers: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    userId: string | null;
+  }>;
 };
 
 type ActionResult = { ok: boolean; message?: string };
@@ -556,6 +591,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [routeAssignmentVehicles, setRouteAssignmentVehicles] = useState<RouteAssignmentVehicle[]>([]);
+  const [routeAssignmentDrivers, setRouteAssignmentDrivers] = useState<RouteAssignmentDriver[]>([]);
   const driversRequestSequence = useRef(0);
   const [fleetOwnerId, setFleetOwnerId] = useState<string | null>(null);
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
@@ -569,6 +606,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setVehicles([]);
     setRoutes([]);
     setDrivers([]);
+    setRouteAssignmentVehicles([]);
+    setRouteAssignmentDrivers([]);
     setLoadErrors([]);
     setFleetOwnerId(user?.id ?? null);
   }, [user?.id]);
@@ -578,11 +617,38 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     return status === 401 || status === 403;
   }, []);
 
+  const refreshRouteAssignmentOptions = useCallback(async () => {
+    if (!apiFetch || !user || !["gerente", "logistica"].includes(user.role)) return;
+    try {
+      const options = await apiFetch<ApiRouteAssignmentOptions>("/Routes/assignment-options");
+      setRouteAssignmentVehicles(options.vehicles.map((vehicle) => ({
+        id: vehicle.id,
+        placa: vehicle.plate,
+        marca: vehicle.brand,
+        modelo: vehicle.model,
+        anio: vehicle.year,
+        estado: statusNumberToState(vehicle.status),
+      })));
+      setRouteAssignmentDrivers(options.drivers);
+      setResourceError("opciones de asignación", false);
+    } catch (error) {
+      if (!isAuthError(error)) setResourceError("opciones de asignación", true);
+      throw error;
+    }
+  }, [apiFetch, isAuthError, setResourceError, user]);
+
+  useEffect(() => {
+    if (!apiFetch || isLoadingUser || !isAuthenticated || !user || !["gerente", "logistica"].includes(user.role)) return;
+    void refreshRouteAssignmentOptions().catch((error) => {
+      if (!isAuthError(error)) console.error("Error cargando opciones de asignación", error);
+    });
+  }, [apiFetch, isAuthenticated, isAuthError, isLoadingUser, refreshRouteAssignmentOptions, user]);
+
   // ---------------- VEHICLES ----------------
   useEffect(() => {
     const loadVehicles = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (user?.role === "chofer" || user?.role === "usuario") return;
+      if (["chofer", "usuario", "logistica"].includes(user?.role ?? "")) return;
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
         const active = data.filter((vehicle) => vehicle.isActive !== false);
@@ -781,7 +847,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadDrivers = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (user?.role === "chofer" || user?.role === "usuario") return;
+      if (["chofer", "usuario", "logistica"].includes(user?.role ?? "")) return;
       try {
         await refreshDrivers();
       } catch (error) {
@@ -804,7 +870,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const retryFleetData = async () => {
     const failures: string[] = [];
-    if (user?.role !== "chofer" && user?.role !== "usuario") {
+    if (["gerente", "logistica"].includes(user?.role ?? "")) {
+      try { await refreshRouteAssignmentOptions(); } catch { failures.push("opciones de asignación"); }
+    }
+    if (!["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
         setVehicles(data.filter((item) => item.isActive !== false).map(mapApiVehicle));
@@ -1166,6 +1235,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         vehicles: userOwnsLoadedData ? vehicles : [],
         routes: userOwnsLoadedData ? routes : [],
         drivers: userOwnsLoadedData ? drivers : [],
+        routeAssignmentVehicles: userOwnsLoadedData ? routeAssignmentVehicles : [],
+        routeAssignmentDrivers: userOwnsLoadedData ? routeAssignmentDrivers : [],
         loadErrors: userOwnsLoadedData ? loadErrors : [],
         retryFleetData,
         addVehicle,

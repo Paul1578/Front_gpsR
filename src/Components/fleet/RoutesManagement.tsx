@@ -4,7 +4,6 @@
 import dynamic from "next/dynamic";
 import { useMemo, useRef, useState } from "react";
 import { useFleet, Route } from "../../Context/FleetContext";
-import { useAuth } from "../../Context/AuthContext";
 import {
   ArrowLeft,
   Ban,
@@ -52,12 +51,12 @@ const validPoint = (point: PickerPoint | null) =>
   !(Math.abs(point.lat) < 0.0001 && Math.abs(point.lng) < 0.0001);
 
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
-  const { routes, vehicles, addRoute, updateRoute, deleteRoute, loadErrors, retryFleetData } = useFleet();
-  const { getTeamUsers } = useAuth();
-  const users = getTeamUsers();
-  const drivers = users
-    .filter((user) => user.isActive !== false && user.role === "chofer" && !!user.driverId)
-    .map((user) => ({ ...user, driverKey: user.driverId! }));
+  const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, retryFleetData } = useFleet();
+  const drivers = routeAssignmentDrivers.map((driver) => ({
+    driverKey: driver.id,
+    nombres: driver.firstName,
+    apellidos: driver.lastName,
+  }));
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -84,7 +83,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     status: "pendiente" as RouteStatus,
   });
 
-  const availableVehicles = vehicles.filter(
+  const availableVehicles = routeAssignmentVehicles.filter(
     (vehicle) =>
       vehicle.estado === "disponible" || vehicle.id === formData.vehicleId,
   );
@@ -104,16 +103,15 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       (driverFilter === "all" || route.conductorId === driverFilter);
   });
   const vehicleName = (id: string) => {
-    const vehicle = vehicles.find((item) => item.id === id);
+    const vehicle = routeAssignmentVehicles.find((item) => item.id === id) ?? vehicles.find((item) => item.id === id);
     return vehicle
       ? `${vehicle.placa} · ${vehicle.marca} ${vehicle.modelo}`
       : "Sin vehículo";
   };
   const driverName = (id: string) => {
-    const driver = users.find((user) => user.driverId === id || user.id === id);
+    const driver = routeAssignmentDrivers.find((item) => item.id === id);
     return driver
-      ? `${driver.nombres ?? ""} ${driver.apellidos ?? ""}`.trim() ||
-          driver.usuario
+      ? `${driver.firstName} ${driver.lastName}`.trim()
       : "Sin conductor";
   };
 
@@ -324,6 +322,8 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
         moveStop={moveStop}
         availableVehicles={availableVehicles}
         drivers={drivers}
+        loadErrors={loadErrors}
+        retryFleetData={retryFleetData}
         vehicleName={vehicleName}
         driverName={driverName}
         editingRoute={editingRoute}
@@ -379,7 +379,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
             </label>
             <label className="text-xs font-medium text-slate-600">Vehículo
               <select value={vehicleFilter} onChange={(event) => setVehicleFilter(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="all">Todos</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.placa}</option>)}
+                <option value="all">Todos</option>{routeAssignmentVehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.placa}</option>)}
               </select>
             </label>
             <label className="text-xs font-medium text-slate-600">Conductor
@@ -542,6 +542,8 @@ function RouteBuilder({
   moveStop,
   availableVehicles,
   drivers,
+  loadErrors,
+  retryFleetData,
   vehicleName,
   driverName,
   editingRoute,
@@ -871,6 +873,12 @@ function RouteBuilder({
                   title="Asigna los recursos"
                   description="Elige quién hará la ruta y con qué vehículo."
                 />
+                {loadErrors.includes("opciones de asignación") && (
+                  <div role="alert" className="my-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    <span>No se pudieron cargar los vehículos y conductores para asignar. Reintenta antes de continuar.</span>
+                    <button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button>
+                  </div>
+                )}
                 <ResourceSelect
                   icon={<Truck size={18} />}
                   label="Vehículo"
@@ -897,7 +905,7 @@ function RouteBuilder({
                   options={drivers.map((d: any) => ({
                     value: d.driverKey,
                     label: `${d.nombres} ${d.apellidos}`,
-                    detail: `@${d.usuario}`,
+                  detail: "Conductor activo",
                   }))}
                 />
               </div>

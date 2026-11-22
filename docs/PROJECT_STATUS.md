@@ -307,3 +307,15 @@ Fecha de actualización: 2026-11-22.
 
 - El E2E de Logistics ahora crea una ruta desde el constructor con un Driver activo sin cuenta, comprueba API/persistencia, la cancela desde la tarjeta y confirma estado Cancelled; además verifica denegación de flota/equipo.
 - El E2E de Admin crea una ruta a 320×844 y comprueba overflow; el alta de Driver independiente también verifica 320 px tras crearlo en tablet. Lint/build/discovery **18** pasan localmente; Actions API/MySQL de esta iteración pendiente.
+
+
+## Iteración E2E Logistics — requiere correcciones — 2026-11-22
+
+- Actions `45009790973` dio 15/18: Logistics UI agotó 90 s; dejar el fixture compartido Driver inactivo hizo fallar el E2E Driver posterior (HTTP 400), y Equipo verificaba un Driver temporal de otro caso que ya había limpiado.
+- El `finally` restaura rol y estado activo; la aserción de Driver independiente usa el fixture que el propio test creó. Se agregó `test.step` al constructor para localizar la causa restante. Repetir Actions con estos cambios antes de contar la creación de ruta desde UI.
+# Iteración en curso — opciones de asignación para Logistics — 2026-11-22
+
+- Causa del fallo Actions `45009790973`: Logistics podía crear rutas pero el constructor cargaba vehículos/conductores desde endpoints administrativos con 403.
+- FleetContext ahora consulta `/Routes/assignment-options` para gerente/Logistics y RoutesManagement consume conductores activos independientes de cuentas de usuario. El paso de asignación muestra error y reintento si el endpoint falla.
+- E2E extiende caso Logistics: comprueba 403 en `/Vehicles` y `/Drivers`, 200 en opciones mínimas sin documento/teléfono, disponibilidad de recursos en selectores, creación y cancelación UI.
+- Local: lint, build Next, discovery Playwright 18 tests, diff-check; Actions con API/MySQL aún pendiente. No considerar cerrada la prueba Logistics hasta validar el workflow integrado.

@@ -800,5 +800,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 ## 2026-11-22 — Consulta de Actions en repositorio equivocado — CORREGIDO
 
-- Se consultó el ID de Actions del frontend usando el repositorio backend; GitHub respondió 404. Se consultó de nuevo desde `/home/leonardo/Front_gpsR` y se confirmó el estado correcto.
-- Prevención: usar el checkout/repositorio que originó cada run al llamar `gh run view`.
+- Se consultó un ID de Actions frontend desde el repositorio backend y un ID backend desde el frontend; GitHub respondió 404. También se repitió una consulta Front desde Back durante dos runs concurrentes. Se volvieron a consultar los IDs desde sus repositorios de origen y se confirmaron sus estados.
+- Prevención: usar el checkout/repositorio que originó cada run al llamar `gh run view`; consultar en paralelo desde cada checkout cuando se monitorean ambos workflows.
+
+## 2026-11-22 — E2E de Logistics sin opciones para asignar recursos — EN VALIDACIÓN
+
+- Actions `45009790973` pasó 15/18. El nuevo recorrido de Logistics agotó 90 s durante la creación UI; al cambiar después la cuenta compartida de Logistics a Driver, el backend dejó el perfil Driver inactivo. El test Driver siguiente no pudo crear su ruta (HTTP 400), y el test de Equipo esperaba un Driver “Foreign Driver QA” creado/limpiado por otro caso y falló por dependencia de orden.
+- Se añadió una sección Playwright “Logistics crea una ruta…” para identificar el último paso y el `finally` ahora restaura tanto el rol como el estado activo del Driver. El test de Equipo valida el propio Driver independiente que acaba de crear, sin depender de otro caso.
+- Prevención: los E2E no deben depender de fixtures temporales de otro test; al restaurar un rol operativo también debe comprobarse el estado del perfil enlazado. La repetición integrada debe confirmar además el punto exacto del timeout y el cleanup.
+
+- Diagnóstico adicional por traza local: el constructor llegaba a “Asigna los recursos”, pero el selector de vehículo permanecía sin opciones. Logistics tiene 403 en `/Vehicles` y `/Drivers`, mientras que el constructor dependía de esos endpoints y de `/Users/my-team`.
+- Solución en curso: nuevo `GET /Routes/assignment-options`, protegido para Admin/Manager/Logistics y limitado por los filtros de tenant EF Core; devuelve sólo campos operativos activos y omite documento/teléfono. Front consume el contrato desde FleetContext y muestra error con reintento si no carga. El E2E comprueba acceso 200, ausencia de PII y creación/cancelación de ruta en UI.
+- Prevención: si un rol puede ejecutar una operación pero no administrar el recurso relacionado, ofrecer un contrato de lectura mínimo con autorización y aislamiento explícitos; no ampliar permisos de los endpoints CRUD.
+- Verificación local tras el cambio: Front lint/build y discovery 18 casos pasan; Backend Release build sin warnings y xUnit 64/64; sintaxis del smoke y diff-check pasan. Smoke MySQL/API y Actions integradas pendientes.

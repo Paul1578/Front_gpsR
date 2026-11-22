@@ -1413,39 +1413,57 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     });
     expect(logisticsToken).toBeTruthy();
     const logisticsHeaders = { Authorization: `Bearer ${logisticsToken}` };
-    const [routesResponse, vehiclesResponse] = await Promise.all([
+    const [routesResponse, vehiclesResponse, driversResponse, assignmentOptionsResponse] = await Promise.all([
       logisticsPage.request.get("/api/backend/Routes", { headers: logisticsHeaders }),
       logisticsPage.request.get("/api/backend/Vehicles", { headers: logisticsHeaders }),
+      logisticsPage.request.get("/api/backend/Drivers", { headers: logisticsHeaders }),
+      logisticsPage.request.get("/api/backend/Routes/assignment-options", { headers: logisticsHeaders }),
     ]);
     expect(routesResponse.status()).toBe(200);
     expect(vehiclesResponse.status()).toBe(403);
+    expect(driversResponse.status()).toBe(403);
+    expect(assignmentOptionsResponse.status()).toBe(200);
+    const assignmentOptions = await assignmentOptionsResponse.json();
+    expect(assignmentOptions.vehicles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: vehicleId, plate: `E2EQA${suffix}` }),
+    ]));
+    expect(assignmentOptions.drivers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: routeDriverId, firstName: `E2E Logistics ${suffix}`, userId: null }),
+    ]));
+    expect(assignmentOptions.drivers.every((item: Record<string, unknown>) =>
+      !("documentNumber" in item) && !("phoneNumber" in item),
+    )).toBe(true);
 
-    await logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
-    await logisticsPage.getByRole("button", { name: "Nueva ruta", exact: true }).click();
-    await logisticsPage.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
-    await logisticsPage.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Creada por Logistics desde UI");
-    await logisticsPage.getByRole("button", { name: "Continuar" }).click();
-    const map = logisticsPage.locator(".leaflet-container");
-    await logisticsPage.getByRole("button", { name: "Seleccionando" }).waitFor();
-    await clickMapAwayFromMarkers(map);
-    await logisticsPage.getByPlaceholder("¿Desde dónde sale?").fill("Origen Logistics E2E");
-    const destinationRow = logisticsPage.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
-    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
-    await clickMapAwayFromMarkers(map);
-    await logisticsPage.getByPlaceholder("¿A dónde llega?").fill("Destino Logistics E2E");
-    await logisticsPage.getByRole("button", { name: "Continuar" }).click();
-    await logisticsPage.getByRole("heading", { name: "Asigna los recursos" }).waitFor();
-    await logisticsPage.locator("select").nth(0).selectOption(vehicleId!);
-    await logisticsPage.locator("select").nth(1).selectOption(routeDriverId);
-    await logisticsPage.getByRole("button", { name: "Continuar" }).click();
-    await logisticsPage.getByRole("heading", { name: "Revisa y crea" }).waitFor();
-    const createRoutePromise = logisticsPage.waitForResponse((response) =>
-      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
-    );
-    await logisticsPage.getByRole("button", { name: "Crear ruta", exact: true }).click();
-    const createRouteResponse = await createRoutePromise;
-    expect(createRouteResponse.status()).toBe(201);
-    routeId = (await createRouteResponse.json()).id as string;
+    await test.step("Logistics crea una ruta desde el constructor", async () => {
+      await logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+      await logisticsPage.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+      await logisticsPage.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+      await logisticsPage.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Creada por Logistics desde UI");
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      const map = logisticsPage.locator(".leaflet-container");
+      await logisticsPage.getByRole("button", { name: "Seleccionando" }).waitFor();
+      await clickMapAwayFromMarkers(map);
+      await logisticsPage.getByPlaceholder("¿Desde dónde sale?").fill("Origen Logistics E2E");
+      const destinationRow = logisticsPage.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+      await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+      await clickMapAwayFromMarkers(map);
+      await logisticsPage.getByPlaceholder("¿A dónde llega?").fill("Destino Logistics E2E");
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await logisticsPage.getByRole("heading", { name: "Asigna los recursos" }).waitFor();
+      await expect(logisticsPage.locator("select").nth(0).locator(`option[value="${vehicleId}"]`)).toHaveCount(1);
+      await expect(logisticsPage.locator("select").nth(1).locator(`option[value="${routeDriverId}"]`)).toHaveCount(1);
+      await logisticsPage.locator("select").nth(0).selectOption(vehicleId!);
+      await logisticsPage.locator("select").nth(1).selectOption(routeDriverId);
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await logisticsPage.getByRole("heading", { name: "Revisa y crea" }).waitFor();
+      const createRoutePromise = logisticsPage.waitForResponse((response) =>
+        response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+      );
+      await logisticsPage.getByRole("button", { name: "Crear ruta", exact: true }).click();
+      const createRouteResponse = await createRoutePromise;
+      expect(createRouteResponse.status()).toBe(201);
+      routeId = (await createRouteResponse.json()).id as string;
+    });
     const persistedRoute = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
     expect(persistedRoute.status()).toBe(200);
     expect(await persistedRoute.json()).toMatchObject({ name: routeName, vehicleId, driverId: routeDriverId, status: 0 });
@@ -1464,10 +1482,19 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
     if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
     await logisticsContext.close();
-    await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
+    const restoreDriverRole = await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
       headers,
       data: { roleName: "Driver" },
-    }).catch(() => undefined);
+    }).catch(() => null);
+    if (restoreDriverRole?.status() === 200) {
+      const restoredDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      if (restoredDriver?.status() === 200 && (await restoredDriver.json()).isActive === false) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+          headers,
+          data: { isActive: true },
+        }).catch(() => undefined);
+      }
+    }
   }
 });
 
@@ -2148,8 +2175,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await page.getByRole("button", { name: "Mostrar bajas" }).click();
   const inactiveDriverCard = page.getByText(`${firstName} editado ${lastName}`).locator("xpath=../..");
   await expect(inactiveDriverCard).toContainText("Inactivo");
-  const unlinkedDriverCard = page.locator("div.space-y-3 > div").filter({ hasText: "Foreign Driver QA" });
-  await expect(unlinkedDriverCard).toContainText("Sin usuario vinculado");
+  await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
 
   const reactivatePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&

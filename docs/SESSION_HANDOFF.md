@@ -410,3 +410,19 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Actions `45009354112` para Front `6681023` pasó success: Playwright autenticado **18/18**, responsive browser **1/1**, audit/lint/build y cleanup; nuevo Driver se creó desde UI sin usuario, con `userId=null` persistido.
 - En progreso local (aún no publicar): Logistics crea/cancela ruta desde UI y Admin prueba el constructor a 320×844; lint/build/discovery 18 pasan. Revisar el diff, publicar y corregir cualquier fallo real de Actions.
+
+
+## Fallo actual y siguiente acción frontend — 2026-11-22
+
+- Actions `45009790973` falló 3/18 (15 pasaron). Logistics UI timeout 90 s; su cambio de rol dejó Driver inactivo y contaminó el caso Driver siguiente; Equipo usaba un fixture `Foreign Driver QA` que otro caso ya había eliminado. Ver causas y cambios en `ERROR_LOG.md`.
+- Fix local pendiente de publicar: finally restaura rol+IsActive, la aserción usa el Driver no vinculado creado por sí mismo, constructor marcado con test.step. Primero ejecutar lint/build/discovery; después publicar y seguir la traza hasta que el E2E pase.
+# Continuación — Logistics y opciones de asignación — 2026-11-22
+
+- Branch Front `refactor/route-builder`, HEAD anterior `0967fc4`; cambios locales no publicados en FleetContext, RoutesManagement, E2E y docs.
+- La traza de `45009790973` mostró que Logistics llegaba al paso de recursos sin opciones: `/Vehicles` y `/Drivers` son 403 y el constructor dependía de ellos. Front ahora usa `/Routes/assignment-options`; fallo de carga muestra error/reintento.
+- E2E Logistics verifica 403 CRUD, 200 opciones mínimas sin documento/teléfono, Driver sin usuario enlazado, selectores, creación/persistencia y cancelación de ruta. También conserva reparación fixture y elimina dependencia entre tests.
+- Verificación local Front: lint/build Next, discovery 18 casos y diff-check pasan. Falta Playwright autenticado con API/MySQL.
+- Backend `chore/stabilize-fleet-platform`, HEAD anterior `36e55cb`; endpoint/query/DTO y smoke local sin commit. El DbContext aplica filtro `OwnerUserId`; smoke confirma tenant A, tenant B vacío, User 403 y Logistics 200 sin PII.
+- Backend local: Release build 0 warnings/0 errors; xUnit 64/64; `bash -n` y diff-check correctos. Ejecutar el smoke de API/MySQL en Actions, esperar workflow y revisar cleanup. El host correcto es `/home/leonardo/.dotnet/dotnet`, solución `BackEnd_Gps.sln`.
+- El error y solución del Actions inicial están en `docs/ERROR_LOG.md` de ambos repos. No declarar esta prueba cerrada antes de CI.
+- Pendientes misión global: cobertura CRUD/roles/responsive por ampliar; no modificar política de Admin delegado sin decisión de producto. SMTP requiere credenciales externas; móvil nativo está aplazado por el usuario.
