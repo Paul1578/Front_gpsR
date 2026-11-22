@@ -64,6 +64,14 @@
 - Action `45058535602` sobre Front `50bf9d0` pasó audit, lint/build, responsive **1/1**, Release/xUnit del Backend, E2E integrado **33/33** y cleanup.
 - La primera corrida integrada fue 32/33. Se corrigieron guardas de rol, fixture Driver no asignable, selector Editar, aria-label de edición y prefijo del cleanup SQL; el primer cleanup falló por FK en el contenedor descartable, que se eliminó completamente. El siguiente pase focal y el suite final pasaron.
 
+# Validación QA actual — 2026-11-22
+
+- `npm run lint`: correcto después de corregir la carrera de `refreshTeamUsers`.
+- `npm run build`: correcto; Next.js 16.4.6 compiló TypeScript y generó las 10 rutas.
+- `npm run test:e2e -- --list`: descubre 37 escenarios. Incluye fallo HTTP 503, retry de usuarios y recuperación conjunta de rutas/vehículos; la Action del SHA actualizado debe ejecutar el flujo autenticado con API/MySQL efímeros.
+- Action `45072706025` (SHA `7f4841c`): **35/37 E2E**. Fallaron (1) el test buscaba Exportar en Resumen, donde no se renderiza y (2) Gestión de Equipo no veía un error Driver compartido cuando una carga local obsoleta se descartaba por carrera. Ambos corregidos en el siguiente cambio; aún sin ejecución integrada.
+- QA independiente detectó que el segundo clic de retry también apuntaba a una alerta ya retirada. El test ahora ejecuta un solo retry conjunto. El resumen de datos muestra `—`/carga durante fallos en vez de arrays vacíos como ceros.
+
 # Pruebas frontend
 
 ## Comandos y resultados

@@ -1,5 +1,13 @@
 ## Continuación — 2026-11-22
 
+- Action `45072706025` sobre `7f4841c` terminó **35/37**. Falló el E2E de Exportar por localizarlo en Resumen y el E2E de Gestión de Equipo porque un error de carga Driver se ocultaba entre solicitudes paralelas. Ambos fallos registrados en `docs/ERROR_LOG.md` y corregidos localmente.
+- E2E corregido: navega a Gestión de Datos, verifica los tres `—`, recupera `/Users/my-team` desde Usuarios y hace un solo reintento conjunto de rutas/vehículos. Gestión de Equipo combina error local con el compartido de FleetContext. El resumen ya no muestra ceros engañosos.
+- Se agregó protección de secuencia para que respuestas tardías de `/Users/my-team` no sobrescriban solicitudes más nuevas; solicitudes pendientes se invalidan al cambiar a rol no administrador.
+- Local: `npm run lint`, `npm run build` correctos; `npm run test:e2e -- --list` descubre 37. Repetir Action integrada con API/MySQL efímeros después de commit/push.
+- Decisiones de producto pendientes del usuario: política para otorgar Admin y si se necesita desvincular User↔Driver reteniendo ambos registros. App nativa pospuesta por usuario.
+
+## Continuación — 2026-11-22
+
 - Front `340eb55` eliminó Equipos/`teamId` ficticios, completó correo y campos Driver; Action `45072015727` pasó 36/36 E2E, responsive 1/1, backend 111/111, audit/lint/build y cleanup.
 - Front local añade estados de carga/error/reintento al panel de empresa y bloquea exportación parcial. Lint/build/audit/discovery 37/diff-check pasan; estos cambios siguen locales, deben publicarse y pasar Action.
 - Front Action `45071113746` para `5d4e290` también pasó: 36/36 Playwright, responsive 1/1, backend xUnit 110/110, lint/build/audit y cleanup.

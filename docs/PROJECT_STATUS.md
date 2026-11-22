@@ -17,6 +17,13 @@
 - Backend xUnit **110/110**, smoke HTTP/MySQL descartable y cleanup cero. Smoke confirma 400 sin cambios al omitir/completar parada y cerrar ruta, luego el ciclo válido funciona.
 - Front lint/build/audit 0/discovery 36 pasan; Action E2E para el fix pendiente.
 
+# Estado actual — 2026-11-22 (QA administración)
+
+- Action `45072706025` (SHA `7f4841c`) terminó 35/37. Errores: Exportar buscado en tab equivocado; Gestión de Equipo no reflejaba error de Driver compartido tras carrera con solicitudes duplicadas. Documentados y corregidos localmente.
+- E2E actualizado: tab correcto, un retry conjunto, retry independiente de usuarios, conteos `—`. Gestión de Equipo ya presenta error compartido FleetContext. Solicitudes `/Users/my-team` obsoletas no pisan resultados nuevos.
+- `npm run lint`, `npm run build` y discovery Playwright (37) pasan localmente. Falta commit/push y nueva Action con API/MySQL efímeros.
+- Política de asignación del rol backend Admin y desvinculación User↔Driver están en consulta al usuario. No cerrar esos criterios sin decisión.
+
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.

@@ -280,6 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const tokensRef = useRef<AuthTokens | null>(null);
   const authSessionVersionRef = useRef(0);
+  const teamUsersRequestVersionRef = useRef(0);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [teamUsersLoading, setTeamUsersLoading] = useState(false);
@@ -349,6 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isAbortedRequest(error)) console.error("Error obteniendo equipo:", error);
       });
     } else {
+      teamUsersRequestVersionRef.current += 1;
       setTeamUsers([]);
       setTeamUsersError(null);
       setTeamUsersLoading(false);
@@ -851,16 +853,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshTeamUsers = async () => {
+    const requestVersion = ++teamUsersRequestVersionRef.current;
     setTeamUsersLoading(true);
     setTeamUsersError(null);
     try {
       const data = await apiFetch<ApiUser[]>("/Users/my-team");
-      setTeamUsers(data.map(mapApiUser));
+      if (requestVersion === teamUsersRequestVersionRef.current) {
+        setTeamUsers(data.map(mapApiUser));
+      }
     } catch (error) {
-      setTeamUsersError("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.");
+      if (requestVersion === teamUsersRequestVersionRef.current) {
+        setTeamUsersError("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.");
+      }
       throw error;
     } finally {
-      setTeamUsersLoading(false);
+      if (requestVersion === teamUsersRequestVersionRef.current) {
+        setTeamUsersLoading(false);
+      }
     }
   };
 

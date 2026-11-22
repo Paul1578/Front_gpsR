@@ -1,3 +1,15 @@
+## 2026-11-22 — E2E de errores de administración tenía selectores y recuperación incorrectos — CORREGIDO LOCALMENTE
+
+- Revisión QA detectó que el test buscaba Exportar en la pestaña Resumen y pulsaba dos veces un reintento que recupera rutas y vehículos en conjunto. También halló ceros aparentes en el resumen de exportación tras fallos 503.
+- El E2E ahora valida `—` y exportación bloqueada en Gestión de Datos, recupera usuarios en su propia pestaña y usa una sola recarga conjunta para rutas/vehículos. Las lecturas tardías de miembros ya no pisan resultados de recargas posteriores; logout/rol distinto invalida peticiones pendientes.
+- Prevención: al probar interfaz con tabs, ubicar controles dentro de la vista correspondiente y modelar los efectos combinados de cada acción de reintento.
+
+## 2026-11-22 — Error de carga de choferes se perdía entre solicitudes paralelas — CORREGIDO LOCALMENTE
+
+- La Action `45072706025` corrió 35/37: además del selector de exportación, falló el escenario de error/reintento de Gestión de Equipo. La vista dependía sólo del estado de su solicitud local; `FleetContext` también carga Drivers al autenticar y descarta respuestas obsoletas por secuencia. Si la carga paralela vigente fallaba y la vista recibía una respuesta descartada, el error compartido no aparecía en Equipo.
+- Gestión de Equipo combina el resultado local con el error de recurso del contexto. Una respuesta obsoleta no oculta el error de la solicitud actual; al recuperar exitosamente, el contexto limpia el error y se muestra el estado vacío real.
+- Prevención: consumidores con cargas duplicadas deben mostrar el estado del recurso compartido; probar carreras además de respuestas HTTP aisladas.
+
 ## 2026-11-22 — Administración mostraba cero cuando fallaba la carga y exportaba datos parciales — CORREGIDO LOCALMENTE
 
 - El panel tomaba arreglos vacíos tras fallos de `/Users/my-team`, `/Vehicles` o `/Routes` y los mostraba como cero. La exportación generaba archivo aunque faltaran consultas; al crear usuario tampoco actualizaba la lista visible.

@@ -68,12 +68,21 @@ test("Administración distingue fallos de carga de una empresa vacía y permite 
   await expect(page.getByText("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.")).toBeVisible();
   await expect(page.getByText("No se pudieron cargar las rutas.")).toBeVisible();
   await expect(page.getByText("No se pudieron cargar los vehículos.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeDisabled();
+  await expect(page.getByRole("heading", { name: "Resumen de Datos" })).toBeVisible();
+  await expect(page.getByText("—", { exact: true })).toHaveCount(3);
 
   shouldFail = false;
+  await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Resumen", exact: true }).click();
   const retryButtons = page.getByRole("button", { name: "Reintentar", exact: true });
   await retryButtons.first().click();
-  await retryButtons.nth(1).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeEnabled();
 });

@@ -621,15 +621,15 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-xs text-gray-600">Usuarios</p>
-                        <p className="text-lg text-gray-900">{users.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(users.length, teamUsersLoading, !!teamUsersError)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Rutas</p>
-                        <p className="text-lg text-gray-900">{allRoutes.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(allRoutes.length, routesLoading, routesLoadFailed)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Vehículos</p>
-                        <p className="text-lg text-gray-900">{allVehicles.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(allVehicles.length, vehiclesLoading, vehiclesLoadFailed)}</p>
                       </div>
                     </div>
                   </div>

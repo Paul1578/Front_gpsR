@@ -21,6 +21,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const {
     drivers,
     vehicles,
+    loadErrors,
     refreshDrivers,
     addDriver,
     updateDriver,
@@ -50,6 +51,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   });
 
   const users = getTeamUsers();
+  const hasDriverLoadError = driversLoadError || loadErrors.includes("conductores");
   const normalizedDriverSearch = driverSearch.trim().toLocaleLowerCase();
   const visibleDrivers = drivers
     .filter((driver) => showInactiveDrivers || driver.isActive !== false)
@@ -509,7 +511,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 </div>
               </form>
 
-              {driversLoadError ? (
+              {hasDriverLoadError ? (
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                   <span>No se pudieron cargar los choferes. Comprueba tu conexión e inténtalo de nuevo.</span>
                   <button type="button" onClick={() => void loadDrivers(!showInactiveDrivers)} disabled={isLoadingDrivers} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
