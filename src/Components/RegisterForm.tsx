@@ -8,10 +8,11 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 interface RegisterFormProps {
   className?: string;
   onSwitchToLogin: () => void;
+  onRegistrationSuccess: () => void;
   onBack: () => void;
 }
 
-export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFormProps) {
+export function RegisterForm({ className, onSwitchToLogin, onRegistrationSuccess, onBack }: RegisterFormProps) {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [usuario, setUsuario] = useState("");
@@ -44,7 +45,7 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
 
     if (success) {
       toast.success("Cuenta creada exitosamente! Bienvenido");
-      onSwitchToLogin();
+      onRegistrationSuccess();
     } else {
       toast.error("Este correo ya existe. Intenta con otro correo");
     }

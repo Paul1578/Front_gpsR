@@ -21,6 +21,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <RegisterForm
             onSwitchToLogin={() => router.push("/login")}
+            onRegistrationSuccess={() => router.replace("/dashboard")}
             onBack={() => router.push("/login")}
           />
         </div>

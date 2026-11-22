@@ -82,6 +82,14 @@ Fecha de actualización: 2026-11-22.
 - Se amplió el E2E existente de Historial para operar el filtro de canceladas y abrir detalle a 768×1024, comprobando anchura de `main` y diálogo. Actions `44998408284` en Front `650e306` + Back `a7f7c4e` pasó: xUnit 61/61, responsive 1/1, E2E 17/17 y cleanup success.
 - SMTP real requiere credenciales externas; nativo móvil fue pospuesto por el usuario. Mantener misión activa y continuar con cobertura CRUD/responsive.
 
+## Registro público como cuenta raíz de empresa — en validación — 2026-11-22
+
+- Hallazgo: `/register` decía “Registra tu equipo como Gerente”, pero el backend forzaba rol User y dejaba a la cuenta sin permisos operativos.
+- Backend cambia el rol fijo de registro a Admin raíz de tenant; el cliente no controla el rol y `owner_id` limita el acceso a la empresa recién creada. Se actualizan los smokes HTTP/MySQL y se elimina la elevación manual de la cuenta de segundo tenant en el runner.
+- Front elimina roleName del payload, envía nombres capturados como username y añade E2E móvil de alta, lectura `/Auth/me`, lista de flota vacía y acceso de menú a rutas/vehículos.
+- Front lint/build/discovery **18 tests** y Backend Release **61/61** pasan localmente; `bash -n` y `git diff --check` pasan. Integración HTTP/MySQL/Playwright pendiente de Actions en ambas ramas.
+- Errores de inspección de repositorio y decisión de aislamiento documentados en `docs/ERROR_LOG.md` de cada rama.
+
 ## Actualización de cierre E2E — 2026-11-21
 
 - Creación visual de ruta desde mapa móvil cubre origen, dos paradas con operaciones recogida y recogida+entrega, destino, asignación de recursos, orden persistido y borrado confirmado desde la UI. Suite Playwright Chrome/API/MySQL: 7/7.

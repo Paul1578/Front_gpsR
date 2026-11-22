@@ -182,8 +182,6 @@ const uiRoleToBackendRole: Record<UserRole, ApiRole> = {
   usuario: "User",
 };
 
-const DEFAULT_REGISTER_ROLE: ApiRole = "Admin";
-
 const defaultPermissions: Record<UserRole, UserPermissions> = {
   superadmin: {
     canViewMap: true,
@@ -658,6 +656,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const buildRegisterUsername = (data: RegisterData) => {
+    const fullName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim().replace(/\s+/g, " ");
+    if (fullName) return fullName;
     const candidate = data.usuario.includes("@")
       ? data.usuario.split("@")[0] ?? data.usuario
       : data.usuario;
@@ -672,7 +672,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: buildRegisterUsername(data),
         email: data.usuario,
         password: data.password,
-        roleName: DEFAULT_REGISTER_ROLE,
       };
       const response = await apiFetch<AuthResponseDto>("/Auth/register", {
         method: "POST",

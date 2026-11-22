@@ -78,6 +78,54 @@ test("login con credenciales inválidas muestra un error comprensible", async ({
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("el registro público crea el tenant Gerente aislado y permite administrar la flota", async ({ page, request }) => {
+  test.skip(!allowMutations, "Requiere API/MySQL QA descartables con FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/register");
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const emailAddress = `fletflow.e2e.admin.register.${suffix}@example.test`;
+  const password = `RegisterQA-${randomUUID()}aA1!`;
+
+  await page.getByLabel("Nombres").fill("E2E QA Empresa");
+  await page.getByLabel("Apellidos").fill("Propietaria");
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.locator('input[type="password"]').nth(0).fill(password);
+  await page.locator('input[type="password"]').nth(1).fill(password);
+  const registrationPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/register") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  expect((await registrationPromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
+
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const meResponse = await request.get("/api/backend/Auth/me", { headers });
+  expect(meResponse.status()).toBe(200);
+  const me = await meResponse.json();
+  expect(me.username).toBe("E2E QA Empresa Propietaria");
+  expect(me.roles).toEqual(["Admin"]);
+
+  const vehiclesResponse = await request.get("/api/backend/Vehicles", { headers });
+  expect(vehiclesResponse.status()).toBe(200);
+  expect(await vehiclesResponse.json()).toEqual([]);
+  await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin.");
 

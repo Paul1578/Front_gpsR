@@ -307,3 +307,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - El E2E Admin que ya crea/edita/cancela y consulta la ruta cambia a 768×1024 al entrar en Historial; verifica que el filtro `Canceladas` es visible y funcional, que la pantalla y `main` no desbordan, y que el diálogo de detalles cabe en el viewport.
 - `npm run lint`, `npm run build`, discovery **17 tests** y `git diff --check` pasan localmente. El caso depende de API/MySQL y queda pendiente de ejecutar en Actions después de publicar.
 - Actions `44998408284` para Front `650e306` terminó success: backend Release 61/61, audit/lint/build, responsive 1/1 y E2E **17/17**; cleanup/stop API y contenedores success. El filtro y detalle del Historial pasan en 768×1024. La rama sigue en `refactor/route-builder`.
+
+## Registro público y cuenta raíz de empresa — en validación — 2026-11-22
+
+- Hallazgo: `/register` prometía una cuenta Gerente pero el backend forzaba User; la cuenta se autenticaba sin capacidad para manejar su empresa.
+- Backend local cambia el rol fijo a Admin como propietario de un tenant nuevo; el cliente no puede escoger el rol y `owner_id` mantiene el aislamiento multiempresa.
+- Front elimina `roleName` del payload, conserva los nombres introducidos como username y agrega E2E UI de registro a 390×844, rol Admin en `/Auth/me`, lista Vehicles vacía con 200 y acceso al menú de gestión.
+- Validación local Front lint/build/discovery **18**, Backend Release xUnit **61/61**, bash syntax y diff-check pasan. Actions HTTP/MySQL/Playwright integrados pendientes.
+- Se habilitó `workflow_dispatch` para ejecutar la CI en las ramas aisladas; pendiente publicar y disparar backend y Front cross-branch.
+- Errores de investigación y decisión/corrección de la contradicción están en `ERROR_LOG.md` de ambos repositorios.

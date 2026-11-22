@@ -645,3 +645,32 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una llamada de diagnóstico `gh run view` combinó una expresión jq con quoting incorrecto y Bash respondió `unexpected EOF while looking for matching \'`; el comando no inició ni modificó ningún proceso o dato.
 - Corrección: consultar los campos JSON por separado con expresiones jq entre comillas válidas; la segunda consulta devolvió estado de los workflows correctamente.
 - Prevención: simplificar los filtros jq en consultas al CLI y comprobar la cadena shell antes de incluir comillas anidadas.
+
+## 2026-11-22 — Lectura frontend/Actions desde el checkout backend — CORREGIDO
+
+- Al inspeccionar el registro se ejecutó `sed src/Components/RegisterForm.tsx` desde Back y se consultó `gh run view 44998727880` con el repositorio por defecto Back; el archivo relativo no existía y el CLI respondió HTTP 404 porque ese run pertenece a Front. Ninguno de los comandos modificó código ni datos.
+- Corrección: consultar `src/...` desde `/home/leonardo/Front_gpsR` y ejecutar `gh` con `workdir` del repositorio que contiene el workflow. El run `44998727880` se confirmó en Front.
+- Prevención: para consultas cruzadas, seleccionar expresamente el checkout destino antes de ejecutar rutas relativas o comandos `gh`.
+
+## 2026-11-22 — Registro público y rol mostrado discrepaban — CORREGIDO EN CÓDIGO, CI PENDIENTE
+
+- `/register` ofrecía alta “como Gerente” y el frontend solicitaba Admin, pero el backend forzaba User. El usuario quedaba autenticado sin acceso a la flota de la nueva empresa.
+- Backend fija Admin como raíz del nuevo tenant, ignora roles solicitados por el request y limita datos al `owner_id` propio; Front ya no manda roleName y agrega E2E móvil de registro con validación de `/Auth/me` y permisos reales. Esos cambios aún requieren Actions integrado antes de contarlos como verificados.
+
+## 2026-11-22 — Parche de ERROR_LOG Front con contexto de línea desactualizado — CORREGIDO
+
+- Un parche intentó insertar una entrada usando una línea final que ya no coincidía con el archivo; `apply_patch` rechazó la operación sin modificar el documento.
+- Corrección: volver a leer el final actual del archivo y aplicar la entrada al final real; el diff confirma que sólo se añadió documentación.
+- Prevención: refrescar el contexto del archivo antes de aplicar parches sobre documentación que pudo cambiar durante la sesión.
+
+## 2026-11-22 — Registro exitoso enviaba a login pese a crear sesión — CORREGIDO
+
+- Al revisar el E2E del nuevo tenant, confirmé que `register()` guardaba tokens y autenticaba al usuario, pero `RegisterForm` llamaba después a `onSwitchToLogin()`. La navegación a `/login` contradecía el comportamiento de alta con sesión y la prueba esperaba `/dashboard`.
+- Corrección: separar el callback de registro exitoso y dirigirlo a `/dashboard`; el enlace “¿Ya tienes cuenta?” sigue abriendo login.
+- Prevención: leer el flujo UI completo desde submit hasta navegación antes de fijar la expectativa de un E2E.
+
+## 2026-11-22 — CI no se podía ejecutar desde ramas de trabajo — CORREGIDO
+
+- El workflow sólo tenía triggers de push/PR a `main`, lo que impedía validar la rama refactor sin merge o PR.
+- Corrección: se habilitó `workflow_dispatch` para ejecutar manualmente la suite en el ref de trabajo; incluye el checkout del backend feature.
+- Prevención: verificar los triggers disponibles antes de asumir que el push aislado inicia Actions.
