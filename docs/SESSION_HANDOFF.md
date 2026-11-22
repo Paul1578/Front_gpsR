@@ -12,6 +12,11 @@
 - El manejador UI ya enseña errores API, pero faltaba comprobar un 409 desde Gestión de Conductores. Se añadió al E2E Manager un stub 409, aserción de alerta/no éxito y luego se deja continuar con asignación HTTP real.
 - Local `npm run lint`, `npm run build`, discovery Playwright **20** y diff-check pasan. Actions `45032626648` pasó audit/lint/build, responsive 1/1, E2E autenticado Chrome/API/MySQL **20/20** y cleanup.
 
+## Siguiente brecha — cambio de contraseña exitoso desde Perfil — 2026-11-22
+
+- La cobertura anterior no ejecutaba el submit exitoso. Añadido E2E al final para cambiar la clave del User QA, confirmar logout, rechazo de refresh/clave anteriores y login con clave nueva. Quedó después de los tests que usan credenciales originales.
+- Pendiente lint/build/discovery y Actions autenticado. El fixture vive sólo en MySQL efímero y el runner lo elimina.
+
 ## Fase completada — edición de perfil de equipo — 2026-11-22
 
 - Gestión de Equipo edita nombres, apellidos y username con PUT /Users/{id}/profile; email queda inmutable. AuthContext.updateUserProfile separa guardado y refresco para no afirmar que falló un guardado exitoso.

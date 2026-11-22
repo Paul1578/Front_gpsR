@@ -13,6 +13,12 @@
 - E2E Manager inyecta respuesta 409, exige el mensaje del backend y ausencia de confirmación; después retira el stub y ejecuta la asignación real.
 - `npm run lint`, `npm run build` y discovery Playwright **20** pasan local. Actions `45032626648` pasó E2E autenticado **20/20**, responsive 1/1 y cleanup correcto.
 
+## 2026-11-22 — Cambio de contraseña web sin E2E exitoso — COBERTURA AÑADIDA
+
+- Auditoría observó que el perfil probaba visibilidad responsive y un 503 de `logout-all`, pero nunca completaba el cambio de contraseña desde la UI.
+- Nuevo E2E al final de la suite cambia la contraseña del User QA, espera logout, comprueba que refresh antiguo y contraseña anterior dan 401 y vuelve a autenticarse con la nueva.
+- `npm run lint`, `npm run build`, discovery Playwright y Actions integrado pendientes para este caso.
+
 ## 2026-11-22 — Runner E2E local detenido por guard de mutaciones — CORREGIDO
 
 - Primera invocación de `run-e2e-local.sh` terminó en código 2 porque no estaba definida `FLETFLOW_E2E_ALLOW_MUTATIONS=true`; el guard se ejecutó antes de tocar servicios o datos.

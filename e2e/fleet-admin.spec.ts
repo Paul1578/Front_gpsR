@@ -2848,3 +2848,56 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
+
+test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", async ({ page }) => {
+  test.skip(!userEmail || !userPassword, "El runner local/CI crea el usuario QA para validar autenticación.");
+
+  const newPassword = `PwQA-${randomUUID()}aA1!`;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(userEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const previousRefreshToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).refreshToken as string : null;
+  });
+  expect(previousRefreshToken).toBeTruthy();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await page.getByRole("button", { name: "Cambiar contraseña", exact: true }).first().click();
+  const passwordForm = page.getByPlaceholder("Contraseña actual").locator("xpath=ancestor::form");
+  await page.getByPlaceholder("Contraseña actual").fill(userPassword!);
+  await page.getByPlaceholder("Nueva contraseña").fill(newPassword);
+  await page.getByPlaceholder("Confirmar nueva contraseña").fill(newPassword);
+  const changePasswordResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/change-password") &&
+    response.request().method() === "POST",
+  );
+  await passwordForm.getByRole("button", { name: "Cambiar contraseña", exact: true }).click();
+  expect((await changePasswordResponsePromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+
+  const refreshAfterPasswordChange = await page.request.post("/api/backend/Auth/refresh", {
+    data: { refreshToken: previousRefreshToken },
+  });
+  expect(refreshAfterPasswordChange.status()).toBe(401);
+  const oldPasswordLogin = await page.request.post("/api/backend/Auth/login", {
+    data: { email: userEmail, password: userPassword },
+  });
+  expect(oldPasswordLogin.status()).toBe(401);
+
+  await page.getByLabel("Correo electrónico").fill(userEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(newPassword);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const newSessionToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(newSessionToken).toBeTruthy();
+});

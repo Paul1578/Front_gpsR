@@ -42,6 +42,10 @@
 
 - E2E confirma que un HTTP 409 muestra el mensaje del servicio y no una confirmación de éxito; luego comprueba la asignación real. Actions `45032626648` pasó 20/20, responsive y cleanup.
 
+## 2026-11-22 — Cambio de contraseña desde Mi Perfil — E2E añadido
+
+- E2E QA cambia la contraseña desde la pantalla, confirma logout, refresh y clave anteriores rechazados y nueva autenticación. Lint/build/discovery 21 pasan local; Actions pendiente.
+
 ## 2026-11-21 — E2E móvil de rutas, conductores y roles
 
 - Playwright autenticado pasó 5/5 con frontend, API y MySQL locales; incluye el flujo progresivo de edición/cancelación de ruta, filtro y detalle de Historial a 390×844, y CRUD de Driver desde Gestión de Equipo.
