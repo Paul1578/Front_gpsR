@@ -2,8 +2,10 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -32,6 +34,11 @@ export type RouteEvidence =
     }
   | { id: string; type: "note"; content: string; timestamp: string };
 
+export type RoutePointOperation =
+  "none" | "pickup" | "delivery" | "pickup_and_delivery";
+export type RoutePointStatus =
+  "pending" | "in_progress" | "completed" | "failed" | "skipped";
+
 type NewRouteEvidence = RouteEvidence extends infer Evidence
   ? Evidence extends RouteEvidence
     ? Omit<Evidence, "id" | "timestamp">
@@ -42,16 +49,42 @@ export interface Route {
   id: string;
   nombre: string;
   vehiculoId: string;
+  vehiculoPlaca?: string;
+  vehiculoMarca?: string;
+  vehiculoModelo?: string;
   conductorId: string;
   carga: string;
-  origen?: { lat: number; lng: number; nombre?: string };
-  destino?: { lat: number; lng: number; nombre?: string };
-  puntos: Array<{ lat: number; lng: number; nombre?: string }>;
+  origen?: {
+    lat: number;
+    lng: number;
+    nombre?: string;
+    operation?: RoutePointOperation;
+    status?: RoutePointStatus;
+    evidence?: RouteEvidence[];
+  };
+  destino?: {
+    lat: number;
+    lng: number;
+    nombre?: string;
+    operation?: RoutePointOperation;
+    status?: RoutePointStatus;
+    evidence?: RouteEvidence[];
+  };
+  puntos: Array<{
+    lat: number;
+    lng: number;
+    nombre?: string;
+    operation?: RoutePointOperation;
+    status?: RoutePointStatus;
+    evidence?: RouteEvidence[];
+  }>;
   // paradas intermedias
   estado: "pendiente" | "en_progreso" | "completada" | "cancelada";
   fechaCreacion: string;
   fechaInicio?: string;
   fechaFin?: string;
+  fechaInicioReal?: string;
+  fechaFinReal?: string;
   teamId?: string;
   evidencias?: RouteEvidence[];
   notas?: string;
@@ -73,36 +106,55 @@ interface FleetContextType {
   vehicles: Vehicle[];
   routes: Route[];
   drivers: Driver[];
+  loadErrors: string[];
+  retryFleetData: () => Promise<void>;
 
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<ActionResult>;
-  updateVehicle: (id: string, vehicle: Partial<Vehicle>) => Promise<ActionResult>;
+  updateVehicle: (
+    id: string,
+    vehicle: Partial<Vehicle>,
+  ) => Promise<ActionResult>;
   deleteVehicle: (id: string) => Promise<ActionResult>;
 
-  addRoute: (route: Omit<Route, "id" | "fechaCreacion">) => Promise<ActionResult>;
+  addRoute: (
+    route: Omit<Route, "id" | "fechaCreacion">,
+  ) => Promise<ActionResult>;
   updateRoute: (id: string, route: Partial<Route>) => Promise<ActionResult>;
   deleteRoute: (id: string) => Promise<ActionResult>;
 
-  updateVehicleLocation: (
-    vehicleId: string,
-    location: { lat: number; lng: number }
-  ) => Promise<ActionResult>;
   registerRoutePosition: (
     routeId: string,
     location: { lat: number; lng: number },
-    meta?: { recordedAt?: string; speedKmh?: number; heading?: number }
+    meta?: { recordedAt?: string; speedKmh?: number; heading?: number },
   ) => Promise<ActionResult>;
-  addRouteEvidence: (
+  updateRoutePointStatus: (
     routeId: string,
-    evidence: NewRouteEvidence
-  ) => void;
+    pointIndex: number,
+    status: RoutePointStatus,
+  ) => Promise<ActionResult>;
+  addRoutePointEvidence: (
+    routeId: string,
+    pointIndex: number,
+    evidence: NewRouteEvidence,
+  ) => Promise<ActionResult>;
 
   getRoutesByDriver: (driverId: string) => Route[];
   getTeamVehicles: () => Vehicle[];
   getTeamRoutes: () => Route[];
 
   refreshDrivers: (onlyActive?: boolean) => Promise<void>;
-  addDriver: (driver: Omit<Driver, "id" | "isActive" | "vehicleId">) => Promise<ActionResult>;
-  assignVehicleToDriver: (driverId: string, vehicleId: string) => Promise<ActionResult>;
+  addDriver: (
+    driver: Omit<Driver, "id" | "isActive" | "vehicleId">,
+  ) => Promise<ActionResult>;
+  updateDriver: (
+    id: string,
+    driver: Pick<Driver, "firstName" | "lastName" | "documentNumber" | "phoneNumber">,
+  ) => Promise<ActionResult>;
+  setDriverActive: (id: string, isActive: boolean) => Promise<ActionResult>;
+  assignVehicleToDriver: (
+    driverId: string,
+    vehicleId: string,
+  ) => Promise<ActionResult>;
   unassignVehicleFromDriver: (driverId: string) => Promise<ActionResult>;
 }
 
@@ -125,11 +177,26 @@ type ApiRoutePoint = {
   lat?: number;
   lng?: number;
   name?: string;
+  operation?: string | number;
+  status?: string | number;
+  evidence?: ApiPointEvidence[];
+  Evidence?: ApiPointEvidence[];
+};
+
+type ApiPointEvidence = {
+  type?: string;
+  content?: string;
+  description?: string;
+  createdAtUtc?: string;
+  CreatedAtUtc?: string;
 };
 
 type ApiRoute = {
   id: string;
   vehicleId: string;
+  vehiclePlate?: string;
+  vehicleBrand?: string;
+  vehicleModel?: string;
   driverId: string;
   name: string;
   origin?: {
@@ -138,6 +205,8 @@ type ApiRoute = {
     lat?: number;
     lng?: number;
     name?: string;
+    operation?: string | number;
+    status?: string | number;
   };
   destination?: {
     latitude?: number;
@@ -145,11 +214,15 @@ type ApiRoute = {
     lat?: number;
     lng?: number;
     name?: string;
+    operation?: string | number;
+    status?: string | number;
   };
   points: ApiRoutePoint[];
   cargoDescription?: string;
   plannedStart?: string;
   plannedEnd?: string;
+  startedAt?: string;
+  endedAt?: string;
   status?: string | number;
   isActive?: boolean;
 };
@@ -167,13 +240,27 @@ type ApiDriver = {
 
 type ActionResult = { ok: boolean; message?: string };
 
+type ApiRequestError = Error & {
+  status?: number;
+  data?: {
+    message?: string;
+    errors?: string[];
+  };
+};
+
+type ApiRoutePointResponse = ApiRoutePoint & {
+  Latitude?: number;
+  Longitude?: number;
+};
+
 const resolveApiMessage = (error: unknown, fallback: string): string => {
-  const data = (error as any)?.data;
-  const status = (error as any)?.status;
+  const requestError = error as ApiRequestError | null;
+  const data = requestError?.data;
+  const status = requestError?.status;
   const explicitMessage =
     data?.message ||
     (Array.isArray(data?.errors) ? data.errors.join(", ") : undefined) ||
-    (error as Error)?.message;
+    requestError?.message;
 
   if (status === 401) {
     return "Tu sesion expiro, inicia sesion nuevamente.";
@@ -208,6 +295,19 @@ const stateToApiStatusNumber = (estado?: Route["estado"]): number => {
   return 0;
 };
 
+const pointStatusToApiNumber = (status: RoutePointStatus): number => ({
+  pending: 0,
+  in_progress: 1,
+  completed: 2,
+  failed: 3,
+  skipped: 4,
+})[status];
+
+const pointOperationToApiNumber = (operation?: RoutePointOperation): number =>
+  ({ none: 0, pickup: 1, delivery: 2, pickup_and_delivery: 3 })[
+    operation ?? "none"
+  ];
+
 const mapApiVehicle = (apiVehicle: ApiVehicle): Vehicle => ({
   id: apiVehicle.id,
   placa: apiVehicle.plate,
@@ -220,6 +320,46 @@ const mapApiVehicle = (apiVehicle: ApiVehicle): Vehicle => ({
 });
 
 const mapApiRoute = (apiRoute: ApiRoute): Route => {
+  const normalizeOperation = (
+    operation?: string | number,
+  ): RoutePointOperation => {
+    if (typeof operation === "number")
+      return operation === 1
+        ? "pickup"
+        : operation === 2
+          ? "delivery"
+          : operation === 3
+            ? "pickup_and_delivery"
+            : "none";
+    const key = (operation ?? "")
+      .toString()
+      .toLowerCase()
+      .replace(/[-\s]/g, "_");
+    if (key.includes("pickup") || key.includes("recog"))
+      return key.includes("delivery") || key.includes("entrega")
+        ? "pickup_and_delivery"
+        : "pickup";
+    if (key.includes("delivery") || key.includes("entrega")) return "delivery";
+    return "none";
+  };
+  const normalizePointStatus = (status?: string | number): RoutePointStatus => {
+    if (typeof status === "number")
+      return status === 1
+        ? "in_progress"
+        : status === 2
+          ? "completed"
+          : status === 3
+            ? "failed"
+            : status === 4
+              ? "skipped"
+              : "pending";
+    const key = (status ?? "").toString().toLowerCase();
+    if (key.includes("progress") || key.includes("curso")) return "in_progress";
+    if (key.includes("complete") || key.includes("complet")) return "completed";
+    if (key.includes("fail") || key.includes("fall")) return "failed";
+    if (key.includes("skip") || key.includes("omit")) return "skipped";
+    return "pending";
+  };
   const normalizeStatus = (status?: string | number): Route["estado"] => {
     if (typeof status === "number") {
       if (status === 1) return "en_progreso";
@@ -228,45 +368,87 @@ const mapApiRoute = (apiRoute: ApiRoute): Route => {
       return "pendiente";
     }
     const key = (status ?? "").toString().toLowerCase();
-    if (key.includes("progress") || key.includes("curso") || key.includes("progreso"))
+    if (
+      key.includes("progress") ||
+      key.includes("curso") ||
+      key.includes("progreso")
+    )
       return "en_progreso";
-    if (key.includes("complete") || key.includes("complet")) return "completada";
+    if (key.includes("complete") || key.includes("complet"))
+      return "completada";
     if (key.includes("cancel")) return "cancelada";
     return "pendiente";
   };
 
-  const puntos =
-    apiRoute.points?.map((p, idx) => ({
-      lat: p.latitude ?? (p as any).Latitude ?? p.lat ?? 0,
-      lng: p.longitude ?? (p as any).Longitude ?? p.lng ?? 0,
-      nombre: p.name ?? `Punto ${idx + 1}`,
-    })) ?? [];
+  const allPoints =
+    apiRoute.points?.map((point, idx) => {
+      const responsePoint = point as ApiRoutePointResponse;
+      const pointEvidence: RouteEvidence[] = (point.evidence ?? point.Evidence ?? []).map(
+        (item, evidenceIndex) => {
+          const timestamp = item.createdAtUtc ?? item.CreatedAtUtc ?? "";
+          const id = `${apiRoute.id}-${idx}-${evidenceIndex}-${timestamp}`;
+          return item.type === "image"
+            ? {
+                id,
+                type: "image" as const,
+                content: item.content ?? "",
+                description: item.description,
+                timestamp,
+              }
+            : { id, type: "note" as const, content: item.content ?? "", timestamp };
+        },
+      );
+      return {
+        lat: point.latitude ?? responsePoint.Latitude ?? point.lat ?? 0,
+        lng: point.longitude ?? responsePoint.Longitude ?? point.lng ?? 0,
+        nombre: point.name ?? `Punto ${idx + 1}`,
+        operation: normalizeOperation(point.operation),
+        status: normalizePointStatus(point.status),
+        evidence: pointEvidence,
+      };
+    }) ?? [];
+  const puntos = allPoints.length >= 2 ? allPoints.slice(1, -1) : [];
+  const evidencias = allPoints.flatMap((point) => point.evidence ?? []);
 
   return {
     id: apiRoute.id,
     nombre: apiRoute.name,
     vehiculoId: apiRoute.vehicleId,
+    vehiculoPlaca: apiRoute.vehiclePlate,
+    vehiculoMarca: apiRoute.vehicleBrand,
+    vehiculoModelo: apiRoute.vehicleModel,
     conductorId: apiRoute.driverId,
     carga: apiRoute.cargoDescription ?? "",
-    origen: apiRoute.origin
-      ? {
-          lat: apiRoute.origin.lat ?? apiRoute.origin.latitude ?? 0,
-          lng: apiRoute.origin.lng ?? apiRoute.origin.longitude ?? 0,
-          nombre: apiRoute.origin.name,
-        }
-      : undefined,
-    destino: apiRoute.destination
-      ? {
-          lat: apiRoute.destination.lat ?? apiRoute.destination.latitude ?? 0,
-          lng: apiRoute.destination.lng ?? apiRoute.destination.longitude ?? 0,
-          nombre: apiRoute.destination.name,
-        }
-      : undefined,
+    origen: allPoints[0]
+      ? { ...allPoints[0] }
+      : apiRoute.origin
+        ? {
+            lat: apiRoute.origin.lat ?? apiRoute.origin.latitude ?? 0,
+            lng: apiRoute.origin.lng ?? apiRoute.origin.longitude ?? 0,
+            nombre: apiRoute.origin.name,
+            operation: normalizeOperation(apiRoute.origin.operation),
+            status: normalizePointStatus(apiRoute.origin.status),
+          }
+        : undefined,
+    destino: allPoints.length > 1
+      ? { ...allPoints[allPoints.length - 1] }
+      : apiRoute.destination
+        ? {
+            lat: apiRoute.destination.lat ?? apiRoute.destination.latitude ?? 0,
+            lng: apiRoute.destination.lng ?? apiRoute.destination.longitude ?? 0,
+            nombre: apiRoute.destination.name,
+            operation: normalizeOperation(apiRoute.destination.operation),
+            status: normalizePointStatus(apiRoute.destination.status),
+          }
+        : undefined,
     puntos,
+    evidencias,
     estado: normalizeStatus(apiRoute.status),
     fechaCreacion: apiRoute.plannedStart ?? new Date().toISOString(),
     fechaInicio: apiRoute.plannedStart,
     fechaFin: apiRoute.plannedEnd,
+    fechaInicioReal: apiRoute.startedAt,
+    fechaFinReal: apiRoute.endedAt,
     isActive: apiRoute.isActive,
   };
 };
@@ -283,15 +465,43 @@ const mapApiDriver = (apiDriver: ApiDriver): Driver => ({
 });
 
 const toApiRoutePayload = (route: Partial<Route>) => {
+  const operationToNumber = (operation?: RoutePointOperation) =>
+    operation === "pickup"
+      ? 1
+      : operation === "delivery"
+        ? 2
+        : operation === "pickup_and_delivery"
+          ? 3
+          : 0;
+  const pointStatusToNumber = (status?: RoutePointStatus) =>
+    status === "in_progress"
+      ? 1
+      : status === "completed"
+        ? 2
+        : status === "failed"
+          ? 3
+          : status === "skipped"
+            ? 4
+            : 0;
   const toApiPoint = (
-    point: { lat?: number; lng?: number; nombre?: string } | undefined,
-    fallbackName: string
+    point:
+      | {
+          lat?: number;
+          lng?: number;
+          nombre?: string;
+          operation?: RoutePointOperation;
+          status?: RoutePointStatus;
+        }
+      | undefined,
+    fallbackName: string,
   ) =>
     point
       ? {
           lat: Number(point.lat ?? 0),
           lng: Number(point.lng ?? 0),
           name: point.nombre ?? fallbackName,
+          operation: operationToNumber(point.operation),
+          status: pointStatusToNumber(point.status),
         }
       : undefined;
 
@@ -300,11 +510,19 @@ const toApiRoutePayload = (route: Partial<Route>) => {
       lat: Number(p.lat),
       lng: Number(p.lng),
       name: p.nombre ?? `Parada ${idx + 1}`,
+      operation: operationToNumber(p.operation),
+      status: pointStatusToNumber(p.status),
     })) ?? [];
 
   // backend espera points: incluye todas las paradas (origen/destino opcional);
   // enviamos origen + paradas + destino para no perder los puntos.
-  const points: Array<{ lat: number; lng: number; name?: string }> = [];
+  const points: Array<{
+    lat: number;
+    lng: number;
+    name?: string;
+    operation: number;
+    status: number;
+  }> = [];
   const originPoint = toApiPoint(route.origen, "Origen");
   if (originPoint) points.push(originPoint);
   points.push(...stops);
@@ -336,31 +554,49 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const driversRequestSequence = useRef(0);
+  const [fleetOwnerId, setFleetOwnerId] = useState<string | null>(null);
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
+  const setResourceError = useCallback((resource: string, failed: boolean) =>
+    setLoadErrors((current) => failed
+      ? current.includes(resource) ? current : [...current, resource]
+      : current.filter((item) => item !== resource)), []);
 
-  const isAuthError = (error: unknown) => {
+  useEffect(() => {
+    driversRequestSequence.current += 1;
+    setVehicles([]);
+    setRoutes([]);
+    setDrivers([]);
+    setLoadErrors([]);
+    setFleetOwnerId(user?.id ?? null);
+  }, [user?.id]);
+
+  const isAuthError = useCallback((error: unknown) => {
     const status = (error as { status?: number } | null)?.status;
     return status === 401 || status === 403;
-  };
+  }, []);
 
   // ---------------- VEHICLES ----------------
   useEffect(() => {
     const loadVehicles = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (user?.role === "chofer") return;
+      if (user?.role === "chofer" || user?.role === "usuario") return;
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
-        const active = data.filter((v) => (v as any).isActive !== false);
+        const active = data.filter((vehicle) => vehicle.isActive !== false);
         setVehicles(active.map(mapApiVehicle));
+        setResourceError("vehículos", false);
       } catch (error) {
         if (isAuthError(error)) return;
+        setResourceError("vehículos", true);
         console.error("Error cargando vehículos desde API", error);
       }
     };
     void loadVehicles();
-  }, [apiFetch, isAuthenticated, isLoadingUser, user?.role]);
+  }, [apiFetch, isAuthenticated, isAuthError, isLoadingUser, setResourceError, user?.role]);
 
   const addVehicle = async (
-    vehicle: Omit<Vehicle, "id">
+    vehicle: Omit<Vehicle, "id">,
   ): Promise<ActionResult> => {
     try {
       const payload = {
@@ -393,7 +629,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const updateVehicle = async (
     id: string,
-    vehicleData: Partial<Vehicle>
+    vehicleData: Partial<Vehicle>,
   ): Promise<ActionResult> => {
     try {
       const current = vehicles.find((v) => v.id === id);
@@ -428,7 +664,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       }
 
       const updatedVehicles = vehicles.map((v) =>
-        v.id === id ? { ...v, ...vehicleData } : v
+        v.id === id ? { ...v, ...vehicleData } : v,
       );
 
       setVehicles(updatedVehicles);
@@ -463,58 +699,99 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   // ---------------- ROUTES ----------------
 
   // ✅ helper para re-listar SIEMPRE desde BD sin tocar otras cosas
-  const refreshRoutes = async () => {
+  const refreshRoutes = useCallback(async () => {
     if (!apiFetch) return;
 
     const data = await apiFetch<ApiRoute[]>("/Routes");
-    const active = data.filter((r) => (r as any).isActive !== false);
+    const active = data.filter((route) => route.isActive !== false);
 
-    setRoutes((prev) => {
-      const prevMap = new Map(prev.map((r) => [r.id, r]));
+    setRoutes(active.map(mapApiRoute));
+    setResourceError("rutas", false);
+  }, [apiFetch, setResourceError]);
 
-      return active.map((apiR) => {
-        const mapped = mapApiRoute(apiR);
-        const old = prevMap.get(mapped.id);
-
-        // preserva evidencias/notas locales si existen solo en front
-        return old
-          ? { ...mapped, evidencias: old.evidencias, notas: old.notas }
-          : mapped;
-      });
-    });
-  };
+  const refreshDrivers = useCallback(
+    async (onlyActive = true) => {
+      if (!apiFetch || user?.role === "chofer" || user?.role === "usuario") return;
+      const requestSequence = ++driversRequestSequence.current;
+      const query = onlyActive ? "?onlyActive=true" : "";
+      try {
+        const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
+        if (requestSequence !== driversRequestSequence.current) return;
+        const visibleDrivers = onlyActive
+          ? data.filter((driver) => driver.isActive !== false)
+          : data;
+        setDrivers(visibleDrivers.map(mapApiDriver));
+        setResourceError("conductores", false);
+      } catch (error) {
+        if (requestSequence !== driversRequestSequence.current) return;
+        if (isAuthError(error)) return;
+        setResourceError("conductores", true);
+        throw error;
+      }
+    },
+    [apiFetch, isAuthError, setResourceError, user?.role],
+  );
 
   useEffect(() => {
     const loadRoutes = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
+      if (user?.role === "usuario") return;
       try {
         await refreshRoutes();
       } catch (error) {
         if (isAuthError(error)) return;
+        setResourceError("rutas", true);
         console.error("Error cargando rutas desde API", error);
       }
     };
 
     void loadRoutes();
-  }, [apiFetch, isAuthenticated, isLoadingUser]);
+  }, [apiFetch, isAuthenticated, isAuthError, isLoadingUser, refreshRoutes, setResourceError, user?.role]);
 
   useEffect(() => {
     const loadDrivers = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (user?.role === "chofer") return;
+      if (user?.role === "chofer" || user?.role === "usuario") return;
       try {
         await refreshDrivers();
       } catch (error) {
         if (isAuthError(error)) return;
+        setResourceError("conductores", true);
         console.error("Error cargando drivers desde API", error);
       }
     };
 
     void loadDrivers();
-  }, [apiFetch, isAuthenticated, isLoadingUser, user?.role]);
+  }, [
+    apiFetch,
+    isAuthenticated,
+    isLoadingUser,
+    isAuthError,
+    refreshDrivers,
+    setResourceError,
+    user?.role,
+  ]);
+
+  const retryFleetData = async () => {
+    const failures: string[] = [];
+    if (user?.role !== "chofer" && user?.role !== "usuario") {
+      try {
+        const data = await apiFetch<ApiVehicle[]>("/Vehicles");
+        setVehicles(data.filter((item) => item.isActive !== false).map(mapApiVehicle));
+        setResourceError("vehículos", false);
+      } catch { failures.push("vehículos"); }
+      try { await refreshDrivers(); } catch { failures.push("conductores"); }
+    }
+    if (user?.role !== "usuario") {
+      try { await refreshRoutes(); } catch { failures.push("rutas"); }
+    }
+    setLoadErrors(failures);
+  };
+
+  const userOwnsLoadedData = !!user && fleetOwnerId === user.id;
 
   const addRoute = async (
-    route: Omit<Route, "id" | "fechaCreacion">
+    route: Omit<Route, "id" | "fechaCreacion">,
   ): Promise<ActionResult> => {
     try {
       const payload = toApiRoutePayload(route);
@@ -524,7 +801,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       });
 
-      await linkDriverVehicle(route.conductorId, route.vehiculoId);
       await refreshRoutes();
       return { ok: true, message: "Ruta creada correctamente" };
     } catch (error) {
@@ -539,11 +815,28 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   // ✅ PUT /api/Routes/{id} con body EXACTO que pasaste
   const updateRoute = async (
     id: string,
-    routePatch: Partial<Route>
+    routePatch: Partial<Route>,
   ): Promise<ActionResult> => {
     try {
       const current = routes.find((r) => r.id === id);
       if (!current) throw new Error("Ruta no encontrada");
+
+      const routePatchKeys = Object.keys(routePatch);
+      const statusOnlyPatch =
+        routePatch.estado !== undefined &&
+        routePatchKeys.every((key) =>
+          ["estado", "fechaInicio", "fechaFin"].includes(key),
+        );
+      if (statusOnlyPatch) {
+        await apiFetch(`/Routes/${id}/status`, {
+          method: "PUT",
+          body: JSON.stringify({
+            status: stateToApiStatusNumber(routePatch.estado),
+          }),
+        });
+        await refreshRoutes();
+        return { ok: true, message: "Estado de ruta actualizado" };
+      }
 
       const merged: Route = {
         ...current,
@@ -564,6 +857,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
                   lat: Number(merged.origen.lat ?? 0),
                   lng: Number(merged.origen.lng ?? 0),
                   name: merged.origen.nombre ?? "Origen",
+                  operation: pointOperationToApiNumber(merged.origen.operation),
                 },
               ]
             : []),
@@ -571,6 +865,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             lat: Number(p.lat),
             lng: Number(p.lng),
             name: p.nombre ?? `Parada ${idx + 1}`,
+            operation: pointOperationToApiNumber(p.operation),
           })),
           ...(merged.destino
             ? [
@@ -578,6 +873,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
                   lat: Number(merged.destino.lat ?? 0),
                   lng: Number(merged.destino.lng ?? 0),
                   name: merged.destino.nombre ?? "Destino",
+                  operation: pointOperationToApiNumber(merged.destino.operation),
                 },
               ]
             : []),
@@ -587,6 +883,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
               lat: Number(merged.origen.lat ?? 0),
               lng: Number(merged.origen.lng ?? 0),
               name: merged.origen.nombre ?? "Origen",
+                  operation: pointOperationToApiNumber(merged.origen.operation),
             }
           : undefined,
         destination: merged.destino
@@ -594,6 +891,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
               lat: Number(merged.destino.lat ?? 0),
               lng: Number(merged.destino.lng ?? 0),
               name: merged.destino.nombre ?? "Destino",
+                  operation: pointOperationToApiNumber(merged.destino.operation),
             }
           : undefined,
         cargoDescription: merged.carga ?? "",
@@ -607,9 +905,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
             new Date(
               merged.fechaInicio ??
                 merged.fechaCreacion ??
-                new Date().toISOString()
+                new Date().toISOString(),
             ).getTime() +
-              60 * 60 * 1000
+              60 * 60 * 1000,
           ).toISOString(),
         status: stateToApiStatusNumber(merged.estado),
         isActive: true,
@@ -620,7 +918,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       });
 
-      await linkDriverVehicle(merged.conductorId, merged.vehiculoId);
       const finished =
         typeof merged.estado === "string" &&
         ["completada", "cancelada"].includes(merged.estado.toLowerCase());
@@ -653,43 +950,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateVehicleLocation = async (
-    vehicleId: string,
-    location: { lat: number; lng: number }
-  ): Promise<ActionResult> => {
-    try {
-      await apiFetch(`/Vehicles/${vehicleId}/location`, {
-        method: "PUT",
-        body: JSON.stringify({
-          latitude: location.lat,
-          longitude: location.lng,
-        }),
-      });
-      await updateVehicle(vehicleId, { ubicacionActual: location });
-      return { ok: true };
-    } catch (error) {
-      const status = (error as { status?: number } | null)?.status;
-      if (status !== 429) {
-        console.warn(
-          "No se pudo persistir ubicacion en backend, usando estado local:",
-          error
-        );
-      }
-      await updateVehicle(vehicleId, { ubicacionActual: location });
-      return {
-        ok: false,
-        message: resolveApiMessage(
-          error,
-          "No se pudo actualizar la ubicacion del vehiculo"
-        ),
-      };
-    }
-  };
-
   const registerRoutePosition = async (
     routeId: string,
     location: { lat: number; lng: number },
-    meta?: { recordedAt?: string; speedKmh?: number; heading?: number }
+    meta?: { recordedAt?: string; speedKmh?: number; heading?: number },
   ): Promise<ActionResult> => {
     try {
       await apiFetch(`/Routes/${routeId}/positions`, {
@@ -712,29 +976,44 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         ok: false,
         message: resolveApiMessage(
           error,
-          "No se pudo registrar el tracking de la ruta"
+          "No se pudo registrar el tracking de la ruta",
         ),
       };
     }
   };
 
-  const addRouteEvidence = (
+  const updateRoutePointStatus = async (
     routeId: string,
-    evidence: NewRouteEvidence
-  ) => {
-    const newEvidence: RouteEvidence = {
-      ...evidence,
-      id: crypto.randomUUID ? crypto.randomUUID() : `evi-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    };
+    pointIndex: number,
+    status: RoutePointStatus,
+  ): Promise<ActionResult> => {
+    try {
+      await apiFetch(`/Routes/${routeId}/points/${pointIndex}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status: pointStatusToApiNumber(status) }),
+      });
+      await refreshRoutes();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: resolveApiMessage(error, "No se pudo actualizar la parada") };
+    }
+  };
 
-    setRoutes((prev) =>
-      prev.map((r) =>
-        r.id === routeId
-          ? { ...r, evidencias: [...(r.evidencias ?? []), newEvidence] }
-          : r
-      )
-    );
+  const addRoutePointEvidence = async (
+    routeId: string,
+    pointIndex: number,
+    evidence: NewRouteEvidence,
+  ): Promise<ActionResult> => {
+    try {
+      await apiFetch(`/Routes/${routeId}/points/${pointIndex}/evidence`, {
+        method: "POST",
+        body: JSON.stringify(evidence),
+      });
+      await refreshRoutes();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: resolveApiMessage(error, "No se pudo guardar la evidencia") };
+    }
   };
 
   const getRoutesByDriver = (driverId: string): Route[] =>
@@ -744,22 +1023,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const getTeamRoutes = (): Route[] => routes;
 
-  const refreshDrivers = async (onlyActive = true) => {
-    if (!apiFetch) return;
-    if (user?.role === "chofer") return;
-    const query = onlyActive ? "?onlyActive=true" : "";
-    try {
-      const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
-      const active = data.filter((d) => (d as any).isActive !== false);
-      setDrivers(active.map(mapApiDriver));
-    } catch (error) {
-      if (isAuthError(error)) return;
-      throw error;
-    }
-  };
-
   const addDriver = async (
-    driver: Omit<Driver, "id" | "isActive" | "vehicleId">
+    driver: Omit<Driver, "id" | "isActive" | "vehicleId">,
   ): Promise<ActionResult> => {
     try {
       const payload = {
@@ -778,13 +1043,52 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       return { ok: true, message: "Chofer creado" };
     } catch (error) {
       console.error("Error al crear chofer:", error);
-      return { ok: false, message: resolveApiMessage(error, "No se pudo crear el chofer") };
+      return {
+        ok: false,
+        message: resolveApiMessage(error, "No se pudo crear el chofer"),
+      };
+    }
+  };
+
+  const updateDriver = async (
+    id: string,
+    driver: Pick<Driver, "firstName" | "lastName" | "documentNumber" | "phoneNumber">,
+  ): Promise<ActionResult> => {
+    try {
+      const updated = await apiFetch<ApiDriver>(`/Drivers/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(driver),
+      });
+      const mapped = mapApiDriver(updated);
+      setDrivers((prev) => prev.map((item) => item.id === id ? mapped : item));
+      return { ok: true, message: "Datos del conductor actualizados" };
+    } catch (error) {
+      return { ok: false, message: resolveApiMessage(error, "No se pudo actualizar el conductor") };
+    }
+  };
+
+  const setDriverActive = async (id: string, isActive: boolean): Promise<ActionResult> => {
+    try {
+      await apiFetch(`/Drivers/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ isActive }),
+      });
+      if (isActive) {
+        await refreshDrivers(false);
+      } else {
+        setDrivers((prev) => prev.map((driver) =>
+          driver.id === id ? { ...driver, isActive: false, vehicleId: undefined } : driver,
+        ));
+      }
+      return { ok: true, message: isActive ? "Conductor reactivado" : "Conductor dado de baja" };
+    } catch (error) {
+      return { ok: false, message: resolveApiMessage(error, "No se pudo cambiar el estado del conductor") };
     }
   };
 
   const assignVehicleToDriver = async (
     driverId: string,
-    vehicleId: string
+    vehicleId: string,
   ): Promise<ActionResult> => {
     try {
       await apiFetch(`/Drivers/${driverId}/assign-vehicle`, {
@@ -792,63 +1096,64 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ vehicleId }),
       });
       setDrivers((prev) =>
-        prev.map((d) => (d.id === driverId ? { ...d, vehicleId } : d))
+        prev.map((d) => (d.id === driverId ? { ...d, vehicleId } : d)),
       );
       return { ok: true, message: "Vehiculo asignado" };
     } catch (error) {
       console.error("Error asignando vehiculo:", error);
-      return { ok: false, message: resolveApiMessage(error, "No se pudo asignar el vehiculo") };
+      return {
+        ok: false,
+        message: resolveApiMessage(error, "No se pudo asignar el vehiculo"),
+      };
     }
   };
 
-  const unassignVehicleFromDriver = async (driverId: string): Promise<ActionResult> => {
+  const unassignVehicleFromDriver = async (
+    driverId: string,
+  ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Drivers/${driverId}/unassign-vehicle`, { method: "PUT" });
+      await apiFetch(`/Drivers/${driverId}/unassign-vehicle`, {
+        method: "PUT",
+      });
       setDrivers((prev) =>
-        prev.map((d) => (d.id === driverId ? { ...d, vehicleId: undefined } : d))
+        prev.map((d) =>
+          d.id === driverId ? { ...d, vehicleId: undefined } : d,
+        ),
       );
       return { ok: true, message: "Vehiculo desasignado" };
     } catch (error) {
       console.error("Error desasignando vehiculo:", error);
-      return { ok: false, message: resolveApiMessage(error, "No se pudo desasignar el vehiculo") };
-    }
-  };
-
-  const linkDriverVehicle = async (driverId?: string, vehicleId?: string) => {
-    if (!driverId || !vehicleId) return;
-    try {
-      await apiFetch(`/Drivers/${driverId}/assign-vehicle`, {
-        method: "PUT",
-        body: JSON.stringify({ vehicleId }),
-      });
-      setDrivers((prev) =>
-        prev.map((d) => (d.id === driverId ? { ...d, vehicleId } : d))
-      );
-    } catch (error) {
-      console.error("No se pudo asignar vehiculo al chofer al crear la ruta:", error);
+      return {
+        ok: false,
+        message: resolveApiMessage(error, "No se pudo desasignar el vehiculo"),
+      };
     }
   };
 
   return (
     <FleetContext.Provider
       value={{
-        vehicles,
-        routes,
-        drivers,
+        vehicles: userOwnsLoadedData ? vehicles : [],
+        routes: userOwnsLoadedData ? routes : [],
+        drivers: userOwnsLoadedData ? drivers : [],
+        loadErrors: userOwnsLoadedData ? loadErrors : [],
+        retryFleetData,
         addVehicle,
         updateVehicle,
         deleteVehicle,
         addRoute,
         updateRoute,
         deleteRoute,
-        updateVehicleLocation,
         registerRoutePosition,
-        addRouteEvidence,
+        updateRoutePointStatus,
+        addRoutePointEvidence,
         getRoutesByDriver,
         getTeamVehicles,
         getTeamRoutes,
         refreshDrivers,
         addDriver,
+        updateDriver,
+        setDriverActive,
         assignVehicleToDriver,
         unassignVehicleFromDriver,
       }}

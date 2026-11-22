@@ -47,7 +47,9 @@ export function FleetDashboard() {
       );
     };
 
-    const permissionsApi = (navigator as any).permissions;
+    const permissionsApi = navigator.permissions as Permissions & {
+      query: (permissionDesc: { name: "geolocation" }) => Promise<PermissionStatus>;
+    };
     if (permissionsApi?.query) {
       permissionsApi
         .query({ name: "geolocation" })

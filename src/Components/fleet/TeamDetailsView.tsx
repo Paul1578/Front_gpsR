@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, Users, Truck, Route, History, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, Users, Truck, Route as RouteIcon, History } from "lucide-react";
 import { useAuth } from "../../Context/AuthContext";
-import { useFleet } from "../../Context/FleetContext";
-import { toast } from "sonner";
+import { useFleet, type Route, type Vehicle } from "../../Context/FleetContext";
 
 interface TeamDetailsViewProps {
   teamId: string;
@@ -10,11 +9,9 @@ interface TeamDetailsViewProps {
 }
 
 export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
-  const { getAllUsers, updateUserRole, updateUserPermissions } = useAuth();
+  const { getAllUsers } = useAuth();
   const { vehicles, routes } = useFleet();
   const [activeTab, setActiveTab] = useState<"team" | "vehicles" | "routes" | "history">("team");
-  const [editingTeamName, setEditingTeamName] = useState(false);
-  const [tempTeamName, setTempTeamName] = useState("");
 
   // Obtener datos del sistema
   const allUsers = getAllUsers();
@@ -22,12 +19,12 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
   const teamMembers = allUsers.filter(u => u.teamId === teamId);
   
   const allVehicles = vehicles;
-  const teamVehicles = allVehicles.filter((v: any) => v.teamId === teamId);
+  const teamVehicles = allVehicles.filter((v: Vehicle) => v.teamId === teamId);
   
   const allRoutes = routes;
-  const teamRoutes = allRoutes.filter((r: any) => r.teamId === teamId);
-  const activeRoutes = teamRoutes.filter((r: any) => r.estado === "en_progreso");
-  const completedRoutes = teamRoutes.filter((r: any) => r.estado === "completada");
+  const teamRoutes = allRoutes.filter((r: Route) => r.teamId === teamId);
+  const activeRoutes = teamRoutes.filter((r) => r.estado === "en_progreso");
+  const completedRoutes = teamRoutes.filter((r) => r.estado === "completada");
 
   if (!manager) {
     return (
@@ -36,16 +33,6 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
       </div>
     );
   }
-
-  const handleEditTeamName = () => {
-    setTempTeamName(manager.teamName || `Equipo de ${manager.nombres}`);
-    setEditingTeamName(true);
-  };
-
-  const handleSaveTeamName = () => {
-    toast.info("Actualiza el nombre del equipo desde el backend");
-    setEditingTeamName(false);
-  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -78,41 +65,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
               <ArrowLeft size={20} />
             </button>
             <div className="flex-1">
-              {editingTeamName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={tempTeamName}
-                    onChange={(e) => setTempTeamName(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                    placeholder="Nombre del equipo"
-                  />
-                  <button
-                    onClick={handleSaveTeamName}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                  >
-                    <Check size={18} />
-                  </button>
-                  <button
-                    onClick={() => setEditingTeamName(false)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl text-gray-900">
-                    {manager.teamName || `Equipo de ${manager.nombres} ${manager.apellidos}`}
-                  </h1>
-                  <button
-                    onClick={handleEditTeamName}
-                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                </div>
-              )}
+              <h1 className="text-xl text-gray-900">
+                {manager.teamName || `Equipo de ${manager.nombres} ${manager.apellidos}`}
+              </h1>
               <p className="text-sm text-gray-600">
                 Gerente: {manager.nombres} {manager.apellidos} (@{manager.usuario})
               </p>
@@ -137,7 +92,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
             </div>
             <div className="bg-purple-50 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
-                <Route size={16} className="text-purple-600" />
+                <RouteIcon size={16} className="text-purple-600" />
                 <p className="text-xs text-purple-800">Rutas Activas</p>
               </div>
               <p className="text-xl text-purple-900">{activeRoutes.length}</p>
@@ -187,7 +142,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                   : "border-transparent text-gray-600 hover:text-gray-900"
               }`}
             >
-              <Route size={18} />
+              <RouteIcon size={18} />
               Rutas Activas
             </button>
             <button
@@ -284,7 +239,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {teamVehicles.map((vehicle: any) => (
+                  {teamVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -293,7 +248,7 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                         <div className="flex-1">
                           <p className="text-sm text-gray-900">{vehicle.placa}</p>
                           <p className="text-xs text-gray-600">
-                            {vehicle.marca} {vehicle.modelo} ({vehicle.año})
+                            {vehicle.marca} {vehicle.modelo} ({vehicle.anio})
                           </p>
                           <span className={`inline-block mt-2 px-2 py-1 rounded text-xs ${
                             vehicle.estado === "disponible" ? "bg-green-100 text-green-800" :
@@ -322,9 +277,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {activeRoutes.map((route: any) => {
+                  {activeRoutes.map((route) => {
                     const driver = allUsers.find(u => u.id === route.conductorId);
-                    const vehicle = allVehicles.find((v: any) => v.id === route.vehiculoId);
+                    const vehicle = allVehicles.find((v) => v.id === route.vehiculoId);
                     
                     return (
                       <div key={route.id} className="p-4 border border-gray-200 rounded-lg">
@@ -364,9 +319,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {completedRoutes.map((route: any) => {
+                  {completedRoutes.map((route) => {
                     const driver = allUsers.find(u => u.id === route.conductorId);
-                    const vehicle = allVehicles.find((v: any) => v.id === route.vehiculoId);
+                    const vehicle = allVehicles.find((v) => v.id === route.vehiculoId);
                     
                     return (
                       <div key={route.id} className="p-4 border border-gray-200 rounded-lg">
@@ -387,9 +342,9 @@ export function TeamDetailsView({ teamId, onBack }: TeamDetailsViewProps) {
                         <p className="text-xs text-gray-500">
                           Carga: {route.carga}
                         </p>
-                        {route.fechaFin && (
+                        {route.fechaFinReal && (
                           <p className="text-xs text-gray-400 mt-1">
-                            Completada: {new Date(route.fechaFin).toLocaleString()}
+                            Finalizada: {new Date(route.fechaFinReal).toLocaleString()}
                           </p>
                         )}
                       </div>

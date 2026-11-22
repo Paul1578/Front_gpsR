@@ -30,7 +30,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const users = getAllUsers();
   const managers = getManagers();
 
-  // Obtener todas las rutas y vehículos del sistema (sin filtro de equipo)
+  // La API devuelve recursos del propietario autenticado, no del sistema completo.
   const allRoutes = routes;
   const allVehicles = vehicles;
 
@@ -42,10 +42,10 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     logistics: users.filter(u => u.role === "logistica").length,
     drivers: users.filter(u => u.role === "chofer").length,
     totalRoutes: allRoutes.length,
-    activeRoutes: allRoutes.filter((r: any) => r.estado === "en_progreso").length,
-    completedRoutes: allRoutes.filter((r: any) => r.estado === "completada").length,
+    activeRoutes: allRoutes.filter((r) => r.estado === "en_progreso").length,
+    completedRoutes: allRoutes.filter((r) => r.estado === "completada").length,
     totalVehicles: allVehicles.length,
-    activeVehicles: allVehicles.filter((v: any) => v.estado === "en_ruta").length,
+    activeVehicles: allVehicles.filter((v) => v.estado === "en_ruta").length,
     totalTeams: managers.length,
   };
 
@@ -68,15 +68,15 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
     setIsCreating(true);
     
-    const success = await createUser({
+    const result = await createUser({
       ...createUserForm,
       teamId: createUserForm.role === "gerente" || createUserForm.role === "superadmin" ? undefined : createUserForm.teamId,
     });
 
     setIsCreating(false);
 
-    if (success) {
-      toast.success("Usuario creado exitosamente");
+    if (result.ok) {
+      toast.success(result.invitationSent ? "Usuario creado y correo enviado" : "Usuario creado. No se pudo enviar el correo de invitación.");
       setCreateUserForm({
         nombres: "",
         apellidos: "",
@@ -87,11 +87,11 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
       });
       setShowCreatePassword(false);
     } else {
-      toast.error("Error al crear usuario. El nombre de usuario podría estar en uso.");
+      toast.error("No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
     }
   };
 
-  const handleExportData = () => {
+  const handleExportData = (timestamp: number) => {
     const data = {
       users,
       routes: allRoutes,
@@ -103,7 +103,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fleettrack-backup-${Date.now()}.json`;
+    a.download = `fleettrack-backup-${timestamp}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -160,8 +160,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                 <Shield size={24} />
               </div>
               <div>
-                <h1 className="text-2xl">Panel Super Admin</h1>
-                <p className="text-red-100 text-sm">Administración del Sistema FleetTrack</p>
+                <h1 className="text-2xl">Administración de la empresa</h1>
+                <p className="text-red-100 text-sm">Usuarios y operación de tu empresa</p>
               </div>
             </div>
           </div>
@@ -169,19 +169,19 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Total Equipos</p>
+              <p className="text-red-100 text-xs mb-1">Gerentes</p>
               <p className="text-2xl">{stats.totalTeams}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Total Usuarios</p>
+              <p className="text-red-100 text-xs mb-1">Usuarios de la empresa</p>
               <p className="text-2xl">{stats.totalUsers}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Rutas Activas</p>
+              <p className="text-red-100 text-xs mb-1">Rutas en curso de la empresa</p>
               <p className="text-2xl">{stats.activeRoutes}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Vehículos Totales</p>
+              <p className="text-red-100 text-xs mb-1">Vehículos de la empresa</p>
               <p className="text-2xl">{stats.totalVehicles}</p>
             </div>
           </div>
@@ -400,8 +400,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {managers.map((manager) => {
                       const teamMembers = users.filter(u => u.teamId === manager.id);
-                      const teamVehicles = allVehicles.filter((v: any) => v.teamId === manager.id);
-                      const teamRoutes = allRoutes.filter((r: any) => r.teamId === manager.id);
+                      const teamVehicles = allVehicles.filter((v) => v.teamId === manager.id);
+                      const teamRoutes = allRoutes.filter((r) => r.teamId === manager.id);
                       
                       return (
                         <button
@@ -449,7 +449,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           {activeTab === "users" && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg text-gray-900 mb-4">Todos los Usuarios del Sistema</h3>
+                <h3 className="text-lg text-gray-900 mb-4">Usuarios de la empresa</h3>
                 <div className="space-y-3">
                   {users.map((user) => {
                     const manager = user.teamId ? users.find(u => u.id === user.teamId) : null;
@@ -583,7 +583,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["superadmin", "gerente", "logistica", "chofer"] as UserRole[]).map((role) => (
+                      {(["gerente", "logistica", "chofer"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           type="button"
@@ -659,10 +659,10 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                           Exportar Datos
                         </h4>
                         <p className="text-xs text-gray-600 mb-3">
-                          Descarga una copia de seguridad completa del sistema en formato JSON
+                          Descarga una copia de los datos disponibles de tu empresa en formato JSON
                         </p>
                         <button
-                          onClick={handleExportData}
+                          onClick={() => handleExportData(Date.now())}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                         >
                           Exportar Ahora

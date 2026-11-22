@@ -20,6 +20,33 @@ export interface MapViewProps {
 
 type LatLngTuple = [number, number];
 
+interface OsrmRouteResponse {
+  routes?: Array<{
+    geometry?: { coordinates?: Array<[number, number]> };
+  }>;
+}
+
+function normalizeTrackingPositions(positions: RoutePositionDto[]): LatLngTuple[] {
+  const sorted = [...positions].sort((a, b) => {
+    const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+    const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+    return aTime - bTime;
+  });
+
+  return sorted
+    .map((position) => {
+      const lat = parseCoord(position.latitude);
+      const lng = parseCoord(position.longitude);
+      if (lat == null || lng == null) return null;
+      return [lat, lng] as LatLngTuple;
+    })
+    .filter((point): point is LatLngTuple => point !== null);
+}
+
+function parseCoord(value?: number): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 export function MapView({ onBack }: MapViewProps) {
   const { apiFetch } = useAuth();
 
@@ -32,6 +59,8 @@ export function MapView({ onBack }: MapViewProps) {
   const [trackingPositions, setTrackingPositions] = useState<LatLngTuple[]>([]);
   const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
   const [isLoadingTracking, setIsLoadingTracking] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [trackingRetry, setTrackingRetry] = useState(0);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
   useEffect(() => {
@@ -46,7 +75,7 @@ export function MapView({ onBack }: MapViewProps) {
         const apiRoutes = await fetchRoutes(apiFetch);
         if (cancelled) return;
 
-        const filtered = apiRoutes.filter((r) => (r as any).isActive !== false);
+        const filtered = apiRoutes.filter((route) => route.isActive !== false);
         const mapped = mapRoutesApiToRoutesForMap(filtered);
         setRoutes(mapped);
 
@@ -69,32 +98,6 @@ export function MapView({ onBack }: MapViewProps) {
   }, [apiFetch]);
 
   // --------- HELPERS PARA TRACKING ---------
-  const parseCoord = (value?: number | string): number | null => {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string") {
-      const parsed = parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  };
-
-  const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[] => {
-    const sorted = [...positions].sort((a, b) => {
-      const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
-      const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
-      return aTime - bTime;
-    });
-
-    return sorted
-      .map((p) => {
-        const lat = parseCoord((p as any).latitude);
-        const lng = parseCoord((p as any).longitude);
-        if (lat == null || lng == null) return null;
-        return [lat, lng] as LatLngTuple;
-      })
-      .filter((v): v is LatLngTuple => v !== null);
-  };
-
   const fetchSnappedGeometry = async (
     planned: LatLngTuple[]
   ): Promise<LatLngTuple[] | null> => {
@@ -109,7 +112,7 @@ export function MapView({ onBack }: MapViewProps) {
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = (await res.json()) as any;
+      const data = (await res.json()) as OsrmRouteResponse;
       const geometry = data?.routes?.[0]?.geometry?.coordinates as
         | Array<[number, number]>
         | undefined;
@@ -125,6 +128,7 @@ export function MapView({ onBack }: MapViewProps) {
   useEffect(() => {
     if (!apiFetch || !selectedRouteId) {
       setTrackingPositions([]);
+      setTrackingError(null);
       return;
     }
     let cancelled = false;
@@ -136,9 +140,10 @@ export function MapView({ onBack }: MapViewProps) {
         if (cancelled) return;
         const coords = normalizeTrackingPositions(apiPositions);
         setTrackingPositions(coords);
+        setTrackingError(null);
       } catch (err) {
         console.error("Error cargando tracking de la ruta", err);
-        if (!cancelled) setTrackingPositions([]);
+        if (!cancelled) setTrackingError("No se pudo actualizar el tracking.");
       } finally {
         if (!cancelled) setIsLoadingTracking(false);
       }
@@ -150,7 +155,7 @@ export function MapView({ onBack }: MapViewProps) {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [apiFetch, selectedRouteId]);
+  }, [apiFetch, selectedRouteId, trackingRetry]);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,6 +189,12 @@ export function MapView({ onBack }: MapViewProps) {
   }, [selectedRoute]);
 
   const summary = { routes: routes.length, stopsCount };
+
+  useEffect(() => {
+    setTrackingPositions([]);
+    setTrackingDisplay([]);
+    setTrackingError(null);
+  }, [selectedRouteId]);
 
   const getStatusMeta = (status?: number) => {
     switch (status) {
@@ -242,6 +253,13 @@ export function MapView({ onBack }: MapViewProps) {
           )}
         </div>
       </header>
+
+      {trackingError && selectedRouteId && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          <span>{trackingError} {trackingPositions.length > 0 ? "Se conserva la última posición recibida." : "No hay posiciones disponibles para mostrar."}</span>
+          <button type="button" onClick={() => setTrackingRetry((value) => value + 1)} disabled={isLoadingTracking} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">{isLoadingTracking ? "Actualizando…" : "Reintentar"}</button>
+        </div>
+      )}
 
       {/* CONTENIDO */}
       <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50">

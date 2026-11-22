@@ -22,20 +22,26 @@ export interface RouteApiDto {
   driverId: string;
   name: string;
   origin: {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+    Latitude?: number;
+    Longitude?: number;
     name?: string;
+    Name?: string;
   };
   destination: {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+    Latitude?: number;
+    Longitude?: number;
     name?: string;
+    Name?: string;
   };
-  points: Array<{
-    latitude: number;
-    longitude: number;
-    name?: string;
-  }>;
+  points: RawRoutePoint[];
   cargoDescription?: string | null;
   plannedStart: string; // ISO
   plannedEnd: string;   // ISO
@@ -160,29 +166,58 @@ export interface RouteForMap {
   points: Array<{ latitude: number; longitude: number; name?: string }>;
 }
 
+interface RawRoutePoint {
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  lng?: number;
+  Latitude?: number;
+  Longitude?: number;
+  name?: string;
+  Name?: string;
+}
+
+type RouteApiDtoWithSerializedPoints = RouteApiDto & {
+  pointsJson?: string;
+  PointsJson?: string;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isRawRoutePoint = (value: unknown): value is RawRoutePoint =>
+  isRecord(value);
+
+const firstNumber = (...values: unknown[]): number => {
+  const value = values.find((candidate) => typeof candidate === "number");
+  return typeof value === "number" ? value : 0;
+};
+
 const normalizePoint = (
-  raw: Record<string, unknown>,
+  raw: RawRoutePoint,
   fallbackName: string
 ): { latitude: number; longitude: number; name?: string } => ({
-  latitude:
-    (raw as any).latitude ?? (raw as any).lat ?? (raw as any).Latitude ?? 0,
-  longitude:
-    (raw as any).longitude ?? (raw as any).lng ?? (raw as any).Longitude ?? 0,
-  name: (raw as any).name ?? fallbackName,
+  latitude: firstNumber(raw.latitude, raw.lat, raw.Latitude),
+  longitude: firstNumber(raw.longitude, raw.lng, raw.Longitude),
+  name: raw.name ?? raw.Name ?? fallbackName,
 });
 
 const parsePoints = (
-  dto: RouteApiDto | (RouteApiDto & { pointsJson?: string; PointsJson?: string })
+  dto: RouteApiDtoWithSerializedPoints
 ) => {
   if (Array.isArray(dto.points)) {
-    return dto.points.map((p, idx) => normalizePoint(p as any, `Punto ${idx + 1}`));
+    return dto.points
+      .filter(isRawRoutePoint)
+      .map((point, idx) => normalizePoint(point, `Punto ${idx + 1}`));
   }
-  const raw = (dto as any).pointsJson ?? (dto as any).PointsJson;
+  const raw = dto.pointsJson ?? dto.PointsJson;
   if (typeof raw === "string" && raw.length > 0) {
     try {
-      const parsed = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.map((p, idx) => normalizePoint(p as any, `Punto ${idx + 1}`));
+        return parsed
+          .filter(isRawRoutePoint)
+          .map((point, idx) => normalizePoint(point, `Punto ${idx + 1}`));
       }
     } catch {
       // ignore parse errors
@@ -203,29 +238,17 @@ export const mapRouteApiToRouteForMap = (dto: RouteApiDto): RouteForMap => ({
   isActive: dto.isActive,
   origin: {
     latitude:
-      dto.origin.latitude ??
-      (dto as any).origin?.lat ??
-      (dto as any).origin?.Latitude ??
-      0,
+      firstNumber(dto.origin.latitude, dto.origin.lat, dto.origin.Latitude),
     longitude:
-      dto.origin.longitude ??
-      (dto as any).origin?.lng ??
-      (dto as any).origin?.Longitude ??
-      0,
-    name: dto.origin.name,
+      firstNumber(dto.origin.longitude, dto.origin.lng, dto.origin.Longitude),
+    name: dto.origin.name ?? dto.origin.Name,
   },
   destination: {
     latitude:
-      dto.destination.latitude ??
-      (dto as any).destination?.lat ??
-      (dto as any).destination?.Latitude ??
-      0,
+      firstNumber(dto.destination.latitude, dto.destination.lat, dto.destination.Latitude),
     longitude:
-      dto.destination.longitude ??
-      (dto as any).destination?.lng ??
-      (dto as any).destination?.Longitude ??
-      0,
-    name: dto.destination.name,
+      firstNumber(dto.destination.longitude, dto.destination.lng, dto.destination.Longitude),
+    name: dto.destination.name ?? dto.destination.Name,
   },
   points: parsePoints(dto),
 });

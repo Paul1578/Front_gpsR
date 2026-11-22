@@ -33,14 +33,21 @@ export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
       const data = await response.json().catch(() => null);
 
       if (response.ok) {
-        toast.success((data && data.message) || "Si el email existe, se envio un token.");
+        toast.success(
+          (data && data.message) || "Si el email existe, se envio un token.",
+        );
         setEmail("");
         setTimeout(() => onBack(), 2500);
       } else {
-        toast.error((data && data.message) || "No pudimos procesar tu solicitud. Intentalo nuevamente.");
+        toast.error(
+          (data && data.message) ||
+            "No pudimos procesar tu solicitud. Intentalo nuevamente.",
+        );
       }
-    } catch (err) {
-      toast.error("Hubo un problema de conexion. Verifica tu red e intentalo otra vez.");
+    } catch {
+      toast.error(
+        "Hubo un problema de conexion. Verifica tu red e intentalo otra vez.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +68,9 @@ export function RecoverPassword({ className, onBack }: RecoverPasswordProps) {
       </button>
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Recuperemos tu contraseña</h1>
+        <h1 className="text-3xl font-semibold text-gray-900">
+          Recuperemos tu contraseña
+        </h1>
         <p className="text-sm text-gray-500 leading-relaxed">
           Ingresa tu correo y te enviaremos un token de restablecimiento.
         </p>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "../../Context/AuthContext";
 import {
   ArrowLeft,
@@ -19,12 +20,17 @@ import {
   type RouteApiDto,
   type VehicleApiDto,
 } from "@/services/fleetApi";
+import type { RouteEvidence } from "@/Context/FleetContext";
 
 interface RouteHistoryProps {
   onBack?: () => void;
 }
 
 type StatusFilter = "all" | number | string;
+type RouteHistoryItem = RouteApiDto & {
+  evidencias?: RouteEvidence[];
+  notas?: string;
+};
 
 const mapStatus = (status?: number | string) => {
   if (typeof status === "number") {
@@ -34,7 +40,11 @@ const mapStatus = (status?: number | string) => {
     return "pendiente";
   }
   const key = (status ?? "").toString().toLowerCase();
-  if (key.includes("progress") || key.includes("curso") || key.includes("progreso"))
+  if (
+    key.includes("progress") ||
+    key.includes("curso") ||
+    key.includes("progreso")
+  )
     return "en_progreso";
   if (key.includes("complete") || key.includes("complet")) return "completada";
   if (key.includes("cancel")) return "cancelada";
@@ -44,9 +54,11 @@ const mapStatus = (status?: number | string) => {
 export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const { apiFetch, getAllUsers } = useAuth();
 
-  const [routes, setRoutes] = useState<RouteApiDto[]>([]);
+  const [routes, setRoutes] = useState<RouteHistoryItem[]>([]);
   const [vehicles, setVehicles] = useState<VehicleApiDto[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<RouteApiDto | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<RouteHistoryItem | null>(
+    null,
+  );
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +122,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
     };
   }, [apiFetch]);
 
-const filteredRoutes = useMemo(() => {
+  const filteredRoutes = useMemo(() => {
     return routes
       .filter((route) => {
         if (filterStatus === "all") return true;
@@ -121,13 +133,15 @@ const filteredRoutes = useMemo(() => {
       .sort(
         (a, b) =>
           new Date(b.plannedStart ?? "").getTime() -
-          new Date(a.plannedStart ?? "").getTime()
+          new Date(a.plannedStart ?? "").getTime(),
       );
   }, [routes, filterStatus]);
 
   const getStatusIcon = (status?: number | string) => {
     const key =
-      typeof status === "number" ? status : (status ?? "").toString().toLowerCase();
+      typeof status === "number"
+        ? status
+        : (status ?? "").toString().toLowerCase();
 
     switch (key) {
       case 2:
@@ -148,9 +162,12 @@ const filteredRoutes = useMemo(() => {
   const getStatusBadge = (status?: number | string) => {
     const estado = mapStatus(status);
     const styles = {
-      completada: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
-      en_progreso: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
-      pendiente: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200",
+      completada:
+        "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
+      en_progreso:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+      pendiente:
+        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200",
       cancelada: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
     };
     const labels = {
@@ -197,7 +214,9 @@ const filteredRoutes = useMemo(() => {
               </button>
             )}
             <div>
-              <h2 className="text-xl md:text-2xl text-gray-900">Historial de Rutas</h2>
+              <h2 className="text-xl md:text-2xl text-gray-900">
+                Historial de Rutas
+              </h2>
               <p className="text-sm text-gray-500 mt-1">
                 Revisa todas las rutas y sus estados (datos en vivo)
               </p>
@@ -260,7 +279,9 @@ const filteredRoutes = useMemo(() => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           {getStatusIcon(route.status)}
-                          <h3 className="text-base text-gray-900">{route.name}</h3>
+                          <h3 className="text-base text-gray-900">
+                            {route.name}
+                          </h3>
                         </div>
                         <p className="text-xs text-gray-500">
                           Creada: {formatDate(route.plannedStart)}
@@ -273,14 +294,17 @@ const filteredRoutes = useMemo(() => {
                       <div className="flex items-center gap-2 text-gray-600">
                         <Truck size={14} />
                         <span>
-                          {vehicle?.plate || "N/A"} - {vehicle?.brand} {vehicle?.model}
+                          {vehicle?.plate || "N/A"} - {vehicle?.brand}{" "}
+                          {vehicle?.model}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2 text-gray-600">
                         <User size={14} />
                         <span>
-                          {driver ? `${driver.nombres} ${driver.apellidos}` : "N/A"}
+                          {driver
+                            ? `${driver.nombres} ${driver.apellidos}`
+                            : "N/A"}
                         </span>
                       </div>
 
@@ -289,13 +313,12 @@ const filteredRoutes = useMemo(() => {
                         <span>{route.cargoDescription ?? "Sin carga"}</span>
                       </div>
 
-                      {(route as any).evidencias &&
-                        (route as any).evidencias.length > 0 && (
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <ImageIcon size={14} />
-                            <span>{(route as any).evidencias.length} evidencia(s)</span>
-                          </div>
-                        )}
+                      {route.evidencias && route.evidencias.length > 0 && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <ImageIcon size={14} />
+                          <span>{route.evidencias.length} evidencia(s)</span>
+                        </div>
+                      )}
                     </div>
 
                     {route.plannedStart && (
@@ -325,7 +348,10 @@ const filteredRoutes = useMemo(() => {
         </div>
       </div>
 
-      <Dialog open={!!selectedRoute} onOpenChange={() => setSelectedRoute(null)}>
+      <Dialog
+        open={!!selectedRoute}
+        onOpenChange={() => setSelectedRoute(null)}
+      >
         <DialogContent
           className="sm:max-w-2xl max-w-[95%] max-h-[90vh] overflow-y-auto"
           aria-describedby={undefined}
@@ -345,18 +371,24 @@ const filteredRoutes = useMemo(() => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Vehículo</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Vehículo
+                  </label>
                   <p className="text-sm text-gray-900">
-                    {vehicles.find((v) => v.id === selectedRoute.vehicleId)?.plate ||
-                      "N/A"}
+                    {vehicles.find((v) => v.id === selectedRoute.vehicleId)
+                      ?.plate || "N/A"}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Conductor</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Conductor
+                  </label>
                   <p className="text-sm text-gray-900">
                     {(() => {
-                      const driver = users.find((u) => u.id === selectedRoute.driverId);
+                      const driver = users.find(
+                        (u) => u.id === selectedRoute.driverId,
+                      );
                       return driver
                         ? `${driver.nombres} ${driver.apellidos}`
                         : "N/A";
@@ -365,7 +397,9 @@ const filteredRoutes = useMemo(() => {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Carga</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Carga
+                  </label>
                   <p className="text-sm text-gray-900">
                     {selectedRoute.cargoDescription ?? "N/A"}
                   </p>
@@ -393,7 +427,9 @@ const filteredRoutes = useMemo(() => {
 
                 {selectedRoute.plannedEnd && (
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Fecha Fin</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Fecha Fin
+                    </label>
                     <p className="text-sm text-gray-900">
                       {formatDate(selectedRoute.plannedEnd)}
                     </p>
@@ -408,7 +444,10 @@ const filteredRoutes = useMemo(() => {
                   </label>
                   <div className="space-y-2">
                     {selectedRoute.points.map((punto, index) => (
-                      <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                      <div
+                        key={index}
+                        className="p-2 bg-gray-50 rounded text-sm"
+                      >
                         {index + 1}. {punto.name ?? "Punto"}
                       </div>
                     ))}
@@ -416,29 +455,37 @@ const filteredRoutes = useMemo(() => {
                 </div>
               )}
 
-              {(selectedRoute as any).notas && (
+              {selectedRoute.notas && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Notas</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Notas
+                  </label>
                   <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded">
-                    {(selectedRoute as any).notas}
+                    {selectedRoute.notas}
                   </p>
                 </div>
               )}
 
-              {(selectedRoute as any).evidencias &&
-                (selectedRoute as any).evidencias.length > 0 && (
+              {selectedRoute.evidencias &&
+                selectedRoute.evidencias.length > 0 && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-2">
                       Evidencias
                     </label>
                     <div className="space-y-3">
-                      {(selectedRoute as any).evidencias.map((evidencia: any) => (
-                        <div key={evidencia.id} className="p-3 bg-gray-50 rounded">
+                      {selectedRoute.evidencias.map((evidencia) => (
+                        <div
+                          key={evidencia.id}
+                          className="p-3 bg-gray-50 rounded"
+                        >
                           {evidencia.type === "image" ? (
                             <div>
-                              <img
+                              <Image
                                 src={evidencia.content}
                                 alt="Evidencia"
+                                width={960}
+                                height={640}
+                                unoptimized
                                 className="w-full rounded mb-2"
                               />
                               {evidencia.description && (

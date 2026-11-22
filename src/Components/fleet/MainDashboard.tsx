@@ -1,6 +1,6 @@
 import { useFleet } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
-import { Map, Truck, Route, Users, Activity, TrendingUp, Clock, CheckCircle, History, Shield } from "lucide-react";
+import { Map, Truck, Route, Users, Activity, Clock, CheckCircle, History, Shield } from "lucide-react";
 import { ViewType } from "../FleetDashboard";
 
 
@@ -9,7 +9,7 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onNavigate }: MainDashboardProps) {
-  const { vehicles, routes } = useFleet();
+  const { vehicles, routes, loadErrors, retryFleetData } = useFleet();
   const { user, getAllUsers } = useAuth();
 
   const users = getAllUsers();
@@ -18,6 +18,22 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const completedRoutes = routes.filter(r => r.estado === "completada");
   const availableVehicles = vehicles.filter(v => v.estado === "disponible");
   const vehiclesInRoute = vehicles.filter(v => v.estado === "en_ruta");
+  const completedOperationalStops = routes
+    .flatMap((route) => [
+      ...(route.origen ? [route.origen] : []),
+      ...route.puntos,
+      ...(route.destino ? [route.destino] : []),
+    ])
+    .filter(
+      (point) =>
+        point.operation &&
+        point.operation !== "none" &&
+        point.status === "completed",
+    ).length;
+
+  if (user?.role === "usuario") {
+    return <div className="flex h-full items-center justify-center p-6"><div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center"><h1 className="text-xl font-semibold text-slate-900">Hola, {user.nombres}</h1><p className="mt-2 text-sm text-slate-600">Tu cuenta no tiene permisos operativos asignados. Contacta al administrador de tu empresa.</p></div></div>;
+  }
 
   // Si es Super Admin, mostrar dashboard especial
   if (user?.role === "superadmin") {
@@ -180,31 +196,31 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const stats = [
     {
       label: "Rutas Activas",
-      value: activeRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : activeRoutes.length,
       icon: Activity,
       color: "bg-blue-100 text-blue-600",
-      change: "+12%",
+      change: "En progreso",
     },
     {
       label: "Vehículos Disponibles",
-      value: availableVehicles.length,
+      value: loadErrors.includes("vehículos") ? "—" : availableVehicles.length,
       icon: Truck,
       color: "bg-green-100 text-green-600",
       change: `${vehiclesInRoute.length} en ruta`,
     },
     {
       label: "Rutas Pendientes",
-      value: pendingRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : pendingRoutes.length,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
       change: "Por iniciar",
     },
     {
-      label: "Completadas Hoy",
-      value: completedRoutes.length,
+      label: "Rutas Completadas",
+      value: loadErrors.includes("rutas") ? "—" : completedRoutes.length,
       icon: CheckCircle,
       color: "bg-purple-100 text-purple-600",
-      change: "+8 esta semana",
+      change: "Total registrado",
     },
   ];
 
@@ -282,11 +298,11 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
               <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp size={20} className="text-purple-600" />
+                    <CheckCircle size={20} className="text-purple-600" />
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">Rendimiento</p>
-                <p className="text-2xl text-gray-900 mt-1">Excelente</p>
+                <p className="text-xs text-gray-500">Paradas completadas</p>
+                <p className="text-2xl text-gray-900 mt-1">{completedOperationalStops}</p>
               </div>
             </div>
           </div>
@@ -310,6 +326,8 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                 : "Administra tu flota de vehículos y rutas desde un solo lugar"}
             </p>
           </div>
+
+          {loadErrors.length > 0 && <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>No se pudieron cargar {loadErrors.join(", ")}. Las cifras marcadas con — no están disponibles.</span><button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button></div>}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -373,7 +391,9 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg md:text-xl text-gray-900 mb-4">Actividad Reciente</h2>
             
-            {routes.length === 0 ? (
+            {loadErrors.includes("rutas") ? (
+              <div role="status" className="py-8 text-center text-sm text-red-700">No se pudo consultar la actividad de rutas.</div>
+            ) : routes.length === 0 ? (
               <div className="text-center py-8">
                 <Activity size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500 text-sm">No hay actividad reciente</p>

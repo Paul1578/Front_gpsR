@@ -44,10 +44,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
       return;
     }
 
-    const result = await addVehicle({
-      ...formData,
-      ubicacionActual: { lat: -12.0464, lng: -77.0428 },
-    });
+    const result = await addVehicle(formData);
 
     if (result.ok) {
       toast.success(result.message ?? "Vehiculo agregado exitosamente");

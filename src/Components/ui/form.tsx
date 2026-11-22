@@ -8,9 +8,6 @@ import {
   FormProvider,
   useFormContext,
   useFormState,
-  type ControllerProps,
-  type FieldPath,
-  type FieldValues,
 } from "react-hook-form";
 
 import { cn } from "./utils";
@@ -21,24 +18,16 @@ import { Label } from "@/Components/ui/label";
  */
 const Form = FormProvider;
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = {
-  name: TName;
-};
+type FormFieldContextValue = { name: string };
 
 const FormFieldContext = React.createContext<FormFieldContextValue | undefined>(
-  undefined
+  undefined,
 );
 
 /**
  * Conecta un campo individual con react-hook-form.
  */
-function FormField<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({ ...props }: ControllerProps<TFieldValues, TName>) {
+function FormField(props: React.ComponentProps<typeof Controller>) {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
@@ -54,14 +43,14 @@ function useFormField() {
   const itemContext = React.useContext(FormItemContext);
   const { getFieldState } = useFormContext();
   const formState = useFormState({
-    name: fieldContext?.name,
+    name: fieldContext?.name as never,
   });
 
   if (!fieldContext) {
     throw new Error("useFormField debe usarse dentro de <FormField>");
   }
 
-  const fieldState = getFieldState(fieldContext.name, formState);
+  const fieldState = getFieldState(fieldContext.name as never, formState);
   const { id } = itemContext;
 
   return {
@@ -79,7 +68,7 @@ type FormItemContextValue = {
 };
 
 const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
+  {} as FormItemContextValue,
 );
 
 /**
@@ -131,9 +120,7 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
       data-slot="form-control"
       id={formItemId}
       aria-describedby={
-        !error
-          ? formDescriptionId
-          : `${formDescriptionId} ${formMessageId}`
+        !error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
       {...props}

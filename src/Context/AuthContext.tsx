@@ -56,7 +56,43 @@ interface ApiErrorPayload {
   details?: Record<string, string[]>;
 }
 
-export type UserRole = "superadmin" | "gerente" | "logistica" | "chofer";
+interface ApiRequestError {
+  message?: string;
+  status?: number;
+  data?: ApiErrorPayload | string[];
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getApiRequestError = (error: unknown): ApiRequestError | null => {
+  if (!isRecord(error)) return null;
+  const data = error.data;
+  const parsedData = Array.isArray(data)
+    ? data.filter((item): item is string => typeof item === "string")
+    : isRecord(data)
+      ? {
+          statusCode: typeof data.statusCode === "number" ? data.statusCode : undefined,
+          error: typeof data.error === "string" ? data.error : undefined,
+          message: typeof data.message === "string" ? data.message : undefined,
+          details: isRecord(data.details)
+            ? Object.fromEntries(
+                Object.entries(data.details).filter(
+                  (entry): entry is [string, string[]] =>
+                    Array.isArray(entry[1]) && entry[1].every((value) => typeof value === "string"),
+                ),
+              )
+            : undefined,
+        }
+      : undefined;
+  return {
+    message: typeof error.message === "string" ? error.message : undefined,
+    status: typeof error.status === "number" ? error.status : undefined,
+    data: parsedData,
+  };
+};
+
+export type UserRole = "superadmin" | "gerente" | "logistica" | "chofer" | "usuario";
 
 export interface UserPermissions {
   canViewMap: boolean;
@@ -99,19 +135,19 @@ interface AuthContextType {
   ) => Promise<{ ok: boolean; message?: string }>;
   logoutAll: () => Promise<void>;
   createUser: (
-    data: RegisterData & { role: UserRole; teamId?: string; email?: string }
-  ) => Promise<boolean>;
+    data: RegisterData & {
+      role: UserRole;
+      teamId?: string;
+      email?: string;
+      phoneNumber?: string;
+    }
+  ) => Promise<{ ok: boolean; invitationSent: boolean }>;
   refreshTeamUsers: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoadingUser: boolean;
-  updateUserPermissions: (
-    userId: string,
-    permissions: Partial<UserPermissions>
-  ) => void;
-  updateUserRole: (userId: string, role: UserRole) => Promise<void>;
-  updateUserStatus: (userId: string, isActive: boolean) => Promise<void>;
-  updateTeamName: (teamName: string) => void;
+  updateUserRole: (userId: string, role: UserRole) => Promise<{ ok: boolean; message?: string }>;
+  updateUserStatus: (userId: string, isActive: boolean) => Promise<{ ok: boolean; message?: string }>;
   getAllUsers: () => User[];
   getTeamUsers: () => User[];
   getManagers: () => User[];
@@ -125,6 +161,7 @@ interface RegisterData {
   usuario: string; // Usado como email en el backend
   password: string;
   identificacion?: string;
+  phoneNumber?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,7 +170,7 @@ const roleMap: Record<ApiRole, UserRole> = {
   Admin: "gerente",
   Driver: "chofer",
   Manager: "logistica",
-  User: "logistica",
+  User: "usuario",
   Logistics: "logistica",
 };
 
@@ -142,6 +179,7 @@ const uiRoleToBackendRole: Record<UserRole, ApiRole> = {
   gerente: "Admin",
   logistica: "Logistics",
   chofer: "Driver",
+  usuario: "User",
 };
 
 const DEFAULT_REGISTER_ROLE: ApiRole = "Admin";
@@ -153,10 +191,10 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canManageVehicles: true,
     canManageTeam: true,
     canViewOwnRoute: true,
-    canAccessSuperAdmin: true,
-    canManageAllOrganizations: true,
-    canViewSystemLogs: true,
-    canExportData: true,
+    canAccessSuperAdmin: false,
+    canManageAllOrganizations: false,
+    canViewSystemLogs: false,
+    canExportData: false,
   },
   gerente: {
     canViewMap: true,
@@ -191,25 +229,23 @@ const defaultPermissions: Record<UserRole, UserPermissions> = {
     canViewSystemLogs: false,
     canExportData: false,
   },
+  usuario: {
+    canViewMap: false,
+    canCreateRoutes: false,
+    canManageVehicles: false,
+    canManageTeam: false,
+    canViewOwnRoute: false,
+    canAccessSuperAdmin: false,
+    canManageAllOrganizations: false,
+    canViewSystemLogs: false,
+    canExportData: false,
+  },
 };
 
 export type ApiRequestOptions = RequestInit & {
   skipAuth?: boolean;
   retry?: boolean;
   tokensOverride?: AuthTokens | null;
-};
-
-type StoredUser = User & { password?: string };
-
-const getStoredUsers = (): StoredUser[] => {
-  if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem("users");
-  return raw ? (JSON.parse(raw) as StoredUser[]) : [];
-};
-
-const saveStoredUsers = (users: StoredUser[]) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("users", JSON.stringify(users));
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -220,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!user;
 
   const isAuthError = (error: unknown) => {
-    const status = (error as { status?: number } | null)?.status;
+    const status = getApiRequestError(error)?.status;
     return status === 401 || status === 403;
   };
 
@@ -246,41 +282,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
-    const storedUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-
-    let parsedUser: User | null = null;
-    if (storedUser) {
-      parsedUser = JSON.parse(storedUser) as User;
-      setUser(parsedUser);
-    }
-
-    if (storedTokens) {
-      const parsedTokens = JSON.parse(storedTokens) as AuthTokens;
-      setTokens(parsedTokens);
-      if (!storedUser) {
-        void (async () => {
-          const fetched = await fetchMeUser();
-          if (fetched) {
-            persistUser(fetched);
-          } else {
-            const derived = deriveUserFromToken(parsedTokens.accessToken);
-            if (derived) {
-              persistUser(derived);
-            }
-          }
-        })();
-      } else if (parsedUser?.role === "chofer" && !parsedUser.driverId) {
-        void (async () => {
-          const fetched = await fetchMeUser();
-          if (fetched) {
-            persistUser(fetched);
-          }
-        })();
+    const restoreSession = async () => {
+      try {
+        const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
+        if (!storedTokens) {
+          persistUser(null);
+          setIsLoadingUser(false);
+          return;
+        }
+        const parsed: unknown = JSON.parse(storedTokens);
+        if (!isRecord(parsed) || typeof parsed.accessToken !== "string" || typeof parsed.refreshToken !== "string") {
+          clearAuthState();
+          return;
+        }
+        setTokens({ accessToken: parsed.accessToken, refreshToken: parsed.refreshToken });
+        // El perfil cacheado es sólo presentación: rol y permisos siempre vienen del backend.
+        const verifiedUser = await fetchMeUser();
+        if (verifiedUser) persistUser(verifiedUser);
+        else clearAuthState();
+      } catch (error) {
+        console.error("No se pudo restaurar la sesión guardada.", error);
+        clearAuthState();
+      } finally {
+        setIsLoadingUser(false);
       }
-    }
+    };
 
-    setIsLoadingUser(false);
+    void restoreSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -338,11 +366,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshAccessToken = async () => {
     const refreshToken = tokensRef.current?.refreshToken;
     if (!refreshToken) return false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     try {
       const response = await fetch(`${API_BASE_URL}/Auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
+        signal: controller.signal,
       });
       if (!response.ok) {
         if (user) {
@@ -361,6 +392,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await clearAuthState();
       return false;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
@@ -546,12 +579,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchMeUser = async (): Promise<User | null> => {
     if (!tokensRef.current?.accessToken) return null;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     try {
-      const me = await apiFetch<ApiUser>("/Auth/me");
+      const me = await apiFetch<ApiUser>("/Auth/me", { signal: controller.signal });
       return mapApiUser(me);
     } catch (error) {
       console.error("Error obteniendo usuario actual:", error);
       return null;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
@@ -663,7 +700,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      if ((error as any)?.status !== 401) {
+      if (getApiRequestError(error)?.status !== 401) {
         console.error("Error al cerrar sesión:", error);
       }
     } finally {
@@ -672,50 +709,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ---------------------------------------------------------------------------
-  // Funciones auxiliares locales (simulación de equipo)
+  // Operaciones del equipo conectadas a la API.
   // ---------------------------------------------------------------------------
 
-  const generateIdentificacion = (): string => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 100)
-      .toString()
-      .padStart(2, "0");
-    return `ID-${timestamp}${random}`;
-  };
-
   const createUser = async (
-    data: RegisterData & { role: UserRole; teamId?: string; email?: string }
-  ): Promise<boolean> => {
+    data: RegisterData & {
+      role: UserRole;
+      teamId?: string;
+      email?: string;
+      phoneNumber?: string;
+    }
+  ): Promise<{ ok: boolean; invitationSent: boolean }> => {
     try {
-      const safePassword =
-        data.password && data.password.trim().length >= 6
-          ? data.password
-          : "123456";
       const payload = {
         username: data.usuario,
         email: data.email ?? data.usuario,
-        password: safePassword,
+        // La API genera una contraseña temporal aleatoria cuando este campo va vacío.
+        password: data.password?.trim() ?? "",
         roleName: uiRoleToBackendRole[data.role],
         teamId: data.teamId,
+        firstName: data.nombres,
+        lastName: data.apellidos,
+        documentNumber: data.identificacion,
+        phoneNumber: data.phoneNumber,
       };
 
-      await apiFetch<ApiUser>("/Users", {
+      const result = await apiFetch<{ invitationSent?: boolean }>("/Users", {
         method: "POST",
         body: JSON.stringify(payload),
       });
 
       await refreshTeamUsers();
-      return true;
+      return { ok: true, invitationSent: result.invitationSent !== false };
     } catch (error) {
-      const errData = (error as any)?.data;
+      const errData = getApiRequestError(error)?.data;
+      const errorMessage = isRecord(errData) && typeof errData.message === "string"
+        ? errData.message
+        : undefined;
       const message =
-        errData?.message ||
+        errorMessage ||
         (Array.isArray(errData) ? errData.join(", ") : "") ||
-        (error as any)?.message ||
+        getApiRequestError(error)?.message ||
         "Error al crear usuario";
       console.error("Error al crear usuario:", error);
       toast?.error?.(message);
-      return false;
+      return { ok: false, invitationSent: false };
     }
   };
 
@@ -726,8 +764,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTeamUsers = async () => {
     try {
       const data = await apiFetch<ApiUser[]>("/Users/my-team");
-      const active = data.filter((u) => (u as any).isActive !== false);
-      setTeamUsers(active.map(mapApiUser));
+      setTeamUsers(data.map(mapApiUser));
     } catch (error) {
       if (isAuthError(error)) return;
       console.error("Error obteniendo equipo:", error);
@@ -742,35 +779,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return teamUsers.filter((u) => u.role === "gerente");
   };
 
-  const updateUserPermissions = (
-    userId: string,
-    permissions: Partial<UserPermissions>
-  ) => {
-    setTeamUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, permissions: { ...u.permissions, ...permissions } } : u
-      )
-    );
-    if (user?.id === userId) {
-      persistUser({ ...(user as User), permissions: { ...user.permissions, ...permissions } });
-    }
-  };
-
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     const targetRole = uiRoleToBackendRole[newRole];
-    const backendRoles: ApiRole[] = ["Admin", "Driver", "Logistics"];
 
     try {
-      for (const role of backendRoles) {
-        if (role !== targetRole) {
-          try {
-            await apiFetch(`/Users/${userId}/roles/${role}`, { method: "DELETE" });
-          } catch {
-            // ignore missing role
-          }
-        }
-      }
-      await apiFetch(`/Users/${userId}/roles/${targetRole}`, { method: "POST" });
+      await apiFetch(`/Users/${userId}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ roleName: targetRole }),
+      });
 
       setTeamUsers((prev) =>
         prev.map((u) =>
@@ -780,8 +796,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user?.id === userId) {
         persistUser({ ...(user as User), role: newRole, permissions: defaultPermissions[newRole] });
       }
+      return { ok: true as const };
     } catch (error) {
       console.error("Error actualizando rol:", error);
+      return {
+        ok: false as const,
+        message: getApiRequestError(error)?.message ?? "No se pudo actualizar el rol",
+      };
     }
   };
 
@@ -789,8 +810,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiFetch(`/Users/${userId}/status?isActive=${isActive}`, { method: "PUT" });
       setTeamUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive } : u)));
+      return { ok: true as const };
     } catch (error) {
       console.error("Error actualizando estado de usuario:", error);
+      return {
+        ok: false as const,
+        message: getApiRequestError(error)?.message ?? "No se pudo actualizar el estado del usuario",
+      };
     }
   };
 
@@ -806,11 +832,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { ok: true };
     } catch (error) {
-      const errData = (error as any)?.data;
+      const errData = getApiRequestError(error)?.data;
+      const validationErrors = isRecord(errData) ? errData.errors : undefined;
       const message =
-        errData?.message ||
-        (Array.isArray(errData?.errors) ? errData.errors.join(", ") : "") ||
-        (error as Error)?.message ||
+        (isRecord(errData) && typeof errData.message === "string"
+          ? errData.message
+          : undefined) ||
+        (Array.isArray(validationErrors) &&
+        validationErrors.every((item): item is string => typeof item === "string")
+          ? validationErrors.join(", ")
+          : undefined) ||
+        getApiRequestError(error)?.message ||
         "No se pudo cambiar la contraseña";
       return { ok: false, message };
     }
@@ -831,18 +863,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = () => user?.role === "superadmin";
 
-  const updateTeamName = (teamName: string) => {
-    if (!user || user.role !== "gerente") return;
-    const users = getStoredUsers();
-    const userIndex = users.findIndex((stored) => stored.id === user.id);
-    if (userIndex !== -1) {
-      users[userIndex].teamName = teamName;
-      saveStoredUsers(users);
-      const updatedUser = { ...user, teamName };
-      persistUser(updatedUser);
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -855,10 +875,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         isAuthenticated: !!user,
         isLoadingUser,
-        updateUserPermissions,
         updateUserRole,
         updateUserStatus,
-        updateTeamName,
         getAllUsers,
         getTeamUsers,
         refreshTeamUsers,

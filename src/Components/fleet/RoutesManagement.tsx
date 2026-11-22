@@ -1,50 +1,76 @@
-﻿"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFleet, Route } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
-import { Plus, Edit, Trash2, Route as RouteIcon, MapPin, ArrowLeft, MoveUp, MoveDown } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Edit,
+  MapPin,
+  Plus,
+  Route as RouteIcon,
+  Search,
+  Trash2,
+  Truck,
+  UserRound,
+  X,
+} from "lucide-react";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { toast } from "sonner";
-import type { PickerPoint, SelectionMode } from "./RoutePickerMap";
-import type { LatLngExpression } from "leaflet";
+import type { PickerPoint } from "./RoutePickerMap";
 
-const RoutePickerMap = dynamic(() => import("./RoutePickerMap"), { ssr: false });
+const RoutePickerMap = dynamic(() => import("./RoutePickerMap"), {
+  ssr: false,
+});
 
 interface RoutesManagementProps {
   onBack?: () => void;
 }
-
 type RouteStatus = Route["estado"];
-
-const DEFAULT_POINT: PickerPoint = { lat: -12.0464, lng: -77.0428, nombre: "Punto" };
-
-const normalizePickerPoint = (p: any): PickerPoint | null => {
-  const latRaw = p?.lat ?? p?.latitude ?? p?.latitud;
-  const lngRaw = p?.lng ?? p?.longitude ?? p?.longitud;
-  const lat = Number(latRaw);
-  const lng = Number(lngRaw);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001) return null;
-  return { lat, lng, nombre: p?.nombre ?? p?.name ?? "" };
+type Target = { type: "origin" | "stop" | "destination"; index?: number };
+type SearchResult = { lat: number; lon: number; display_name: string };
+const DEFAULT_POINT: PickerPoint = {
+  lat: -0.1807,
+  lng: -78.4678,
+  nombre: "Quito",
 };
 
+const validPoint = (point: PickerPoint | null) =>
+  !!point &&
+  Number.isFinite(point.lat) &&
+  Number.isFinite(point.lng) &&
+  point.lat >= -90 &&
+  point.lat <= 90 &&
+  point.lng >= -180 &&
+  point.lng <= 180 &&
+  !(Math.abs(point.lat) < 0.0001 && Math.abs(point.lng) < 0.0001);
+
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
-  const { routes, vehicles, addRoute, updateRoute, deleteRoute } = useFleet();
+  const { routes, vehicles, addRoute, updateRoute, deleteRoute, loadErrors, retryFleetData } = useFleet();
   const { getTeamUsers } = useAuth();
+  const users = getTeamUsers();
+  const drivers = users
+    .filter((user) => user.isActive !== false && user.role === "chofer" && !!user.driverId)
+    .map((user) => ({ ...user, driverKey: user.driverId! }));
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const users = getTeamUsers();
-  const drivers = users
-    .filter((u) => ["chofer", "logistica", "gerente"].includes(u.role))
-    .map((u) => ({ ...u, driverKey: u.driverId ?? u.id }))
-    .filter((u) => !!u.driverKey);
-  const availableVehicles = vehicles.filter((v) => v.estado === "disponible");
-
+  const [step, setStep] = useState(1);
+  const [activeTarget, setActiveTarget] = useState<Target | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [routeSearch, setRouteSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RouteStatus | "all">("all");
+  const [vehicleFilter, setVehicleFilter] = useState("all");
+  const [driverFilter, setDriverFilter] = useState("all");
   const [formData, setFormData] = useState({
     name: "",
     vehicleId: "",
@@ -56,10 +82,101 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     status: "pendiente" as RouteStatus,
   });
 
-  const [selectionMode, setSelectionMode] = useState<SelectionMode>("none");
-  const [pendingPoint, setPendingPoint] = useState<PickerPoint | null>(null);
+  const availableVehicles = vehicles.filter(
+    (vehicle) =>
+      vehicle.estado === "disponible" || vehicle.id === formData.vehicleId,
+  );
+  const points = useMemo(
+    () =>
+      [formData.origin, ...formData.stops, formData.destination].filter(
+        validPoint,
+      ) as PickerPoint[],
+    [formData.origin, formData.stops, formData.destination],
+  );
+  const visibleRoutes = routes.filter((route) => {
+    const search = routeSearch.trim().toLocaleLowerCase();
+    const matchesSearch = !search || route.nombre.toLocaleLowerCase().includes(search);
+    return matchesSearch &&
+      (statusFilter === "all" || route.estado === statusFilter) &&
+      (vehicleFilter === "all" || route.vehiculoId === vehicleFilter) &&
+      (driverFilter === "all" || route.conductorId === driverFilter);
+  });
+  const vehicleName = (id: string) => {
+    const vehicle = vehicles.find((item) => item.id === id);
+    return vehicle
+      ? `${vehicle.placa} · ${vehicle.marca} ${vehicle.modelo}`
+      : "Sin vehículo";
+  };
+  const driverName = (id: string) => {
+    const driver = users.find((user) => user.driverId === id || user.id === id);
+    return driver
+      ? `${driver.nombres ?? ""} ${driver.apellidos ?? ""}`.trim() ||
+          driver.usuario
+      : "Sin conductor";
+  };
+
+  const setPoint = (target: Target, point: PickerPoint) => {
+    setFormData((previous) => {
+      const normalized = {
+        ...point,
+        nombre:
+          point.nombre ||
+          (target.type === "origin"
+            ? "Origen"
+            : target.type === "destination"
+              ? "Destino"
+              : `Parada ${(target.index ?? previous.stops.length) + 1}`),
+      };
+      if (target.type === "origin") return { ...previous, origin: normalized };
+      if (target.type === "destination")
+        return { ...previous, destination: normalized };
+      const stops = [...previous.stops];
+      stops[target.index ?? stops.length] = normalized;
+      return { ...previous, stops };
+    });
+    setActiveTarget(null);
+    setSearchResults([]);
+    setSearchQuery("");
+  };
+
+  const selectTarget = (target: Target) => {
+    setActiveTarget(target);
+    setSearchResults([]);
+    setSearchQuery("");
+  };
+  const searchLocations = async () => {
+    if (searchQuery.trim().length < 3) {
+      toast.error("Escribe al menos 3 caracteres para buscar");
+      return;
+    }
+    setSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&q=${encodeURIComponent(searchQuery.trim())}`,
+      );
+      if (!response.ok) throw new Error("No se pudo buscar la ubicación");
+      const results = (await response.json()) as SearchResult[];
+      setSearchResults(results);
+      if (!results.length)
+        toast.info(
+          "No encontramos esa ubicación. Prueba con una dirección más específica.",
+        );
+    } catch {
+      toast.error(
+        "No se pudo buscar la ubicación. También puedes hacer clic directamente en el mapa.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const resetForm = () => {
+    setShowForm(false);
+    setEditingRoute(null);
+    setStep(1);
+    setActiveTarget(null);
+    setSearchResults([]);
+    setSearchQuery("");
     setFormData({
       name: "",
       vehicleId: "",
@@ -70,109 +187,11 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       destination: null,
       status: "pendiente",
     });
-    setEditingRoute(null);
-    setShowForm(false);
-    setSelectionMode("none");
-    setPendingPoint(null);
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.vehicleId || !formData.driverId || !formData.cargoDescription) {
-      toast.error("Por favor completa todos los campos obligatorios");
-      return;
-    }
-
-    if (!formData.origin) {
-      toast.error("Selecciona un origen");
-      return;
-    }
-    if (!formData.destination) {
-      toast.error("Selecciona un destino");
-      return;
-    }
-    if (
-      !Number.isFinite(formData.origin.lat) ||
-      !Number.isFinite(formData.origin.lng) ||
-      Math.abs(formData.origin.lat) < 0.000001 ||
-      Math.abs(formData.origin.lng) < 0.000001
-    ) {
-      toast.error("Coordenadas de origen invalidas");
-      return;
-    }
-    if (
-      !Number.isFinite(formData.destination.lat) ||
-      !Number.isFinite(formData.destination.lng) ||
-      Math.abs(formData.destination.lat) < 0.000001 ||
-      Math.abs(formData.destination.lng) < 0.000001
-    ) {
-      toast.error("Coordenadas de destino invalidas");
-      return;
-    }
-
-    const allPoints = [formData.origin, ...formData.stops, formData.destination];
-    for (const p of allPoints) {
-      if (Number.isNaN(p.lat) || Number.isNaN(p.lng)) {
-        toast.error("Latitud y longitud deben ser numericas");
-        return;
-      }
-      if (p.lat < -90 || p.lat > 90 || p.lng < -180 || p.lng > 180) {
-        toast.error("Latitud debe estar entre -90 y 90, longitud entre -180 y 180");
-        return;
-      }
-      if (Math.abs(p.lat) < 0.0001 && Math.abs(p.lng) < 0.0001) {
-        toast.error("Coordenadas invalidas (0,0)");
-        return;
-      }
-    }
-
-    const payload: Omit<Route, "id" | "fechaCreacion"> = {
-      nombre: formData.name,
-      vehiculoId: formData.vehicleId,
-      conductorId: formData.driverId,
-      carga: formData.cargoDescription,
-      origen: {
-        lat: Number(formData.origin.lat ?? 0),
-        lng: Number(formData.origin.lng ?? 0),
-        nombre: formData.origin.nombre ?? "Origen",
-      },
-      destino: {
-        lat: Number(formData.destination.lat ?? 0),
-        lng: Number(formData.destination.lng ?? 0),
-        nombre: formData.destination.nombre ?? "Destino",
-      },
-      puntos: formData.stops.map((p, idx) => ({
-        lat: Number(p.lat),
-        lng: Number(p.lng),
-        nombre: p.nombre ?? `Parada ${idx + 1}`,
-      })),
-      estado: formData.status ?? "pendiente",
-      fechaInicio: undefined,
-      fechaFin: undefined,
-      teamId: undefined,
-    };
-
-    if (editingRoute) {
-      const result = await updateRoute(editingRoute.id, payload);
-      if (result.ok) {
-        toast.success(result.message ?? "Ruta actualizada exitosamente");
-        resetForm();
-      } else {
-        toast.error(result.message ?? "No se pudo guardar la ruta");
-      }
-      return;
-    }
-
-    const result = await addRoute(payload);
-    if (result.ok) {
-      toast.success(result.message ?? "Ruta creada exitosamente");
-      resetForm();
-    } else {
-      toast.error(result.message ?? "No se pudo guardar la ruta");
-    }
+  const openCreate = () => {
+    resetForm();
+    setShowForm(true);
   };
-
   const handleEdit = (route: Route) => {
     setEditingRoute(route);
     setFormData({
@@ -183,181 +202,268 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       origin: route.origen ?? null,
       stops: route.puntos ?? [],
       destination: route.destino ?? null,
-      status: (route.estado as RouteStatus) ?? "pendiente",
+      status: route.estado ?? "pendiente",
     });
+    setStep(1);
     setShowForm(true);
-    setSelectionMode("none");
-    setPendingPoint(null);
   };
 
-  const handleDelete = async (id: string) => {
-    const result = await deleteRoute(id);
-    if (result.ok) toast.success(result.message ?? "Ruta eliminada exitosamente");
-    else toast.error(result.message ?? "No se pudo eliminar la ruta");
-    setDeleteConfirm(null);
-  };
-
-  const removeStop = (index: number) => {
-    setFormData((prev) => ({ ...prev, stops: prev.stops.filter((_, i) => i !== index) }));
-  };
-
-  const moveStop = (index: number, direction: "up" | "down") => {
-    setFormData((prev) => {
-      const stops = [...prev.stops];
-      const target = direction === "up" ? index - 1 : index + 1;
-      if (target < 0 || target >= stops.length) return prev;
-      [stops[index], stops[target]] = [stops[target], stops[index]];
-      return { ...prev, stops };
-    });
-  };
-
-  const updateStop = (index: number, field: "nombre" | "lat" | "lng", value: string) => {
-    setFormData((prev) => {
-      const stops = [...prev.stops];
-      stops[index] = { ...stops[index], [field]: field === "nombre" ? value : Number(value) };
-      return { ...prev, stops };
-    });
-  };
-
-  const mapCenter: LatLngExpression = useMemo(() => {
-    const preferred = formData.origin ?? formData.stops[0] ?? formData.destination;
-    if (preferred && Number.isFinite(preferred.lat) && Number.isFinite(preferred.lng)) {
-      return [preferred.lat, preferred.lng];
+  const validateStep = (nextStep: number) => {
+    if (
+      nextStep >= 2 &&
+      (!formData.name.trim() || !formData.cargoDescription.trim())
+    ) {
+      toast.error("Completa el nombre y la descripción de la carga");
+      setStep(1);
+      return false;
     }
-    return [DEFAULT_POINT.lat, DEFAULT_POINT.lng];
-  }, [formData.origin, formData.stops, formData.destination]);
+    if (
+      nextStep >= 3 &&
+      (!validPoint(formData.origin) || !validPoint(formData.destination))
+    ) {
+      toast.error("Define un origen y un destino para continuar");
+      setStep(2);
+      return false;
+    }
+    if (nextStep >= 4 && (!formData.vehicleId || !formData.driverId)) {
+      toast.error("Asigna un vehículo y un conductor");
+      setStep(3);
+      return false;
+    }
+    return true;
+  };
+  const goToStep = (nextStep: number) => {
+    if (nextStep > step && !validateStep(nextStep)) return;
+    if (nextStep === 2 && !editingRoute && !formData.origin && !activeTarget) {
+      setActiveTarget({ type: "origin" });
+    }
+    setStep(nextStep);
+  };
 
-  const getEstadoBadge = (estado: string | undefined) => {
-    const key = typeof estado === "string" ? estado.toLowerCase() : "";
-    const styles: Record<string, string> = {
-      pendiente: "bg-yellow-100 text-yellow-700",
-      en_progreso: "bg-blue-100 text-blue-700",
-      completada: "bg-green-100 text-green-700",
-      cancelada: "bg-red-100 text-red-700",
-      pending: "bg-yellow-100 text-yellow-700",
-      inprogress: "bg-blue-100 text-blue-700",
-      completed: "bg-green-100 text-green-700",
-      cancelled: "bg-red-100 text-red-700",
+  const handleSubmit = async () => {
+    if (savingRef.current) return;
+    if (!validateStep(4) || !formData.origin || !formData.destination) return;
+    const allPoints = [
+      formData.origin,
+      ...formData.stops,
+      formData.destination,
+    ];
+    if (allPoints.some((point) => !validPoint(point))) {
+      toast.error("Hay una ubicación inválida en el recorrido");
+      setStep(2);
+      return;
+    }
+    const payload: Omit<Route, "id" | "fechaCreacion"> = {
+      nombre: formData.name.trim(),
+      vehiculoId: formData.vehicleId,
+      conductorId: formData.driverId,
+      carga: formData.cargoDescription.trim(),
+      origen: formData.origin,
+      destino: formData.destination,
+      puntos: formData.stops,
+      estado: formData.status,
+      fechaInicio: undefined,
+      fechaFin: undefined,
+      teamId: undefined,
     };
-    const labels: Record<string, string> = {
-      pendiente: "Pendiente",
-      en_progreso: "En Progreso",
-      completada: "Completada",
-      cancelada: "Cancelada",
-      pending: "Pendiente",
-      inprogress: "En Progreso",
-      completed: "Completada",
-      cancelled: "Cancelada",
-    };
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const result = editingRoute
+        ? await updateRoute(editingRoute.id, payload)
+        : await addRoute(payload);
+      if (result.ok) {
+        toast.success(result.message ?? (editingRoute ? "Ruta actualizada" : "Ruta creada"));
+        resetForm();
+      } else toast.error(result.message ?? "No se pudo guardar la ruta");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const removeStop = (index: number) =>
+    setFormData((previous) => ({
+      ...previous,
+      stops: previous.stops.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  const moveStop = (index: number, direction: -1 | 1) =>
+    setFormData((previous) => {
+      const stops = [...previous.stops];
+      const target = index + direction;
+      if (target < 0 || target >= stops.length) return previous;
+      [stops[index], stops[target]] = [stops[target], stops[index]];
+      return { ...previous, stops };
+    });
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("es-EC", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+  if (showForm) {
     return (
-      <span className={`px-2 py-1 rounded text-xs ${styles[key] ?? "bg-gray-100 text-gray-700"}`}>
-        {labels[key] ?? estado}
-      </span>
+      <RouteBuilder
+        formData={formData}
+        setFormData={setFormData}
+        step={step}
+        goToStep={goToStep}
+        activeTarget={activeTarget}
+        selectTarget={selectTarget}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        searchResults={searchResults}
+        searching={searching}
+        searchLocations={searchLocations}
+        setPoint={setPoint}
+        points={points}
+        removeStop={removeStop}
+        moveStop={moveStop}
+        availableVehicles={availableVehicles}
+        drivers={drivers}
+        vehicleName={vehicleName}
+        driverName={driverName}
+        editingRoute={editingRoute}
+        onCancel={resetForm}
+        onSubmit={handleSubmit}
+        saving={saving}
+      />
     );
-  };
-
-  const getVehicleName = (id: string) => {
-    const vehicle = vehicles.find((v) => v.id === id);
-    return vehicle ? `${vehicle.placa} - ${vehicle.marca} ${vehicle.modelo}` : "N/A";
-  };
-
-  const getDriverName = (id: string) => {
-    const driver = users.find((u) => u.driverId === id || u.id === id);
-    return driver ? `${driver.nombres ?? ""} ${driver.apellidos ?? ""}`.trim() || driver.usuario : "N/A";
-  };
+  }
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white">
-        <div className="p-4 md:p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="h-full flex flex-col bg-slate-50">
+        <div className="border-b border-slate-200 bg-white px-5 py-5 md:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               {onBack && (
-                <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <ArrowLeft size={20} className="text-gray-600" />
+                <button
+                  onClick={onBack}
+                  className="rounded-lg p-2 hover:bg-slate-100"
+                  aria-label="Volver"
+                >
+                  <ArrowLeft size={20} />
                 </button>
               )}
               <div>
-                <h2 className="text-xl md:text-2xl text-gray-900">Gestión de Rutas</h2>
-                <p className="text-sm text-gray-500 mt-1">Crea y administra las rutas de entrega</p>
+                <p className="text-sm font-medium text-blue-700">Operación</p>
+                <h1 className="text-2xl font-semibold text-slate-900">Rutas</h1>
+                <p className="text-sm text-slate-500">
+                  Planifica, asigna y controla tus recorridos de entrega.
+                </p>
               </div>
             </div>
             <button
-              onClick={() => {
-                setShowForm(true);
-                setSelectionMode("none");
-                setPendingPoint(null);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] transition-colors text-sm"
+              onClick={openCreate}
+              className="flex items-center justify-center gap-2 rounded-lg bg-[#3271a4] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2a5f8c]"
             >
-              <Plus size={16} />
-              Crear Ruta
+              <Plus size={17} />
+              Nueva ruta
             </button>
           </div>
         </div>
-
-        <div className="flex-1 overflow-auto p-4 md:p-6">
-          {routes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <RouteIcon size={48} className="text-gray-300 mb-3" />
-              <p className="text-gray-500 text-sm">No hay rutas registradas</p>
+        <div className="flex-1 overflow-auto p-5 md:p-8">
+          {loadErrors.includes("rutas") && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>No se pudieron cargar las rutas. Los datos mostrados pueden estar incompletos.</span><button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button></div>}
+          <div className="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="text-xs font-medium text-slate-600">Buscar ruta
+              <input value={routeSearch} onChange={(event) => setRouteSearch(event.target.value)} placeholder="Nombre de ruta" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-medium text-slate-600">Estado
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RouteStatus | "all")} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="all">Todos</option><option value="pendiente">Pendiente</option><option value="en_progreso">En progreso</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Vehículo
+              <select value={vehicleFilter} onChange={(event) => setVehicleFilter(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="all">Todos</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.placa}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Conductor
+              <select value={driverFilter} onChange={(event) => setDriverFilter(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="all">Todos</option>{drivers.map((driver) => <option key={driver.driverKey} value={driver.driverKey}>{driver.nombres} {driver.apellidos}</option>)}
+              </select>
+            </label>
+          </div>
+          {loadErrors.includes("rutas") && routes.length === 0 ? null : routes.length === 0 ? (
+            <div className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+              <RouteIcon size={42} className="mb-4 text-slate-300" />
+              <h2 className="font-semibold text-slate-800">
+                Aún no tienes rutas
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Crea tu primera ruta para empezar a organizar las entregas.
+              </p>
+              <button
+                onClick={openCreate}
+                className="mt-5 rounded-lg bg-[#3271a4] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Crear primera ruta
+              </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {routes.map((route) => (
+            visibleRoutes.length === 0 ? <div className="rounded-xl bg-white p-8 text-center text-sm text-slate-500">Ninguna ruta coincide con esos filtros.<button onClick={() => { setRouteSearch(""); setStatusFilter("all"); setVehicleFilter("all"); setDriverFilter("all"); }} className="ml-2 font-semibold text-blue-700 underline">Limpiar filtros</button></div> : <div className="grid gap-4 xl:grid-cols-2">
+              {visibleRoutes.map((route) => (
                 <div
                   key={route.id}
-                  className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <RouteIcon size={20} className="text-purple-600" />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="rounded-lg bg-blue-50 p-2.5">
+                        <RouteIcon size={19} className="text-blue-700" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-base text-gray-900">{route.nombre}</h3>
-                        <p className="text-xs text-gray-500">Creada el {new Date(route.fechaCreacion).toLocaleDateString()}</p>
+                        <h2 className="truncate font-semibold text-slate-900">
+                          {route.nombre}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          Creada el {formatDate(route.fechaCreacion)}
+                        </p>
                       </div>
                     </div>
-                    {getEstadoBadge(route.estado)}
+                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      {route.estado === "en_progreso"
+                        ? "En progreso"
+                        : route.estado === "completada"
+                          ? "Completada"
+                          : route.estado === "cancelada"
+                            ? "Cancelada"
+                            : "Pendiente"}
+                    </span>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    <div className="space-y-2">
-                      <div className="text-xs">
-                        <span className="text-gray-500">Vehículo:</span>
-                        <p className="text-gray-900 mt-0.5">{getVehicleName(route.vehiculoId)}</p>
-                      </div>
-                      <div className="text-xs">
-                        <span className="text-gray-500">Conductor:</span>
-                        <p className="text-gray-900 mt-0.5">{getDriverName(route.conductorId)}</p>
-                      </div>
+                  <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-slate-500">Asignación</p>
+                      <p className="mt-1 text-slate-800">
+                        {vehicleName(route.vehiculoId)}
+                      </p>
+                      <p className="text-slate-600">
+                        {driverName(route.conductorId)}
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <div className="text-xs">
-                        <span className="text-gray-500">Carga:</span>
-                        <p className="text-gray-900 mt-0.5">{route.carga}</p>
-                      </div>
-                      <div className="text-xs">
-                        <span className="text-gray-500">Paradas:</span>
-                        <p className="text-gray-900 mt-0.5">{route.puntos.length} puntos</p>
-                      </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Recorrido</p>
+                      <p className="mt-1 text-slate-800">
+                        {(route.puntos?.length ?? 0) + 2} puntos · {route.carga}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
+                  <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
                     <button
                       onClick={() => handleEdit(route)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-xs"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
                     >
-                      <Edit size={14} />
-                      Editar
+                      <Edit size={15} />
+                      Editar ruta
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(route.id)}
-                      className="flex items-center justify-center px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-xs"
+                      className="rounded-lg bg-red-50 px-3 py-2 text-red-600 hover:bg-red-100"
+                      aria-label={`Eliminar ${route.nombre}`}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -366,385 +472,548 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
           )}
         </div>
       </div>
-
-      <Dialog open={showForm} onOpenChange={resetForm}>
-        <DialogContent className="sm:max-w-5xl max-w-[98%] max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">{editingRoute ? "Editar Ruta" : "Crear Ruta"}</DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            <div>
-              <label className="block text-sm mb-1 text-gray-700">Nombre de la Ruta *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
-                placeholder="Ruta Centro - Norte"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1 text-gray-700">Vehículo *</label>
-                <select
-                  value={formData.vehicleId}
-                  onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
-                  required
-                >
-                  <option value="">Seleccionar vehículo</option>
-                  {availableVehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.placa} - {vehicle.marca} {vehicle.modelo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm mb-1 text-gray-700">Conductor *</label>
-                <select
-                  value={formData.driverId}
-                  onChange={(e) => setFormData({ ...formData, driverId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
-                  required
-                >
-                  <option value="">Seleccionar conductor</option>
-                  {drivers.map((driver) => (
-                    <option key={driver.driverKey} value={driver.driverKey}>
-                      {driver.nombres} {driver.apellidos} ({driver.usuario})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1 text-gray-700">Descripción de la Carga *</label>
-              <textarea
-                value={formData.cargoDescription}
-                onChange={(e) => setFormData({ ...formData, cargoDescription: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#3271a4] text-sm"
-                placeholder="Especifica que productos o items se entregaran..."
-                rows={3}
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm text-gray-700">Selección en el mapa</label>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectionMode("origin");
-                      toast.info("Haz clic en el mapa para fijar el origen y luego confirma");
-                    }}
-                    className={`px-2 py-1 rounded border ${selectionMode === "origin" ? "border-[#3271a4] text-[#3271a4]" : "border-gray-200 text-gray-700"}`}
-                  >
-                    Seleccionar origen
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectionMode("stop");
-                      toast.info("Haz clic en el mapa para agregar una parada y confirma");
-                    }}
-                    className={`px-2 py-1 rounded border ${selectionMode === "stop" ? "border-[#3271a4] text-[#3271a4]" : "border-gray-200 text-gray-700"}`}
-                  >
-                    Agregar parada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectionMode("destination");
-                      toast.info("Haz clic en el mapa para fijar el destino y confirma");
-                    }}
-                    className={`px-2 py-1 rounded border ${selectionMode === "destination" ? "border-[#3271a4] text-[#3271a4]" : "border-gray-200 text-gray-700"}`}
-                  >
-                    Seleccionar destino
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, origin: null, stops: [], destination: null }));
-                      setPendingPoint(null);
-                      setSelectionMode("none");
-                    }}
-                    className="px-2 py-1 rounded border border-gray-200 text-gray-700"
-                  >
-                    Limpiar ruta
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-72 overflow-y-auto">
-                <div className="p-3 border border-gray-200 rounded-lg bg-green-50">
-                  <p className="text-xs text-gray-700 mb-2">Origen</p>
-                  {formData.origin ? (
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <input
-                        type="text"
-                        value={formData.origin.nombre ?? ""}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, origin: { ...prev.origin!, nombre: e.target.value } }))}
-                        className="px-2 py-1 border border-gray-200 rounded"
-                        placeholder="Nombre"
-                      />
-                      <div className="grid grid-cols-2 gap-1">
-                        <input
-                          type="number"
-                          step="any"
-                          value={formData.origin.lat ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              origin: { ...prev.origin!, lat: e.target.value === "" ? 0 : Number(e.target.value) },
-                            }))
-                          }
-                          className="px-2 py-1 border border-gray-200 rounded"
-                          placeholder="Lat"
-                        />
-                        <input
-                          type="number"
-                          step="any"
-                          value={formData.origin.lng ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              origin: { ...prev.origin!, lng: e.target.value === "" ? 0 : Number(e.target.value) },
-                            }))
-                          }
-                          className="px-2 py-1 border border-gray-200 rounded"
-                          placeholder="Lng"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500">Sin origen. Selecciona en el mapa.</p>
-                  )}
-                </div>
-
-                <div className="p-3 border border-gray-200 rounded-lg bg-blue-50">
-                  <p className="text-xs text-gray-700 mb-2">Paradas</p>
-                  {formData.stops.length === 0 ? (
-                    <p className="text-xs text-gray-500">Sin paradas.</p>
-                  ) : (
-                    formData.stops.map((stop, index) => (
-                      <div key={index} className="mb-2 p-2 bg-white rounded border border-gray-200">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <input
-                            type="text"
-                            value={stop.nombre ?? ""}
-                            onChange={(e) => updateStop(index, "nombre", e.target.value)}
-                            className="flex-1 px-2 py-1 border border-gray-200 rounded mr-2"
-                            placeholder={`Parada ${index + 1}`}
-                          />
-                          <div className="flex gap-1">
-                            <button type="button" onClick={() => moveStop(index, "up")} className="p-1 text-gray-500 hover:text-gray-800">
-                              <MoveUp size={14} />
-                            </button>
-                            <button type="button" onClick={() => moveStop(index, "down")} className="p-1 text-gray-500 hover:text-gray-800">
-                              <MoveDown size={14} />
-                            </button>
-                            <button type="button" onClick={() => removeStop(index)} className="p-1 text-red-500 hover:text-red-700">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <input
-                          type="number"
-                          step="any"
-                          value={stop.lat ?? ""}
-                          onChange={(e) => updateStop(index, "lat", e.target.value)}
-                          className="px-2 py-1 border border-gray-200 rounded"
-                          placeholder="Lat"
-                        />
-                          <input
-                            type="number"
-                            step="any"
-                            value={stop.lng ?? ""}
-                            onChange={(e) => updateStop(index, "lng", e.target.value)}
-                            className="px-2 py-1 border border-gray-200 rounded"
-                            placeholder="Lng"
-                          />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="p-3 border border-gray-200 rounded-lg bg-red-50">
-                  <p className="text-xs text-gray-700 mb-2">Destino</p>
-                  {formData.destination ? (
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <input
-                        type="text"
-                        value={formData.destination.nombre ?? ""}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, destination: { ...prev.destination!, nombre: e.target.value } }))}
-                        className="px-2 py-1 border border-gray-200 rounded"
-                        placeholder="Nombre"
-                      />
-                      <div className="grid grid-cols-2 gap-1">
-                        <input
-                          type="number"
-                          step="any"
-                          value={formData.destination.lat ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              destination: { ...prev.destination!, lat: e.target.value === "" ? 0 : Number(e.target.value) },
-                            }))
-                          }
-                          className="px-2 py-1 border border-gray-200 rounded"
-                          placeholder="Lat"
-                        />
-                        <input
-                          type="number"
-                          step="any"
-                          value={formData.destination.lng ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              destination: { ...prev.destination!, lng: e.target.value === "" ? 0 : Number(e.target.value) },
-                            }))
-                          }
-                          className="px-2 py-1 border border-gray-200 rounded"
-                          placeholder="Lng"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500">Sin destino. Selecciona en el mapa.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Ajusta desde el mapa</span>
-                <span className="text-xs text-gray-500">Click en el mapa según el modo seleccionado. Confirma antes de guardar.</span>
-              </div>
-              <div className="h-64 rounded-lg overflow-hidden border border-gray-200">
-                <RoutePickerMap
-                  origin={formData.origin}
-                  stops={formData.stops}
-                  destination={formData.destination}
-                  pendingPoint={pendingPoint}
-                  selectionMode={selectionMode}
-                  onMapClick={(p) => {
-                    const normalized = normalizePickerPoint(p);
-                    if (!normalized) return;
-                    setPendingPoint(normalized);
-                  }}
-                  onConfirmPending={() => {
-                    if (!pendingPoint) return;
-                    const normalized = normalizePickerPoint(pendingPoint);
-                    if (!normalized) {
-                      toast.error("No se pudo leer el punto seleccionado");
-                      return;
-                    }
-                    if (selectionMode === "origin") {
-                      setFormData((prev) => ({ ...prev, origin: { ...normalized, nombre: normalized.nombre || "Origen" } }));
-                    } else if (selectionMode === "destination") {
-                      setFormData((prev) => ({ ...prev, destination: { ...normalized, nombre: normalized.nombre || "Destino" } }));
-                    } else if (selectionMode === "stop") {
-                      setFormData((prev) => ({
-                        ...prev,
-                        stops: [...prev.stops, { ...normalized, nombre: normalized.nombre || `Parada ${prev.stops.length + 1}` }],
-                      }));
-                    }
-                    setPendingPoint(null);
-                    setSelectionMode("none");
-                  }}
-                  onCancelPending={() => {
-                    setPendingPoint(null);
-                    setSelectionMode("none");
-                  }}
-                  isOpen={showForm}
-                />
-              </div>
-              {pendingPoint && (
-                <div className="flex items-center gap-3 text-xs text-gray-700 bg-blue-50 border border-blue-100 rounded px-3 py-2">
-                  <span>
-                    Punto seleccionado: {pendingPoint.lat.toFixed(5)}, {pendingPoint.lng.toFixed(5)} ({selectionMode})
-                  </span>
-                  <div className="ml-auto flex gap-2">
-                    <button
-                      type="button"
-                      className="px-3 py-1 bg-[#3271a4] text-white rounded flex items-center gap-1"
-                      onClick={() => {
-                        if (!pendingPoint) return;
-                        const normalized = normalizePickerPoint(pendingPoint);
-                        if (!normalized) {
-                          toast.error("No se pudo leer el punto seleccionado");
-                          return;
-                        }
-                        if (selectionMode === "origin") {
-                          setFormData((prev) => ({ ...prev, origin: { ...normalized, nombre: normalized.nombre || "Origen" } }));
-                        } else if (selectionMode === "destination") {
-                          setFormData((prev) => ({ ...prev, destination: { ...normalized, nombre: normalized.nombre || "Destino" } }));
-                        } else if (selectionMode === "stop") {
-                          setFormData((prev) => ({
-                            ...prev,
-                            stops: [...prev.stops, { ...normalized, nombre: normalized.nombre || `Parada ${prev.stops.length + 1}` }],
-                          }));
-                        }
-                        setPendingPoint(null);
-                        setSelectionMode("none");
-                      }}
-                    >
-                      Confirmar
-                    </button>
-                    <button
-                      type="button"
-                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded flex items-center gap-1"
-                      onClick={() => {
-                        setPendingPoint(null);
-                        setSelectionMode("none");
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] transition-colors text-sm"
-              >
-                {editingRoute ? "Actualizar" : "Crear"}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       <ConfirmDialog
         open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
-        title="Eliminar Ruta"
+        onConfirm={async () => {
+          if (!deleteConfirm) return;
+          const result = await deleteRoute(deleteConfirm);
+          if (result.ok) setDeleteConfirm(null);
+          else toast.error(result.message ?? "No se pudo eliminar la ruta");
+        }}
+        title="Eliminar ruta"
         description="¿Estás seguro de que deseas eliminar esta ruta? Esta acción no se puede deshacer."
         confirmText="Sí, eliminar"
         cancelText="Cancelar"
         variant="destructive"
       />
     </>
+  );
+}
+
+type RouteBuilderProps = { searchResults: SearchResult[]; saving: boolean; [key: string]: any };
+
+function RouteBuilder({
+  formData,
+  setFormData,
+  step,
+  goToStep,
+  activeTarget,
+  selectTarget,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  searching,
+  searchLocations,
+  setPoint,
+  points,
+  removeStop,
+  moveStop,
+  availableVehicles,
+  drivers,
+  vehicleName,
+  driverName,
+  editingRoute,
+  onCancel,
+  onSubmit,
+  saving,
+}: RouteBuilderProps) {
+  const targetLabel =
+    activeTarget?.type === "origin"
+      ? "origen"
+      : activeTarget?.type === "destination"
+        ? "destino"
+        : activeTarget
+          ? `parada ${activeTarget.index + 1}`
+          : "punto";
+  const pointSummary = (point: PickerPoint | null, fallback: string) =>
+    point?.nombre || fallback;
+  const pointRow = (
+    type: "origin" | "stop" | "destination",
+    point: PickerPoint | null,
+    index?: number,
+  ) => {
+    const target = {
+      type,
+      ...(index !== undefined ? { index } : {}),
+    } as Target;
+    const selected =
+      activeTarget?.type === type && activeTarget?.index === index;
+    const operation =
+      point?.operation ?? (type === "stop" ? "delivery" : "none");
+    const updateOperation = (value: PickerPoint["operation"]) => {
+      setFormData((previous: any) => {
+        if (type === "origin")
+          return {
+            ...previous,
+            origin: previous.origin
+              ? { ...previous.origin, operation: value }
+              : previous.origin,
+          };
+        if (type === "destination")
+          return {
+            ...previous,
+            destination: previous.destination
+              ? { ...previous.destination, operation: value }
+              : previous.destination,
+          };
+        return {
+          ...previous,
+          stops: previous.stops.map((stop: PickerPoint, stopIndex: number) =>
+            stopIndex === index ? { ...stop, operation: value } : stop,
+          ),
+        };
+      });
+    };
+    return (
+      <div
+        className={`rounded-xl border p-3 ${selected ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white"}`}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${type === "origin" ? "bg-green-100 text-green-700" : type === "destination" ? "bg-red-100 text-red-700" : "bg-sky-100 text-sky-700"}`}
+          >
+            {type === "origin"
+              ? "A"
+              : type === "destination"
+                ? "B"
+                : (index ?? 0) + 1}
+          </div>
+          <div className="min-w-[130px] flex-1">
+            <input
+              value={point?.nombre ?? ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (type === "origin")
+                  setFormData((p: any) => ({
+                    ...p,
+                    origin: p.origin
+                      ? { ...p.origin, nombre: value }
+                      : { ...DEFAULT_POINT, nombre: value },
+                  }));
+                else if (type === "destination")
+                  setFormData((p: any) => ({
+                    ...p,
+                    destination: p.destination
+                      ? { ...p.destination, nombre: value }
+                      : { ...DEFAULT_POINT, nombre: value },
+                  }));
+                else
+                  setFormData((p: any) => ({
+                    ...p,
+                    stops: p.stops.map((s: PickerPoint, i: number) =>
+                      i === index ? { ...s, nombre: value } : s,
+                    ),
+                  }));
+              }}
+              placeholder={
+                type === "origin"
+                  ? "¿Desde dónde sale?"
+                  : type === "destination"
+                    ? "¿A dónde llega?"
+                    : `Parada ${index! + 1}`
+              }
+              className="w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
+            />
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              {point
+                ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`
+                : "Ubicación pendiente"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => selectTarget(target)}
+            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${selected ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+          >
+            <MapPin size={14} className="mr-1 inline" />
+            {selected ? "Seleccionando" : "Ubicar"}
+          </button>
+          {type === "stop" && (
+            <select
+              aria-label={`Tipo de operación de la parada ${(index ?? 0) + 1}`}
+              value={operation}
+              onChange={(event) =>
+                updateOperation(event.target.value as PickerPoint["operation"])
+              }
+              className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700"
+            >
+              <option value="delivery">Entrega</option>
+              <option value="pickup">Recogida</option>
+              <option value="pickup_and_delivery">Recogida y entrega</option>
+            </select>
+          )}
+          {type === "stop" && (
+            <div className="flex shrink-0 gap-1">
+              <button
+                type="button"
+                onClick={() => moveStop(index!, -1)}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Subir parada"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveStop(index!, 1)}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Bajar parada"
+              >
+                <ChevronDown size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => removeStop(index!)}
+                className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                aria-label="Eliminar parada"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div className="flex h-full flex-col bg-slate-50">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 md:px-8">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded-lg p-2 hover:bg-slate-100"
+            aria-label="Cancelar creación"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+              Constructor de rutas
+            </p>
+            <h1 className="text-xl font-semibold text-slate-900">
+              {editingRoute ? "Editar ruta" : "Nueva ruta"}
+            </h1>
+          </div>
+        </div>
+        <div className="hidden items-center gap-2 md:flex">
+          {["Información", "Recorrido", "Asignación", "Revisión"].map(
+            (label, index) => (
+              <button
+                key={label}
+                onClick={() => goToStep(index + 1)}
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${step === index + 1 ? "bg-blue-100 text-blue-800" : step > index + 1 ? "text-green-700" : "text-slate-400"}`}
+              >
+                {step > index + 1 ? <Check size={14} /> : index + 1}
+                {label}
+              </button>
+            ),
+          )}
+        </div>
+        <button
+          onClick={onCancel}
+          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+          aria-label="Cerrar"
+        >
+          <X size={20} />
+        </button>
+      </header>
+      <div className="flex-1 overflow-auto">
+        <div className="mx-auto grid min-h-full max-w-[1500px] lg:grid-cols-[minmax(360px,0.8fr)_minmax(500px,1.2fr)]">
+          <section className="overflow-y-auto p-5 md:p-8">
+            {step === 1 && (
+              <div className="mx-auto max-w-xl">
+                <StepTitle
+                  number="01"
+                  title="Información de la ruta"
+                  description="Define qué se va a entregar y cuándo."
+                />
+                <label className="mt-8 block text-sm font-semibold text-slate-700">
+                  Nombre de la ruta <span className="text-red-500">*</span>
+                  <input
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((p: any) => ({ ...p, name: e.target.value }))
+                    }
+                    placeholder="Ej. Entregas zona norte"
+                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+                <label className="mt-5 block text-sm font-semibold text-slate-700">
+                  Descripción de la carga{" "}
+                  <span className="text-red-500">*</span>
+                  <textarea
+                    value={formData.cargoDescription}
+                    onChange={(e) =>
+                      setFormData((p: any) => ({
+                        ...p,
+                        cargoDescription: e.target.value,
+                      }))
+                    }
+                    placeholder="Productos, cantidad o instrucciones para el conductor"
+                    rows={5}
+                    className="mt-2 w-full resize-none rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+            )}
+            {step === 2 && (
+              <div className="mx-auto max-w-xl">
+                <StepTitle
+                  number="02"
+                  title="Construye el recorrido"
+                  description="Busca una dirección o haz clic en el mapa para fijar cada punto."
+                />
+                <div className="mt-8 space-y-3">
+                  {pointRow("origin", formData.origin)}
+                  {formData.stops.map((stop: PickerPoint, index: number) => (
+                    <div key={`${index}-${stop.lat}-${stop.lng}`}>
+                      {pointRow("stop", stop, index)}
+                    </div>
+                  ))}
+                  {pointRow("destination", formData.destination)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const index = formData.stops.length;
+                      setFormData((p: any) => ({
+                        ...p,
+                        stops: [
+                          ...p.stops,
+                          {
+                            ...DEFAULT_POINT,
+                            lat: NaN,
+                            lng: NaN,
+                            nombre: `Parada ${index + 1}`,
+                            operation: "delivery",
+                            status: "pending",
+                          },
+                        ],
+                      }));
+                      selectTarget({ type: "stop", index });
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:border-blue-400 hover:text-blue-700"
+                  >
+                    <Plus size={16} />
+                    Agregar parada
+                  </button>
+                </div>
+              </div>
+            )}
+            {step === 3 && (
+              <div className="mx-auto max-w-xl">
+                <StepTitle
+                  number="03"
+                  title="Asigna los recursos"
+                  description="Elige quién hará la ruta y con qué vehículo."
+                />
+                <ResourceSelect
+                  icon={<Truck size={18} />}
+                  label="Vehículo"
+                  value={formData.vehicleId}
+                  onChange={(value: string) =>
+                    setFormData((p: any) => ({ ...p, vehicleId: value }))
+                  }
+                  options={availableVehicles.map((v: any) => ({
+                    value: v.id,
+                    label: `${v.placa} · ${v.marca} ${v.modelo}`,
+                    detail:
+                      v.estado === "disponible"
+                        ? "Disponible"
+                        : "Asignado a esta ruta",
+                  }))}
+                />
+                <ResourceSelect
+                  icon={<UserRound size={18} />}
+                  label="Conductor"
+                  value={formData.driverId}
+                  onChange={(value: string) =>
+                    setFormData((p: any) => ({ ...p, driverId: value }))
+                  }
+                  options={drivers.map((d: any) => ({
+                    value: d.driverKey,
+                    label: `${d.nombres} ${d.apellidos}`,
+                    detail: `@${d.usuario}`,
+                  }))}
+                />
+              </div>
+            )}
+            {step === 4 && (
+              <div className="mx-auto max-w-xl">
+                <StepTitle
+                  number="04"
+                  title="Revisa y crea"
+                  description="Confirma los datos antes de asignar la ruta."
+                />
+                <div className="mt-8 space-y-4">
+                  <ReviewRow label="Ruta" value={formData.name} />
+                  <ReviewRow label="Carga" value={formData.cargoDescription} />
+                  <ReviewRow
+                    label="Recorrido"
+                    value={`${points.length} puntos · ${pointSummary(formData.origin, "Origen pendiente")} → ${pointSummary(formData.destination, "Destino pendiente")}`}
+                  />
+                  <ReviewRow
+                    label="Vehículo"
+                    value={vehicleName(formData.vehicleId)}
+                  />
+                  <ReviewRow
+                    label="Conductor"
+                    value={driverName(formData.driverId)}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="mt-10 flex gap-3 border-t border-slate-200 pt-5">
+              <button
+                type="button"
+                onClick={() => (step === 1 ? onCancel() : goToStep(step - 1))}
+                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-white"
+              >
+                {step === 1 ? "Cancelar" : "Atrás"}
+              </button>
+              {step < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => goToStep(step + 1)}
+                  className="flex-1 rounded-lg bg-[#3271a4] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2a5f8c]"
+                >
+                  Continuar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onSubmit}
+                  disabled={saving}
+                  className="flex-1 rounded-lg bg-[#3271a4] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2a5f8c]"
+                >
+                  {saving ? "Guardando…" : editingRoute ? "Guardar cambios" : "Crear ruta"}
+                </button>
+              )}
+            </div>
+          </section>
+          <section className="relative min-h-[460px] border-t border-slate-200 bg-slate-200 lg:min-h-0 lg:border-l lg:border-t-0">
+            <div className="absolute left-4 right-4 top-4 z-[500] rounded-xl bg-white/95 p-3 shadow-lg backdrop-blur md:left-8 md:right-8 md:top-8">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                <Search size={15} className="text-blue-700" />
+                {activeTarget
+                  ? `Ubicando ${targetLabel}`
+                  : "Selecciona un punto para buscarlo"}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && searchLocations()}
+                  placeholder={
+                    activeTarget
+                      ? "Busca una dirección o lugar"
+                      : "Primero elige Origen, Parada o Destino"
+                  }
+                  disabled={!activeTarget}
+                  className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-slate-100"
+                />
+                <button
+                  type="button"
+                  onClick={searchLocations}
+                  disabled={!activeTarget || searching}
+                  className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {searching ? "Buscando…" : "Buscar"}
+                </button>
+              </div>
+              {searchResults.length > 0 && (
+                <div className="mt-2 max-h-48 overflow-auto rounded-lg border border-slate-200 bg-white">
+                  {searchResults.map((result) => (
+                    <button
+                      type="button"
+                      key={`${result.lat}-${result.lon}`}
+                      onClick={() =>
+                        activeTarget &&
+                        setPoint(activeTarget, {
+                          lat: Number(result.lat),
+                          lng: Number(result.lon),
+                          nombre: result.display_name,
+                        })
+                      }
+                      className="block w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-slate-700 last:border-0 hover:bg-blue-50"
+                    >
+                      {result.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="absolute bottom-4 left-4 z-[500] rounded-lg bg-white/95 px-3 py-2 text-xs text-slate-600 shadow md:bottom-8 md:left-8">
+              {activeTarget
+                ? "Haz clic en el mapa para fijar la ubicación"
+                : "Los puntos aparecerán aquí"}
+            </div>
+            <RoutePickerMap
+              origin={formData.origin}
+              stops={formData.stops.filter((p: PickerPoint) => validPoint(p))}
+              destination={formData.destination}
+              activeTarget={
+                activeTarget?.type === "stop"
+                  ? "stop"
+                  : (activeTarget?.type ?? null)
+              }
+              onMapClick={(point: PickerPoint) =>
+                activeTarget && setPoint(activeTarget, point)
+              }
+              isOpen
+            />
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepTitle({
+  number,
+  title,
+  description,
+}: {
+  number: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold tracking-widest text-blue-700">
+        PASO {number}
+      </p>
+      <h2 className="mt-2 text-2xl font-semibold text-slate-900">{title}</h2>
+      <p className="mt-1 text-sm text-slate-500">{description}</p>
+    </div>
+  );
+}
+function ResourceSelect({ icon, label, value, onChange, options }: any) {
+  return (
+    <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        {icon}
+        {label}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500"
+      >
+        <option value="">Seleccionar {label.toLowerCase()}</option>
+        {options.map((option: any) => (
+          <option key={option.value} value={option.value}>
+            {option.label} · {option.detail}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
-import { Users, Shield, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck } from "lucide-react";
+import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner";
 
@@ -14,7 +14,6 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     getTeamUsers,
     refreshTeamUsers,
     updateUserRole,
-    updateUserPermissions,
     updateUserStatus,
     createUser,
     isSuperAdmin,
@@ -24,19 +23,28 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     vehicles,
     refreshDrivers,
     addDriver,
+    updateDriver,
+    setDriverActive,
     assignVehicleToDriver,
     unassignVehicleFromDriver,
   } = useFleet();
 
-  const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [showPermissions, setShowPermissions] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
   const [showDriversSection, setShowDriversSection] = useState(false);
+  const [showInactiveDrivers, setShowInactiveDrivers] = useState(false);
+  const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
+  const [driverEditForm, setDriverEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    documentNumber: "",
+    phoneNumber: "",
+  });
 
   const users = getTeamUsers();
+  const visibleDrivers = drivers.filter((driver) => showInactiveDrivers || driver.isActive !== false);
 
   useEffect(() => {
     setIsLoadingTeam(true);
@@ -55,14 +63,6 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const [permissionsForm, setPermissionsForm] = useState<UserPermissions>({
-    canViewMap: false,
-    canCreateRoutes: false,
-    canManageVehicles: false,
-    canManageTeam: false,
-    canViewOwnRoute: false,
-  });
 
   const [createUserForm, setCreateUserForm] = useState({
     nombres: "",
@@ -93,22 +93,19 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   };
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    await updateUserRole(userId, newRole);
-    toast.success("Rol actualizado exitosamente");
-  };
-
-  const handleEditPermissions = (user: any) => {
-    setEditingUser(user);
-    setPermissionsForm(user.permissions);
-    setShowPermissions(true);
-  };
-
-  const handleSavePermissions = () => {
-    if (editingUser) {
-      updateUserPermissions(editingUser.id, permissionsForm);
-      toast.success("Permisos actualizados exitosamente");
-      setShowPermissions(false);
-      setEditingUser(null);
+    const previousRole = users.find((member) => member.id === userId)?.role;
+    const result = await updateUserRole(userId, newRole);
+    if (result?.ok) {
+      toast.success("Rol actualizado exitosamente");
+      if (previousRole === "chofer" || newRole === "chofer") {
+        try {
+          await refreshDrivers(false);
+        } catch {
+          toast.warning("El rol se actualizó, pero no se pudo refrescar la lista de choferes.");
+        }
+      }
+    } else {
+      toast.error(result?.message ?? "No se pudo actualizar el rol");
     }
   };
 
@@ -136,36 +133,12 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       role: createUserForm.role,
       teamId: undefined,
       password: "",
+      phoneNumber: createUserForm.phoneNumber,
     });
 
     setIsCreating(false);
 
-    if (success) {
-      await refreshTeamUsers();
-
-      // Si es chofer, crea también el Driver vinculado al usuario recién creado
-      if (createUserForm.role === "chofer") {
-        const usersUpdated = getTeamUsers();
-        const createdUser = usersUpdated.find((u) => u.usuario === createUserForm.usuario);
-        if (createdUser) {
-          const driverResult = await addDriver({
-            userId: createdUser.id,
-            firstName: createUserForm.nombres,
-            lastName: createUserForm.apellidos,
-            documentNumber: createUserForm.documentNumber,
-            phoneNumber: createUserForm.phoneNumber,
-          });
-          if (driverResult.ok) {
-            await refreshDrivers();
-          } else {
-            toast.error(driverResult.message ?? "No se pudo crear el chofer");
-          }
-        } else {
-          toast.error("No se pudo localizar el usuario creado para vincular chofer");
-        }
-      }
-
-      toast.success("Usuario creado exitosamente");
+    if (success.ok) {
       closeCreateUserDialog();
       setCreateUserForm({
         nombres: "",
@@ -176,6 +149,19 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
         documentNumber: "",
         phoneNumber: "",
       });
+
+      const refreshResults = await Promise.allSettled([
+        refreshTeamUsers(),
+        ...(createUserForm.role === "chofer" ? [refreshDrivers()] : []),
+      ]);
+      if (success.invitationSent) {
+        toast.success("Usuario creado y correo de invitación enviado");
+      } else {
+        toast.warning("Usuario creado, pero el correo de invitación no se pudo enviar");
+      }
+      if (refreshResults.some((result) => result.status === "rejected")) {
+        toast.warning("La cuenta se creó, pero no se pudo actualizar toda la lista. Intenta recargarla.");
+      }
     } else {
       toast.error("El nombre de usuario ya existe");
     }
@@ -187,12 +173,14 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       gerente: "bg-purple-100 text-purple-700",
       logistica: "bg-blue-100 text-blue-700",
       chofer: "bg-green-100 text-green-700",
+      usuario: "bg-gray-100 text-gray-700",
     };
     const labels = {
       superadmin: "Super Admin",
       gerente: "Gerente",
       logistica: "Logística",
       chofer: "Chofer",
+      usuario: "Usuario",
     };
     return (
       <span className={`px-2 py-1 rounded text-xs ${styles[role]}`}>
@@ -201,7 +189,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     );
   };
 
-  const permissionLabels = {
+  const permissionLabels: Record<keyof UserPermissions, string> = {
     canViewMap: "Ver Mapa en Tiempo Real",
     canCreateRoutes: "Crear y Gestionar Rutas",
     canManageVehicles: "Gestionar Vehículos",
@@ -255,6 +243,34 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     }
   };
 
+  const handleEditDriver = (driver: (typeof drivers)[number]) => {
+    setEditingDriverId(driver.id);
+    setDriverEditForm({
+      firstName: driver.firstName,
+      lastName: driver.lastName,
+      documentNumber: driver.documentNumber,
+      phoneNumber: driver.phoneNumber,
+    });
+  };
+
+  const handleSaveDriver = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingDriverId) return;
+    const result = await updateDriver(editingDriverId, driverEditForm);
+    if (result.ok) {
+      toast.success(result.message ?? "Conductor actualizado");
+      setEditingDriverId(null);
+    } else {
+      toast.error(result.message ?? "No se pudo actualizar el conductor");
+    }
+  };
+
+  const handleDriverStatus = async (driverId: string, isActive: boolean) => {
+    const result = await setDriverActive(driverId, isActive);
+    if (result.ok) toast.success(result.message ?? "Estado actualizado");
+    else toast.error(result.message ?? "No se pudo cambiar el estado del conductor");
+  };
+
   return (
     <>
       <div className="h-full flex flex-col bg-white">
@@ -306,10 +322,24 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <p className="text-sm text-gray-500">Gestiona conductores y asigna vehículos</p>
                 </div>
                 <button
-                  onClick={() => void refreshDrivers()}
+                  onClick={() => void refreshDrivers(!showInactiveDrivers)}
                   className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
                 >
                   Recargar
+                </button>
+              </div>
+
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showInactiveDrivers;
+                    setShowInactiveDrivers(next);
+                    void refreshDrivers(!next);
+                  }}
+                  className="text-sm text-[#3271a4] hover:underline"
+                >
+                  {showInactiveDrivers ? "Ocultar bajas" : "Mostrar bajas"}
                 </button>
               </div>
 
@@ -328,7 +358,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 >
                   <option value="">Selecciona usuario</option>
-                  {users.map((u) => (
+                  {users.filter((u) => u.isActive !== false).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.nombres} {u.apellidos} (@{u.usuario})
                     </option>
@@ -374,11 +404,11 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
               {isLoadingDrivers ? (
                 <p className="text-sm text-gray-500">Cargando choferes...</p>
-              ) : drivers.length === 0 ? (
+              ) : visibleDrivers.length === 0 ? (
                 <p className="text-sm text-gray-500">No hay choferes registrados</p>
               ) : (
                 <div className="space-y-3">
-                  {drivers.map((driver) => {
+                  {visibleDrivers.map((driver) => {
                     const vehicle = vehicles.find((v) => v.id === driver.vehicleId);
                     const user = users.find((u) => u.id === driver.userId);
                     return (
@@ -389,6 +419,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                         <div>
                           <p className="text-sm font-semibold text-gray-900">
                             {driver.firstName} {driver.lastName}
+                            {!driver.isActive && <span className="ml-2 text-xs font-normal text-red-600">Inactivo</span>}
                           </p>
                           <p className="text-xs text-gray-500">
                             Doc: {driver.documentNumber} · Tel: {driver.phoneNumber}
@@ -398,6 +429,21 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                           </p>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEditDriver(driver)}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDriverStatus(driver.id, !driver.isActive)}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50"
+                          >
+                            {driver.isActive ? "Dar de baja" : "Reactivar"}
+                          </button>
+                          {driver.isActive && <>
                           <select
                             value={assignSelection[driver.id] ?? ""}
                             onChange={(e) =>
@@ -428,7 +474,20 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                             <Truck size={14} />
                             <span>{vehicle ? `${vehicle.placa} (${vehicle.marca})` : "Sin vehículo"}</span>
                           </div>
+                          </>}
                         </div>
+                        {editingDriverId === driver.id && (
+                          <form onSubmit={handleSaveDriver} className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:col-span-2">
+                            <input aria-label="Nombres del conductor" value={driverEditForm.firstName} onChange={(event) => setDriverEditForm({ ...driverEditForm, firstName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Apellidos del conductor" value={driverEditForm.lastName} onChange={(event) => setDriverEditForm({ ...driverEditForm, lastName: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Documento del conductor" value={driverEditForm.documentNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, documentNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input aria-label="Teléfono del conductor" value={driverEditForm.phoneNumber} onChange={(event) => setDriverEditForm({ ...driverEditForm, phoneNumber: event.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <div className="flex gap-2 sm:col-span-2 sm:justify-end">
+                              <button type="button" onClick={() => setEditingDriverId(null)} className="px-3 py-2 border rounded-lg text-sm">Cancelar</button>
+                              <button type="submit" className="px-3 py-2 bg-[#3271a4] text-white rounded-lg text-sm">Guardar cambios</button>
+                            </div>
+                          </form>
+                        )}
                       </div>
                     );
                   })}
@@ -472,8 +531,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                       <button
                         onClick={() => {
                           const next = !user.isActive;
-                          void updateUserStatus(user.id, next);
-                          toast.success(`Usuario ${next ? "activado" : "desactivado"}`);
+                          void updateUserStatus(user.id, next).then((result) => {
+                            if (result.ok) toast.success(`Usuario ${next ? "activado" : "desactivado"}`);
+                            else toast.error(result.message ?? "No se pudo actualizar el usuario");
+                          });
                         }}
                         className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900"
                       >
@@ -493,7 +554,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     <label className="block text-xs text-gray-500 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {(isSuperAdmin()
-                        ? (["superadmin", "gerente", "logistica", "chofer"] as UserRole[])
+                        ? (["gerente", "logistica", "chofer"] as UserRole[])
                         : (["gerente", "logistica", "chofer"] as UserRole[])
                       ).map((role) => (
                         <button
@@ -518,7 +579,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     <label className="block text-xs text-gray-500 mb-2">Permisos Activos</label>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(user.permissions)
-                        .filter(([_, value]) => value)
+                      .filter(([, value]) => value)
                         .map(([key]) => (
                           <span
                             key={key}
@@ -531,86 +592,13 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     </div>
                   </div>
 
-                  {/* Edit Permissions Button */}
-                  <button
-                    onClick={() => handleEditPermissions(user)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
-                  >
-                    <Shield size={14} />
-                    Editar Permisos
-                  </button>
+                  <p className="text-xs text-gray-500">Los permisos se determinan por el rol y se aplican desde el servidor.</p>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* Permissions Dialog */}
-      <Dialog open={showPermissions} onOpenChange={() => setShowPermissions(false)}>
-        <DialogContent className="sm:max-w-md max-w-[90%]" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">
-              Editar Permisos - {editingUser?.nombres} {editingUser?.apellidos}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-            <p className="text-sm text-gray-500">
-              Selecciona los permisos específicos para este usuario
-            </p>
-
-            {Object.entries(permissionLabels).map(([key, label]) => (
-              <label
-                key={key}
-                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={permissionsForm[key as keyof UserPermissions]}
-                  onChange={(e) =>
-                    setPermissionsForm({
-                      ...permissionsForm,
-                      [key]: e.target.checked,
-                    })
-                  }
-                  className="mt-0.5 w-4 h-4 text-[#3271a4] border-gray-300 rounded focus:ring-[#3271a4]"
-                />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {key === "canViewMap" && "Permite ver el mapa con todas las rutas en tiempo real"}
-                    {key === "canCreateRoutes" && "Permite crear, editar y eliminar rutas"}
-                    {key === "canManageVehicles" && "Permite gestionar el CRUD completo de vehículos"}
-                    {key === "canManageTeam" && "Permite gestionar roles y permisos del equipo"}
-                    {key === "canViewOwnRoute" && "Permite ver solo la ruta asignada al usuario"}
-                    {key === "canAccessSuperAdmin" && "Acceso completo al panel de administración del sistema"}
-                    {key === "canManageAllOrganizations" && "Gestionar usuarios y datos de todas las organizaciones"}
-                    {key === "canViewSystemLogs" && "Ver registros de actividad y eventos del sistema"}
-                    {key === "canExportData" && "Exportar e importar datos del sistema"}
-                  </p>
-                </div>
-              </label>
-            ))}
-
-            <div className="flex gap-2 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowPermissions(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSavePermissions}
-                className="flex-1 px-4 py-2 bg-[#3271a4] text-white rounded-lg hover:bg-[#2a5f8c] transition-colors text-sm"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Create User Dialog */}
       <Dialog
@@ -705,7 +693,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(isSuperAdmin()
-                  ? (["superadmin", "gerente", "logistica", "chofer"] as UserRole[])
+                  ? (["gerente", "logistica", "chofer"] as UserRole[])
                   : (["gerente", "logistica", "chofer"] as UserRole[])
                 ).map((role) => {
                   const active = createUserForm.role === role;

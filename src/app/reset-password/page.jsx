@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
       newPassword.length > 0 &&
       confirmNewPassword.length > 0 &&
       newPassword !== confirmNewPassword,
-    [newPassword, confirmNewPassword]
+    [newPassword, confirmNewPassword],
   );
 
   const disabled =
@@ -82,11 +82,14 @@ export default function ResetPasswordPage() {
       } else {
         const data = await response.json().catch(() => null);
         setError(
-          (data && data.message) || "No pudimos actualizar tu contraseña. Inténtalo de nuevo en unos minutos."
+          (data && data.message) ||
+            "No pudimos actualizar tu contraseña. Inténtalo de nuevo en unos minutos.",
         );
       }
-    } catch (err) {
-      setError("Hubo un problema de conexión. Por favor, inténtalo nuevamente.");
+    } catch {
+      setError(
+        "Hubo un problema de conexión. Por favor, inténtalo nuevamente.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -106,11 +109,16 @@ export default function ResetPasswordPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-[#3271a4]/60 to-transparent" />
             <div className="relative h-full flex flex-col justify-between p-10 text-white">
               <div className="space-y-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/70">Seguridad</p>
-                <h2 className="text-3xl font-semibold leading-tight">Restablece tu acceso con confianza</h2>
+                <p className="text-sm uppercase tracking-[0.2em] text-white/70">
+                  Seguridad
+                </p>
+                <h2 className="text-3xl font-semibold leading-tight">
+                  Restablece tu acceso con confianza
+                </h2>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  Protegemos tu cuenta con enlaces de un solo uso y tokens de 12 caracteres. Completa el formulario para
-                  activar tu nueva contraseña.
+                  Protegemos tu cuenta con enlaces de un solo uso y tokens de 12
+                  caracteres. Completa el formulario para activar tu nueva
+                  contraseña.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -134,17 +142,20 @@ export default function ResetPasswordPage() {
                 <ShieldCheck className="w-4 h-4" />
                 Enlace seguro de restablecimiento
               </div>
-              <h1 className="text-3xl font-semibold text-gray-900">Crea una nueva contraseña</h1>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                Crea una nueva contraseña
+              </h1>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Tu token se envió por correo. Por seguridad, el enlace expira pronto. El botón se activará cuando
-                detectemos el token.
+                Tu token se envió por correo. Por seguridad, el enlace expira
+                pronto. El botón se activará cuando detectemos el token.
               </p>
             </div>
 
             <div className="space-y-3">
               {!token && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-700 px-4 py-3 text-sm">
-                  No encontramos el token en el enlace. Intenta abrir nuevamente el correo o solicita uno nuevo.
+                  No encontramos el token en el enlace. Intenta abrir nuevamente
+                  el correo o solicita uno nuevo.
                 </div>
               )}
               {error && (
@@ -155,7 +166,8 @@ export default function ResetPasswordPage() {
               {success && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-4 py-3 text-sm flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
-                  Tu contraseña fue actualizada. Redirigiendo al inicio de sesión...
+                  Tu contraseña fue actualizada. Redirigiendo al inicio de
+                  sesión...
                 </div>
               )}
             </div>
@@ -177,9 +189,17 @@ export default function ResetPasswordPage() {
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                    aria-label={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={
+                      showNewPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
                   >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showNewPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </label>
@@ -200,15 +220,25 @@ export default function ResetPasswordPage() {
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </label>
 
               {passwordsMismatch && (
-                <div className="text-xs text-red-600">Las contraseñas no coinciden.</div>
+                <div className="text-xs text-red-600">
+                  Las contraseñas no coinciden.
+                </div>
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-500">

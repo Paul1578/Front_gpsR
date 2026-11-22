@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
-import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut, Moon } from "lucide-react";
+import {
+  ArrowLeft,
+  User,
+  IdCard,
+  Shield,
+  Lock,
+  LogOut,
+  Moon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import { useThemePreference } from "../../Context/ThemeContext";
@@ -10,10 +18,8 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ onBack }: ProfileViewProps = {}) {
-  const { user, updateTeamName, changePassword, logoutAll, logout } = useAuth();
+  const { user, changePassword, logoutAll, logout } = useAuth();
   const { scheme, setPreference } = useThemePreference();
-  const [editingTeamName, setEditingTeamName] = useState(false);
-  const [tempTeamName, setTempTeamName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -34,6 +40,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       gerente: "Gerente",
       logistica: "Logística",
       chofer: "Chofer",
+      usuario: "Usuario",
     };
     return labels[role as keyof typeof labels] || role;
   };
@@ -44,6 +51,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       gerente: "text-purple-700 bg-purple-100",
       logistica: "text-blue-700 bg-blue-100",
       chofer: "text-green-700 bg-green-100",
+      usuario: "text-gray-700 bg-gray-100",
     };
     return colors[role as keyof typeof colors] || "text-gray-700 bg-gray-100";
   };
@@ -79,7 +87,11 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       return;
     }
     setIsUpdatingPassword(true);
-    const result = await changePassword(currentPassword, newPassword, confirmNewPassword);
+    const result = await changePassword(
+      currentPassword,
+      newPassword,
+      confirmNewPassword,
+    );
     setIsUpdatingPassword(false);
     if (result.ok) {
       toast.success("Contrasena actualizada. Cerrando sesion por seguridad...");
@@ -135,7 +147,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className={`px-3 py-1 rounded-full text-xs ${getRoleColor(
-                    user.role
+                    user.role,
                   )}`}
                 >
                   {getRoleLabel(user.role)}
@@ -153,7 +165,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <div className="flex items-center gap-2">
                 <Moon size={18} className="text-gray-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Modo oscuro</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    Modo oscuro
+                  </p>
                   <p className="text-xs text-gray-500">
                     Cambia el tema de la app. Se guarda en este dispositivo.
                   </p>
@@ -161,7 +175,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               </div>
               <Switch
                 checked={isDark}
-                onCheckedChange={(checked) => setPreference(checked ? "dark" : "light")}
+                onCheckedChange={(checked) =>
+                  setPreference(checked ? "dark" : "light")
+                }
               />
             </div>
           </div>
@@ -173,7 +189,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                 <Lock size={18} className="text-gray-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Seguridad</p>
-                  <p className="text-xs text-gray-500">Actualiza tu contraseña con el token actual</p>
+                  <p className="text-xs text-gray-500">
+                    Actualiza tu contraseña con el token actual
+                  </p>
                 </div>
               </div>
               <button
@@ -185,7 +203,10 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               </button>
             </div>
             {showPasswordForm && (
-              <form onSubmit={handleChangePassword} className="mt-4 flex flex-col gap-3">
+              <form
+                onSubmit={handleChangePassword}
+                className="mt-4 flex flex-col gap-3"
+              >
                 <input
                   type="password"
                   value={currentPassword}
@@ -213,7 +234,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                     disabled={isUpdatingPassword}
                     className="px-4 py-2 bg-[#3271a4] text-white rounded-lg text-sm hover:bg-[#2a5f8c] disabled:opacity-60"
                   >
-                    {isUpdatingPassword ? "Actualizando..." : "Cambiar contraseña"}
+                    {isUpdatingPassword
+                      ? "Actualizando..."
+                      : "Cambiar contraseña"}
                   </button>
                   <button
                     type="button"
@@ -235,7 +258,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <p className="text-xs text-gray-500 mb-1">
                 Número de Identificación
               </p>
-              <p className="text-sm text-gray-900">{user.identificacion || "No asignado"}</p>
+              <p className="text-sm text-gray-900">
+                {user.identificacion || "No asignado"}
+              </p>
             </div>
           </div>
 
@@ -264,49 +289,12 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <Shield size={20} className="text-blue-600 mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs text-blue-600 mb-1">Nombre de tu Equipo</p>
-                {editingTeamName ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={tempTeamName}
-                      onChange={(e) => setTempTeamName(e.target.value)}
-                      className="flex-1 px-3 py-1 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
-                      placeholder="Nombre del equipo"
-                    />
-                    <button
-                      onClick={() => {
-                        updateTeamName(tempTeamName);
-                        setEditingTeamName(false);
-                        toast.success("Nombre del equipo actualizado");
-                      }}
-                      className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                    >
-                      <Check size={18} />
-                    </button>
-                    <button
-                      onClick={() => setEditingTeamName(false)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-blue-900">
-                      {user.teamName || `Equipo de ${user.nombres}`}
-                    </p>
-                    <button
-                      onClick={() => {
-                        setTempTeamName(user.teamName || `Equipo de ${user.nombres}`);
-                        setEditingTeamName(true);
-                      }}
-                      className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <p className="text-xs text-blue-600 mb-1">
+                  Nombre de tu Equipo
+                </p>
+                <p className="text-sm text-blue-900">
+                  {user.teamName || `Equipo de ${user.nombres}`}
+                </p>
               </div>
             </div>
           )}
@@ -337,11 +325,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                       value ? "text-gray-900" : "text-gray-400"
                     }`}
                   >
-                    {
-                      permissionLabels[
-                        key as keyof typeof permissionLabels
-                      ]
-                    }
+                    {permissionLabels[key as keyof typeof permissionLabels]}
                   </p>
                 </div>
               ))}
@@ -351,7 +335,8 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
           {/* Additional Info */}
           <div className="pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-400">
-              Para cambiar tu información personal o permisos, contacta a un administrador del sistema.
+              Para cambiar tu información personal o permisos, contacta a un
+              administrador del sistema.
             </p>
           </div>
         </div>

@@ -1,0 +1,71 @@
+# Changelog
+
+## 2026-11-21 — E2E móvil de rutas, conductores y roles
+
+- Playwright autenticado pasó 5/5 con frontend, API y MySQL locales; incluye el flujo progresivo de edición/cancelación de ruta, filtro y detalle de Historial a 390×844, y CRUD de Driver desde Gestión de Equipo.
+- El caso Driver verifica edición, baja/reactivación y transiciones Driver→Logistics→Driver con sincronización del perfil y la lista.
+- Alta confirmada cierra el diálogo aunque falle un refresco posterior; mensaje SMTP no enviado sigue explícito.
+- Se documentaron correcciones a selectores Playwright y al test de navegación móvil. Fixtures temporales borrados; conteos QA en cero.
+- Frontend lint/build/npm audit correctos; backend hermano 47/47.
+
+## 2026-11-21 — Auditoría E2E de CRUD, roles y respuesta responsive
+
+- Se corrigió el filtro de conductores inactivos para conservar bajas al solicitar todas las filas; cargas concurrentes antiguas ya no pisan la más reciente.
+- Chrome E2E completó edición/baja/filtro/reactivación Driver; rol User sin controles y 403; Logistics con Rutas/200 y Vehicles/403; Vehicle alta/búsqueda/edición/baja lógica.
+- Viewport de Equipo en 390×844 pasó sin overflow; fixtures temporales limpiados.
+- Se verificó que baja de vehículo conserva registro inactivo para historial y lo excluye del listado activo.
+- Se añadió workflow frontend con `npm ci`, auditoría npm, lint y build para push/PR a `main`.
+- Se agregó Playwright y `npm run test:e2e`; Chrome/MySQL ejecutó login negativo, CRUD Admin móvil, edición de ruta con Driver visible preservando operación y rol User denegado 4/4; el runner local limpia fixtures por prefijos exclusivos.
+
+## 2026-11-21 — Riesgos UX y robustez de sesión
+
+- Se quitó el endpoint de ubicación de vehículo que no existía; el tracking consume posiciones de ruta reales.
+- Errores de carga de tracking preservan el último dato visible y ofrecen reintento; geometría de OSRM degradada queda etiquetada como estimada.
+- `/Auth/me` y refresh tienen timeout; fallos se presentan claramente al usuario.
+- Build/lint de producción y auditoría npm pasan con cero vulnerabilidades.
+
+## 2026-11-21 — Permisos, rutas y sesión
+
+- El rol API `User` ya no hereda los permisos de Logistics; recibe una vista informativa sin funciones operativas.
+- La restauración de sesión consulta `/Auth/me` y no confía en el perfil local para decidir permisos.
+- Crear/editar rutas sincroniza el vehículo del Driver en la misma unidad de trabajo; se retiró la segunda petición que podía fallar sin notificación.
+- El listado permite buscar y filtrar por estado, vehículo y conductor; guarda con bloqueo de doble envío y conserva el diálogo cuando falla el borrado.
+- Dashboard y Gestión de Rutas exponen errores de carga con opción de reintento; ya no convierten fallos en cifras cero.
+- Panel administrativo describe el alcance de empresa y el alta usa el resultado `{ok, invitationSent}`.
+- Verificación: lint/build de frontend, npm audit 0, backend 43/43, Release build y endpoints locales.
+- Móvil nativo pospuesto por decisión del usuario; responsive web permanece dentro de esta fase.
+
+## 2026-11-20
+
+- Se creó el constructor de rutas por pasos.
+- Se añadió búsqueda de ubicaciones y etiquetas de mapa.
+- Se documentó el modelo de paradas de recogida/entrega/ambas.
+- Se inició la auditoría integral multiagente.
+- Se corrigió la captura de clics del mapa mediante la referencia Leaflet compatible con React-Leaflet 5.
+- Se añadieron tipos de operación/estado de parada al modelo frontend y al payload hacia la API.
+- Se añadió el selector visible de Entrega, Recogida y Recogida y entrega para paradas.
+- El build de producción del frontend quedó verificado correctamente.
+- Se registró la deuda pendiente del lint global: 86 errores y 27 advertencias heredadas.
+# Cambios 2026-11-20 — Estabilización y constructor de rutas
+
+- Se refactorizó el constructor de rutas para visualizar A, paradas numeradas y B, seleccionar puntos con clic y especificar recogida/entrega/ambas.
+- Se eliminó el movimiento GPS ficticio; el conductor sólo registra la ubicación entregada por geolocalización.
+- Se tiparon vistas, contextos y cliente de API; el lint global ahora pasa sin diagnósticos.
+- Next.js se actualizó a 16.4.6 por vulnerabilidades detectadas; `npm audit` queda en 0 vulnerabilidades.
+- El proxy API usa `FLETFLOW_API_URL` configurable. `.env.local` local apunta a API corregida en 5048 y está ignorado por Git.
+- `npm run build` y `/dashboard` local responden correctamente.
+
+
+## 2026-11-21 — Alta y baja de ruta en mapa móvil
+
+- Se añadió E2E que crea rutas desde la UI a 390×844 con clics reales, dos paradas con operaciones distintas, asignación, persistencia y borrado confirmado.
+- La prueba encontró y permitió corregir el ancho cero del nombre de parada en móvil.
+- CI añade un chequeo Playwright de layout responsive no mutante.
+- Resultado: suite Chrome/API/MySQL 7/7; lint/build/npm audit correctos y datos QA retirados.
+
+## 2026-11-21 — Verificación IDOR entre tenants sobre HTTP/MySQL
+
+- Runner local crea dos tenants Admin temporales y limpia ambos al terminar.
+- Playwright verifica listados y operaciones cruzadas de Vehicles, Drivers y Routes, y evita enlazar recursos de otra empresa al crear ruta.
+- Se persistió GPS de ruta en progreso: propietario lee la posición y tenant ajeno recibe `200 []`; POST de GPS ajeno responde 404.
+- Suite autenticada Chrome/API/MySQL pasó 8/8; cero fixtures al cerrar.
