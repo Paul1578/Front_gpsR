@@ -276,3 +276,8 @@
 - La alerta de Vehicle ahora bloquea clics repetidos durante el reintento y comunica su estado; E2E verifica que un vehículo vuelve a estar disponible para asignación.
 
 - Se alinean con backend los límites visibles del diálogo TeamManagement y se previenen entradas sólo con espacios. La primera lint detectó dos atributos maxLength redundantes; se corrigió y lint/build/discovery 19 pasaron.
+
+## 2026-11-22 — Revalidación del último lote Front
+
+- Actions 45025319275 pasó en HEAD 000d6cb: audit, lint, build, responsive y E2E Chrome integrado con API/MySQL.
+- El commit actual de outbox backend todavía requiere un run integrado nuevo tras publicarse.

@@ -921,3 +921,17 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - ESLint encontró `react/jsx-no-duplicate-props` en los formularios existentes de alta de Driver (nombres/apellidos), porque el parche genérico insertó `maxLength` encima del atributo que ya existía.
 - Solución: retirar las props nuevas duplicadas y mantener una única longitud 100 por campo; límites 100/200/20 continúan en los formularios objetivo.
 - Repetición local: `npm run lint`, `npm run build` y Playwright discovery **19** pasaron; no ejecutar comandos de Front con paths relativos de Back.
+
+## 2026-11-22 — CI frontend aún referenciaba backend anterior — CONTROLADO
+
+- Actions 45025319275 completó success antes de crear la migración EmailOutbox. Validó frontend 000d6cb con backend 8d3cb32, no el nuevo árbol local.
+- Solución de control: documentar el SHA efectivo y no usar ese run como evidencia del outbox; ejecutar Actions integrada después de publicar backend.
+- Prevención: comparar el SHA checkout del backend en el log de cada workflow antes de asociar el run con cambios posteriores.
+
+## 2026-11-22 — Errores de entorno de la iteración outbox documentados en backend
+
+- La compilación EF inicial falló por extensión DataProtection sin namespace; se agregó el using y la migración se generó.
+- Un intento de lanzar smoke tomó el host global sin runtime; se relanzó con el SDK local y pasó.
+- El guard del terminal rechazó una limpieza amplia antes de ejecutar comandos; se sustituyó por detener/eliminar únicamente el contenedor descartable con nombre exacto.
+- La corrida previa sin requests concurrentes no se contó como prueba de serialización; el smoke con dos requests reales pasó.
+- Detalle y prevención se mantienen en Back_GPS/docs/ERROR_LOG.md.

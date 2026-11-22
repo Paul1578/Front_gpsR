@@ -360,3 +360,9 @@ Fecha de actualización: 2026-11-22.
 - Commit `42b1b4b` (retry accesible y E2E de opciones recuperadas) validado por Actions `45023625523`: workflow Front completado `success`, con backend de la rama integrada.
 
 - En Front, primera lint tras editar el diálogo encontró dos props `maxLength` duplicadas en el form Driver existente; se retiraron y la repetición lint/build/discovery 19 pasó. E2E integrado de la rama está pendiente.
+
+## Validación integrada más reciente — 2026-11-22
+
+- Front HEAD 000d6cb, Actions 45025319275 success: lint/build/audit, responsive y E2E autenticado con API/MySQL, cleanup.
+- El run consumió backend 8d3cb32; las siguientes modificaciones del outbox backend aún no se han publicado, por lo que se requiere una corrida integrada nueva.
+- Desarrollo móvil nativo queda explícitamente aplazado; mantener responsive web para desktop/tablet/móvil.

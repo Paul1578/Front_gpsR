@@ -485,3 +485,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front commit `42b1b4b` quedó validado por Actions `45023625523` (`success`), incluidos build backend y E2E Chrome/API/MySQL integrado. Próxima iteración puede continuar sobre `refactor/route-builder`.
 - Front primer lint de límites falló por dos `maxLength` duplicados en form Driver; removidos, repetición `npm run lint && npm run build` y discovery 19 pasó. Este fallo también quedó en ERROR_LOG.
+
+## Revisión de CI y dependencia backend — 2026-11-22
+
+- Front está en refactor/route-builder, HEAD 000d6cb; Actions 45025319275 terminó success: audit/lint/build, responsive 1/1 y E2E Playwright/API/MySQL del flujo autenticado, cleanup del runner. El backend validado en ese run era HEAD 8d3cb32.
+- Backend inicia el siguiente lote para hacer durable el correo de recuperación; está en desarrollo local en chore/stabilize-fleet-platform y aún no está en Actions. Después del push, repetir workflow integrado con esa migración antes de actualizar la validación aquí.
+- Móvil nativo pospuesto por decisión del usuario; las pruebas responsive web siguen dentro del alcance. La auditoría general sigue abierta.

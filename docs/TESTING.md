@@ -240,3 +240,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Spec de estados de error/reintento: 2/2. El test Historial conserva 503 hasta observar el alert y luego permite reintentar.
 - Dos primeras E2E API/MySQL dieron 16/18 y 17/18; tras corregir selectores y mock, repetición completa pasó 18/18 en Chrome. Runner local acabó código 0 y eliminó la DB/fixtures efímeros.
 - Actions Front `45023625523` para SHA `42b1b4b35b3489e388488910e1ee084595f8b3b7` terminó `success`; el workflow incluye backend Release/xUnit, frontend lint/build, responsive y E2E autenticado con API/MySQL/cleanup.
+
+## Actions integradas más recientes — 2026-11-22
+
+- Run 45025319275 para Front 000d6cb terminó success: backend Release/xUnit/smoke, audit/lint/build, responsive 1/1, E2E autenticado Playwright/API/MySQL y cleanup.
+- Este run usó Backend 8d3cb32. La implementación posterior de EmailOutbox requiere un nuevo run integrado para confirmar migración y API actuales.
