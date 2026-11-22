@@ -1024,3 +1024,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Actions `45036661541` pasó para Front `a75914f`: suite Playwright autenticada contra API/MySQL **22/22**, responsive browser **1/1**, audit, lint y build success; el workflow también limpió API/contenedor.
 - El E2E nuevo de options 503 → alerta/`—` → retry con un vehículo forma parte de los 22 casos. No hubo fallos de test.
+
+## 2026-11-22 — Búsqueda de pruebas backend desde la raíz incorrecta — CORREGIDO
+
+- Un recuento secundario `rg` buscó la carpeta `BackEnd_Gps.Tests` mientras el directorio de trabajo era Front; devolvió error de ruta y no encontró tests.
+- Solución: conservar la búsqueda de specs Front desde este repo y ejecutar recuentos backend en `/home/leonardo/Back_GPS`; nunca interpretar salida de raíz ajena como cobertura cero.
