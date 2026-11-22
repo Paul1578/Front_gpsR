@@ -157,4 +157,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 ## Limpieza de fixture de reordenar paradas — 2026-11-22
 
 - Actions `44986079119` ejecutó la nueva persistencia del orden/tipos, pero el `finally` falló con 409 al borrar el vehículo: la ruta había asignado ese vehículo al Driver. Se corrigió restaurando la asignación previa; Actions `44986497890` pasó responsive 1/1 y Playwright 14/14.
-- Una revisión separada detectó que el cleanup podía cortar pasos posteriores si fallaba la ruta o la restauración. El `finally` ahora cancela rutas activas, intenta todas las operaciones aunque una falle y acumula errores explícitos. `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` pasan. Falta repetir la suite integrada del SHA siguiente.
+- Una revisión separada detectó que el cleanup podía cortar pasos posteriores si fallaba la ruta o la restauración. El `finally` ahora cancela rutas activas, intenta todas las operaciones aunque una falle y acumula errores explícitos. Validado local con lint/build/list/diff check y por Actions `44986877646` en SHA `aa49b83`: Release **57/57**, responsive **1/1**, E2E autenticado **14/14**; no se ejercitó el camino de cancelación de emergencia.
+
+## Breakpoint de 320 px — 2026-11-22
+
+- El E2E Admin responsive ahora reduce Mi Perfil a 320×844 y comprueba que el cambio de contraseña sigue visible sin overflow. Validación local: lint/build y descubrimiento 14/14; esperar Actions para considerar el viewport validado en navegador remoto.

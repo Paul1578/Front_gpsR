@@ -211,7 +211,7 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - GitHub Actions Front `44985541718` pasó para SHA `1f3a24c`: backend Release build **0 warnings/0 errors**, xUnit **56/56**, audit y lint verdes, build Next verde, responsive **1/1**, E2E autenticado **14/14** en Chrome con API y MySQL desechables.
 - El caso Driver ejecuta inicio de ruta, nota como evidencia, cierre de parada y cierre de ruta desde la UI móvil; por API comprueba `Completed` y vehículo `Available`. El modal de evidencia queda sobre controles Leaflet y cleanup elimina fixtures aun ante error.
 - Documenté el contrato HTTP incorrecto asumido por la prueba y el z-index que bloqueaba el modal en `ERROR_LOG.md`; ambos están corregidos y verificados por CI.
-- Siguiente: cerrar cobertura real de reordenar/quitar paradas, matriz backend de permisos tras cambios de rol, CRUD y responsive de pantallas restantes. Dos agentes trabajan en checkout aislado: prueba del constructor frontend y revocación por cambio de rol backend; revisar e integrar resultados antes de publicar.
+- Siguiente: cerrar cobertura real de reordenar/quitar paradas, matriz backend de permisos tras cambios de rol, CRUD y responsive de pantallas restantes. Las revisiones delegadas de frontend/backend ya terminaron y sus cambios se integraron; el hardening adicional del cleanup está publicado y en validación.
 - No declarar completa la misión. SMTP necesita credenciales externas vigentes; app nativa fue pospuesta por el usuario; Super Admin requiere definición de producto porque no existe en el contrato backend.
 
 ## Reordenamiento de paradas: corrección del cleanup — 2026-11-22
@@ -219,3 +219,15 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Integré la prueba en `refactor/route-builder` (commit `69bdd31`); agrega/retira/reordena paradas y compara vía API los cuatro puntos y operaciones persistidos. La ejecución local se omitió por no tener servicios/credenciales QA; Actions `44986079119` sí la ejecutó y detectó que la limpieza de vehículo recibía 409.
 - Causa: crear ruta asigna su vehículo al Driver; tras borrar la ruta, ese vínculo sigue vigente. El test ahora captura el `vehicleId` previo y en `finally` lo restaura (o desasigna) antes de eliminar el vehículo de prueba.
 - Lint, build y `git diff --check` pasan tras el cambio. Pendiente publicar y repetir Actions Chrome/API/MySQL; no contar aún este E2E como aprobado.
+
+## Resultado E2E de orden y cleanup — 2026-11-22
+
+- Actions frontend `44986877646` para `aa49b83` terminó success: backend Release 57/57, build sin warnings/errores, responsive 1/1 y Playwright Chrome/API/MySQL 14/14.
+- El test persistió cuatro puntos en el orden exacto con operaciones recogida/ambas/recogida y demostró que el punto eliminado no se guarda. Su cleanup restauró/desasignó el Driver y retiró el vehículo.
+- La cancelación de ruta activa ante fallo está implementada y reporta errores de limpieza, pero el caso normal del test no ejecutó esa rama.
+- Estado frontend `refactor/route-builder` sincronizado en `aa49b83`; faltan pruebas CRUD, roles y responsive que continúan listadas en estado del proyecto.
+
+## Responsive de Perfil a 320 px — 2026-11-22
+
+- Amplié el recorrido autenticado Admin para abrir Perfil y reducir el viewport a 320×844 antes de abrir el formulario de cambio de contraseña; se conserva la aserción de ancho y visibilidad.
+- Lint, build, test discovery (14) y diff check pasan localmente. Cambio aún sin publicar; requiere Actions integrado antes de contar el breakpoint como cubierto.

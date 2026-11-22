@@ -167,4 +167,8 @@ Fecha de actualización: 2026-11-22.
 ## Validación de orden de paradas — 2026-11-22
 
 - El E2E ahora agrega, quita y reordena paradas, y comprueba orden y operación exactos desde GET API. Actions `44986079119` encontró que el cleanup dejaba el vehículo asignado al Driver (409); se restauró la asignación original y `44986497890` pasó 14/14 en Playwright y 1/1 responsive.
-- Una revisión separada motivó hardening del `finally`: cancelar ruta activa, seguir con los demás cleanup aunque falle un paso y reportar todos los errores. Lint/build/discovery pasan; falta Actions del SHA de hardening antes de marcarlo validado.
+- Una revisión separada motivó hardening del `finally`: cancelar ruta activa, seguir con los demás cleanup aunque falle un paso y reportar todos los errores. Actions `44986877646` para `aa49b83` pasó: Release 57/57, responsive 1/1, Playwright 14/14. La rama de cancelación de emergencia queda implementada pero no fue ejercitada en este flujo normal.
+
+## Responsive móvil estrecho — 2026-11-22
+
+- Amplié el E2E Admin de Perfil para comprobar el formulario de cambio de contraseña a 320×844, además de los breakpoints ya cubiertos 390×844 y 768×1024. Lint, build y discovery de 14 tests pasan; la nueva aserción está pendiente de Actions integrado.

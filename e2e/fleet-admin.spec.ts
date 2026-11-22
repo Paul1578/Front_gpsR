@@ -140,6 +140,8 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertNoHorizontalOverflow();
   await page.getByRole("button", { name: "Cambiar contraseña" }).click();
   await expect(page.getByPlaceholder("Contraseña actual")).toBeVisible();
   await assertNoHorizontalOverflow();
