@@ -1054,3 +1054,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Revalidación cruzada Front Actions `45038687601` pasó con Front `f972e19` y Backend `b625c28`: Release/xUnit **86/86**, audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **23/23** y cleanup.
 - Incluye error/reintento de GET `/Vehicles` a 320 px y el backend con key ring cifrado, test-email restringido y rate limit atómico.
+
+## 2026-11-22 — Gestión de Vehículos mostraba vacío durante la carga inicial — CORREGIDO; CI PENDIENTE
+
+- Hallazgo: aunque la vista ya diferenciaba el 503 del estado vacío, la lista podía verse momentáneamente vacía antes de que terminara la petición inicial.
+- Solución: `FleetContext` expone `vehiclesLoading`, y Gestión de Vehículos presenta un estado accesible de carga antes de error, vacío o resultados.
+- El E2E retiene deliberadamente la respuesta inicial; comprueba que aparece “Cargando vehículos…” y no el estado vacío, luego libera un 503 y prueba error → reintento 200 → unidad visible a 320 px.
+- Pruebas locales: el caso enfocado pasó 1/1; spec completo de errores/carga 5/5; `npm run lint`, `npm run build`, discovery Playwright 23 y `git diff --check` pasan. CI de este cambio aún pendiente.
+- Prevención: probar carga pendiente, fallo y recuperación por separado; una lista inicial vacía no demuestra que la carga haya concluido.

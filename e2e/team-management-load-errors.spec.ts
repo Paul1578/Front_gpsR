@@ -107,6 +107,14 @@ test("Dashboard de Logistics muestra error de opciones de flota y recupera al re
 
 test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permite reintentar", async ({ page }) => {
   let vehiclesRequestFails = true;
+  let releaseInitialVehicleFailure: () => void = () => {};
+  let notifyInitialVehicleRequest: () => void = () => {};
+  const initialVehicleRequestStarted = new Promise<void>((resolve) => {
+    notifyInitialVehicleRequest = resolve;
+  });
+  const initialVehicleFailureGate = new Promise<void>((resolve) => {
+    releaseInitialVehicleFailure = resolve;
+  });
   await page.setViewportSize({ width: 320, height: 844 });
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -131,6 +139,8 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
 
     if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
       if (vehiclesRequestFails) {
+        notifyInitialVehicleRequest();
+        await initialVehicleFailureGate;
         await route.fulfill({
           status: 503,
           contentType: "application/json",
@@ -185,6 +195,11 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
   await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+
+  await expect(page.getByRole("status")).toHaveText("Cargando vehículos…");
+  await expect(page.getByText("No hay vehículos registrados", { exact: true })).toHaveCount(0);
+  await initialVehicleRequestStarted;
+  releaseInitialVehicleFailure();
 
   const vehiclesAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los vehículos" });
   await expect(vehiclesAlert).toBeVisible();

@@ -585,3 +585,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front Actions `45038687601` pasó con Front `f972e19`, checkout Backend exacto `b625c28`: build/tests Release, xUnit **86/86**, audit, lint, build, responsive **1/1**, E2E Chrome/API/MySQL **23/23**, cleanup success.
 - Incluye Gestión de Vehículos con error/reintento en viewport 320; backend con rate limit y email diagnóstico endurecidos y test de key ring cifrado/restart.
 - Decisión Admin delegado continúa pendiente; móvil nativo aplazado y SMTP real requiere credenciales. No declarar la misión completa.
+
+## Continuación 2026-11-22 — Carga pendiente en Gestión de Vehículos
+
+- Rama frontend `refactor/route-builder`; backend `chore/stabilize-fleet-platform`.
+- `FleetContext` ahora expone `vehiclesLoading`. La vista prioriza el estado accesible de carga sobre error/vacío/resultados.
+- E2E bloquea la petición inicial de `/Vehicles`: comprueba carga y ausencia de estado vacío, libera 503, verifica alerta/reintento y fixture `QA-VEH-01`, más viewport 320 px.
+- Local: caso enfocado 1/1; spec de carga/error 5/5; `npm run lint`, `npm run build`, Playwright discovery 23 y `git diff --check` pasan. Falta CI del nuevo commit.
+- La revisión de seguridad halló dos tareas backend en curso con agente: concurrencia real en test del rate limit y descifrado del key ring en rotación de certificado. Revisar/validar su commit antes de integrar.
+- Actions Front `45039219806` para Front `52761b4` seguía en progreso al guardar esta nota; confirmar resultado y documentar.
+- No cambiar la concesión de rol Admin delegado hasta recibir respuesta de producto. SMTP actualizado y certificado/volumen de producción son dependencias externas; móvil nativo está pospuesto.

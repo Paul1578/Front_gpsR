@@ -426,3 +426,9 @@ Fecha de actualización: 2026-11-22.
 - E2E local del archivo de estados de carga **5/5**, lint/build y discovery 23 pasan; Actions integrado pendiente para el nuevo caso.
 - Actions `45038229853` confirmó Front `40bdcea`: 23/23 E2E API/MySQL y responsive/lint/build/audit correctos; incluido error/reintento de Vehículos en 320 px. Backend `b625c28` validó 86/86 xUnit y smokes/cleanup en `45038446662`.
 - Revalidación cruzada actual: `45038687601` pasó Front `f972e19` + Backend `b625c28`; 86/86 xUnit, 23/23 E2E, responsive 1/1, audit/lint/build y cleanup. Incluye el nuevo estado de error/reintento en Gestión de Vehículos.
+
+## Actualización 2026-11-22 — Gestión de Vehículos
+
+- Añadido estado de carga explícito para que una petición pendiente no se muestre como flota vacía. E2E cubre carga pendiente → error 503 → reintento correcto a 320 px.
+- Verificación local: Playwright de errores/carga **5/5**, lint/build y discovery **23** correctos. Actions del cambio pendiente.
+- Continúa abierta la auditoría integral: CRUD y matriz de roles/responsive por cerrar, política de promoción Admin delegada sin decisión de producto; SMTP real externo y móvil nativo aplazado por el usuario.

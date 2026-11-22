@@ -10,7 +10,7 @@ interface VehiclesManagementProps {
 }
 
 export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle, getInactiveVehicles, reactivateVehicle, loadErrors, retryFleetData } = useFleet();
+  const { vehicles, addVehicle, updateVehicle, deleteVehicle, getInactiveVehicles, reactivateVehicle, loadErrors, vehiclesLoading, retryFleetData } = useFleet();
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -220,7 +220,11 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
         )}
 
         <div className="flex-1 overflow-auto p-4 md:p-6">
-          {loadErrors.includes("vehículos") ? (
+          {vehiclesLoading ? (
+            <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+              Cargando vehículos…
+            </p>
+          ) : loadErrors.includes("vehículos") ? (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
               <span>No se pudieron cargar los vehículos. No se puede confirmar si la flota está vacía.</span>
               <button type="button" onClick={() => void retryFleetData()} className="rounded-md border border-red-200 bg-white px-3 py-1.5 font-semibold hover:bg-red-50">

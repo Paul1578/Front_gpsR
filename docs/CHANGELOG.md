@@ -336,3 +336,9 @@
 - Actions `45038446662` validó Backend `b625c28`: xUnit 86/86, HTTP/MySQL de tenant/roles/flota, concurrencia y cleanup.
 
 - Actions `45038687601` cerró revalidación cruzada: Front `f972e19` + Backend `b625c28`, xUnit 86/86, E2E 23/23, responsive/audit/lint/build y cleanup success.
+
+## 2026-11-22 — Estado de carga de Vehículos
+
+- Se añadió estado de carga explícito en el contexto y Gestión de Vehículos, previo a los estados de error, lista vacía y resultados.
+- Playwright mantiene pendiente la respuesta inicial para comprobar que la vista no afirma que la flota está vacía; luego verifica 503, reintento y unidad recuperada a 320 px.
+- Pruebas locales: load-errors 5/5, lint, build, discovery Playwright 23 y diff-check pasan. Actions integrada del commit aún pendiente.

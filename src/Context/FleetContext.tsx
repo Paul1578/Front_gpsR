@@ -126,6 +126,7 @@ interface FleetContextType {
   routeAssignmentVehicles: RouteAssignmentVehicle[];
   routeAssignmentDrivers: RouteAssignmentDriver[];
   loadErrors: string[];
+  vehiclesLoading: boolean;
   retryFleetData: () => Promise<void>;
 
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<ActionResult>;
@@ -596,6 +597,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [routeAssignmentVehicles, setRouteAssignmentVehicles] = useState<RouteAssignmentVehicle[]>([]);
   const [routeAssignmentDrivers, setRouteAssignmentDrivers] = useState<RouteAssignmentDriver[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const driversRequestSequence = useRef(0);
   const [fleetOwnerId, setFleetOwnerId] = useState<string | null>(null);
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
@@ -612,6 +614,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setRouteAssignmentVehicles([]);
     setRouteAssignmentDrivers([]);
     setLoadErrors([]);
+    setVehiclesLoading(false);
     setFleetOwnerId(user?.id ?? null);
   }, [user?.id]);
 
@@ -651,7 +654,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadVehicles = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (["chofer", "usuario", "logistica"].includes(user?.role ?? "")) return;
+      if (["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
+        setVehiclesLoading(false);
+        return;
+      }
+      setVehiclesLoading(true);
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
         const active = data.filter((vehicle) => vehicle.isActive !== false);
@@ -661,6 +668,8 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         if (isAuthError(error)) return;
         setResourceError("vehículos", true);
         console.error("Error cargando vehículos desde API", error);
+      } finally {
+        setVehiclesLoading(false);
       }
     };
     void loadVehicles();
@@ -877,11 +886,13 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       try { await refreshRouteAssignmentOptions(); } catch { failures.push("opciones de asignación"); }
     }
     if (!["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
+      setVehiclesLoading(true);
       try {
         const data = await apiFetch<ApiVehicle[]>("/Vehicles");
         setVehicles(data.filter((item) => item.isActive !== false).map(mapApiVehicle));
         setResourceError("vehículos", false);
       } catch { failures.push("vehículos"); }
+      finally { setVehiclesLoading(false); }
       try { await refreshDrivers(); } catch { failures.push("conductores"); }
     }
     if (user?.role !== "usuario") {
@@ -1231,6 +1242,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         routeAssignmentVehicles: userOwnsLoadedData ? routeAssignmentVehicles : [],
         routeAssignmentDrivers: userOwnsLoadedData ? routeAssignmentDrivers : [],
         loadErrors: userOwnsLoadedData ? loadErrors : [],
+        vehiclesLoading: userOwnsLoadedData && vehiclesLoading,
         retryFleetData,
         addVehicle,
         getInactiveVehicles,
