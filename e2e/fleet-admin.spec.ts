@@ -660,7 +660,8 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
     await expectNoHorizontalOverflow();
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
-    await expect(page.getByText("Recogida y entrega tablet QA")).toBeVisible();
+    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..", { has: page.getByText(/3 puntos ·/) });
+    await expect(routeSummary).toContainText("3 puntos");
     await expectNoHorizontalOverflow();
 
     const createResponsePromise = page.waitForResponse((response) =>

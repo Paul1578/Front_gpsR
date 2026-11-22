@@ -11,6 +11,7 @@ Fecha de actualización: 2026-11-22.
 - Primera corrida del nuevo E2E: Actions `44991979019` encontró timeout de 30 s en el caso tablet (15 E2E restantes pasaron). Cleanup del caso dependía del contexto de página cerrado por el timeout; se separó a `APIRequestContext` del fixture `request`, se amplió timeout total del caso a 90 s y se acotaron los waits UI a 8 s. Revalidación integrada pendiente; detalle en `docs/ERROR_LOG.md`.
 - En Actions `44992464372`, el timeout acotado identificó un segundo error de test: esperaba el botón móvil Abrir menú a 768 px; el lateral ya está expandido en tablet. Se corrigió navegando directamente por Gestión de Rutas; 15 E2E restantes y cleanup del caso pasaron. Repetición pendiente.
 - Actions `44992803081` llegó al paso de recursos; el vehículo creado por API no estaba en la lista previamente cargada por FleetContext. Se agregó reload antes de abrir el constructor; 15 casos restantes y cleanup pasaron. Revalidación completa pendiente.
+- Actions `44993132771` avanzó hasta revisión; la pantalla no lista el nombre de cada parada y solo muestra cantidad, origen/destino y recursos. La aserción ahora comprueba “3 puntos”; nombre y `PickupAndDelivery` se validarán tras persistencia API. Los otros 15 y cleanup pasaron; repetir CI.
 
 ## Ramas
 

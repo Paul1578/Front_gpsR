@@ -124,3 +124,4 @@
 - La primera Actions `44991979019` detectó timeout del caso y fragilidad de cleanup ligado a page; solución registrada en `ERROR_LOG.md`, E2E ahora usa request independiente y timeout acotado por fase.
 - Actions `44992464372` reveló que tablet utiliza navegación lateral permanente y no el botón móvil; el E2E ya elige directamente la sección de rutas. Suite corregida pendiente de CI.
 - Actions `44992803081` encontró que el selector de recursos seguía usando la lista FleetContext previa al POST del vehículo de prueba. Se añadió recarga del dashboard antes de abrir el constructor.
+- Actions `44993132771` precisó que revisión resume cantidad/origen/destino y no muestra cada parada; la aserción ahora espera tres puntos y la operación/nombres se verifican desde API después del guardado.

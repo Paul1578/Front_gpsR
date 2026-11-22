@@ -570,3 +570,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44992803081` avanzó por el mapa y la revisión tablet, pero agotó 8 s al asignar el vehículo: se creó por API después de la carga inicial del Dashboard, así que `FleetContext` conservó la lista anterior sin ese registro. Los otros 15 E2E pasaron y el fixture temporal sí se limpió.
 - Corrección: recargar Dashboard después del POST de vehículo y antes de entrar al constructor, replicando el patrón del E2E móvil ya validado.
 - Pendiente repetir Actions: el nuevo caso aún no ha guardado la ruta ni cuenta como aprobado.
+
+# 2026-11-22 — Aserción de revisión buscaba texto que la pantalla no renderiza — CORREGIDO
+
+- Actions `44993132771` completó los pasos de mapa y asignación, pero falló al buscar el nombre de parada dentro de “Revisa y crea”. El componente de revisión muestra el conteo de puntos, origen/destino y recursos; no lista nombres individuales de paradas en esa etapa.
+- Corrección: comprobar `3 puntos` en la fila Recorrido y mantener la verificación del nombre y `PickupAndDelivery` en el GET de ruta guardada, que sí es la fuente persistida.
+- Los otros 15 E2E y cleanup pasaron. La ruta del test tablet no se guardó; la siguiente ejecución debe verificar creación/persistencia antes de contar el caso.
