@@ -26,6 +26,26 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await expect(page.getByLabel("Documento *")).toBeVisible();
   await expect(page.getByLabel("Teléfono *")).toBeVisible();
 
+  const expectNoHorizontalOverflow = async () => {
+    const dimensions = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  };
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.getByPlaceholder("Juan").fill("Chofer QA");
+  await page.getByPlaceholder("Pérez").fill("Responsive");
+  await page.getByPlaceholder("jperez").fill("fletflow-qa-responsive");
+  await page.getByLabel("Correo electrónico").fill("fletflow.qa.responsive@example.test");
+  await page.locator('input[type="password"]').fill("Test-password-123!");
+  await page.getByLabel("Documento *").fill("E2EQA320768");
+  await page.getByLabel("Teléfono *").fill("0990000000");
+  await expectNoHorizontalOverflow();
+  await expect(page.getByRole("heading", { name: "Crear Nuevo Usuario" })).toBeVisible();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expectNoHorizontalOverflow();
+  await expect(page.getByLabel("Documento *")).toBeVisible();
+  await expect(page.getByLabel("Teléfono *")).toBeVisible();
+
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeVisible();

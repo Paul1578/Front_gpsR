@@ -28,6 +28,12 @@
 - El flujo ahora vuelve a Resumen mientras los errores siguen visibles, libera HTTP 200 y hace allí el retry conjunto; después cambia a Usuarios para recuperar `/Users/my-team`, y al final verifica que Exportar se habilitó.
 - Prevención: ordenar una prueba de reintentos según las transiciones que disparan cargas automáticas de la pantalla.
 
+## 2026-11-22 — Panel de empresa requería cobertura responsive estrecha — EN VALIDACIÓN
+
+- QA detectó que la prueba del formulario verificaba los campos Driver a 390 px y sólo medía el ancho general en 320 px dentro de otra pestaña; no probaba escribir ni la presentación del formulario en 320/768.
+- E2E ahora llena campos de Driver a 320 px y verifica overflow/heading/inputs a 320 y 768 px. No crea datos en este caso.
+- Prevención: cubrir interacción y visibilidad de controles responsive en cada viewport, no sólo el ancho del documento.
+
 ## 2026-11-22 — Edición de vehículo podía ocultar una actualización parcial — CORREGIDO LOCALMENTE
 
 - Auditoría independiente confirmó que el frontend envía datos generales y estado a endpoints distintos. Si `/Vehicles/{id}` respondía 200 y `/Vehicles/{id}/status` fallaba, la base ya tenía marca/modelo nuevos, pero la UI conservaba el objeto viejo y reportaba un fallo total sin explicar que hubo persistencia parcial.
