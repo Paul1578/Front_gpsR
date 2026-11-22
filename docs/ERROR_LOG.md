@@ -510,20 +510,20 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La prueba de persistencia buscaba `member.role`; `/Users/my-team` entrega `roles: string[]`. Se alineó la aserción al DTO real y se comprobó que la lista contiene `User`.
 - Verificación tras ambas correcciones: suite Playwright autenticada Chrome/API/MySQL **14/14**, incluyendo alta UI y lectura persistida. Base efímera eliminada.
 
-## 2026-11-22 — E2E de Driver esperaba 204 para estado de parada y dejó una ruta activa — CORREGIDO, REPETIR CI
+## 2026-11-22 — E2E de Driver esperaba 204 para estado de parada y dejó una ruta activa — CORREGIDO Y VERIFICADO
 
 - El endpoint `PUT /Routes/{id}/points/{index}/status` responde `200` con la ruta, mientras que el test esperaba `204`. La aserción queda alineada al contrato observado en el controlador.
 - Al fallar la aserción antes de completar la ruta, quedaba una ruta InProgress en el MySQL de esa ejecución. El retry y el test cross-tenant intentaban usar el mismo Driver y recibían 409 por conflicto de agenda; no fue una regresión de backend.
 - Se añadió `finally` que cancela y da de baja la ruta temporal aun cuando falle la prueba. Los nombres/placas mantienen el prefijo del cleanup existente.
-- Actions `44984300436` falló sólo en este nuevo caso y en los casos posteriores afectados por ese residuo. Corregido localmente; lint/build/discovery pasan. Pendiente repetir Actions en el siguiente SHA.
+- Actions `44984300436` falló sólo en este nuevo caso y en los casos posteriores afectados por ese residuo. La siguiente corrida `44985541718`, SHA `1f3a24c`, terminó success: responsive 1/1 y Playwright autenticado 14/14; cleanup y cross-tenant pasan.
 
 ### Causa visual adicional — Leaflet interceptaba el diálogo de evidencia
 
 - El trace de `44984722584` muestra que el diálogo `z-50` quedaba debajo de los controles Leaflet (`z-index` superior), por eso el botón “Nota” era visible pero el mapa interceptaba el clic.
 - `DialogOverlay`/`DialogContent` ahora usan capas 2000/2001; el mapa no debe cubrir el modal. La limpieza ahora lee el estado real de la ruta y exige respuesta exitosa al cancelarla y darla de baja, sin tragarse errores.
-- Lint/build y discovery pasan localmente; nuevo Actions pendiente.
+- Lint/build y discovery pasaron localmente; Actions `44985541718` confirmó el flujo de evidencia/cierre sobre Chrome, API y MySQL efímero.
 
 ### Repetición `44985230566` — contrato uniforme del endpoint de parada
 
 - La capa del modal corrigió el clic: CI guardó evidencia y llegó a completar la parada. La respuesta de `PUT .../points/{index}/status` es `200` tanto al iniciar como al completar, pues el controlador devuelve la ruta actualizada. El test todavía esperaba 204 sólo al completar.
-- El cleanup pasó: los 13 casos siguientes, incluido el tenant cruzado que antes devolvía 409, quedaron verdes. Ajustar la última aserción a 200 y repetir el run.
+- El cleanup pasó: los 13 casos siguientes, incluido el tenant cruzado que antes devolvía 409, quedaron verdes. Se alineó la última aserción a 200; Actions `44985541718` pasó 14/14.

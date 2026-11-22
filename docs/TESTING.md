@@ -142,4 +142,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Trace del fallo reveló modal de evidencia tapado por controles del mapa (`z-50`); se corrigió elevando Dialog a z-index 2000/2001. Cleanup de ruta ahora comprueba las respuestas de cancelación/baja. Prueba integral pendiente.
 
-- `44985230566`: **13/14**. Dialog Note guardó evidencia y dejó que la parada se completara; assert falló por esperar 204 en vez del HTTP 200 real. Tenant cross-tenant y cleanup pasaron. Nueva expectativa 200 pendiente de Actions.
+- `44985230566`: **13/14**. Dialog Note guardó evidencia y dejó que la parada se completara; assert falló por esperar 204 en vez del HTTP 200 real. Tenant cross-tenant y cleanup pasaron. La expectativa se corrigió y fue validada en Actions `44985541718`.
+
+## Driver E2E integrado — 2026-11-22
+
+- Actions `44985541718` en SHA `1f3a24c`: audit, lint y build correctos; backend Release **56/56** sin warnings/errores; responsive Chrome **1/1**; Playwright autenticado Chrome/API/MySQL **14/14**.
+- El E2E Driver inicia y completa una ruta móvil con evidencia de nota, y verifica por API que el vehículo vuelve a `Available`. CI usó MySQL desechable.
+- Las aserciones HTTP quedaron alineadas a 200 según el contrato observado; la ruta se limpia desde `finally`. El modal sobre Leaflet quedó comprobado en la ejecución integrada.

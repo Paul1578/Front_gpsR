@@ -196,4 +196,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Hallazgo adicional del trace: Leaflet (z-index de controles) interceptaba el botón “Nota” del modal. Se subió el z-index común del overlay/contenido a 2000/2001. Cleanup exige cancelación y baja exitosas. Nuevo E2E debe pasar y no contaminar cross-tenant.
 
-- Run `44985230566`: el modal ya funciona sobre mapa y cleanup elimina conflicto; 13/14 pasaron, incluido cross-tenant. Único fallo restante: aserción al completar parada esperaba 204 pero ese endpoint devuelve 200. Se corrigió localmente, falta CI siguiente.
+- Run `44985230566`: el modal ya funciona sobre mapa y cleanup elimina conflicto; 13/14 pasaron, incluido cross-tenant. Único fallo restante: aserción al completar parada esperaba 204 pero ese endpoint devuelve 200. Se corrigió y verificó después en Actions `44985541718` (14/14).
+
+## Resultado integrado Driver — 2026-11-22
+
+- Estado de ramas: Front `refactor/route-builder`, SHA `1f3a24c`, limpio y sincronizado; Back `chore/stabilize-fleet-platform`, SHA `2bf305d`, limpio y sincronizado. `main` intacta.
+- GitHub Actions Front `44985541718` pasó para SHA `1f3a24c`: backend Release build **0 warnings/0 errors**, xUnit **56/56**, audit y lint verdes, build Next verde, responsive **1/1**, E2E autenticado **14/14** en Chrome con API y MySQL desechables.
+- El caso Driver ejecuta inicio de ruta, nota como evidencia, cierre de parada y cierre de ruta desde la UI móvil; por API comprueba `Completed` y vehículo `Available`. El modal de evidencia queda sobre controles Leaflet y cleanup elimina fixtures aun ante error.
+- Documenté el contrato HTTP incorrecto asumido por la prueba y el z-index que bloqueaba el modal en `ERROR_LOG.md`; ambos están corregidos y verificados por CI.
+- Siguiente: cerrar cobertura real de reordenar/quitar paradas, matriz backend de permisos tras cambios de rol, CRUD y responsive de pantallas restantes. Dos agentes trabajan en checkout aislado: prueba del constructor frontend y revocación por cambio de rol backend; revisar e integrar resultados antes de publicar.
+- No declarar completa la misión. SMTP necesita credenciales externas vigentes; app nativa fue pospuesta por el usuario; Super Admin requiere definición de producto porque no existe en el contrato backend.

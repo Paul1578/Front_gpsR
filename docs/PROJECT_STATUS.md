@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Fecha de actualización: 2026-11-21.
+Fecha de actualización: 2026-11-22.
 
 ## Ramas
 
@@ -153,4 +153,13 @@ Fecha de actualización: 2026-11-21.
 
 - Trace de `44984722584` confirmó además un defecto visual real: controles Leaflet tapaban el modal de evidencia. `DialogOverlay` y `DialogContent` se elevaron sobre el mapa; cleanup ahora verifica cancelación/baja. Validación local lint/build/discovery pasa; repetir integración.
 
-- Run `44985230566`: modal de evidencia corregido y clicable; guardó evidencia y marcó stop. Falló sólo porque la aserción de completar parada aún esperaba 204 (API devuelve 200). Los 13 casos restantes pasaron, incluido cross-tenant; cleanup verificado. Corregir expectativa y repetir.
+- Run `44985230566`: modal de evidencia corregido y clicable; guardó evidencia y marcó stop. Falló sólo porque la aserción de completar parada aún esperaba 204 (API devuelve 200). Los 13 casos restantes pasaron, incluido cross-tenant; cleanup verificado. La expectativa se corrigió y el flujo completo pasó después en `44985541718`.
+
+## Continuación de estabilización — 2026-11-22
+
+- Frontend `refactor/route-builder`, SHA `1f3a24c`: GitHub Actions `44985541718` terminó `success`. Backend de la rama feature compiló sin warnings/errores y pasó **56/56** xUnit; frontend pasó audit, lint, build, responsive Chrome **1/1** y Playwright Chrome/API/MySQL **14/14**.
+- El E2E Driver completa desde viewport 390×844 una ruta de API, registra evidencia de nota, completa la parada y la ruta; el backend confirma ruta `Completed` y vehículo `Available`. El test y cleanup respetan HTTP 200 del endpoint de paradas.
+- Defecto descubierto y corregido: Leaflet quedaba encima del diálogo de evidencia. El diálogo ahora tiene z-index superior; la prueba integrada confirma que la nota se guarda y la acción puede completarse.
+- Errores intermedios y soluciones están en `docs/ERROR_LOG.md`.
+- Pendiente: ampliar CRUD, matriz de mutaciones por rol y cobertura visual responsive de pantallas/acciones restantes. SMTP depende de credenciales externas vigentes; app nativa móvil está aplazada por decisión del usuario.
+- La auditoría continúa activa; estos resultados no cubren todos los criterios de aceptación.
