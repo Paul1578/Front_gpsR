@@ -166,5 +166,5 @@ Fecha de actualización: 2026-11-22.
 
 ## Validación de orden de paradas — 2026-11-22
 
-- El E2E ahora agrega, quita y reordena paradas, y comprueba orden y operación exactos desde GET API. El primer Actions `44986079119` detectó que su cleanup dejaba el vehículo asignado al Driver (409); la prueba fue corregida para restaurar la asignación original antes de borrar.
-- Lint/build/diff check locales pasan. Ejecución integrada de la corrección pendiente; no se cuenta como cubierta hasta que pase Chrome/API/MySQL.
+- El E2E ahora agrega, quita y reordena paradas, y comprueba orden y operación exactos desde GET API. Actions `44986079119` encontró que el cleanup dejaba el vehículo asignado al Driver (409); se restauró la asignación original y `44986497890` pasó 14/14 en Playwright y 1/1 responsive.
+- Una revisión separada motivó hardening del `finally`: cancelar ruta activa, seguir con los demás cleanup aunque falle un paso y reportar todos los errores. Lint/build/discovery pasan; falta Actions del SHA de hardening antes de marcarlo validado.

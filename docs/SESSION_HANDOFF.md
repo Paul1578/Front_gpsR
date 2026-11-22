@@ -1,12 +1,11 @@
 # Session handoff
 
-## Prueba E2E de orden y operación de paradas — 2026-11-21
+## E2E de orden y operación de paradas — 2026-11-22
 
-- Trabajo en checkout separado `/home/leonardo/Front_gpsR-route-e2e`, rama `test/route-builder-persistence`, basado en frontend `refactor/route-builder`; árbol original y `main` intactos.
-- Se reforzó el Playwright real del constructor existente: agrega tres paradas, elimina una antes del guardado, mueve la parada recogida+entrega por encima de la parada de recogida y confirma por GET autenticado que el API persistió los cuatro puntos en el orden esperado y con el tipo correcto ligado a cada nombre.
-- La aserción exacta prueba que la parada eliminada no se guardó. La limpieza de route/vehicle por API ahora valida códigos de respuesta y no silencia errores.
-- `npm ci`, `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` correctos. La ejecución del caso se intentó localmente y quedó skipped: sin Admin QA/variables de mutación y API Swagger no activa; no se creó ningún fixture. El backend compartido tenía cambios locales ajenos, por lo que no se utilizó su runner/DB.
-- Pendiente: ejecutar el caso autenticado con `scripts/run-e2e-local.sh` sobre una base MySQL descartable, y después crear commit en esta rama aislada.
+- El cambio aislado se integró a `refactor/route-builder` en `69bdd31`; el test agrega, quita y reordena paradas y confirma por GET API el orden y operación persistidos. La ejecución local se omitió por falta de Admin QA y API activa, sin crear fixtures.
+- Actions `44986079119` encontró un 409 al limpiar el vehículo porque CreateRoute lo deja asignado al Driver. `010bc31` restauró la asignación previa; Actions `44986497890` pasó con responsive 1/1 y Playwright 14/14.
+- Revisión independiente detectó que cleanup podía abandonar pasos posteriores ante un error y no cancelaba rutas activas. El `finally` ahora cancela antes de borrar, restaura/libera Driver, intenta eliminar vehículo aun si otra etapa falla y acumula errores explícitos.
+- Local tras el hardening: lint, build, listado de 14 tests y `git diff --check` pasan. Falta la nueva ejecución Chrome/API/MySQL; no contar todavía la robustez final como validada.
 
 ## Ramas y contexto
 

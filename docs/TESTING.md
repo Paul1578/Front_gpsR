@@ -156,5 +156,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 ## Limpieza de fixture de reordenar paradas — 2026-11-22
 
-- Actions `44986079119` ejecutó la nueva persistencia del orden/tipos, pero el `finally` falló con 409 al borrar el vehículo: la ruta había asignado ese vehículo al Driver.
-- Se corrigió el cleanup para restaurar la asignación previa del Driver tras borrar la ruta y antes de borrar el vehículo. `npm run lint`, `npm run build` y `git diff --check` pasan; la repetición autenticada de Chrome/API/MySQL está pendiente.
+- Actions `44986079119` ejecutó la nueva persistencia del orden/tipos, pero el `finally` falló con 409 al borrar el vehículo: la ruta había asignado ese vehículo al Driver. Se corrigió restaurando la asignación previa; Actions `44986497890` pasó responsive 1/1 y Playwright 14/14.
+- Una revisión separada detectó que el cleanup podía cortar pasos posteriores si fallaba la ruta o la restauración. El `finally` ahora cancela rutas activas, intenta todas las operaciones aunque una falle y acumula errores explícitos. `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` pasan. Falta repetir la suite integrada del SHA siguiente.

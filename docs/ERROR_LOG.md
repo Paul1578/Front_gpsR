@@ -534,9 +534,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La capa del modal corrigió el clic: CI guardó evidencia y llegó a completar la parada. La respuesta de `PUT .../points/{index}/status` es `200` tanto al iniciar como al completar, pues el controlador devuelve la ruta actualizada. El test todavía esperaba 204 sólo al completar.
 - El cleanup pasó: los 13 casos siguientes, incluido el tenant cruzado que antes devolvía 409, quedaron verdes. Se alineó la última aserción a 200; Actions `44985541718` pasó 14/14.
 
-## 2026-11-22 — Cleanup del E2E de paradas dejó un Driver asignado — CORREGIDO, REPETIR CI
+## 2026-11-22 — Cleanup del E2E de paradas dejó un Driver asignado — CORREGIDO
 
 - El E2E que reordena y elimina paradas completó la creación de ruta y las aserciones de persistencia, pero su limpieza recibió HTTP 409 al dar de baja el vehículo.
 - Causa: `CreateRoute` asigna el vehículo seleccionado al Driver; borrar la ruta no elimina la asignación del perfil. La limpieza anterior intentaba retirar el vehículo sin restaurar el `vehicleId` original.
 - Corrección: capturar la asignación original del Driver y, en `finally`, restaurarla si la ruta temporal la cambió (o desasignar si no había una previa) después de borrar la ruta. Luego se elimina el vehículo temporal y se comprueba el status HTTP.
-- Run Actions `44986079119` reveló el problema: el test nuevo falló sólo en cleanup (409 esperado por la guarda real); restante suite pasó. Lint/build local tras la corrección pasan; repetir Actions con el nuevo SHA.
+- Run Actions `44986079119` reveló el problema: el test nuevo falló sólo en cleanup (409 esperado por la guarda real); restante suite pasó. Se capturó/restauró la asignación anterior. Actions `44986497890` para `010bc31` pasó responsive 1/1 y Playwright 14/14.
+- Revisión adicional: el primer `finally` podía abandonar pasos de limpieza posteriores tras un error en DELETE/restauración, y no cancelaba una ruta activa. Ahora cada paso se intenta independientemente, las rutas InProgress se cancelan primero y los fallos se acumulan para reportarlos sin ocultarlos. Lint/build/listado pasan; esta última robustez queda pendiente del siguiente Actions.

@@ -521,28 +521,61 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
     }));
     expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
+    const cleanupIssues: string[] = [];
     if (routeId) {
-      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
-      expect([200, 204, 404]).toContain(cleanupRoute.status());
-    }
-    if (vehicleId) {
-      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
-      expect(currentDriverResponse.status()).toBe(200);
-      const currentDriverVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
-      if (currentDriverVehicleId === vehicleId) {
-        const restoreAssignment = originalDriverVehicleId
-          ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+      try {
+        const currentRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+        if (currentRoute.status() === 200) {
+          const route = await currentRoute.json();
+          const status = typeof route.status === "string" ? route.status.toLowerCase() : route.status;
+          if (status === 1 || status === "inprogress" || status === "in_progress") {
+            const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
               headers,
-              data: { vehicleId: originalDriverVehicleId },
-            })
-          : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
-        expect(restoreAssignment.status()).toBe(204);
+              data: { status: 3 },
+            });
+            if (cancelRoute.status() !== 204) cleanupIssues.push(`No se pudo cancelar la ruta temporal: HTTP ${cancelRoute.status()}`);
+          }
+          const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+          if (![200, 204, 404].includes(cleanupRoute.status())) cleanupIssues.push(`No se pudo retirar la ruta temporal: HTTP ${cleanupRoute.status()}`);
+        } else if (currentRoute.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar la ruta temporal: HTTP ${currentRoute.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló el cleanup de la ruta temporal: ${String(error)}`);
       }
     }
     if (vehicleId) {
-      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
-      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+      try {
+        const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+        if (currentDriverResponse.status() !== 200) {
+          cleanupIssues.push(`No se pudo leer la asignación del Driver QA: HTTP ${currentDriverResponse.status()}`);
+        } else {
+          const currentDriverVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
+          if (currentDriverVehicleId === vehicleId) {
+            const restoreAssignment = originalDriverVehicleId
+              ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+                  headers,
+                  data: { vehicleId: originalDriverVehicleId },
+                })
+              : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+            if (restoreAssignment.status() !== 204) {
+              cleanupIssues.push(`No se pudo restaurar la asignación previa del Driver: HTTP ${restoreAssignment.status()}`);
+              const releaseTemporaryVehicle = await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+              if (releaseTemporaryVehicle.status() !== 204) cleanupIssues.push(`No se pudo liberar el vehículo temporal del Driver: HTTP ${releaseTemporaryVehicle.status()}`);
+            }
+          }
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló la restauración de la asignación del Driver: ${String(error)}`);
+      }
+      try {
+        const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
+        if (![200, 204, 404].includes(cleanupVehicle.status())) cleanupIssues.push(`No se pudo retirar el vehículo temporal: HTTP ${cleanupVehicle.status()}`);
+      } catch (error) {
+        cleanupIssues.push(`Falló el cleanup del vehículo temporal: ${String(error)}`);
+      }
     }
+    expect(cleanupIssues, "El cleanup debe retirar ruta/vehículo y restaurar el Driver sin ocultar fallos").toEqual([]);
   }
 });
 
