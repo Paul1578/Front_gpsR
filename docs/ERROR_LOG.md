@@ -1256,7 +1256,7 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Action `45067692881` pasó lint/build/audit/responsive y backend xUnit **107/107**, pero E2E terminó **34/35**. En el caso de alta Driver, `getByPlaceholder("Documento")` coincidía con el campo del formulario y con inputs de búsqueda del Equipo/Conductores; Playwright lanzó strict mode violation. El selector de Teléfono también dependía de placeholder.
 - Solución: usar `getByRole("textbox", { name: "Documento" })` y el nombre accesible "Teléfono". Se mantiene el contenido de producto y los límites verificados.
 - Prevención: si se agregan controles de búsqueda junto a formularios, los E2E deben apuntar a nombres accesibles/roles y comprobar unicidad semántica, no asumir unicidad de placeholder.
-- Repetición integrada del SHA corregido pendiente; no contar la búsqueda como verificada por ejecución funcional hasta entonces.
+- La corrección integrada pasó Action `45068474426`: **36/36 E2E** y cleanup. Un commit siguiente eliminó dependencia del dato preexistente creando y desactivando un Driver temporal; Action `45069041959` pasó de nuevo **36/36** con cleanup.
 
 ## 2026-11-22 — Fixture E2E de búsqueda no admitía token nullable — CORREGIDO LOCAL
 

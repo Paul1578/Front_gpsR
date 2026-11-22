@@ -2,7 +2,8 @@
 
 - Front lint y build correctos; `npm audit --audit-level=low`: 0 vulnerabilidades; Playwright descubre **36 tests** en 5 archivos; `git diff --check` correcto.
 - Action `45067692881`: backend Release/xUnit **107/107**, audit/lint/build y responsive browser **1/1** pasaron; E2E **34/35**. El único fallo fue un locator estricto ambiguo para Documento/Teléfono en el ciclo de alta Driver, no un fallo de API.
-- Corrección: se identifican esos campos por rol textbox y nombre accesible. La nueva búsqueda de Gestión de Conductores y su E2E real a 320/768 px aún esperan CI autenticada contra API/MySQL efímeros.
+- Corrección con roles textbox y nombres accesibles pasó Action `45068474426`: **36/36** E2E autenticados, responsive **1/1**, backend, audit/lint/build y cleanup.
+- Commit `58e2b4c` crea un Driver API temporal para que el E2E de búsqueda no dependa de datos preexistentes. Action `45069041959` pasó **36/36**, backend **107/107**, responsive **1/1**, audit/lint/build; cleanup por runner y DB MySQL efímera.
 - La API local :5048 no está disponible, por lo que no se reporta ejecución funcional local de estos E2E.
 - El caso de búsqueda ahora crea/desactiva su Driver API temporal, sin skip por lista vacía. Un primer build de este ajuste encontró tipo nullable de `localStorage`; corregido a `undefined` y se repite build antes de Actions.
 

@@ -2,8 +2,8 @@
 
 - Gestión de Conductores permite buscar por nombre, apellido, documento y teléfono, sin sensibilidad a mayúsculas ni tildes; mantiene el filtro de inactivos y distingue vacío real de búsqueda sin resultados.
 - E2E nuevo valida consulta real por documento, vacío, limpieza y responsive a 320/768 px. Suite descubierta: 36 casos.
-- Action `45067692881` pasó backend 107/107, audit/lint/build y responsive, pero falló 1 de 35 E2E: el test del ciclo Driver usaba placeholders ambiguos después de añadir búsquedas. Cambiados a textbox con nombre accesible; repetición integrada pendiente.
-- Lint/build, audit (0 vulnerabilidades), discovery (36) y diff-check locales pasan. Historial del fallo/solución en `ERROR_LOG.md`.
+- Action `45067692881` pasó backend 107/107, audit/lint/build y responsive, pero falló 1 de 35 E2E: el test del ciclo Driver usaba placeholders ambiguos después de añadir búsquedas. Cambiados a textbox con nombre accesible; Action `45068474426` pasó **36/36 E2E**, backend, responsive, audit/lint/build y cleanup.
+- Lint/build, audit (0 vulnerabilidades), discovery (36) y diff-check locales pasan. Action `45069041959` pasó la variante determinista: backend 107/107, audit 0, responsive 1/1 y **36/36 E2E** con API/MySQL descartables.
 - El E2E de búsqueda crea un Driver API temporal en su propio tenant y lo desactiva en `afterEach`; no depende de filas preexistentes ni omite el caso por flota vacía.
 
 ## 2026-11-22 — Constructor de rutas Manager y cobertura responsive
