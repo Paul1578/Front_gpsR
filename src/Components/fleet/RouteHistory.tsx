@@ -62,6 +62,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const users = getAllUsers();
 
@@ -80,11 +81,6 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
           fetchRoutes(apiFetch),
           fetchVehicles(apiFetch),
         ]);
-
-        console.log("[RouteHistory] fetch ok", {
-          routes: routesRes?.length ?? 0,
-          vehicles: vehiclesRes?.length ?? 0,
-        });
 
         if (cancelled) return;
         setRoutes(routesRes);
@@ -120,7 +116,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [apiFetch]);
+  }, [apiFetch, retryCount]);
 
   const filteredRoutes = useMemo(() => {
     return routes
@@ -132,8 +128,8 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
       })
       .sort(
         (a, b) =>
-          new Date(b.plannedStart ?? "").getTime() -
-          new Date(a.plannedStart ?? "").getTime(),
+          new Date(b.startedAt ?? b.plannedStart ?? "").getTime() -
+          new Date(a.startedAt ?? a.plannedStart ?? "").getTime(),
       );
   }, [routes, filterStatus]);
 
@@ -188,7 +184,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
     );
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "N/D";
     const date = new Date(dateString);
     return date.toLocaleDateString("es-ES", {
@@ -254,8 +250,15 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
           )}
 
           {!isLoading && error && (
-            <div className="flex flex-col items-center justify-center py-12 text-sm text-red-500">
-              {error}
+            <div role="alert" className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-red-600">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => setRetryCount((count) => count + 1)}
+                className="rounded-lg border border-red-200 px-4 py-2 font-medium text-red-700 hover:bg-red-50"
+              >
+                Reintentar
+              </button>
             </div>
           )}
 
@@ -268,7 +271,9 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
             <div className="space-y-3">
               {filteredRoutes.map((route) => {
                 const vehicle = vehicles.find((v) => v.id === route.vehicleId);
-                const driver = users.find((u) => u.id === route.driverId);
+                const driver = users.find(
+                  (u) => u.driverId === route.driverId || u.id === route.driverId,
+                );
 
                 return (
                   <div
@@ -284,7 +289,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                           </h3>
                         </div>
                         <p className="text-xs text-gray-500">
-                          Creada: {formatDate(route.plannedStart)}
+                          Inicio planificado: {formatDate(route.plannedStart)}
                         </p>
                       </div>
                       {getStatusBadge(route.status)}
@@ -321,15 +326,21 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                       )}
                     </div>
 
-                    {route.plannedStart && (
+                    {route.startedAt && (
                       <div className="text-xs text-gray-500 mb-2">
-                        Iniciada: {formatDate(route.plannedStart)}
+                        Inicio real: {formatDate(route.startedAt)}
                       </div>
                     )}
 
                     {route.plannedEnd && (
                       <div className="text-xs text-gray-500 mb-2">
-                        Finalizada: {formatDate(route.plannedEnd)}
+                        Fin planificado: {formatDate(route.plannedEnd)}
+                      </div>
+                    )}
+
+                    {route.endedAt && (
+                      <div className="text-xs text-gray-500 mb-2">
+                        Cierre real: {formatDate(route.endedAt)}
                       </div>
                     )}
 
@@ -387,7 +398,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                   <p className="text-sm text-gray-900">
                     {(() => {
                       const driver = users.find(
-                        (u) => u.id === selectedRoute.driverId,
+                        (u) => u.driverId === selectedRoute.driverId || u.id === selectedRoute.driverId,
                       );
                       return driver
                         ? `${driver.nombres} ${driver.apellidos}`
@@ -407,20 +418,20 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
 
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
-                    Fecha Creación
+                    Inicio planificado
                   </label>
                   <p className="text-sm text-gray-900">
                     {formatDate(selectedRoute.plannedStart)}
                   </p>
                 </div>
 
-                {selectedRoute.plannedStart && (
+                {selectedRoute.startedAt && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">
-                      Fecha Inicio
+                      Inicio real
                     </label>
                     <p className="text-sm text-gray-900">
-                      {formatDate(selectedRoute.plannedStart)}
+                      {formatDate(selectedRoute.startedAt)}
                     </p>
                   </div>
                 )}
@@ -428,10 +439,21 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                 {selectedRoute.plannedEnd && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">
-                      Fecha Fin
+                      Fin planificado
                     </label>
                     <p className="text-sm text-gray-900">
                       {formatDate(selectedRoute.plannedEnd)}
+                    </p>
+                  </div>
+                )}
+
+                {selectedRoute.endedAt && (
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Cierre real
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDate(selectedRoute.endedAt)}
                     </p>
                   </div>
                 )}

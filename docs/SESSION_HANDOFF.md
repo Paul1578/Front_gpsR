@@ -141,3 +141,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Corrección de continuidad: la suite frontend ya está publicada en PR y el run Actions `44974312596` completó verde (12/12 Playwright autenticados, audit, lint y build) para commit `4b60bf1`. Debe repetirse al actualizar el backend; su revisión concurrente sigue en curso.
 - Backend acaba de incorporar validación de Driver activo al iniciar ruta y locks transaccionales owner-scoped para evitar doble reserva concurrente. La regresión de dependencia SQLite vulnerable se corrigió con SQLitePCLRaw.lib.e_sqlite3 2.1.14; NuGet audit posterior sin vulnerables y xUnit 49/49. Aún falta publicar/verificar Actions de esta iteración.
 - Backend quedó publicado en `90da59a` (PR #5). MySQL real validó Create/Update/start/desactivación simultáneos con estados persistidos consistentes; Release xUnit 50/50, build 0 warnings y NuGet audit limpio. Lanzar/esperar Actions del backend y frontend antes de continuar.
+
+## Continuidad — Historial y cobertura de asignaciones — 2026-11-21
+
+- Rama actual frontend: `refactor/route-builder`; backend: `chore/stabilize-fleet-platform`; nunca trabajar en `main` ni fusionar PRs.
+- Frontend con cambios locales pendientes: RouteHistory corrige resolución de Driver y semántica de fechas, tiene retry de error; E2E prueba filtros, persistencia de asignar/quitar vehículo e Historial móvil. `npm run lint`, `npm run build` y Playwright real Chrome/API/MySQL pasaron (**13/13**) usando DB efímera `fletflow_ci_validation_16`, descartada automáticamente.
+- Runner intentado inicialmente con `FLETFLOW_API_URL` terminando en `/api`; falló en validación previa. Repetición con origen `http://127.0.0.1:5048` completó 13/13; error registrado en `docs/ERROR_LOG.md`.
+- Backend `90da59a` está publicado y CI pasó (`44976384961`). Frontend CI previo `44976408960` pasó para `1c8856a` (12 escenarios); los cambios de esta sección aún deben commit/push y validarse remotamente.
+- Pendiente: revisar diff/status de ambos repos, npm audit, documentar/commit/push; esperar Actions; continuar CRUD y responsive en pantallas sin cobertura. Super Admin global no está definido en backend (roles: Admin, Driver, Manager, User, Logistics), documentado como pendiente de producto/arquitectura. SMTP externo; app nativa móvil pospuesta.

@@ -91,3 +91,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Repetición local del runner en base nueva: Playwright Chrome **8/8**. Cleanup confirmado y esquema temporal descartado.
 - No se afirma ejecución en GitHub Actions: falta publicar las ramas y abrir/ejecutar sus PR.
 - Las ramas se publicaron y abrieron PRs borrador (#2 frontend, #5 backend). Backend Actions pasó. Primer frontend Actions pasó todas las fases previas, pero el runner abortó porque Next aún no estaba iniciado; `playwright.config.ts` lo inicia en CI. El precheck ya se corrigió; nueva ejecución pendiente.
+
+## E2E adicional de rutas, historial y asignaciones — 2026-11-21
+
+- Comando: `npm run lint`, `npm run build` y `scripts/run-e2e-local.sh` con Chrome, API real y MySQL desechable.
+- Resultado: lint/build correctos; Playwright autenticado **13/13**. Se cubrieron filtros combinados de rutas, búsqueda sin coincidencias, limpieza, asociación del conductor al historial, fechas planificadas frente a reales, error 503/reintento y asignar/quitar vehículo al Driver con comprobación de `vehicleId` persistido.
+- La corrida usó `fletflow_ci_validation_16`; el cleanup descartó la base. Primera invocación con URL que incluía `/api` abortó en prevalidación y está documentada en `ERROR_LOG.md`; la repetición pasó usando el origen API.
+- El test de error/reintento del Historial comprueba estado móvil de 390×844 sin overflow. Native mobile permanece fuera de alcance por decisión del usuario.
+- Resultado remoto previo: frontend Actions `44976408960` pasó para commit `1c8856a` con la suite anterior (12 escenarios). Esta iteración 13/13 local está pendiente de publicarse y verificar en Actions.

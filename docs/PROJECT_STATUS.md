@@ -96,3 +96,9 @@ Fecha de actualización: 2026-11-21.
 - Aún faltan otras pantallas/acciones responsive y CRUD; se mantienen como trabajo activo. SMTP requiere credenciales externas. Móvil nativo se hará después por decisión del usuario.
 - El workflow remoto frontend terminó verde: run `44974312596` para commit `4b60bf1` (12 casos Playwright autenticados, audit, lint y build). Debe repetirse al actualizar el backend con la protección de concurrencia recién añadida.
 - El backend publicó `90da59a` en `chore/stabilize-fleet-platform`, incluyendo locks para concurrencia de rutas/vehículos/Drivers; Actions frontend debe usar este commit en su checkout cruzado y volver a validar.
+
+## Actualización — Historial, filtros y asignación de flota — 2026-11-21
+
+- Historial ahora resuelve conductores por `driverId`, distingue planificación de timestamps reales y permite reintentar errores de API.
+- Playwright añadió filtros combinados/búsqueda/limpieza de rutas y asignación/desasignación de vehículo con verificación de persistencia. E2E local Chrome/API/MySQL: **13/13**; base temporal limpiada. Lint y build local correctos.
+- Próximo paso inmediato: publicar cambios y verificar Actions sobre el commit exacto. Pendientes de alcance: aumentar cobertura CRUD y responsive de vistas restantes; el contrato no define rol Super Admin global. SMTP requiere credenciales externas; aplicación nativa móvil pospuesta por el usuario.

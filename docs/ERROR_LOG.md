@@ -453,3 +453,29 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se añadieron pruebas de navegación/overflow a 768×1024, menú de Driver y denegación API, y menú de Logistics con rutas permitidas y vehículos/equipo denegados.
 - El primer test tablet esperaba “Gestión de Rutas” como heading, pero la vista se titula “Rutas”; se corrigió la aserción tras revisar el DOM real.
 - Verificación final de la suite extendida: Chrome/API/MySQL **12/12**; SQL cleanup removió los fixtures de la base efímera.
+
+## 2026-11-22 — Preparación de E2E local pasó `/api` al runner como origen — CORREGIDO EN LA INVOCACIÓN
+
+- El runner exige `FLETFLOW_API_URL=http://127.0.0.1:5048` (origen), mientras que el cliente/frontend agrega `/api` o usa el proxy `/api/backend`. La primera invocación incluyó `/api` y abortó en la validación previa, antes de instalar el cleanup o crear fixtures.
+- La API sólo inició sobre `fletflow_ci_validation_15`; el `trap` externo la detuvo y descartó el esquema. La repetición usa el origen sin `/api`.
+
+## 2026-11-21 — Historial asociaba mal conductores y fechas — CORREGIDO
+
+- La vista intentaba resolver `Route.driverId` sólo contra `User.id`, aunque el modelo de equipo expone `driverId`; las fechas planificadas aparecían como creación/inicio reales aunque el contrato no tiene `createdAt` y `startedAt`/`endedAt` son campos distintos.
+- Solución: resolver por `driverId` con fallback a `id`, etiquetar `plannedStart`/`plannedEnd` como planificados y mostrar inicio/cierre real sólo con `startedAt`/`endedAt`. El error de carga ahora muestra alerta y permite reintentar sin presentar un vacío falso.
+- Se ajustó `RouteApiDto` para reflejar fechas planificadas nullable y timestamps reales opcionales. E2E valida nombre de conductor en tarjeta/detalle, etiquetas y error 503→retry.
+
+## 2026-11-21 — Cobertura E2E omitía filtros de rutas y asignación de vehículo — CUBIERTO
+
+- Se añadieron filtros combinados de estado, vehículo y conductor, búsqueda sin coincidencia y limpieza de filtros a la prueba de rutas.
+- El flujo de Conductores ahora crea un vehículo real, asigna/quita el vehículo desde la UI y comprueba vía API que `vehicleId` persiste y luego queda `null`.
+- Suite Playwright completa local: **13/13** en Chrome con frontend, API y MySQL; base desechable `fletflow_ci_validation_16` eliminada por cleanup. `npm run lint` y `npm run build` finalizaron correctamente.
+
+## 2026-11-21 — Runner local recibió URL de API con `/api` — CORREGIDO EN LA INVOCACIÓN
+
+- El runner valida `FLETFLOW_API_URL` como origen HTTP, pero la invocación inicial incluyó `/api` y terminó antes de cargar fixtures. Se repitió con `http://127.0.0.1:5048`; la base temporal inicial `fletflow_ci_validation_15` fue descartada y la suite pasó en `fletflow_ci_validation_16`.
+
+## 2026-11-21 — Rol visual Super Admin no existe en el contrato backend — PENDIENTE DE DEFINICIÓN DE PRODUCTO
+
+- El contrato backend actualmente expone Admin, Driver, Manager, User y Logistics; no hay rol SystemAdmin/SuperAdmin ni permisos de plataforma globales. La interfaz no puede validar de forma real ese escenario y no debe elevar Admin ni inventar un rol.
+- Hace falta definir si se requiere administración global multiempresa y diseñar ese rol y sus controles en backend antes de añadir una prueba de autorización Super Admin. Los roles existentes sí se prueban en los recorridos cubiertos.

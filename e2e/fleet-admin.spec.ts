@@ -213,6 +213,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
         cargoDescription: "E2E QA recogida y entrega",
         vehicleId,
         driverId: driverIdFixture,
+        plannedStart: "2038-07-21T10:00:00Z",
+        plannedEnd: "2038-07-21T12:00:00Z",
         points: [
           { lat: -0.18, lng: -78.46, name: "E2E origen", operation: 0, status: 0 },
           { lat: -0.19, lng: -78.47, name: "E2E parada", operation: 3, status: 0 },
@@ -255,6 +257,15 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     const persistedPoints = persistedRoute.points as Array<{ operation: number | string }>;
     expect(persistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
 
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await page.getByLabel("Vehículo").selectOption(vehicleId);
+    await page.getByLabel("Conductor").selectOption(driverIdFixture!);
+    await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
+    await search.fill(`${updatedName} sin coincidencia`);
+    await expect(page.getByText("Ninguna ruta coincide con esos filtros.")).toBeVisible();
+    await page.getByRole("button", { name: "Limpiar filtros" }).click();
+    await expect(page.getByRole("heading", { name: updatedName, exact: true })).toBeVisible();
+
     const cancelledResponse = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
       headers,
       data: { status: 3 },
@@ -272,11 +283,19 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await expect(historyHeading).toBeVisible();
     const historyCard = historyHeading.locator("xpath=../../../..");
     await expect(historyCard).toContainText("Cancelada");
+    await expect(historyCard).toContainText("E2E QA Driver");
+    await expect(historyCard).toContainText("Inicio planificado:");
+    await expect(historyCard).not.toContainText("Inicio real:");
+    await expect(historyCard).not.toContainText("Creada:");
     await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
     const historyDialog = page.getByRole("dialog");
     await expect(historyDialog.getByRole("heading", { name: "Detalles de la Ruta" })).toBeVisible();
     await expect(historyDialog).toContainText(updatedName);
     await expect(historyDialog).toContainText("Cancelada");
+    await expect(historyDialog).toContainText("E2E QA Driver");
+    await expect(historyDialog).toContainText("Inicio planificado");
+    await expect(historyDialog).not.toContainText("Fecha Creación");
+    await expect(historyDialog).not.toContainText("Inicio real");
 
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -706,11 +725,19 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   });
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const plate = `E2EQA${suffix}`;
+  const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+    headers,
+    data: { plate, brand: "FleetFlow QA", model: "Driver assignment", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicleId = (await vehicleResponse.json()).id as string;
+  await page.reload();
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
 
-  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const firstName = `E2E QA ${suffix}`;
   const lastName = "Chofer UI";
   const emailAddress = `fletflow.e2e.driver.ui.${suffix}@example.test`;
@@ -742,6 +769,28 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true });
   await expect(driverName).toBeVisible();
   const driverCard = driverName.locator("xpath=../..");
+  await driverCard.getByRole("combobox").selectOption(vehicleId);
+  const assignVehiclePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/assign-vehicle`) &&
+    response.request().method() === "PUT",
+  );
+  await driverCard.getByRole("button", { name: "Asignar", exact: true }).click();
+  expect((await assignVehiclePromise).status()).toBe(204);
+  const assignedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await assignedDriver.json()).vehicleId).toBe(vehicleId);
+  await expect(driverCard).toContainText(plate);
+
+  const unassignVehiclePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/unassign-vehicle`) &&
+    response.request().method() === "PUT",
+  );
+  await driverCard.getByRole("button", { name: "Quitar", exact: true }).click();
+  expect((await unassignVehiclePromise).status()).toBe(204);
+  const unassignedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(unassignedDriver.status()).toBe(200);
+  expect((await unassignedDriver.json()).vehicleId).toBeNull();
+  await expect(driverCard).toContainText("Sin vehículo");
+
   await driverCard.getByRole("button", { name: "Editar" }).click();
   await page.getByRole("textbox", { name: "Nombres del conductor" }).fill(`${firstName} editado`);
 

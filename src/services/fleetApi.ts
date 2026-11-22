@@ -43,8 +43,10 @@ export interface RouteApiDto {
   };
   points: RawRoutePoint[];
   cargoDescription?: string | null;
-  plannedStart: string; // ISO
-  plannedEnd: string;   // ISO
+  plannedStart?: string | null; // ISO
+  plannedEnd?: string | null;   // ISO
+  startedAt?: string | null; // inicio real de la ruta
+  endedAt?: string | null; // cierre real de la ruta
   status: number;       // RouteStatus en el backend
   isActive: boolean;
 }
