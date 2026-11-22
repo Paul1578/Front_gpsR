@@ -336,3 +336,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Ciclo Driver de asignación, edición, baja/reactivación a 320 px.
 - Registro y cambio de contraseña a 320/768 px sin overflow.
 - Validación local: lint/build/discovery 33. E2E API/MySQL y CI pendientes.
+
+## Corrida integrada 33 escenarios — repetición requerida
+
+- Action `45060482928`: 30/33. Dos escenarios recibieron HTTP 409 porque compartían el mismo Driver de QA y solicitaron rutas activas en paralelo; el formulario de Driver excedió el viewport 320 px (413 px).
+- Correcciones posteriores: fixtures Driver independientes para escenarios operativos y aislamiento tenant; ancho mínimo corregido en `DriversManagement.tsx`. `npm run lint`, `npm run build`, `npx playwright test --list` (33) y `git diff --check` pasan localmente.
+- Estado: no declarar E2E integrados como aprobados hasta repetir Actions con frontend/backend actualizados.

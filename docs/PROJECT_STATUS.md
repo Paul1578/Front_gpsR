@@ -499,3 +499,8 @@ Fecha de actualización: 2026-11-22.
 - Front lint/build y discovery 33 correctos. Falta E2E autenticado contra API/MySQL desechables y CI del nuevo commit.
 - Política de Admin delegado sin respuesta de producto. SMTP/despliegue productivo requieren credenciales e infraestructura externas; móvil nativo aplazado.
 - Misión integral abierta.
+
+## E2E de flota, ciclo Driver y responsive — 2026-11-22
+
+- La primera corrida integrada de 33 E2E (`45060482928`) terminó 30/33: dos conflictos 409 por compartir Driver entre operaciones concurrentes y un ancho de formulario de 413 px en viewport 320 px.
+- Se aislaron los fixtures Driver de rutas y tenant; se corrigió el ancho mínimo del contenedor/formulario responsive. Lint, build, discovery (33) y diff-check pasan localmente. Requiere nueva Action antes de validar.

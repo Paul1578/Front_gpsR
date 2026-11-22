@@ -9,6 +9,9 @@ const deactivationUserEmail = process.env.FLETFLOW_E2E_DEACTIVATION_EMAIL;
 const deactivationUserPassword = process.env.FLETFLOW_E2E_DEACTIVATION_PASSWORD;
 const driverEmail = process.env.FLETFLOW_E2E_DRIVER_EMAIL;
 const driverPassword = process.env.FLETFLOW_E2E_DRIVER_PASSWORD;
+const routeDriverEmail = process.env.FLETFLOW_E2E_ROUTE_DRIVER_EMAIL;
+const routeDriverPassword = process.env.FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD;
+const routeDriverIdFixture = process.env.FLETFLOW_E2E_ROUTE_DRIVER_ID;
 const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
@@ -2451,7 +2454,7 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
 });
 
 test("Driver sólo ve su operación, persiste evidencia fotográfica y la API protege recursos administrativos", async ({ page, request, browser }) => {
-  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.skip(!email || !password || !routeDriverEmail || !routeDriverPassword || !routeDriverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver operativo y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.context().grantPermissions(["geolocation"]);
@@ -2474,7 +2477,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   const routeName = `E2E QA ruta conductor ${suffix}`;
 
   try {
-  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, {
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, {
     headers: adminHeaders,
   });
   expect(driverBeforeResponse.status()).toBe(200);
@@ -2491,7 +2494,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
       name: routeName,
       cargoDescription: "Prueba operativa Driver",
       vehicleId,
-      driverId: driverIdFixture,
+      driverId: routeDriverIdFixture,
       points: [
         { lat: -0.18, lng: -78.46, name: "Origen E2E", operation: 0 },
         { lat: -0.19, lng: -78.47, name: "Entrega E2E", operation: 3 },
@@ -2506,8 +2509,8 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   routeId = (await routeResponse.json()).id as string;
 
   await page.goto("/login");
-  await page.getByLabel("Correo electrónico").fill(driverEmail!);
-  await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+  await page.getByLabel("Correo electrónico").fill(routeDriverEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(routeDriverPassword!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.setViewportSize({ width: 320, height: 844 });
@@ -2704,7 +2707,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   expect(persistedVehicle.status()).toBe(200);
   expect((await persistedVehicle.json()).status).toBe(0);
 
-  const deactivateDriver = await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+  const deactivateDriver = await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
     headers: adminHeaders,
     data: { isActive: false },
   });
@@ -2716,7 +2719,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
     headers,
     data: { latitude: -0.185, longitude: -78.465 },
   })).status()).toBe(403);
-  const reactivateDriver = await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+  const reactivateDriver = await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
     headers: adminHeaders,
     data: { isActive: true },
   });
@@ -2790,7 +2793,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
-    await request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+    await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
       headers: adminHeaders,
       data: { isActive: true },
     }).catch(() => undefined);
@@ -2834,16 +2837,16 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
     }
     }
     if (vehicleId) {
-      const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers: adminHeaders });
+      const driverAfterResponse = await request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers: adminHeaders });
       if (driverAfterResponse.ok()) {
         const currentVehicleId = (await driverAfterResponse.json()).vehicleId as string | null;
         if (currentVehicleId === vehicleId) {
           const restoreAssignment = originalDriverVehicleId
-            ? await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+            ? await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/assign-vehicle`, {
                 headers: adminHeaders,
                 data: { vehicleId: originalDriverVehicleId },
               })
-            : await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers: adminHeaders });
+            : await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/unassign-vehicle`, { headers: adminHeaders });
           expect(restoreAssignment.status()).toBe(204);
         }
       }
@@ -2854,7 +2857,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
 });
 
 test("un Admin de otra empresa no puede consultar ni modificar recursos de flota ajenos", async ({ page, request }) => {
-  test.skip(!email || !password || !otherTenantEmail || !otherTenantPassword || !driverIdFixture || !allowMutations, "Requiere dos empresas y Driver QA locales con FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.skip(!email || !password || !otherTenantEmail || !otherTenantPassword || !allowMutations, "Requiere dos empresas y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
@@ -2871,13 +2874,15 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   const ownerHeaders = { Authorization: `Bearer ${ownerToken}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   let vehicleId: string | undefined;
-  const driverId = driverIdFixture!;
+  let driverId: string | undefined;
   let routeId: string | undefined;
-  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
-  expect(driverBeforeResponse.status()).toBe(200);
-  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
-
   try {
+    const createdDriver = await page.request.post("/api/backend/Drivers", {
+      headers: ownerHeaders,
+      data: { firstName: "Tenant", lastName: "Isolation QA", documentNumber: `E2EQA${suffix}`, phoneNumber: "0990000000" },
+    });
+    expect(createdDriver.status()).toBe(201);
+    driverId = (await createdDriver.json()).id as string;
     const created = await page.request.post("/api/backend/Vehicles", {
       headers: ownerHeaders,
       data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tenant test", year: 2025 },
@@ -3019,21 +3024,18 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
       }
     }
     if (vehicleId) {
-      const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
-      if (driverAfterResponse.ok()) {
-        const currentVehicleId = (await driverAfterResponse.json()).vehicleId as string | null;
-        if (currentVehicleId === vehicleId) {
-          const restoreAssignment = originalDriverVehicleId
-            ? await request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, {
-                headers: ownerHeaders,
-                data: { vehicleId: originalDriverVehicleId },
-              })
-            : await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: ownerHeaders });
-          expect(restoreAssignment.status()).toBe(204);
+      if (driverId) {
+        const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+        if (driverAfterResponse.ok() && (await driverAfterResponse.json()).vehicleId === vehicleId) {
+          expect((await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: ownerHeaders })).status()).toBe(204);
         }
       }
       const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
       expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
+    if (driverId) {
+      const cleanupDriver = await request.put(`/api/backend/Drivers/${driverId}/status`, { headers: ownerHeaders, data: { isActive: false } });
+      expect([204, 404]).toContain(cleanupDriver.status());
     }
   }
 });

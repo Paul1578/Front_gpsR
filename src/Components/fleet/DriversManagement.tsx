@@ -127,7 +127,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   };
 
   return (
-    <section className="flex h-full min-h-full flex-col bg-white">
+    <section className="flex h-full min-h-full min-w-0 flex-col bg-white">
       <header className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between md:p-6">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
@@ -145,7 +145,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
         </button>
       </header>
 
-      <div className="flex-1 space-y-5 overflow-auto p-4 md:p-6">
+      <div className="min-w-0 flex-1 space-y-5 overflow-auto p-4 md:p-6">
         {loadErrors.includes("vehículos") && (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
             <span>No se pudieron cargar los vehículos. Las opciones de asignación pueden estar incompletas.</span>
@@ -167,7 +167,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
             </button>
           </div>
         )}
-        <form onSubmit={submit} className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <form onSubmit={submit} className="grid w-full min-w-0 grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:grid-cols-4">
           <h2 className="text-base font-semibold text-slate-800 sm:col-span-2 xl:col-span-4">{editingId ? "Editar conductor" : "Registrar conductor"}</h2>
           <input aria-label="Nombres del conductor" required maxLength={100} value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} placeholder="Nombres" className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
           <input aria-label="Apellidos del conductor" required maxLength={100} value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} placeholder="Apellidos" className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />

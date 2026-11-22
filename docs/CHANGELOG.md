@@ -432,3 +432,8 @@
 - E2E de equipo mantiene el ciclo de Driver a 320 px durante asignación, edición y cambio de estado.
 - Registro y cambio de contraseña verifican formularios a 320 y 768 px.
 - Lint, build y discovery 33 correctos; E2E API/MySQL del nuevo SHA pendiente.
+
+## 2026-11-22 — Estabilización E2E y responsive Driver
+
+- Se aisló el fixture de conductor de rutas operativas para evitar conflictos de agenda entre pruebas paralelas y se corrigió el ancho mínimo del formulario de conductores en móvil.
+- Registro de la falla inicial y mitigaciones en `docs/ERROR_LOG.md`; Actions integrados pendientes.

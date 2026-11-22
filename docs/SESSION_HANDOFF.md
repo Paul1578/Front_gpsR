@@ -707,3 +707,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - npm run lint, npm run build, discovery 33 y diff-check pasaron. Falta E2E real API/MySQL y Actions del nuevo SHA.
 - Auditoría backend encontró también validación de cuenta Driver bajo locks y falta de pruebas HTTP activate/reset; revisar rama chore/stabilize-fleet-platform.
 - No cerrar misión; seguir con cobertura restante. Admin delegado sigue pendiente de decisión; SMTP/infra productiva externas; móvil nativo aplazado.
+
+## Continuación — fixtures operativos y ancho de Conductores — 2026-11-22
+
+- Action Front `45060482928` falló 3/33: dos casos competían por ruta activa con el mismo Driver y uno encontró formulario de 413 px a 320 px. Diagnóstico y prevención documentados en `docs/ERROR_LOG.md`.
+- Fix local: fixture Driver independiente para Mi Ruta/foto; tenant isolation crea su Driver propio; `DriversManagement` permite encogimiento con `min-w-0`. Backend `scripts/run-e2e-local.sh` crea/expone el fixture Driver operativo para CI. El runner extrae IDs usando Node, sin agregar dependencia jq.
+- Front local lint/build/discovery 33/diff-check pasan. Backend runner `bash -n` y diff-check pasan; backend Release xUnit 100/100 y Action `45060714338` pasó antes del cambio de fixture.
+- Pendiente inmediato: commit/push de ambos branches y seguir Actions integrados; corregir y repetir cualquier fallo. Misión sigue abierta, con cobertura CRUD/roles/responsive por completar y límites externos ya registrados.

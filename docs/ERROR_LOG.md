@@ -1203,3 +1203,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La primera preparación del apéndice falló por intentar usar btoa/TextEncoder, no disponibles en el runtime de orquestación; otra versión falló por un literal Markdown con backtick que rompió la sintaxis JavaScript.
 - Ambas fallas ocurrieron antes de ejecutar comandos y no modificaron archivos. Se resolvió escribiendo los apéndices mediante heredoc con delimitadores entre comillas; diff-check confirma los cambios esperados.
 - Prevención: usar APIs del runtime realmente disponibles y no delimitar literales JS con backticks cuando el texto Markdown contiene backticks.
+
+## 2026-11-22 — E2E operativos competían por el mismo Driver y fallaban a 320 px — CORREGIDO; CI PENDIENTE
+
+- Action `45060482928` terminó con 30/33 E2E. Dos escenarios creaban rutas activas para el mismo fixture Driver y el backend respondió 409 por conflicto horario; el timeout produjo además un error secundario de cleanup al cerrarse el contexto Playwright. El tercer fallo midió 413 px de ancho en el formulario de conductores con viewport 320 px.
+- Solución: el runner crea un Driver operativo independiente para el flujo de Mi Ruta/foto; el E2E de aislamiento tenant crea su propio Driver sin asignación y lo desactiva al limpiar. Conductores añade `min-w-0` a la sección/contenedor/formulario para permitir el encogimiento en móvil.
+- Se revisó el diff y `npx playwright test --list` descubre 33 escenarios. `npm run lint`, `npm run build` y `git diff --check` pasan localmente. La repetición API/MySQL integrada sigue pendiente.
+- Prevención: no compartir recursos con exclusión de agenda entre E2E paralelos; medir el formulario completo y sus ancestros flex/grid al validar overflow responsive. Tratar errores de cleanup después de timeout como secundarios y arreglar primero la condición inicial que bloqueó el caso.
