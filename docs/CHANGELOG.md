@@ -75,3 +75,8 @@
 - Gestión de Equipo permite crear/cambiar el rol Usuario.
 - Mi Perfil informa el fallo de logout-all sin perder la sesión actual.
 - Playwright cubre persistencia de rol, error de sesión, vistas responsive y CRUD; Chrome/API/MySQL pasó 14/14 con DB temporal eliminada.
+
+## 2026-11-21 — CI del refactor de rutas
+
+- GitHub Actions frontend y backend pasaron para las ramas feature publicadas (`44982243409`, `44982244087`).
+- E2E frontend local contra Chrome/API/MySQL: 14/14; lint, build y audit npm correctos.

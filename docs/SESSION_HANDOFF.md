@@ -169,3 +169,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Falta hacer commit/push de este lote y verificar Actions con su SHA. Pendientes reales: ampliar CRUD/responsive en pantallas aún sin cobertura, decidir alcance de Super Admin con backend/producto y credenciales SMTP. App nativa móvil aplazada por el usuario.
 - Backend HTTP smoke extendido y pasado: Manager crea Vehicle/Driver/Route y edita rutas; Logistics edita/elimina rutas, sin crear vehículos/conductores; User y Driver no crean rutas. MySQL temporal se descartó.
 - El smoke comprobó además registro anónimo que pide Admin (persistió User y recibió 403 en flota) y logout-all real (200, refresh revocado).
+
+## Continuidad — Actions publicados en verde — 2026-11-21
+
+- Front `refactor/route-builder` SHA `6e37c4d`: Actions run `44982243409` success. Backend hermano `chore/stabilize-fleet-platform` SHA `4cf62a3`: run `44982244087` success.
+- Pruebas locales frontend: lint/build/npm audit sin hallazgos y Playwright autenticado 14/14 contra API/MySQL. Backend incorporó tests de recuperación/activación: suite 54/54.
+- Siguiente: continuar cobertura restante de CRUD y responsive. No cerrar misión; SMTP externo pendiente, nativo móvil aplazado.

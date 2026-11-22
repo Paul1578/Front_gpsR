@@ -122,3 +122,9 @@ Fecha de actualización: 2026-11-21.
 - Pendiente validar este SHA en Actions y continuar cobertura de otros CRUD/responsive; SMTP requiere credenciales externas y la app nativa está pospuesta. La misión sigue abierta.
 - Backend HTTP smoke extendido y pasado: Manager crea flota/ruta y edita rutas; Logistics puede gestionar rutas pero no vehículos/conductores; User/Driver no crean rutas. MySQL temporal se descartó.
 - Registro público con intento Admin queda como User (403 en flota); logout-all real responde 200 y revoca refresh (401).
+
+## CI final de la rama — 2026-11-21
+
+- GitHub Actions frontend run `44982243409` finalizó `success` para `6e37c4d`; Actions backend run `44982244087` también pasó para `4cf62a3`.
+- Frontend local: lint, build, audit de producción y Playwright autenticado Chrome/API/MySQL 14/14 aprobados. Backend: suite Release 54/54 tras agregar pruebas de recovery.
+- La misión sigue abierta: ampliar pantallas y operaciones CRUD/responsive aún no cubiertas; SMTP requiere configuración externa. Móvil nativo pospuesto por decisión del usuario.

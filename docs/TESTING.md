@@ -115,3 +115,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - El cleanup retiró los fixtures QA y descartó el esquema. Backend smoke de tenant/roles y concurrencia también pasó en su DB aislada.
 - Actions remoto para estos cambios locales: pendiente de commit/push y ejecución.
 - Backend MySQL autenticado verificó también que registro público no eleva rol (Admin pedido → User/403) y logout-all invalida el refresh (200→401).
+
+## Resultado remoto final — 2026-11-21
+
+- Frontend Actions run `44982243409` completado `success` en SHA `6e37c4d`; incluye checks publicados y E2E integrado.
+- Backend Actions run `44982244087` completado `success` en SHA `4cf62a3`; suite local posterior ampliada a 54/54 con recovery/activación.
+- Localmente frontend lint/build/audit y Playwright autenticado Chrome/API/MySQL 14/14 pasaron.
