@@ -134,3 +134,7 @@ Fecha de actualización: 2026-11-21.
 - Playwright ahora crea un usuario `User` desde Gestión de Equipo, cambia su estado a inactivo/reactivado desde UI y comprueba ambas escrituras vía `/Users/my-team`.
 - `npm run lint`, `npm run build` y `git diff --check` pasaron localmente. CI integrado ejecutará este caso contra Chrome/API/MySQL desechables tras publicar el commit.
 - Misión activa; queda recorrer otras pantallas y estados responsive no cubiertos.
+
+## Resultado del lifecycle de User en CI — 2026-11-21
+
+- Run frontend Actions `44982723150` terminó `success` para `96caf15`; validó lint, build y Playwright integrado con API/MySQL temporal, incluyendo crear User, darlo de baja y reactivarlo desde UI con persistencia.

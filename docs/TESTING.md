@@ -126,3 +126,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - El E2E de Gestión de Equipo ahora crea una cuenta `User`, la desactiva y reactiva desde botones de UI, y comprueba el estado persistido usando `GET /Users/my-team` después de cada operación.
 - Validación previa a CI: lint, build y `git diff --check` completados correctamente; Actions pendiente para el SHA siguiente.
+
+- Resultado de Actions `44982723150`: `success` para `96caf15`. El caso de alta/estado/reactivación de User y el resto de Playwright autenticado pasaron contra el backend de la rama y MySQL descartable.

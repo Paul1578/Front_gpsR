@@ -180,3 +180,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - `e2e/fleet-admin.spec.ts` extendido para activar y desactivar desde UI una cuenta con rol User, verificando persistencia en API. Se suma a la prueba de creación ya existente.
 - Lint/build y diff check locales pasaron; falta publicar y esperar Actions de este cambio. Runner integrado usa Chrome, backend y MySQL efímeros.
+
+- Confirmado después del push: Actions `44982723150` success en `96caf15`, incluidos el E2E de activar/desactivar User y la integración Chrome/API/MySQL. Próximo lote puede empezar sobre `refactor/route-builder` limpio.

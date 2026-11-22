@@ -84,3 +84,5 @@
 ## 2026-11-21 — Cobertura de estado de usuarios
 
 - E2E de equipo añade desactivación/reactivación visual de usuario con verificación de persistencia API.
+
+- Actions `44982723150` verificó el ciclo UI de creación, baja y reactivación de User con persistencia MySQL.
