@@ -536,6 +536,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                     return (
                       <div
                         key={driver.id}
+                        data-testid={`team-driver-${driver.id}`}
                         className="min-w-0 p-3 border border-gray-200 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                       >
                         <div className="min-w-0">

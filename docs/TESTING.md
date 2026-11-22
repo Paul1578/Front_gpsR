@@ -3,6 +3,12 @@
 - Action `45076629351` en SHA `2147be7`: **37/37 E2E** autenticados con API/MySQL efímeros, responsive **1/1**, audit/lint/build y cleanup correctos. Incluye 503 separados para Users y Routes/Vehicles, reintentos recuperables, exportación parcial bloqueada, formulario Driver a 320/768 px y regresión de persistencia parcial Vehicle.
 - Action `45077576665` en docs HEAD `8887649` repitió esos checks sin cambios funcionales: **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup success.
 
+# Validación de asignación concurrente, creación Driver y mapa Manager — pendiente de CI
+
+- Front local tras los fixes actuales: lint/build correctos, discovery **39 tests**, diff-check correcto. El E2E Manager mapa se descubrió y usa API real; ejecución local se omitió sin API/fixtures QA.
+- Actions `45082924174` y `45083215716` demostraron que un único worker no evita la escritura perdida; ambas llegaron a leer SQL `VehicleId=NULL` tras el éxito visual. La causa detectada en backend es edición de perfil que guarda `VehicleId` obsoleto; fix + regresión unitaria nuevos requieren Release/Action.
+- `45083215716` completó 35 E2E, con errores en documento mostrado desde DTO User y localizador de Driver oculto; se corrigió presentación/selector. Nueva ejecución integrada debe comprobar también alta Driver desde Administración de empresa y mapa Manager.
+
 ## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente
 
 - Nuevo Playwright en `e2e/driver-management-search.spec.ts`: alta desde la pantalla dedicada, edición, asignación y retiro de Vehicle, baja/reactivación; consulta API verifica persistencia. Interacciones a 320 px y comprobación tablet a 768 px.

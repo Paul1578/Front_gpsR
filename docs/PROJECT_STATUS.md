@@ -1,6 +1,11 @@
 ## Estado actual — 2026-11-22
 
-- Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Nuevo E2E crea Driver, consulta User y perfil Driver persistidos, y verifica UI/SMTP; cambios en curso, Action pendiente.
+- Diagnóstico CI: `45082924174` (un worker) observó otra vez SQL `VehicleId=NULL`; lectura backend identificó actualización perdida cuando el PUT de edición Driver guarda un `VehicleId` antiguo. Corrección y regresión en Backend están locales; xUnit/Action pendientes.
+- `45083215716` confirmó además dos errores de aserción E2E: documento ausente del DTO User y locator que eligió un nodo responsive oculto. UI omite ID vacío, el test usa username y tarjetas Driver por ID. Nueva validación integrada pendiente.
+- E2E nuevo Manager mapa (`manager-map.spec.ts`) cubre ruta/vehículo reales y viewports desktop/tablet/móvil web; localmente el test omitió por falta de API/credenciales. El run integrado debe confirmar ejecución real.
+- Estado de ramas: Front `refactor/route-builder` (`f07d37d` remoto + fixes locales); Backend `chore/stabilize-fleet-platform` (`5c8fb4f` remoto + fix local); `main` intacta. Front lint/build/discovery **39** pasan; Backend usa SDK local .NET 8 porque el host global no tiene runtime.
+
+- Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Commit `f07d37d` añade E2E de creación Driver, lecturas persistidas User/Driver y UI/SMTP; lint/build/discovery 38 pasan, Action `45083215716` pendiente.
 
 - Front `e18ea0f` publicado: Action `45080342001` terminó success con 37 passed y 1 flaky (asignación Driver/Vehicle falló en intento inicial, pasó en retry). El E2E local ahora compara GET directo al backend y vía rewrite `/api/backend` para diagnosticar. Persistencia estable abierta; ver `ERROR_LOG.md`.
 - El diagnóstico directo vs. rewrite pasa localmente lint/build y discovery **38 tests**; el cambio quedó pendiente de commit/Action.

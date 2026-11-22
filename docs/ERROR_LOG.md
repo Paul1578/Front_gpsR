@@ -1,3 +1,17 @@
+## 2026-11-22 — Edición concurrente podía borrar la asignación de vehículo — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- Action `45082924174` con un worker y Action `45083215716` reprodujeron que `PUT /Drivers/{id}/assign-vehicle` terminaba con `Drivers.VehicleId=NULL`, aunque la UI recibiera éxito; el retry también podía pasar, así que se conservó la aserción SQL.
+- Causa encontrada al trazar escritores: `UpdateDriverCommand` podía leer el Driver con `VehicleId=NULL`, quedar concurrente con la asignación y luego guardar el objeto obsoleto. `DriverRepository.UpdateAsync` copia también `VehicleId`, lo que permite una actualización perdida.
+- Corrección local: editar bloquea el Driver con el mismo lock de asignaciones, vuelve a leerlo dentro de la transacción y actualiza el perfil con el `VehicleId` vigente. Una regresión simula una asignación entre lectura inicial y lock; Actions aún debe validar el cambio.
+- Prevención: todo mutador de Driver que escriba el registro completo debe usar los locks de asignación y volver a leer el estado después del lock. No quitar la verificación SQL del E2E hasta que el workflow pase.
+
+## 2026-11-22 — Tres pruebas E2E confundían contrato o nodos responsive — CORREGIDOS LOCALMENTE; CI PENDIENTE
+
+- Action `45083215716` falló en administración porque esperaba que `/Users/my-team` mostrara el documento del Driver en el renglón User. Ese DTO no contiene `identificacion`; el documento sí persiste en el perfil Driver. La UI ahora omite `ID:` cuando falta y el E2E valida el username, conservando la lectura API del perfil/documento.
+- `team-search.spec.ts` localizaba el texto Doc por toda la página y Playwright resolvió un nodo que el layout responsive reportó oculto. Se añadió `data-testid` al contenedor Driver y el test usa el ID recibido de API.
+- La asignación de Driver continuaba siendo flaky en ambas Actions y motivó la corrección backend registrada arriba. Tras cada arreglo se debe correr el suite integrado; no inferir éxito desde estado optimista.
+- Prevención: al verificar campos de usuario respetar el DTO que realmente devuelve la API; en E2E usar el contenedor de la entidad por ID, no texto global duplicable por responsive.
+
 ## 2026-11-22 — E2E de errores de administración tenía selectores y recuperación incorrectos — CORREGIDO LOCALMENTE
 
 - Revisión QA detectó que el test buscaba Exportar en la pestaña Resumen y pulsaba dos veces un reintento que recupera rutas y vehículos en conjunto. También halló ceros aparentes en el resumen de exportación tras fallos 503.

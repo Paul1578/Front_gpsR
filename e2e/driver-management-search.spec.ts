@@ -159,7 +159,13 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
 
   await expect(driverCard.getByRole("option", { name: new RegExp(vehiclePlate) })).toBeAttached();
   await driverCard.getByLabel("Vehículo para QA Responsive").selectOption(createdVehicleId!);
+  const assignmentResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "PUT" &&
+    new URL(response.url()).pathname.endsWith(`/Drivers/${createdDriverId}/assign-vehicle`),
+  );
   await driverCard.getByRole("button", { name: "Asignar" }).click();
+  const assignmentResponse = await assignmentResponsePromise;
+  expect(assignmentResponse.status(), await assignmentResponse.text()).toBe(204);
   await expect(driverCard).toContainText(vehiclePlate);
   const apiOrigin = (process.env.FLETFLOW_API_URL ?? "http://127.0.0.1:5048").replace(/\/api\/?$/, "").replace(/\/$/, "");
   if (process.env.DB_NAME) {

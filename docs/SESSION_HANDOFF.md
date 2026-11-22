@@ -1,12 +1,21 @@
 ## Continuación — 2026-11-22
 
+## Estado vigente — diagnóstico de asignación y pruebas responsive
+
+- Ramas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; main sin cambios.
+- Actions `45082924174` (1 worker) y `45083215716` reproducen asignación inestable: MySQL ve `Drivers.VehicleId=NULL` tras éxito UI. Causa técnica hallada: `UpdateDriverCommand` actualizaba Driver con un objeto previo al lock y podía sobrescribir el VehicleId concurrente. Backend local bloquea Driver y re-lee dentro de transacción; se añadió regresión unitaria de interleaving. Ejecutar Release xUnit y Action.
+- La Action `45083215716` también mostró que DTO User de `my-team` no incluye documento y la UI generaba `ID:` vacío; UI omite ese campo sin valor, E2E valida username y mantiene prueba Driver API. `team-search` usa testid de tarjeta identificada por API.
+- Se creó `e2e/manager-map.spec.ts` para Manager con API real, ruta/vehículo, selección y desktop/tablet/móvil web. El agente ejecutó lint/build/discovery/diff-check; E2E local quedó skipped por API/fixtures ausentes. Integrar en Action autenticada.
+- Front local: lint/build, discovery **39 tests**, `git diff --check` correctos. Backend test inicial con `/usr/bin/dotnet` falló porque el host global no tiene runtime; usar `/tmp/fletflow-dotnet/dotnet` para la suite. Al terminar, documentar resultados, commitear/pushear ambos branches, inspeccionar Actions y corregir todo fallo.
+- No marcar misión completa: quedan matriz CRUD/roles/responsive, SMTP productivo externo, móvil nativo pospuesto y decisiones pendientes de Admin delegado/desvincular User↔Driver.
+
 ## Auditoría de Administración de empresa — alta Driver con API/MySQL
 
-- Auditoría independiente encontró que `company-admin.spec.ts` completaba el formulario de `SuperAdminView` pero nunca lo enviaba. Se está ampliando el flujo para crear Driver real, verificar User/Driver por API y renderizado, y validar mensaje SMTP no enviado; requiere lint/build y Action antes de cerrar.
+- Auditoría independiente encontró que `company-admin.spec.ts` completaba el formulario de `SuperAdminView` pero nunca lo enviaba. `f07d37d` añade alta Driver real, lecturas persistidas User/Driver y UI/SMTP; lint/build/discovery 38 pasan, Action `45083215716` pendiente.
 
 ## Continuación — matriz de roles y CRUD de conductores — 2026-11-22
 
-- Ramas activas: Front `refactor/route-builder` (`4206b0d`) y Backend `chore/stabilize-fleet-platform` (`fa16d05`); ambas publicadas, main intacta.
+- Ramas activas: Front `refactor/route-builder` (`f07d37d`) y Backend `chore/stabilize-fleet-platform` (`5c8fb4f`); ambas publicadas, main intacta.
 - Backend smoke amplía 403 Manager sobre Users/Roles y 403 Logistics para mutaciones Vehicle/Driver; compara snapshots SQL. La corrida local API/MySQL descartable pasó. Action `45080063668` en curso.
 - Front E2E agregado completa alta, edición, asignación/desasignación y baja/reactivación en Gestión de Conductores. CI `45079269083` halló locator ambiguo (placa/documento repetidos); test corregido para usar DriverId de API. Lint/build/discovery 38 pasan antes de último ajuste responsive.
 - Action Front `45080069469` falló 37/38: UI reflejó placa por estado optimista pero GET Driver retornó `vehicleId:null` después de PUT 204. La Action `45080342001` para `e18ea0f` pasó con 37 y marcó 1 flaky en el mismo paso (falló primer intento, retry pasó). No declarar persistencia validada; revisar causa backend/DB/concurrencia con traces; detalle `ERROR_LOG.md`.

@@ -37,17 +37,19 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
 
   const driversResponse = await page.request.get("/api/backend/Drivers?onlyActive=true", { headers });
   expect(driversResponse.status()).toBe(200);
-  const drivers = await driversResponse.json() as Array<{ firstName: string; lastName: string; documentNumber: string }>;
+  const drivers = await driversResponse.json() as Array<{ id: string; firstName: string; lastName: string; documentNumber: string }>;
   test.skip(drivers.length === 0, "La cuenta QA no tiene conductores activos para buscar.");
 
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   const driverSearch = page.getByRole("searchbox", { name: "Buscar choferes" });
+  const driverCard = page.getByTestId(`team-driver-${drivers[0].id}`);
   await driverSearch.fill(drivers[0].documentNumber);
-  await expect(page.getByText(`Doc: ${drivers[0].documentNumber}`, { exact: false })).toBeVisible();
+  await expect(driverCard).toBeVisible();
+  await expect(driverCard).toContainText(`Doc: ${drivers[0].documentNumber}`);
   await driverSearch.fill("documento-sin-coincidencias-fletflow");
   await expect(page.getByText("No hay choferes que coincidan con la búsqueda")).toBeVisible();
   await driverSearch.fill("");
-  await expect(page.getByText(`Doc: ${drivers[0].documentNumber}`, { exact: false })).toBeVisible();
+  await expect(driverCard).toBeVisible();
 
   await page.setViewportSize({ width: 320, height: 844 });
   const mobileDimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
@@ -61,5 +63,6 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
   expect(tabletDimensions.document).toBeLessThanOrEqual(tabletDimensions.viewport);
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   await driverSearch.fill(drivers[0].documentNumber);
-  await expect(page.getByText(`Doc: ${drivers[0].documentNumber}`, { exact: false })).toBeVisible();
+  await expect(driverCard).toBeVisible();
+  await expect(driverCard).toContainText(`Doc: ${drivers[0].documentNumber}`);
 });

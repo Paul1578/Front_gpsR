@@ -1,5 +1,12 @@
 # 2026-11-22 — Correcciones de QA para administración de empresa
 
+## Actualización posterior — cobertura de asignación y mapa
+
+- `UpdateDriverCommand` ahora comparte el bloqueo de asignación y re-lee el Driver antes de guardar para preservar cambios concurrentes de `VehicleId`.
+- Alta Driver desde administración se verifica con User y perfil Driver persistidos; la lista omite `ID:` vacío si el DTO no trae identificación.
+- Búsqueda E2E de choferes usa ID de Driver y `data-testid` por registro; se añade E2E Manager mapa desktop/tablet/móvil web con fixtures API.
+- Validación Front local: lint/build/discovery 39/diff-check pasan. xUnit Release y CI integrada pendientes.
+
 - Resolución integrada en Action `45076629351` (`2147be7`): **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL correctos. Los fallos 503 de usuarios y flota permanecen independientes hasta sus respectivos reintentos.
 - El panel Driver se prueba sin mutaciones a 320/768 px; los estados de error no se convierten en ceros.
 

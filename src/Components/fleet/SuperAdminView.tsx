@@ -417,7 +417,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                               {user.nombres} {user.apellidos}
                             </p>
                             <p className="text-xs text-gray-500">
-                              @{user.usuario} · ID: {user.identificacion}
+                              @{user.usuario}{user.identificacion ? ` · ID: ${user.identificacion}` : ""}
                             </p>
                           </div>
                         </div>

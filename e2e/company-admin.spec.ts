@@ -79,7 +79,7 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   expect(await persistedDriver.json()).toMatchObject({ userId: createdUser.id, documentNumber });
 
   await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
-  await expect(page.getByText(`@${username} · ID: ${documentNumber}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`@${username}`, { exact: false })).toBeVisible();
 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();
