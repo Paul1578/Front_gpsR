@@ -215,3 +215,5 @@ Fecha de actualización: 2026-11-22.
 - Actions `44996497487` para Front `6fe66f7` + Back `104cda8` pasó: xUnit **59/59**, responsive **1/1**, E2E autenticados **16/16**, audit/lint/build y runner cleanup success. GPS móvil concedido se envió y leyó por API; el alta duplicada devolvió 409 y no creó una segunda tarjeta.
 
 - Documento de Driver repetido ahora devuelve 409 y no crea cuenta parcial. Backend local 61/61; frontend añadió la aserción móvil Admin y pasó lint/build/discovery 16. Actions integrado pendiente.
+
+- Actions `44997054375` validó Front `1bb7d71` con backend `a7f7c4e`: xUnit 61/61, responsive 1/1, E2E 16/16, audit/lint/build y cleanup del runner success. Documento duplicado devuelve 409 y no crea usuario parcial.

@@ -232,3 +232,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Backend Release local **61/61**; cambios de CreateDriver, UpdateDriver y `POST /Users` para HTTP 409 en documento repetido.
 - E2E Admin móvil vuelve a enviar el documento con correo nuevo, espera 409/mensaje claro y verifica por GET `/Users/my-team` que el correo no fue creado.
 - `npm run lint`, `npm run build`, discovery **16 tests** y diff-check pasaron. CI browser/API/MySQL integrado pendiente.
+- Resultado de la nueva validación: Actions `44997054375`, Front `1bb7d71` + Back `a7f7c4e`, success con 61/61 xUnit, 16/16 E2E y responsive 1/1. El nuevo caso verifica el 409 y ausencia en el equipo.

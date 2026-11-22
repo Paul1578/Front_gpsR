@@ -622,3 +622,4 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Desde Front se intentó leer `Back_GPS/scripts/run-e2e-local.sh`; ese checkout no está anidado localmente bajo Front. `sed`/`cat` devolvieron archivo inexistente, sin cambiar archivos o datos.
 - Corrección: abrir `/home/leonardo/Back_GPS/scripts/run-e2e-local.sh` y `cleanup-e2e.sql` desde la raíz real del backend. La inspección confirma que trap ejecuta cleanup SQL al salir; Actions `44996497487` terminó todos los pasos y detuvo la API/MySQL.
 - Prevención: no inferir que el checkout hermano está montado dentro del repositorio frontend; usar la raíz absoluta registrada en AGENTS.md.
+- Actions `44997054375` corrigió la validación pendiente: 61/61 xUnit, responsive 1/1 y E2E 16/16; documento duplicado retorna 409 y GET del equipo confirmó ausencia de la cuenta. Job y cleanup finalizaron en success.

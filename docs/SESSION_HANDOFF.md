@@ -291,3 +291,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend `POST /Users` con rol Driver ahora reporta conflicto 409 antes de registrar cuenta; CreateDriver y UpdateDriver comparten BusinessConflict y mensaje claro.
 - xUnit local 61/61. E2E móvil Admin crea Driver con documento existente pero email diferente; comprueba error y ausencia en GET `/Users/my-team`.
 - Front lint/build/discovery 16 pasan localmente. Publicar backend y frontend y verificar Actions con API/MySQL descartables; todavía no contar el flujo E2E.
+- Cerró el lote de documento duplicado Actions `44997054375`: Front `1bb7d71` contra Back `a7f7c4e`, xUnit 61/61, responsive 1/1, E2E 16/16, audit/lint/build y cleanup correctos. El siguiente trabajo sigue siendo ampliar CRUD, roles y responsive; la misión global continúa abierta.
