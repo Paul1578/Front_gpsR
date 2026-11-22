@@ -19,7 +19,7 @@
 
 - La auditoría detectó que Admin conserva la creación de Drivers dentro de Gestión de Equipo, donde documento/teléfono no tenían `maxLength` y los campos del perfil no eran obligatorios, a diferencia de la pantalla nueva.
 - Se alineó el formulario de Equipo con campos requeridos y límites 100 para nombres/20 para documento y teléfono. El E2E Admin comprueba ambos atributos; el E2E de Manager verifica acciones y formulario de Drivers también a 768 px.
-- Lint/build/discovery Playwright 18 y diff-check pasan localmente. Actions para este segundo ajuste quedan pendientes.
+- Lint/build/discovery Playwright 18 y diff-check pasan localmente. Actions `45016638974` para `d79ecb8` pasó responsive 1/1 y E2E autenticado 18/18 con cleanup; la vista tablet y formulario Admin quedaron cubiertos.
 
 ## 2026-11-21 — Playwright autenticado local omitido por falta de entorno QA
 

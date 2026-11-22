@@ -253,3 +253,4 @@
 - AuthContext deja de solicitar `/Users/my-team` a Manager/Logistics. E2E integrado añade el ciclo de Driver y la matriz UI; validación CI pendiente.
 - Contrato documento/teléfono unificado a 20 caracteres entre formulario, API y persistencia; responsive E2E ahora comprueba el panel y tarjeta creada a 320 px.
 - El formulario de Drivers que Admin conserva dentro de Gestión de Equipo ahora comparte los mismos límites y requeridos; E2E agrega checks del formulario a 768 px.
+- Actions `45016638974` en `d79ecb8`: audit/lint/build, responsive 1/1, E2E 18/18 contra Chrome/API/MySQL y cleanup success.
