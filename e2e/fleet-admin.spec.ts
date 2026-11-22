@@ -1169,6 +1169,111 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   }
 });
 
+test("Admin combina filtros de rutas y restablece la lista", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const token = await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 9);
+  const fixture = {
+    vehicles: [] as string[],
+    drivers: [] as string[],
+    routes: [] as Array<{ id: string; name: string }>,
+  };
+  const routeNames = [`E2E QA ruta filtros A ${suffix}`, `E2E QA ruta filtros B ${suffix}`];
+
+  try {
+    for (let index = 0; index < 2; index++) {
+      const vehicle = await page.request.post("/api/backend/Vehicles", {
+        headers,
+        data: { plate: `E2EQA${suffix}F${index}`, brand: "FleetFlow QA", model: "Route filter", year: 2025 },
+      });
+      expect(vehicle.status()).toBe(201);
+      fixture.vehicles.push((await vehicle.json()).id as string);
+
+      const driver = await page.request.post("/api/backend/Drivers", {
+        headers,
+        data: {
+          firstName: `E2E Filter ${suffix}`,
+          lastName: `Driver ${index}`,
+          documentNumber: `E2EQA${suffix}F${index}`,
+          phoneNumber: "0990000099",
+          userId: null,
+        },
+      });
+      expect(driver.status()).toBe(201);
+      fixture.drivers.push((await driver.json()).id as string);
+
+      const route = await page.request.post("/api/backend/Routes", {
+        headers,
+        data: {
+          name: routeNames[index],
+          cargoDescription: "Fixture E2E filtros combinados",
+          vehicleId: fixture.vehicles[index],
+          driverId: fixture.drivers[index],
+          points: [
+            { lat: -0.18, lng: -78.46, name: `Origen filtro ${index}`, operation: 0 },
+            { lat: -0.2, lng: -78.48, name: `Destino filtro ${index}`, operation: 0 },
+          ],
+        },
+      });
+      expect(route.status()).toBe(201);
+      fixture.routes.push({ id: (await route.json()).id as string, name: routeNames[index] });
+    }
+
+    await page.reload();
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[0]);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[0]);
+
+    const firstRouteHeading = page.getByRole("heading", { name: routeNames[0], exact: true });
+    const secondRouteHeading = page.getByRole("heading", { name: routeNames[1], exact: true });
+    await expect(firstRouteHeading).toBeVisible();
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByRole("button", { name: "Limpiar filtros" }).click();
+    await expect(firstRouteHeading).toBeVisible();
+    await expect(secondRouteHeading).toBeVisible();
+
+    for (const width of [320, 768]) {
+      await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      await expect(firstRouteHeading).toBeVisible();
+      await expect(secondRouteHeading).toBeVisible();
+    }
+  } finally {
+    for (const route of fixture.routes) {
+      const response = await page.request.delete(`/api/backend/Routes/${route.id}`, { headers }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+    for (const driverId of fixture.drivers) {
+      const response = await page.request.put(`/api/backend/Drivers/${driverId}/status`, {
+        headers,
+        data: { isActive: false },
+      }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+    for (const vehicleId of fixture.vehicles) {
+      const response = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+  }
+});
+
 test("User no ve operaciones y la API deniega recursos de flota", async ({ page }) => {
   test.skip(!userEmail || !userPassword, "El runner local crea el usuario QA para verificar permisos.");
 
@@ -1382,6 +1487,9 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
 
     const managerHeaders = await login(driverEmail!, driverPassword!);
     await expectDenied("Manager", userAndRoleMutations(managerHeaders));
+    const managerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: managerHeaders });
+    expect(managerTeamResponse.status()).toBe(403);
+    expect(await managerTeamResponse.text()).not.toContain(userEmail!);
 
     const managerVehicles = await page.request.get("/api/backend/Vehicles", { headers: managerHeaders });
     const managerRoutes = await page.request.get("/api/backend/Routes", { headers: managerHeaders });
@@ -1734,6 +1842,9 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     expect(vehiclesResponse.status()).toBe(403);
     expect(driversResponse.status()).toBe(403);
     expect(assignmentOptionsResponse.status()).toBe(200);
+    const logisticsTeamResponse = await logisticsPage.request.get("/api/backend/Users/my-team", { headers: logisticsHeaders });
+    expect(logisticsTeamResponse.status()).toBe(403);
+    expect(await logisticsTeamResponse.text()).not.toContain(driverEmail!);
     const assignmentOptions = await assignmentOptionsResponse.json();
     expect(assignmentOptions.vehicles).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: vehicleId, plate: `E2EQA${suffix}` }),
@@ -1765,6 +1876,17 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       await expect(logisticsPage.locator("select").nth(1).locator(`option[value="${routeDriverId}"]`)).toHaveCount(1);
       await logisticsPage.locator("select").nth(0).selectOption(vehicleId!);
       await logisticsPage.locator("select").nth(1).selectOption(routeDriverId);
+      for (const width of [320, 768]) {
+        await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+        const dimensions = await logisticsPage.evaluate(() => ({
+          viewport: document.documentElement.clientWidth,
+          content: document.documentElement.scrollWidth,
+        }));
+        expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+        await expect(logisticsPage.locator("select").nth(0)).toHaveValue(vehicleId);
+        await expect(logisticsPage.locator("select").nth(1)).toHaveValue(routeDriverId);
+      }
+      await logisticsPage.setViewportSize({ width: 390, height: 844 });
       await logisticsPage.getByRole("button", { name: "Continuar" }).click();
       await logisticsPage.getByRole("heading", { name: "Revisa y crea" }).waitFor();
       const createRoutePromise = logisticsPage.waitForResponse((response) =>
@@ -1781,7 +1903,20 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
 
     const routeCard = logisticsPage.getByRole("heading", { name: routeName, exact: true }).locator("xpath=../../../..");
     await routeCard.getByRole("button", { name: `Cancelar ruta ${routeName}` }).click();
+    const cancelDialog = logisticsPage.getByRole("alertdialog");
     await expect(logisticsPage.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      const dialogBounds = await cancelDialog.boundingBox();
+      expect(dialogBounds).toBeTruthy();
+      expect(dialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(dialogBounds!.x + dialogBounds!.width).toBeLessThanOrEqual(width);
+    }
     const cancelRoutePromise = logisticsPage.waitForResponse((response) =>
       response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
     );

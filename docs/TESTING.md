@@ -245,3 +245,12 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Run 45025319275 para Front 000d6cb terminó success: backend Release/xUnit/smoke, audit/lint/build, responsive 1/1, E2E autenticado Playwright/API/MySQL y cleanup.
 - Este run usó Backend 8d3cb32. La implementación posterior de EmailOutbox requiere un nuevo run integrado para confirmar migración y API actuales.
+
+## Matriz adicional Manager/Logistics y filtros — 2026-11-22
+
+- Agregados asserts HTTP con tokens reales: GET /Users/my-team devuelve 403 a Manager y Logistics y el body no contiene el email de la cuenta objetivo.
+- E2E crea dos rutas/vehículos/conductores temporales; combina estado+vehículo+conductor, exige sólo la ruta que coincide, limpia filtros y exige restaurar ambas.
+- Logistics recorre asignación y diálogo de cancelación a 320×844 y 768×1024; se comprueba sin overflow y con selecciones/dialog visible dentro del viewport.
+- La prueba encontró que Limpiar filtros desaparecía cuando aún había resultados; UI corregida.
+- Validación local final: npm run lint, npm run build, discovery Playwright 20 y runner completo Chrome/API/MySQL 20/20. MySQL en container y esquema fletflow_ci_front_routes_20261122 fueron descartables; runner cleanup final se ejecutó y el container/key ring se eliminaron.
+- Errores de la primera iteración (acción de limpiar ausente, DELETE Driver 405, prefijos de cleanup y path inicial del runner) constan en ERROR_LOG.

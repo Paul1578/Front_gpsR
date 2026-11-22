@@ -935,3 +935,21 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El guard del terminal rechazó una limpieza amplia antes de ejecutar comandos; se sustituyó por detener/eliminar únicamente el contenedor descartable con nombre exacto.
 - La corrida previa sin requests concurrentes no se contó como prueba de serialización; el smoke con dos requests reales pasó.
 - Detalle y prevención se mantienen en Back_GPS/docs/ERROR_LOG.md.
+
+## 2026-11-22 — Filtros de rutas sin acción para restaurar resultados — CORREGIDO Y VALIDADO
+
+- La prueba combinada confirmó que los criterios Estado+Vehículo+Conductor ocultaban la ruta no coincidente y conservaban la coincidente, pero esperaba el botón Limpiar filtros con resultados y agotó 90 s.
+- Causa UX: el botón sólo se renderizaba en el estado de cero coincidencias; con una coincidencia no había control para quitar los criterios.
+- Solución: el panel muestra Limpiar filtros siempre que algún filtro esté activo y limpia búsqueda/estado/vehículo/conductor en una sola acción. Se quitó el control duplicado del vacío.
+- Repetición Chrome/API/MySQL descartable completa: 20/20; el test confirma una ruta visible, otra oculta y ambas visibles después de limpiar.
+
+## 2026-11-22 — E2E intentaba borrar un Driver por un endpoint inexistente — CORREGIDO
+
+- El segundo intento del test llegó a validar filtros y responsive, pero falló en cleanup con HTTP 405 porque DriversController no implementa DELETE.
+- Solución: desactivar fixtures con PUT /Drivers/{id}/status y asignar prefijos E2EQA/E2E QA ruta que reconoce cleanup-e2e.sql; el cleanup global de la DB descartable elimina las filas.
+- Repetición completa: 20/20, cleanup del runner ejecutado y contenedor MySQL eliminado.
+
+## 2026-11-22 — Runner E2E se leyó desde el repositorio incorrecto — CORREGIDO
+
+- La inspección inicial buscó scripts/run-e2e-local.sh bajo Front_gpsR y sed reportó archivo inexistente.
+- Solución: leerlo desde Back_GPS/scripts/run-e2e-local.sh, su ubicación real; el runner se ejecutó contra API local y MySQL descartable.

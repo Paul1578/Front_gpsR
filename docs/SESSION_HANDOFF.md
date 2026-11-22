@@ -491,3 +491,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front está en refactor/route-builder, HEAD 000d6cb; Actions 45025319275 terminó success: audit/lint/build, responsive 1/1 y E2E Playwright/API/MySQL del flujo autenticado, cleanup del runner. El backend validado en ese run era HEAD 8d3cb32.
 - Backend inicia el siguiente lote para hacer durable el correo de recuperación; está en desarrollo local en chore/stabilize-fleet-platform y aún no está en Actions. Después del push, repetir workflow integrado con esa migración antes de actualizar la validación aquí.
 - Móvil nativo pospuesto por decisión del usuario; las pruebas responsive web siguen dentro del alcance. La auditoría general sigue abierta.
+
+## Filtros de rutas y pruebas de Manager/Logistics — lote local 2026-11-22
+
+- Auditor Front (solo lectura) recomendó cubrir filtro combinado, GET /Users/my-team prohibido para Manager/Logistics y responsive de Logistics en 320/768 px.
+- Se implementó acción visible Limpiar filtros mientras haya cualquier criterio activo; antes sólo estaba disponible cuando ninguna ruta coincidía. E2E crea dos rutas reales y prueba filtro AND/restauración.
+- E2E Manager/Logistics usa JWT reales, comprueba HTTP 403 en /Users/my-team sin email expuesto. Logistics prueba selects y diálogo de cancelar ruta a 320/768 con overflow cero.
+- Primera corrida completa: los filtros sí filtraban, pero la prueba de restauración falló porque UI ocultaba Limpiar filtros cuando aún quedaban resultados. Solución añadida.
+- Segundo intento alcanzó responsive pero el cleanup llamó DELETE Driver (405); controlador sólo ofrece baja lógica PUT status. Fixture pasó a prefijos que cubre cleanup-e2e.sql, cleanup usa baja lógica. Runner path correcto está en Back_GPS/scripts/run-e2e-local.sh.
+- Validación: lint/build/discovery 20; runner Chrome/API/MySQL local final **20/20**. Docker DB descartable y DataProtection key dir removidos. Actions Front previo 45027026835 fue success pero usó Front 82941b8 antes de estos tests y por tanto no valida el lote; publicar y revisar Actions nuevo.
+- Próximo: push lote Front y documentación backend del Actions 45027017954; verificar nuevo CI integrado Front y backend. Continuar auditoría de brechas pendientes.

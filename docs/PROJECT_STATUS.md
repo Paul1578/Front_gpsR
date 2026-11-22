@@ -366,3 +366,10 @@ Fecha de actualización: 2026-11-22.
 - Front HEAD 000d6cb, Actions 45025319275 success: lint/build/audit, responsive y E2E autenticado con API/MySQL, cleanup.
 - El run consumió backend 8d3cb32; las siguientes modificaciones del outbox backend aún no se han publicado, por lo que se requiere una corrida integrada nueva.
 - Desarrollo móvil nativo queda explícitamente aplazado; mantener responsive web para desktop/tablet/móvil.
+
+## Filtros, roles y responsive de Logistics — local validado 2026-11-22
+
+- UI de rutas ahora ofrece Limpiar filtros con resultados filtrados además del estado vacío.
+- E2E valida filtro combinado contra dos rutas persistidas y restauración de la lista; Manager y Logistics reciben 403 de Users/my-team por HTTP; Logistics mantiene asignaciones/diálogo sin overflow a 320 y 768 px.
+- npm lint/build y suite E2E completa en Chrome/API/MySQL: 20/20. La base fue efímera y el runner ejecutó su limpieza; el container se eliminó.
+- Requiere Actions nuevo tras push para confirmar commit integrado con backend 5049dea. Auditoría global sigue abierta.

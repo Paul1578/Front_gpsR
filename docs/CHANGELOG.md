@@ -281,3 +281,10 @@
 
 - Actions 45025319275 pasó en HEAD 000d6cb: audit, lint, build, responsive y E2E Chrome integrado con API/MySQL.
 - El commit actual de outbox backend todavía requiere un run integrado nuevo tras publicarse.
+
+## 2026-11-22 — Filtros de rutas y matriz Manager/Logistics
+
+- Limpiar filtros permanece disponible con resultados filtrados; el E2E confirma filtrado combinado por estado/vehículo/conductor y restauración.
+- Añadida denegación de /Users/my-team por HTTP para Manager y Logistics.
+- Cobertura responsive de Logistics para selectores y confirmación de cancelación a 320 y 768 px.
+- Verificación local: lint/build y Chrome/API/MySQL **20/20**.

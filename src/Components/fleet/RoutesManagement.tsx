@@ -102,6 +102,14 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       (vehicleFilter === "all" || route.vehiculoId === vehicleFilter) &&
       (driverFilter === "all" || route.conductorId === driverFilter);
   });
+  const hasActiveRouteFilters = routeSearch.trim().length > 0 ||
+    statusFilter !== "all" || vehicleFilter !== "all" || driverFilter !== "all";
+  const clearRouteFilters = () => {
+    setRouteSearch("");
+    setStatusFilter("all");
+    setVehicleFilter("all");
+    setDriverFilter("all");
+  };
   const vehicleName = (id: string) => {
     const vehicle = routeAssignmentVehicles.find((item) => item.id === id) ?? vehicles.find((item) => item.id === id);
     return vehicle
@@ -388,6 +396,9 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
                 <option value="all">Todos</option>{drivers.map((driver) => <option key={driver.driverKey} value={driver.driverKey}>{driver.nombres} {driver.apellidos}</option>)}
               </select>
             </label>
+            {hasActiveRouteFilters && <div className="flex justify-end sm:col-span-2 xl:col-span-4">
+              <button type="button" onClick={clearRouteFilters} className="rounded-md px-2 py-1 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600">Limpiar filtros</button>
+            </div>}
           </div>
           {loadErrors.includes("rutas") && routes.length === 0 ? null : routes.length === 0 ? (
             <div className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
@@ -406,7 +417,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
               </button>
             </div>
           ) : (
-            visibleRoutes.length === 0 ? <div className="rounded-xl bg-white p-8 text-center text-sm text-slate-500">Ninguna ruta coincide con esos filtros.<button onClick={() => { setRouteSearch(""); setStatusFilter("all"); setVehicleFilter("all"); setDriverFilter("all"); }} className="ml-2 font-semibold text-blue-700 underline">Limpiar filtros</button></div> : <div className="grid gap-4 xl:grid-cols-2">
+            visibleRoutes.length === 0 ? <div className="rounded-xl bg-white p-8 text-center text-sm text-slate-500">Ninguna ruta coincide con esos filtros.</div> : <div className="grid gap-4 xl:grid-cols-2">
               {visibleRoutes.map((route) => (
                 <div
                   key={route.id}
