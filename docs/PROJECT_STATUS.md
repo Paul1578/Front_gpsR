@@ -213,3 +213,5 @@ Fecha de actualización: 2026-11-22.
 
 - Actions `44995899244`: backend build/xUnit, audit, lint, build, responsive y setup MySQL correctos; E2E **14/16**. El nuevo GPS detectó y permitió corregir el envío inicial bloqueado por el throttle de 20 s; retries revelaron cleanup/aislamiento de Driver incompleto, ahora endurecidos. Repetición del SHA siguiente pendiente.
 - Actions `44996497487` para Front `6fe66f7` + Back `104cda8` pasó: xUnit **59/59**, responsive **1/1**, E2E autenticados **16/16**, audit/lint/build y runner cleanup success. GPS móvil concedido se envió y leyó por API; el alta duplicada devolvió 409 y no creó una segunda tarjeta.
+
+- Documento de Driver repetido ahora devuelve 409 y no crea cuenta parcial. Backend local 61/61; frontend añadió la aserción móvil Admin y pasó lint/build/discovery 16. Actions integrado pendiente.

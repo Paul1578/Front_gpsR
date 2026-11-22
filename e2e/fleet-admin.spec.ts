@@ -1520,6 +1520,31 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   const driverId = createdUser.driverId as string;
   await expect(page.getByText("Usuario creado, pero el correo de invitación no se pudo enviar")).toBeVisible();
 
+  const duplicateDocumentEmail = `fletflow.e2e.driver.duplicate.${suffix}@example.test`;
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const duplicateDriverDialog = page.getByRole("dialog");
+  await duplicateDriverDialog.getByPlaceholder("Juan").fill("Duplicado E2E");
+  await duplicateDriverDialog.getByPlaceholder("Pérez").fill("Documento repetido");
+  await duplicateDriverDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`dup${suffix}`);
+  await duplicateDriverDialog.getByPlaceholder("jperez@empresa.com").fill(duplicateDocumentEmail);
+  await duplicateDriverDialog.getByPlaceholder("DNI / ID").fill(documentNumber);
+  await duplicateDriverDialog.getByPlaceholder("999999999").fill("0990000001");
+  const duplicateDriverResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Users") &&
+    response.request().method() === "POST",
+  );
+  await duplicateDriverDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const duplicateDriverResponse = await duplicateDriverResponsePromise;
+  expect(duplicateDriverResponse.status()).toBe(409);
+  const duplicateDriverError = await duplicateDriverResponse.json();
+  expect(duplicateDriverError.message).toBe("Ya existe un conductor con ese documento en la empresa.");
+  await expect(page.getByText(duplicateDriverError.message)).toBeVisible();
+  await expect(duplicateDriverDialog).toBeVisible();
+  const usersAfterDuplicate = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(usersAfterDuplicate.status()).toBe(200);
+  expect((await usersAfterDuplicate.json() as Array<{ email: string }>).some((user) => user.email === duplicateDocumentEmail)).toBe(false);
+  await duplicateDriverDialog.getByRole("button", { name: "Cancelar" }).click();
+
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true });
   await expect(driverName).toBeVisible();

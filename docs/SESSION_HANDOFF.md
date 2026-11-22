@@ -285,3 +285,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - `DriverView` ya exige `estado=en_progreso` antes de consumir el throttle. Driver y tenant ahora usan `request` independiente para cleanup, cancelan rutas activas y restauran la asignación original antes de retirar el vehículo.
 - Lint/build/discovery 16 y `git diff --check` pasan local. Actions nuevo SHA pendiente para verificar GPS/persistencia, ciclo Driver y cleanup entero.
 - Actions `44996497487` para Front `6fe66f7` + Back `104cda8` pasó success: backend xUnit 59/59; responsive 1/1; E2E 16/16; audit/lint/build; la tarea `Stop containers` finalizó. La prueba GPS confirmó POST y GET con coordenadas conocidas, duplicate plate confirmó 409 visible y no duplicado. Continuar auditoría CRUD/responsive aún faltante; la misión global no está terminada.
+
+## Siguiente cobertura — documento Driver duplicado — 2026-11-22
+
+- Backend `POST /Users` con rol Driver ahora reporta conflicto 409 antes de registrar cuenta; CreateDriver y UpdateDriver comparten BusinessConflict y mensaje claro.
+- xUnit local 61/61. E2E móvil Admin crea Driver con documento existente pero email diferente; comprueba error y ausencia en GET `/Users/my-team`.
+- Front lint/build/discovery 16 pasan localmente. Publicar backend y frontend y verificar Actions con API/MySQL descartables; todavía no contar el flujo E2E.

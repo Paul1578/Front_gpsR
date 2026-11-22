@@ -226,3 +226,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Se movió la guarda de estado antes del throttle y setup/cleanup pasa al request fixture independiente; ambos E2E restauran asignación de Driver y eliminan vehículo/ruta.
 - Nueva repetición integrada pendiente. La corrida anterior no valida el caso GPS.
 - Resultado: Actions `44996497487` validó Front `6fe66f7` + Back `104cda8`: xUnit 59/59, responsive 1/1, E2E 16/16, audit/lint/build y cleanup completos. Driver recibió GPS en vivo y el GET de ruta confirmó coordenadas; placa duplicada mostró el 409 sin duplicar vehículo.
+
+## Documento Driver duplicado — 2026-11-22
+
+- Backend Release local **61/61**; cambios de CreateDriver, UpdateDriver y `POST /Users` para HTTP 409 en documento repetido.
+- E2E Admin móvil vuelve a enviar el documento con correo nuevo, espera 409/mensaje claro y verifica por GET `/Users/my-team` que el correo no fue creado.
+- `npm run lint`, `npm run build`, discovery **16 tests** y diff-check pasaron. CI browser/API/MySQL integrado pendiente.
