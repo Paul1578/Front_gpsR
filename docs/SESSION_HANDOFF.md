@@ -1,5 +1,15 @@
 ## Continuación — 2026-11-22
 
+## Continuación — matriz de roles y CRUD de conductores — 2026-11-22
+
+- Ramas activas: Front `refactor/route-builder` (`4206b0d`) y Backend `chore/stabilize-fleet-platform` (`fa16d05`); ambas publicadas, main intacta.
+- Backend smoke amplía 403 Manager sobre Users/Roles y 403 Logistics para mutaciones Vehicle/Driver; compara snapshots SQL. La corrida local API/MySQL descartable pasó. Action `45080063668` en curso.
+- Front E2E agregado completa alta, edición, asignación/desasignación y baja/reactivación en Gestión de Conductores. CI `45079269083` halló locator ambiguo (placa/documento repetidos); test corregido para usar DriverId de API. Lint/build/discovery 38 pasan antes de último ajuste responsive.
+- Front Action `45080069469` ejecuta los 38 E2E del commit `4206b0d`; ya superó backend, audit, lint, build, Chromium y check responsive, y está en E2E API/MySQL.
+- `team-search.spec.ts` amplía búsqueda de miembros interactiva a 320 px y de Driver a 768 px además de 390 px; ambas medidas comprueban overflow. Este cambio pasa localmente lint/build/discovery 38/diff-check; está sin commit y requiere nueva Action integrada.
+- Error local de TypeScript por redeclarar `persistedDriver` durante la corrección del locator quedó renombrado a `createdDriver` y registrado en `ERROR_LOG.md`.
+- Mantener misión abierta: cubrir CRUD/roles/responsive progresivamente. Admin delegado y desvinculación User↔Driver esperan respuesta; app nativa diferida y SMTP/infra productiva externas.
+
 - Estado vigente Front `refactor/route-builder`: `2147be7` pasó Action `45076629351` y docs HEAD `8887649` pasó `45077576665`; ambas Actions completaron **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL.
 - El test responsive de administración llena datos Driver y comprueba overflow a 320/768 px; también se valida en el historial de Actions. Front limpio tras publicar el commit.
 - Próximo: cubrir más casos CRUD y matriz HTTP por rol; continuar responsive de vistas pendientes. No cerrar misión. Decisiones pendientes de Admin delegado y desvinculación User↔Driver; móvil nativo diferido.

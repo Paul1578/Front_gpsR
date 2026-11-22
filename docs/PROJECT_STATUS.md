@@ -1,5 +1,10 @@
 ## Estado actual — 2026-11-22
 
+- Front `4206b0d` publicado en `refactor/route-builder`; lint/build correctos, discovery **38 E2E**. Action `45080069469` ejecuta el suite API/MySQL con backend actualizado. El nuevo CRUD Driver corrige locator ambiguo por IDs persistidos.
+- Backend `fa16d05` publicado en `chore/stabilize-fleet-platform`; smoke local amplía 403 de Manager/Logistics con snapshots MySQL intactos. Action `45080063668` en curso.
+- E2E de búsqueda de Equipo ampliado: miembros interactivos a 320 px, conductores a 768 px y comprobación de overflow; lint/build, discovery **38 tests** y diff-check pasan local. Cambios pendientes de commit/Action. La Action previa `45080069469` está ejecutando los 38 E2E con backend `fa16d05`.
+- Misión abierta: quedan más criterios de CRUD/roles/responsive. Admin delegado y desvinculación User↔Driver siguen a la espera de decisión; app nativa aplazada y SMTP/infraestructura productiva externos.
+
 - Front `refactor/route-builder`: `2147be7` pasó Action `45076629351` y documentación HEAD `8887649` pasó `45077576665`: ambas con **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup API/MySQL exitosos.
 - El formulario Driver del panel se comprobó a 320/768 px; el guardado parcial de Vehicle actualiza la UI cuando persiste detalle pero falla el cambio de estado. E2E integrado queda cubierto por Actions recientes.
 - Auditoría responsive encontró que Gestión de Conductores sólo tenía búsqueda E2E. El nuevo test de CRUD dedicado (38 tests) recarga FleetContext antes de asignar. Action `45078351055` fue 37/38 por opciones de Vehicle no refrescadas; `45079269083` llegó a 37/38 y reveló locator ambiguo por placa/documento iguales. Ahora usa sufijos distintos e ID leído por API; lint/build/discovery local pasan. Nueva Action pendiente.

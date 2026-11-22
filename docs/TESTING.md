@@ -92,6 +92,11 @@
 
 # Pruebas frontend
 
+## Búsqueda de Equipo en móvil/tablet — ampliación local, Action pendiente
+
+- `team-search.spec.ts` ahora ejercita la búsqueda de miembros a 320 px y la búsqueda de conductores a 768 px, además del flujo existente a 390 px; verifica que no haya overflow horizontal en móvil/tablet.
+- El flujo autenticado necesita fixtures reales de miembros y conductores; la Action API/MySQL valida interacción y cleanup. Ejecutar lint/build/discovery local y repetir Action integrada.
+
 ## Comandos y resultados
 
 - 2026-11-21, rama aislada `test/route-builder-persistence`: `npm ci` correcto (0 vulnerabilidades), `npm run lint` correcto, `npm run build` correcto y `npm run test:e2e -- --list` descubre 14 casos.

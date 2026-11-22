@@ -119,6 +119,10 @@
 
 # Changelog
 
+## 2026-11-22 — Cobertura responsive de búsqueda en Equipo
+
+- Se amplía el E2E autenticado de búsqueda: miembros interactivos a 320 px, conductores interactivos a 768 px y comprobación de overflow en ambas medidas, conservando el caso de 390 px. Validación Action pendiente.
+
 ## 2026-11-22 — Selector evita vehículos ya asignados a otro conductor — VALIDADO
 
 - Gestión de Conductores refleja la regla de exclusividad vigente; el E2E Manager verifica retirada y disponibilidad posterior a desasignar. Actions `45031929936`: responsive 1/1 y Playwright autenticado 20/20, cleanup correcto.

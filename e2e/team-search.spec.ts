@@ -50,6 +50,16 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
   await expect(page.getByText(`Doc: ${drivers[0].documentNumber}`, { exact: false })).toBeVisible();
 
   await page.setViewportSize({ width: 320, height: 844 });
-  const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
-  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+  const mobileDimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+  expect(mobileDimensions.document).toBeLessThanOrEqual(mobileDimensions.viewport);
+  await page.getByRole("button", { name: "Ocultar choferes" }).click();
+  await teamSearch.fill(teamUsers[0].username);
+  await expect(page.getByTestId(`team-user-${teamUsers[0].id}`)).toBeVisible();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  const tabletDimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+  expect(tabletDimensions.document).toBeLessThanOrEqual(tabletDimensions.viewport);
+  await page.getByRole("button", { name: "Gestionar choferes" }).click();
+  await driverSearch.fill(drivers[0].documentNumber);
+  await expect(page.getByText(`Doc: ${drivers[0].documentNumber}`, { exact: false })).toBeVisible();
 });
