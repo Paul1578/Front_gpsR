@@ -112,3 +112,4 @@
 
 - Se ampliaron las denegaciones API esperadas para User, Driver, Logistics y Manager; Equipo/Choferes ahora comprueban error/reintento a 390×844.
 - Lint, build, diff check y discovery de 15 tests pasan; spec de errores pasa 2/2. Actions `44989454133` para `286b100` terminó success: xUnit 57/57, Playwright 15/15 sin skips, responsive 1/1 y audit/lint/build verdes.
+- Backend `029e94d` pasó Actions `44991181335`; se repetirá E2E frontend contra esa versión cruzada final.

@@ -234,14 +234,15 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 ## Trabajo restante
 
-- Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; no cerrar la auditoría con estos 14 E2E.
+- Continuar casos de CRUD, mutaciones por rol y responsive web aún sin verificación real; la suite actual de 15 E2E no pretende cubrir cada acción/pantalla.
 - Externos delimitados: credenciales SMTP válidas; móvil nativo pospuesto por el usuario; administración global Super Admin sin contrato/rol backend definido; despliegue productivo (dominio/TLS/object storage/rate limiting distribuido).
 
 ## Matriz de permisos y responsive de errores — 2026-11-22
 
-- Trabajo local pendiente de commit en Front `refactor/route-builder`: `e2e/fleet-admin.spec.ts` incorpora denegaciones API esperadas para User, Driver, Logistics y Manager en operaciones de flota, rutas, usuarios y roles.
+- Commit `286b100` ya está publicado en Front `refactor/route-builder`: `e2e/fleet-admin.spec.ts` incorpora denegaciones API esperadas para User, Driver, Logistics y Manager en operaciones de flota, rutas, usuarios y roles.
 - La matriz usa las cuentas User/Driver efímeras del runner, IDs inexistentes para operaciones negativas y un Vehicle QA para payloads. El rol temporal del Driver se restaura a Driver mediante `finally`; `run-e2e-local.sh` limpia prefijos E2E de MySQL.
 - En `team-management-load-errors.spec.ts`, errores y reintentos de Equipo/Choferes comprueban 390×844 y ausencia de overflow. El spec pasó 2/2 localmente.
-- Estado combinado: lint/build, discovery (15) y `git diff --check` pasan. Matriz API no ejecutada porque API/Frontend locales responden HTTP 000 y no hay credenciales QA; Actions debe ejecutarla con DB efímera.
+- Estado combinado: lint/build, discovery (15) y `git diff --check` pasan. La matriz no se ejecutó localmente porque API/Frontend locales responden HTTP 000 y no hay credenciales QA; Actions ya la ejecutó con DB efímera (15/15 sin skips).
 - El primer build detectó error TypeScript por capturar headers mutables no inicializados; se pasan explícitamente a cada factory y el build posterior pasó. Ver `docs/ERROR_LOG.md`.
 - La matriz comprobó los HTTP 403 esperados con API y MySQL efímeros. El commit `286b100` pasó Actions `44989454133`: xUnit 57/57; Playwright autenticado 15/15 sin skips; responsive 1/1; audit/lint/build correctos. Se corrigió el detalle de `ERROR_LOG.md`; continuar con la cobertura global restante.
+- El backend relacionado avanzó después a `029e94d`; Actions `44991181335` confirmó build, xUnit y smoke HTTP/MySQL del ciclo Logistics con cleanup. Siguiente: disparar el workflow frontend contra ese HEAD y registrar el SHA/run cruzado.

@@ -175,7 +175,7 @@ Fecha de actualización: 2026-11-22.
 
 ## Estado de continuidad — 2026-11-22
 
-- Front `refactor/route-builder`: HEAD documental `2500ddb`, limpio y sincronizado; última verificación funcional `18ca8f0`. Back `chore/stabilize-fleet-platform`: `fb01c25`, limpio y sincronizado. Ningún cambio en `main`.
+- Front `refactor/route-builder`: HEAD documental `a938b2b`, limpio y sincronizado; última matriz de código `286b100` pasó Actions. Back `chore/stabilize-fleet-platform`: `029e94d`, limpio y sincronizado; smoke lifecycle Logistics y cleanup pasaron. Ningún cambio en `main`.
 - La auditoría sigue abierta: ampliar CRUD, autorizaciones/mutaciones y vistas responsive no cubiertas. Los E2E actuales no se consideran cobertura exhaustiva.
 - Fuera de capacidad local o aplazado por decisión: SMTP válido, aplicación nativa, Super Admin global aún no definido, y componentes de despliegue productivo como dominio/TLS, almacenamiento de objetos y rate limiting distribuido.
 
@@ -183,6 +183,11 @@ Fecha de actualización: 2026-11-22.
 
 - En `refactor/route-builder`, Playwright descubre ahora 15 casos. Lint, build de producción y diff check pasan; el spec de errores Equipo/Choferes se ejecutó 2/2 a 390×844.
 - Se añadió cobertura negativa de operaciones por rol para User, Driver, Logistics y Manager. Actions/API/MySQL confirmó los códigos HTTP; el runner provisionó fixtures y recursos desechables.
-- La API y el frontend locales no estaban disponibles para E2E autenticado (HTTP 000). La matriz no se presenta como verificada.
+- La API y el frontend locales no estaban disponibles para E2E autenticado (HTTP 000); la matriz sí se ejecutó y verificó en Actions con API/MySQL efímeros.
 - La auditoría sigue activa: falta ampliar CRUD y responsive fuera de las vistas cubiertas. SMTP, app nativa pospuesta, Super Admin sin contrato backend y requisitos de producción siguen delimitados como pendientes externos/de producto.
 - Actions `44989454133` para `286b100` pasó: matriz ejecutada sin skips dentro de Playwright 15/15, responsive 1/1, xUnit 57/57 y audit/lint/build verdes.
+
+## Integración de ramas actualizada — 2026-11-22
+
+- Backend `chore/stabilize-fleet-platform` alcanzó `029e94d`; Actions `44991181335` pasó build, xUnit y smoke HTTP/MySQL de tenant/Logistics/concurrencia.
+- El frontend conserva los 15 E2E ya validados; se repetirá contra ese HEAD backend para confirmar la integración cruzada final.
