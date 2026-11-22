@@ -49,6 +49,13 @@
 
 # Session handoff
 
+## Validación de filtros/roles/responsive — 2026-11-22
+
+- Front commit `da70521` publicado en `refactor/route-builder`; Actions `45028577152` terminó success con checkout de backend `f2f18cd`.
+- Audit, lint, build y responsive pasaron; E2E autenticado Chrome/API/MySQL **20/20**, cleanup completado.
+- Añadido reset de filtros persistente con resultados parciales; el E2E combina filtros por estado/vehículo/Driver y confirma que limpiar restaura ambas rutas. Manager/Logistics reciben 403 de `Users/my-team` sin filtrar correo. Logistics conserva selectores y diálogo de cancelación sin overflow a 320/768 px.
+- La misión continúa: quedan cobertura CRUD/responsive adicional, pruebas backend automatizadas del outbox y completar matriz propia de ownership Driver; Admin delegado sigue a decisión de producto. SMTP requiere credenciales externas; app nativa aplazada.
+
 ## Corte más reciente — 2026-11-22
 
 - Front `refactor/route-builder` incluye `fe86bfa`; Back `chore/stabilize-fleet-platform` incluye `4695e79`. Actions frontend `45005853556` pasó: backend tests, audit, lint/build, responsive browser y Playwright API/MySQL **18/18**, cleanup exitoso.

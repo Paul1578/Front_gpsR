@@ -373,3 +373,5 @@ Fecha de actualización: 2026-11-22.
 - E2E valida filtro combinado contra dos rutas persistidas y restauración de la lista; Manager y Logistics reciben 403 de Users/my-team por HTTP; Logistics mantiene asignaciones/diálogo sin overflow a 320 y 768 px.
 - npm lint/build y suite E2E completa en Chrome/API/MySQL: 20/20. La base fue efímera y el runner ejecutó su limpieza; el container se eliminó.
 - Requiere Actions nuevo tras push para confirmar commit integrado con backend 5049dea. Auditoría global sigue abierta.
+
+- Validación integrada completada: Front `da70521` + backend `f2f18cd`, Actions `45028577152` success. Audit de dependencias, lint, build, responsive y E2E autenticado Chrome/API/MySQL **20/20** pasaron; runner/servicios descartables completaron cleanup.

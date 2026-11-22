@@ -254,3 +254,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - La prueba encontró que Limpiar filtros desaparecía cuando aún había resultados; UI corregida.
 - Validación local final: npm run lint, npm run build, discovery Playwright 20 y runner completo Chrome/API/MySQL 20/20. MySQL en container y esquema fletflow_ci_front_routes_20261122 fueron descartables; runner cleanup final se ejecutó y el container/key ring se eliminaron.
 - Errores de la primera iteración (acción de limpiar ausente, DELETE Driver 405, prefijos de cleanup y path inicial del runner) constan en ERROR_LOG.
+# Validación integrada 2026-11-22 — `da70521`
+
+- Actions `45028577152`: **success** para Front `da70521` + Backend `f2f18cd`.
+- `npm audit --audit-level=low`, lint, build, browser responsive y suite autenticada Playwright Chrome/API/MySQL: **20/20**, cero skips.
+- El workflow finalizó API, MySQL y cleanup sin errores.

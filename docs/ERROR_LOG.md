@@ -953,3 +953,7 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - La inspección inicial buscó scripts/run-e2e-local.sh bajo Front_gpsR y sed reportó archivo inexistente.
 - Solución: leerlo desde Back_GPS/scripts/run-e2e-local.sh, su ubicación real; el runner se ejecutó contra API local y MySQL descartable.
+# 2026-11-22 — Espacio final detectado por `git diff --check`
+
+- Error: la actualización de evidencia de Actions agregó una línea vacía al final de `docs/TESTING.md`; `git diff --check` impidió el commit documental.
+- Solución: quitar el espacio final y repetir diff-check antes de publicar.

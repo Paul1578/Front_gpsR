@@ -288,3 +288,7 @@
 - Añadida denegación de /Users/my-team por HTTP para Manager y Logistics.
 - Cobertura responsive de Logistics para selectores y confirmación de cancelación a 320 y 768 px.
 - Verificación local: lint/build y Chrome/API/MySQL **20/20**.
+# 2026-11-22
+
+- Rutas: botón “Limpiar filtros” permanece disponible cuando los filtros aún devuelven coincidencias; cubierto con filtros combinados y restauración desde API/MySQL.
+- E2E agrega denegación de `Users/my-team` para Manager/Logistics y responsive de asignación/cancelación Logistics en 320/768 px. Actions `45028577152`: **20/20**.
