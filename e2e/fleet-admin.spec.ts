@@ -135,6 +135,8 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
@@ -142,8 +144,10 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,
+    main: document.querySelector("main")?.getBoundingClientRect().width ?? 0,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  expect(widths.main).toBeGreaterThan(700);
 
   await page.setViewportSize({ width: 320, height: 844 });
   const assertMobileWidth = async () => {

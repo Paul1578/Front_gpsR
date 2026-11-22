@@ -4,7 +4,7 @@
 - La matriz cubre rechazo de `PUT /Users/{id}/profile` para User, Driver, Logistics y Manager; backend prueba validaciones y límites de tenant/root. Cambios de perfil de miembro regular y Driver persisten y sincronizan.
 - Se añadió al E2E navegación Dashboard e Historial a 320×844 con control de overflow; el caso aún requiere Actions sobre el nuevo commit.
 - Cobertura responsive adicional de Mi Ruta a 320×844 verifica no-solapamiento de GPS/vehículo y límites del diálogo de evidencia; lint y discovery 18 pasan localmente, ejecución real pendiente.
-- La auditoría de UX identificó que la barra lateral consume 256 px a 768 px y comprime el área operativa. Próximo cambio propuesto: mantener el menú en drawer hasta 1024 px y validar la mejora de ancho útil con navegador.
+- La auditoría de UX identificó que la barra lateral consumía 256 px a 768 px y comprimía el área operativa. Se cambió a drawer hasta 1024 px; E2E requiere navegación por hamburger y `main > 700 px`. Lint/build/diff-check pasan; falta correr browser/API/MySQL sobre el commit.
 - Auditoría continúa abierta: faltan más operaciones CRUD, matriz de privilegios Admin y pruebas responsive de las vistas restantes. SMTP necesita configuración externa; móvil nativo pospuesto.
 
 ## Actualización — edición de miembros — 2026-11-22

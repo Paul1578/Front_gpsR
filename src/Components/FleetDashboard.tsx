@@ -121,8 +121,8 @@ export function FleetDashboard() {
     <>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -141,7 +141,7 @@ export function FleetDashboard() {
               </div>
             </div>
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setSidebarOpen(false)}
               aria-label="Cerrar menú"
             >
@@ -185,7 +185,7 @@ export function FleetDashboard() {
           <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
             <div className="flex items-center gap-3">
               <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Abrir menú"
               >
