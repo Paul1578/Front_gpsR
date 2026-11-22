@@ -12,6 +12,11 @@
 - La asignación de Driver continuaba siendo flaky en ambas Actions y motivó la corrección backend registrada arriba. Tras cada arreglo se debe correr el suite integrado; no inferir éxito desde estado optimista.
 - Prevención: al verificar campos de usuario respetar el DTO que realmente devuelve la API; en E2E usar el contenedor de la entidad por ID, no texto global duplicable por responsive.
 
+## 2026-11-22 — Runner E2E no suministraba UserId a Manager mapa — CORREGIDO EN RUNNER
+
+- Al auditar la nueva prueba se detectó que esperaba `FLETFLOW_E2E_DRIVER_USER_ID`, pero `run-e2e-local.sh` sólo exportaba DriverId. Eso habría omitido el test de Manager aunque el suite terminara verde.
+- Backend runner ahora exporta el ID de User creado para el fixture Driver. La siguiente Action Front debe mostrar explícitamente el caso Manager como ejecutado.
+
 ## 2026-11-22 — E2E de errores de administración tenía selectores y recuperación incorrectos — CORREGIDO LOCALMENTE
 
 - Revisión QA detectó que el test buscaba Exportar en la pestaña Resumen y pulsaba dos veces un reintento que recupera rutas y vehículos en conjunto. También halló ceros aparentes en el resumen de exportación tras fallos 503.
