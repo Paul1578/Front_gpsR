@@ -1,10 +1,10 @@
 ## Session handoff — Constructor de rutas y CRUD Driver responsive — 2026-11-22
 
 - Ramas activas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; no cambios en `main`.
-- Action `45050067540`: 28/30 E2E; selectores de alerta/Nota corregidos. Action `45051132073` sobre `b534480`: 29/31 tras pasar backend Release/xUnit, audit, lint/build y responsive; falló timeout de 30 s del test largo de mapa y menú móvil en viewport desktop. Fix local: timeout 90 s para mapa y viewport 390×844 explícito en Mi Ruta; repetir Action.
+- Action `45050067540`: 28/30 E2E; selectores de alerta/Nota corregidos. Action `45051977357` sobre `bffe183`: 29/31 tras backend Release/xUnit, audit, lint/build y responsive. Mapa a 320 px agotó 90 s y falló cleanup; Mi Ruta no vio el alert 503. Fix local: timeout individual 8 s para ubicar el bloqueo, intercept wildcard `/Routes**` sostenido hasta que el alert aparezca y liberado antes de reintentar, y artifacts de trazas por cinco días. Lint/build/discovery 31 pasan; commit y nueva Action pendientes.
 - Front en trabajo: retirado `DEFAULT_POINT` de Quito. Escribir origen/destino deja ubicación pendiente y bloquea avance hasta mapa/búsqueda; E2E integrado modificado para probarlo. Error/reintento de assignment-options ahora se informa en la lista y rutas con IDs no se presentan como sin asignar. Confirmación de cancelación ya no promete disponibilidad incompatible con mantenimiento.
 - Próximo lote local añade ciclo User a 768 px, roles a 320 px, asignación y estado Driver en 768 px y edición/cancelación de ruta en 320/768 px. Lint/build/discovery 31 ya pasan en los cambios previos; repetir después del ajuste final.
-- Repetir Action del fix geográfico/mapa, revisar su cleanup, y luego publicar/correr el lote responsive adicional. Push directo no dispara CI; usar workflow_dispatch en branch.
+- Repetir Action de mapa/alerta y revisar el trace si falla; la suite ya incluye el lote responsive adicional. Push directo no dispara CI; usar workflow_dispatch en branch.
 - Backend `2045b18` con 97/97 xUnit y smoke de fila-lock/driver-rutas; docs commit `280a0c8`. Backend Action `45050058627` pasó; el Front debe integrarse contra backend actual.
 - Objetivo completo sigue abierto: continuar criterios alcanzables CRUD/roles/responsive/seguridad; Admin delegado requiere decisión de política, SMTP vigente e infraestructura/PFX son externas; nativo móvil diferido por el usuario.
 

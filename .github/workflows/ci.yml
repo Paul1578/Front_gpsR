@@ -129,6 +129,15 @@ jobs:
       - name: Run authenticated browser and API/MySQL E2E suite
         run: bash Back_GPS/scripts/run-e2e-local.sh
 
+      - name: Preserve Playwright traces for failed E2E runs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 5
+
       - name: Stop API
         if: always()
         run: |

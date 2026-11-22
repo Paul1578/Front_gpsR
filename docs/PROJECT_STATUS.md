@@ -1,9 +1,9 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Front `b534480` + Backend `2045b18`: Action `45051132073` pasó backend Release/xUnit, audit, lint, build y responsive; Playwright **29/31**. Expiró el timeout del E2E largo de mapa (incluido cleanup) y el caso Mi Ruta esperaba menú móvil sin declarar viewport. Correcciones locales documentadas en `ERROR_LOG.md`; Action repetida pendiente.
+- Front `bffe183` + Backend `2045b18`: Action `45051977357` pasó backend Release/xUnit, audit, lint, build y responsive; Playwright **29/31**. El mapa a 320 px agotó 90 s y el cleanup venció; Mi Ruta no mostró el alert del 503 simulado. Corrección local intercepta `/Routes**` hasta mostrar error y reduce el timeout individual de mapa a 8 s; CI ahora conserva trazas al fallar. Repetir Action.
 - Cambios locales en revisión: el constructor ya no usa coordenadas predeterminadas de Quito si se escribe un nombre sin fijar mapa/búsqueda; lista de rutas muestra error/reintento de asignaciones; cancelación tiene copy compatible con mantenimiento/otras rutas. E2E amplía rechazo de punto sin coordenadas y edición Driver persistida en tablet.
-- Verificación local del fix geográfico: lint/build, discovery **31** y estados de carga/error **9/9**. El nuevo lote responsive de usuarios, conductores y rutas está en trabajo local; lint/build/discovery pasan. La siguiente validación autenticada es Action en curso después del fix de timeout/viewport.
+- Verificación local: lint/build, discovery **31** y estados de carga/error **9/9** antes de los últimos fixes; lint/build/discovery siguen pasando. Cambios responsive de usuarios, conductores y rutas están en `bffe183`; la suite autenticada requiere repetición con fixes de `ERROR_LOG.md`.
 - Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
 
 # Estado actual — 2026-11-22

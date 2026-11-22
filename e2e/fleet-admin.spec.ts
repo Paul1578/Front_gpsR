@@ -842,6 +842,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
 test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación", async ({ page }) => {
   test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
   test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
 
   await page.setViewportSize({ width: 320, height: 844 });
   await page.goto("/login");
@@ -2244,9 +2245,10 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
   test.skip(!driverEmail || !driverPassword, "Requiere cuenta QA Driver.");
 
   await page.setViewportSize({ width: 390, height: 844 });
-  let routeReads = 0;
-  await page.route("**/api/backend/Routes", async (route) => {
-    if (route.request().method() === "GET" && routeReads++ === 0) {
+  page.setDefaultTimeout(8_000);
+  let keepRouteReadsFailing = true;
+  await page.route("**/api/backend/Routes**", async (route) => {
+    if (route.request().method() === "GET" && keepRouteReadsFailing) {
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
       return;
     }
@@ -2262,6 +2264,7 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
   const routeLoadAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar tus rutas" });
   await expect(routeLoadAlert).toBeVisible();
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toHaveCount(0);
+  keepRouteReadsFailing = false;
   await routeLoadAlert.getByRole("button", { name: "Reintentar" }).click();
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
 });

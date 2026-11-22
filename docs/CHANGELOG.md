@@ -368,6 +368,13 @@
 - Se añadió una regresión E2E A→logout→B con refresh de A retrasado; protege tokens y usuario de B. `AbortError` esperados por cancelación no generan errores de consola.
 - Verificación local: spec de carga/error **8/8**, lint/build, discovery **26** y diff-check correctos. Actions `45042907944` validó commit `c6441b6`: backend Release, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26** y cleanup.
 
+# 2026-11-22 — Diagnóstico E2E en CI
+
+- El test móvil de creación de ruta fija timeout de locator para que un bloqueo identifique pronto el control que no responde.
+- El caso de Mi Ruta mantiene 503 en GET `/Routes` hasta que se compruebe el estado de error y permite el retry explícitamente.
+- CI preserva traces Playwright cuando falla la suite, con retención de cinco días.
+- Action `45051977357` dejó **29/31**; estas correcciones aún requieren verificación integrada.
+
 # 2026-11-22 — Mi Ruta: responsive tablet
 
 - El E2E de Driver ahora mide la vista inicial/acción y el diálogo de evidencia a 768×1024 además de 320×844; comprueba overflow del documento y área principal y confirma que el estado final se mantiene en tablet.
