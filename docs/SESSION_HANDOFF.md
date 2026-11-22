@@ -1,5 +1,12 @@
 # Session handoff
 
+## Estado integrado actual — 2026-11-22
+
+- Ramas actuales y limpias antes de este registro: frontend `refactor/route-builder` en `8b59308`; backend `chore/stabilize-fleet-platform` en `029e94d`. No modificar `main`.
+- Actions frontend `44991377967` terminó `success`, descargando exactamente backend `029e94d`: xUnit 57/57; audit, lint y build frontend correctos; responsive 1/1; E2E autenticado API/MySQL 15/15 sin skips.
+- La misión sigue abierta: el objetivo siguiente es ampliar en forma verificable las acciones de CRUD y vistas responsive que no aparecen en los 15 E2E actuales. Revisar informe de auditoría de cobertura en curso antes de elegir el siguiente test.
+- Externos/diferidos: SMTP real requiere credenciales vigentes; la aplicación móvil nativa fue pospuesta por el usuario. No confundir estos límites con web responsive.
+
 ## E2E de orden y operación de paradas — 2026-11-22
 
 - El cambio aislado se integró a `refactor/route-builder` en `69bdd31`; el test agrega, quita y reordena paradas y confirma por GET API el orden y operación persistidos. La ejecución local se omitió por falta de Admin QA y API activa, sin crear fixtures.

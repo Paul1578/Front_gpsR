@@ -171,3 +171,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - El caso nuevo de permisos no se ejecutó localmente: API y frontend locales devolvieron HTTP 000 y no había credenciales QA disponibles. No se cuenta como aprobado ni omitido; requiere Actions con API/MySQL descartables.
 - Verificación integrada: Actions `44989454133` para `286b100` terminó success; xUnit **57/57**, Playwright autenticado **15/15** (sin skips), responsive **1/1**, audit, lint y build correctos. El runner ejecutó la matriz por rol contra API/MySQL efímeros y limpió los datos al cerrar.
 - Backend final `chore/stabilize-fleet-platform` ahora está en `029e94d`, con ciclo Logistics y cleanup verificados por Actions `44991181335`. Falta repetir el workflow frontend contra ese HEAD para confirmar la integración cruzada final.
+# Reejecución integrada con backend actual — 2026-11-22
+
+- GitHub Actions frontend run [`44991377967`](https://github.com/Paul1578/Front_gpsR/actions/runs/44991377967): `success`, frontend SHA `8b59308`.
+- El workflow descargó `chore/stabilize-fleet-platform` en SHA `029e94d`.
+- Backend: build Release correcto; xUnit **57/57**, 0 fallidas y 0 omitidas.
+- Frontend: `npm audit --audit-level=low` con 0 vulnerabilidades, ESLint y build Next correctos.
+- Navegador: responsive no mutante **1/1**; E2E autenticado Chrome/API/MySQL **15/15**, sin skips.
+- Alcance: valida el estado publicado de ambas ramas y sus flujos automatizados; la cobertura no equivale a pruebas exhaustivas de cada acción CRUD/pantalla responsive.

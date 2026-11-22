@@ -2,6 +2,12 @@
 
 Fecha de actualización: 2026-11-22.
 
+## Integración cross-branch confirmada — 2026-11-22
+
+- GitHub Actions `44991377967` terminó `success` en frontend `8b59308`; hizo checkout de `chore/stabilize-fleet-platform` exactamente en backend `029e94d`.
+- Evidencia de la corrida: backend Release build correcto y xUnit 57/57; `npm audit` sin vulnerabilidades; lint y build Next correctos; responsive 1/1; Playwright autenticado Chrome/API/MySQL 15/15 sin skips.
+- Este corte confirma integración de ambas ramas publicadas. No implica que el catálogo completo de CRUD, todos los roles o todas las vistas responsive estén cubiertos; permanecen como trabajo activo.
+
 ## Ramas
 
 - Frontend: `refactor/route-builder`.
