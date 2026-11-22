@@ -301,3 +301,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Local: lint, build, discovery **17 tests** y `git diff --check` pasan. E2E autenticado local no se pudo ejecutar porque Front `:3000` y API `:5048` respondían HTTP 000.
 - Commit Front `a5dd689` Actions `44997939176` terminó success con Back `a7f7c4e`: build backend sin errores, xUnit **61/61**, frontend audit/lint/build, responsive **1/1**, E2E autenticado **17/17**; cleanup/stop API y MySQL success. El nuevo flujo de selección/tracking tablet pasó.
 - Los errores de rutas de inspección están documentados en `ERROR_LOG.md`. Rama frontend sincronizada y limpia tras el commit de producto; registrar resultado CI y continuar CRUD/responsive restantes.
+
+## Historial en viewport tablet — 2026-11-22
+
+- El E2E Admin que ya crea/edita/cancela y consulta la ruta cambia a 768×1024 al entrar en Historial; verifica que el filtro `Canceladas` es visible y funcional, que la pantalla y `main` no desbordan, y que el diálogo de detalles cabe en el viewport.
+- `npm run lint`, `npm run build`, discovery **17 tests** y `git diff --check` pasan localmente. El caso depende de API/MySQL y queda pendiente de ejecutar en Actions después de publicar.

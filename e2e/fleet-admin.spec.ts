@@ -611,6 +611,16 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Historial de Rutas" })).toBeVisible();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect(page.getByRole("button", { name: "Canceladas", exact: true })).toBeVisible();
+    const historyDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(historyDimensions.document).toBeLessThanOrEqual(historyDimensions.viewport);
+    expect(historyDimensions.mainContent).toBeLessThanOrEqual(historyDimensions.main);
     await page.getByRole("button", { name: "Canceladas", exact: true }).click();
     const historyHeading = page.getByRole("heading", { name: updatedName, exact: true });
     await expect(historyHeading).toBeVisible();
@@ -629,6 +639,10 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await expect(historyDialog).toContainText("Inicio planificado");
     await expect(historyDialog).not.toContainText("Fecha Creación");
     await expect(historyDialog).not.toContainText("Inicio real");
+    const historyDialogBounds = await historyDialog.boundingBox();
+    expect(historyDialogBounds).not.toBeNull();
+    const tabletWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(historyDialogBounds!.width).toBeLessThanOrEqual(tabletWidth);
 
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
