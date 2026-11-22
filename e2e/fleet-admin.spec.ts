@@ -423,6 +423,12 @@ test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async
     await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
       .toContainText(routeName);
     await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toBeVisible();
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(routeName);
+    await expect(page.locator(".leaflet-container")).toBeVisible();
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toBeVisible();
+    await expect(trackingRouteButton).toBeVisible();
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       document: document.documentElement.scrollWidth,
@@ -776,6 +782,15 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     }));
     expect(historyDimensions.document).toBeLessThanOrEqual(historyDimensions.viewport);
     expect(historyDimensions.mainContent).toBeLessThanOrEqual(historyDimensions.main);
+    await page.setViewportSize({ width: 320, height: 844 });
+    const narrowHistoryDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(narrowHistoryDimensions.document).toBeLessThanOrEqual(narrowHistoryDimensions.viewport);
+    expect(narrowHistoryDimensions.mainContent).toBeLessThanOrEqual(narrowHistoryDimensions.main);
     await page.getByRole("button", { name: "Canceladas", exact: true }).click();
     const historyHeading = page.getByRole("heading", { name: updatedName, exact: true });
     await expect(historyHeading).toBeVisible();
@@ -798,6 +813,12 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(historyDialogBounds).not.toBeNull();
     const tabletWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(historyDialogBounds!.width).toBeLessThanOrEqual(tabletWidth);
+    const mobileDialog = await historyDialog.evaluate((dialog) => ({
+      width: dialog.getBoundingClientRect().width,
+      overflowY: getComputedStyle(dialog).overflowY,
+    }));
+    expect(mobileDialog.width).toBeLessThanOrEqual(320);
+    expect(mobileDialog.overflowY).toBe("auto");
 
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
