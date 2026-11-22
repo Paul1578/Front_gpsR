@@ -2,7 +2,7 @@
 
 - E2E de cambio de contraseña añadió persistencia, revocación de refresh/clave anterior y nuevo login. Actions `45033318956` falló 20/21 por un locator Playwright ambiguo (no llegó a ejecutar el endpoint); causa/corrección documentadas en `ERROR_LOG.md`, selector corregido.
 - Auditoría identificó que Historial de Logística recibía 403 de `/Vehicles` y ocultaba rutas que sí podía leer. Front usa ahora los campos de vehículo ya incluidos en `RouteDto`; el test verifica API, placa/detalle y responsive 320/768 px.
-- Lint, build, discovery **21 tests** y `git diff --check` pasan localmente. Actions `45034387245` pasó backend Release/xUnit, auditoría, lint, build, responsive **1/1**, E2E autenticados **21/21** y cleanup.
+- Lint, build, discovery actual **26 tests** y `git diff --check` pasan localmente. Actions `45034387245` pasó backend Release/xUnit, auditoría, lint, build, responsive **1/1**, E2E autenticados **21/21** y cleanup de aquel commit.
 - Actions `45033927966` llegó a validar ruta/placa Logistics pero falló 20/21 porque una aserción contaba cualquier `role=alert`; se limitó al mensaje del Historial y la repetición integrada pasó.
 - El E2E de Logistics ahora también mide el diálogo de detalle contra el viewport a 320/768 px. Lint/build/discovery 21 y diff-check pasan localmente; la verificación integrada de este assert queda pendiente.
 - Auditoría detectó y corrigió otro caso: Logistics ya no muestra cero como disponibilidad por depender de `/Vehicles`; usa las opciones permitidas y cuenta vehículos únicos en rutas en progreso. Actions `45035807218` pasó la suite E2E **21/21**, responsive **1/1**, build/lint/audit, backend tests y cleanup; valida el conteo real y que el navegador no llame `/Vehicles`.
@@ -452,3 +452,9 @@ Fecha de actualización: 2026-11-22.
 - Front `c6441b6` pasó Actions `45042907944`: backend Release, audit/lint/build, responsive **1/1**, E2E API/MySQL **26/26**, cleanup success. El run usó el backend de la rama `chore/stabilize-fleet-platform`.
 - El commit previo Front `5bc0bff` también pasó Actions `45041860522` con 24/24 E2E.
 - Misión integral abierta. Faltan ciclos CRUD/responsive que se cubrirán progresivamente, decisión de política para Admin delegado, SMTP actualizado/infraestructura de certificado. Móvil nativo está aplazado por decisión del usuario.
+
+## Mi Ruta de Driver — cobertura tablet añadida localmente
+
+- El E2E autenticado existente probaba navegación, GPS, inicio/fin de parada y evidencia sólo a 320×844. Ahora comprueba vista inicial y acción en 768×1024, límites/controles del diálogo de evidencia a 320 y 768 px, vuelta a 320 y estado final a 768 px; mide overflow de documento y `<main>`.
+- `npm run lint`, `npm run build`, discovery Playwright **26** y diff-check pasan localmente. La prueba de API/MySQL se omitió en local porque no hay fixture QA; Actions integrado debe ejecutarla en el entorno descartable.
+- Actions `45043342482` pasó para el commit de documentación `9793aa5` (código `c6441b6`): E2E **26/26**, responsive 1/1, backend Release, audit/lint/build y cleanup. No incluye aún esta ampliación responsive.

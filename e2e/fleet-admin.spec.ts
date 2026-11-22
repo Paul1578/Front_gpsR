@@ -2121,9 +2121,18 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,
+      mainViewport: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
     }));
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+    expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.mainViewport);
   };
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar Ruta" })).toBeVisible();
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 320, height: 844 });
   await assertDriverViewport();
   const gpsBadge = await page.getByText("GPS en vivo", { exact: true }).locator("xpath=..").boundingBox();
   const vehicleBadge = await page.locator(".absolute.top-4.right-4").boundingBox();
@@ -2168,7 +2177,17 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect(evidenceBounds!.x).toBeGreaterThanOrEqual(0);
   expect(evidenceBounds!.x + evidenceBounds!.width).toBeLessThanOrEqual(320);
   await assertDriverViewport();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(evidenceDialog.getByRole("button", { name: "Nota" })).toBeVisible();
   await evidenceDialog.getByRole("button", { name: "Nota" }).click();
+  await expect(evidenceDialog.getByRole("button", { name: "Agregar Nota" })).toBeVisible();
+  const tabletEvidenceBounds = await evidenceDialog.boundingBox();
+  expect(tabletEvidenceBounds).not.toBeNull();
+  expect(tabletEvidenceBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(tabletEvidenceBounds!.x + tabletEvidenceBounds!.width).toBeLessThanOrEqual(768);
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertDriverViewport();
   await evidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recibido por cliente E2E");
   const evidencePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&
@@ -2193,6 +2212,9 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   await page.getByRole("button", { name: "Completar", exact: true }).click();
   expect((await completeRoutePromise).status()).toBe(204);
   await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+  await assertDriverViewport();
 
   const persistedRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
   expect(persistedRoute.status()).toBe(200);

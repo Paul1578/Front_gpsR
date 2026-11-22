@@ -624,3 +624,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Commit Front `c6441b6` publicado en `refactor/route-builder`; Actions `45042907944` pasó en 3m48s: backend Release, audit/lint/build, responsive 1/1, E2E API/MySQL 26/26 y cleanup.
 - Próximo paso: continuar auditoría por CRUD/roles/responsive reales; el objetivo integral permanece abierto. Mantener cambios sólo en las ramas de trabajo y actualizar evidencia tras cada bloque.
 - Dependencias sin decisión: política de Admin delegado; SMTP actual; provisioning de key ring/PFX en producción. Nativo móvil diferido por el usuario.
+
+## Continuación — Mi Ruta responsive tablet — 2026-11-22
+
+- Auditoría independiente read-only halló que el flujo Driver (GPS, parada y evidencia) estaba probado en 320×844, sin recorrido equivalente a 768×1024. Dashboard, rutas, vehículos, equipo e historial ya tienen varias comprobaciones 320/768.
+- E2E ampliado en `e2e/fleet-admin.spec.ts`: valida Mi Ruta y botón iniciar en 768 px; comprueba overflow del documento y `<main>`; abre evidencia a 320 px, cambia el viewport a 768 y valida controles/encuadre; vuelve a 320 para guardar la nota; valida estado vacío final a 768.
+- Lint/build/discovery 26 pasan. El test enfocado local se omitió porque no hay credenciales/fixtures Driver QA y la ejecución requiere mutaciones, documentado en `ERROR_LOG.md`; se confía en runner integrado efímero sólo después de pasar Actions del nuevo SHA.
+- La auditoría encontró y corrigió el conteo obsoleto “21 pruebas” en el encabezado de `PROJECT_STATUS.md` (suite actual 26). También registró una búsqueda `rg` con rutas/capitalización equivocadas; resuelta usando `src/Components/fleet`.
+- Action `45043342482` pasó en docs SHA `9793aa5` (código `c6441b6`): 26/26 E2E y responsive 1/1, pero antecede a este cambio y no lo valida.
+- Próximo: diff-check, commit/push de la prueba/documentación, seguir Actions exacto; si falla, corregir y repetir. Después continuar con áreas CRUD/responsive restantes.

@@ -43,6 +43,16 @@
 - Primer intento E2E falló: un `AbortError` normal de la sesión invalidada se registró con `console.error`; el overlay de Next dev interceptó el clic de logout. Se suprimió ese log esperado y la repetición pasó. En otra corrida, lint se ejecutó al mismo tiempo que Playwright y ESLint recibió `ENOENT` al recorrer `test-results`, directorio que Playwright recreaba. Prevención: ejecutar lint/build después de finalizar Playwright, no en paralelo.
 - `npm run lint`, `npm run build`, discovery Playwright (**26 pruebas**) y `git diff --check` pasan localmente. Front commit `c6441b6` pasó Actions `45042907944`: backend Release, audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **26/26** y cleanup completo.
 
+## 2026-11-22 — Auditoría E2E consultó rutas de archivos con mayúsculas/carpeta equivocadas — CORREGIDO EN LA BÚSQUEDA
+
+- Un `rg` buscó `src/Components/Routes`, `Drivers`, `Vehicles`, `TeamManagement` y `RouteHistory`; el repositorio organiza esas vistas en `src/Components/fleet` y el sistema distingue mayúsculas. La búsqueda emitió “No such file”.
+- Solución: consultar las rutas reales bajo `src/Components/fleet`. No fue error del producto ni modificó archivos.
+
+## 2026-11-22 — E2E local de Mi Ruta omitido por falta de fixtures de flota — LIMITACIÓN DE ENTORNO
+
+- La ejecución local aislada descubrió el caso pero Playwright lo marcó skipped porque faltan credenciales/ID Driver QA y `FLETFLOW_E2E_ALLOW_MUTATIONS=true`. El test requiere un API/MySQL descartable y realiza operaciones que luego limpia.
+- No se ejecutó contra la base compartida ni se creó un usuario bootstrap local. La validación real debe ejecutarse en Actions, cuyo runner genera credenciales y base efímera. Actions `45043342482` pasó 26/26 antes de añadir la comprobación tablet; el SHA nuevo aún requiere CI integrado.
+
 ## 2026-11-22 — Asignación fallida sin E2E negativo en Gestión de Conductores — COBERTURA AÑADIDA
 
 - Auditoría confirmó que el componente ya mostraba el error de API al asignar, pero no había prueba de que un HTTP 409 se presentara sin un toast de éxito.
