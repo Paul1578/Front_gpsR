@@ -274,3 +274,5 @@
 - Nuevo E2E valida los estados de error y la recuperación de Drivers y Vehicles.
 
 - La alerta de Vehicle ahora bloquea clics repetidos durante el reintento y comunica su estado; E2E verifica que un vehículo vuelve a estar disponible para asignación.
+
+- Se alinean con backend los límites visibles del diálogo TeamManagement y se previenen entradas sólo con espacios. La primera lint detectó dos atributos maxLength redundantes; se corrigió y lint/build/discovery 19 pasaron.

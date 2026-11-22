@@ -2357,6 +2357,10 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   };
   await page.setViewportSize({ width: 320, height: 844 });
   await expectUserDialogFits();
+  await expect(dialog.getByPlaceholder("Juan")).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByPlaceholder("Pérez")).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByRole("textbox", { name: "jperez", exact: true })).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByPlaceholder("jperez@empresa.com")).toHaveAttribute("maxlength", "200");
   await expect(dialog.getByPlaceholder("DNI / ID")).toBeVisible();
   await expect(dialog.getByPlaceholder("999999999")).toBeVisible();
   await page.setViewportSize({ width: 768, height: 1024 });

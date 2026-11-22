@@ -358,3 +358,5 @@ Fecha de actualización: 2026-11-22.
 
 - Revisión externa del E2E añadió verificación de vehículo visible/seleccionable después del retry; botón deshabilitado con estado “Reintentando…”. El test enfocado pasó 1/1 tras ajustar la expectativa del fixture conductor.
 - Commit `42b1b4b` (retry accesible y E2E de opciones recuperadas) validado por Actions `45023625523`: workflow Front completado `success`, con backend de la rama integrada.
+
+- En Front, primera lint tras editar el diálogo encontró dos props `maxLength` duplicadas en el form Driver existente; se retiraron y la repetición lint/build/discovery 19 pasó. E2E integrado de la rama está pendiente.

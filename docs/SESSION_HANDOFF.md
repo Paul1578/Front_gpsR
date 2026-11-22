@@ -484,3 +484,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Un primer test falló al mantener expectativa de lista vacía luego de agregar Driver fixture; se corrigió y E2E enfocado pasó 1/1. Error y remedio documentados.
 
 - Front commit `42b1b4b` quedó validado por Actions `45023625523` (`success`), incluidos build backend y E2E Chrome/API/MySQL integrado. Próxima iteración puede continuar sobre `refactor/route-builder`.
+- Front primer lint de límites falló por dos `maxLength` duplicados en form Driver; removidos, repetición `npm run lint && npm run build` y discovery 19 pasó. Este fallo también quedó en ERROR_LOG.

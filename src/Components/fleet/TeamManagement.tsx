@@ -156,8 +156,18 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!createUserForm.usuario || !createUserForm.email || !createUserForm.nombres || !createUserForm.apellidos) {
+    const userFields = {
+      username: createUserForm.usuario.trim(),
+      email: createUserForm.email.trim(),
+      firstName: createUserForm.nombres.trim(),
+      lastName: createUserForm.apellidos.trim(),
+    };
+    if (!userFields.username || !userFields.email || !userFields.firstName || !userFields.lastName) {
       toast.error("Por favor completa nombres, apellidos, usuario y correo");
+      return;
+    }
+    if (userFields.username.length > 100 || userFields.firstName.length > 100 || userFields.lastName.length > 100 || userFields.email.length > 200) {
+      toast.error("Usuario, nombres y apellidos admiten hasta 100 caracteres; el correo, hasta 200.");
       return;
     }
 
@@ -169,11 +179,11 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     setIsCreating(true);
 
     const success = await createUser({
-      nombres: createUserForm.nombres,
-      apellidos: createUserForm.apellidos,
+      nombres: userFields.firstName,
+      apellidos: userFields.lastName,
       identificacion: createUserForm.documentNumber,
-      usuario: createUserForm.usuario,
-      email: createUserForm.email,
+      usuario: userFields.username,
+      email: userFields.email,
       role: createUserForm.role,
       teamId: undefined,
       password: "",
@@ -719,6 +729,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <label className="block text-sm text-gray-700 mb-1">Nombres</label>
                 <input
                   type="text"
+                  maxLength={100}
                   value={createUserForm.nombres}
                   onChange={(e) => setCreateUserForm({ ...createUserForm, nombres: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
@@ -729,6 +740,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <label className="block text-sm text-gray-700 mb-1">Apellidos</label>
                 <input
                   type="text"
+                  maxLength={100}
                   value={createUserForm.apellidos}
                   onChange={(e) => setCreateUserForm({ ...createUserForm, apellidos: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
@@ -740,6 +752,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               <label className="block text-sm text-gray-700 mb-1">Usuario</label>
               <input
                 type="text"
+                maxLength={100}
                 value={createUserForm.usuario}
                 onChange={(e) => setCreateUserForm({ ...createUserForm, usuario: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
@@ -751,6 +764,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               <label className="block text-sm text-gray-700 mb-1">Correo</label>
               <input
                 type="email"
+                maxLength={200}
                 value={createUserForm.email}
                 onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
@@ -768,6 +782,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <label className="block text-sm text-gray-700 mb-1">Documento</label>
                   <input
                     type="text"
+                    maxLength={20}
                     value={createUserForm.documentNumber}
                     onChange={(e) => setCreateUserForm({ ...createUserForm, documentNumber: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"
@@ -778,6 +793,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <label className="block text-sm text-gray-700 mb-1">Teléfono</label>
                   <input
                     type="text"
+                    maxLength={20}
                     value={createUserForm.phoneNumber}
                     onChange={(e) => setCreateUserForm({ ...createUserForm, phoneNumber: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3271a4] focus:border-transparent text-sm"

@@ -915,3 +915,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: el harness ahora responde con conductor y vehículo disponibles; E2E verifica el nombre/placa en el selector y que exactamente una nueva solicitud de Vehicle se completa. El botón informa “Reintentando…” y queda deshabilitado mientras espera.
 - Primer intento tras hacer realista el fixture falló porque el test aún esperaba el estado vacío “No hay conductores activos”. Se actualizó la expectativa a la tarjeta del conductor fixture, luego el E2E enfocado pasó 1/1.
 - Prevención: probar el resultado funcional del reintento, no sólo el cambio de estado de la alerta.
+
+## 2026-11-22 — Props maxLength duplicadas en TeamManagement — CORREGIDO
+
+- ESLint encontró `react/jsx-no-duplicate-props` en los formularios existentes de alta de Driver (nombres/apellidos), porque el parche genérico insertó `maxLength` encima del atributo que ya existía.
+- Solución: retirar las props nuevas duplicadas y mantener una única longitud 100 por campo; límites 100/200/20 continúan en los formularios objetivo.
+- Repetición local: `npm run lint`, `npm run build` y Playwright discovery **19** pasaron; no ejecutar comandos de Front con paths relativos de Back.
