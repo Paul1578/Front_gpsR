@@ -234,3 +234,4 @@
 - Se distingue el error de carga con reintento; Logistics conserva el acceso restringido a CRUD de vehículos y Drivers.
 - E2E agregado para autorización mínima, omisión de PII, creación/cancelación y selectores con recursos reales. CI integrado pendiente.
 - Actions `45011806008` dejó 16/18: los tests mockeados de Equipo/Historial no interceptaban el nuevo endpoint y fallaban al abrir drawer. Stub JSON vacío agregado; suite dirigida 2/2, lint/build pasan localmente. Repetir Actions integrado.
+- Actions `45012288100` ejecutó E2E 18/18, pero cleanup falló porque `E2E QA Logistics ruta` no coincidía con el prefijo SQL `E2E QA ruta`. Nombre ajustado al prefijo convencional; nueva corrida pendiente.

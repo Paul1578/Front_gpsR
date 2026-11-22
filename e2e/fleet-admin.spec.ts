@@ -1366,7 +1366,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
   expect(driver).toBeTruthy();
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
-  const routeName = `E2E QA Logistics ruta ${suffix}`;
+  const routeName = `E2E QA ruta Logistics ${suffix}`;
   let routeId: string | undefined;
   const createdVehicle = await page.request.post("/api/backend/Vehicles", {
     headers,
