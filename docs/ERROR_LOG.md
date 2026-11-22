@@ -681,3 +681,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Un parche agrupado esperaba una frase del handoff que no existía en Front; `apply_patch` rechazó todo el parche y no alteró documentos.
 - Corrección: volver a leer los párrafos reales del registro de sesión y aplicar cambios con el texto actual.
 - Prevención: no asumir que el handoff frontend y backend mantienen las mismas frases aunque documenten el mismo hallazgo.
+
+
+## 2026-11-22 — Inventario de tests backend ejecutado desde Front — CORREGIDO
+
+- Un `rg` combinado incluyó `BackEnd_Gps.Tests` con cwd en el repo Front; la búsqueda devolvió ruta inexistente y código 2. No tocó archivos ni datos.
+- Corrección: consultar pruebas backend desde `/home/leonardo/Back_GPS`.
+- Prevención: separar cada ruta relativa por repositorio al lanzar búsquedas paralelas.
+
+## 2026-11-22 — Parche final combinado encontró contexto ya actualizado — CORREGIDO
+
+- El parche para cerrar estados de onboarding mezcló un párrafo que ya contenía el resultado CI con otro hunk de handoff distinto; la verificación falló antes de completar el conjunto.
+- Corrección: releer cada destino y actualizar títulos/estado con reemplazos acotados; `git diff --check` pasó.
+- Prevención: revisar los fragmentos actuales inmediatamente antes de agrupar parches entre repositorios.
