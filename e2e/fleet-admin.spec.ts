@@ -1556,7 +1556,8 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect(driverForeignRoute.status()).toBe(403);
   const driverRouteList = await page.request.get(`/api/backend/Routes?vehicleId=${foreignVehicleId}`, { headers });
   expect(driverRouteList.status()).toBe(200);
-  expect(await driverRouteList.json()).toEqual([]);
+  const driverVisibleRoutes = await driverRouteList.json() as Array<{ id: string }>;
+  expect(driverVisibleRoutes.some((route) => route.id === foreignRouteId)).toBe(false);
   expect((await page.request.put(`/api/backend/Routes/${foreignRouteId}/status`, {
     headers,
     data: { status: 3 },

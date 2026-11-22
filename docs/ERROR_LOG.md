@@ -730,3 +730,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 ## 2026-11-22 — Cancelación de ruta desde UI verificada
 
 - Actions `45000517571` pasó en Front `0f91d9a` con Backend `d346fa2`: Playwright 18/18, responsive 1/1, build/audit/lint y cleanup API/MySQL success. El E2E confirmó `PUT /Routes/{id}/status` 204 después de la confirmación UI, luego estado persistido cancelado e Historial.
+# 2026-11-22 — Test Driver asumía lista vacía al filtrar una ruta ajena — CORREGIDO ANTES DE CI
+
+- Hallazgo de revisión: el E2E estaba asertando que la lista Driver completa quedaba vacía al solicitar `vehicleId` de otro conductor.
+- Causa: `GetAll` ignora ese filtro para Driver, pero conserva rutas propias completadas que siguen activas; una respuesta no vacía es válida.
+- Solución: comprobar únicamente que la lista no contiene el ID de la ruta ajena, que es la garantía de autorización requerida.
+- Prevención: las pruebas de aislamiento deben afirmar ausencia del recurso atacado y no imponer filtros/globales que el contrato no promete.
+- Verificación: corrección estática antes de la ejecución Actions; lint/build/discovery se vuelven a ejecutar antes del dispatch actualizado.
