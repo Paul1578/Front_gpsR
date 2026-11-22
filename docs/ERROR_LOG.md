@@ -594,4 +594,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 ## Ampliación Manager positiva — 2026-11-22
 
-- La matriz cubría denegaciones de Manager pero no operaciones permitidas. Se agregó un ciclo autenticado positivo de vehículo y lectura de flota/rutas. Aún no hay errores asociados; se registrarán si las pruebas encuentran diferencias entre contrato y comportamiento.
+- La matriz cubría denegaciones de Manager pero no operaciones permitidas. Se agregó un ciclo autenticado positivo de vehículo y lectura de flota/rutas.
+- Actions `44994997016` pasó con 16/16 E2E, responsive 1/1, xUnit 57/57 y cleanup completo. No se detectó error de producto en el flujo permitido de Manager.

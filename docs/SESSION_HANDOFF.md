@@ -22,6 +22,7 @@
 - El primer run de vehículo (`44994219944`) falló por carrera de test: el waiter de PUT aceptaba antes la actualización general que el endpoint `/status`. Ahora se espera `PUT .../status`, valida 204/body, y después consulta GET. Repetir Actions.
 - Actions `44994623654` confirmó ese arreglo y el estado operativo real: backend 57/57, responsive 1/1, E2E 16/16, audit/lint/build/cleanup correctos. El test cambia mantenimiento y disponibilidad, compara valores API 2/0 y confirma tarjeta tras reload.
 - Próximo corte de roles añadido: Manager debe tener acceso positivo a listar rutas/vehículos y CRUD/lifecycle de vehículo; la matriz existente ya garantiza denegaciones Users/Roles y restores el fixture Driver en `finally`. Nueva ejecución CI pendiente.
+- Actions `44994997016` confirmó el corte de Manager en Front `202ec3d` + Back `029e94d`: E2E 16/16, responsive 1/1, xUnit 57/57, audit/lint/build y cleanup MySQL correctos. El Manager creó, editó, cambió estado, leyó y eliminó vehículo; fixture restaurado. La siguiente cobertura debe abordar brechas restantes de CRUD negativo, vistas responsive y acceso Driver a rutas por tenant.
 
 ## E2E de orden y operación de paradas — 2026-11-22
 
