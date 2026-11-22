@@ -1667,6 +1667,19 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await expect(managerDriverCard).toContainText(`E2E QA Manager editado ${suffix}`);
 
       await managerDriverCard.getByLabel(`Vehículo para E2E QA Manager editado ${suffix}`).selectOption(managerVehicleId!);
+      const assignVehiclePath = `**/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`;
+      await managerPage.route(assignVehiclePath, async (route) => {
+        await route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "El vehículo ya está asignado a otro conductor." }),
+        });
+      });
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      await expect(managerPage.getByText("El vehículo ya está asignado a otro conductor.")).toBeVisible();
+      await expect(managerPage.getByText("Vehículo asignado.", { exact: true })).toHaveCount(0);
+      await managerPage.unroute(assignVehiclePath);
+
       const assignManagerDriverVehicle = managerPage.waitForResponse((response) =>
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
       );

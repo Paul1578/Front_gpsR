@@ -7,6 +7,11 @@
 - La primera suite backend completa dio 81/82 porque el fixture de doble inicio intentaba asociar dos conductores al mismo vehículo. Se corrigió para usar dos rutas del mismo conductor; causa y prevención están en `docs/ERROR_LOG.md`.
 - Ramas aisladas: Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`. No declarar misión completa.
 
+## Siguiente brecha — error visible al asignar un vehículo — 2026-11-22
+
+- El manejador UI ya enseña errores API, pero faltaba comprobar un 409 desde Gestión de Conductores. Se añadió al E2E Manager un stub 409, aserción de alerta/no éxito y luego se deja continuar con asignación HTTP real.
+- Local `npm run lint`, `npm run build`, discovery Playwright **20** y diff-check pasan. Actions autenticado con API/MySQL descartables pendiente.
+
 ## Fase completada — edición de perfil de equipo — 2026-11-22
 
 - Gestión de Equipo edita nombres, apellidos y username con PUT /Users/{id}/profile; email queda inmutable. AuthContext.updateUserProfile separa guardado y refresco para no afirmar que falló un guardado exitoso.

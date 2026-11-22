@@ -7,6 +7,12 @@
 
 # Registro de errores y decisiones
 
+## 2026-11-22 — Asignación fallida sin E2E negativo en Gestión de Conductores — COBERTURA AÑADIDA
+
+- Auditoría confirmó que el componente ya mostraba el error de API al asignar, pero no había prueba de que un HTTP 409 se presentara sin un toast de éxito.
+- E2E Manager inyecta respuesta 409, exige el mensaje del backend y ausencia de confirmación; después retira el stub y ejecuta la asignación real.
+- `npm run lint`, `npm run build` y discovery Playwright **20** pasan local; Actions autenticado/cleanup de este cambio pendientes.
+
 ## 2026-11-22 — Runner E2E local detenido por guard de mutaciones — CORREGIDO
 
 - Primera invocación de `run-e2e-local.sh` terminó en código 2 porque no estaba definida `FLETFLOW_E2E_ALLOW_MUTATIONS=true`; el guard se ejecutó antes de tocar servicios o datos.

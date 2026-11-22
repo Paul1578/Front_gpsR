@@ -52,6 +52,10 @@ Gestión de Equipo permite editar nombres, apellidos y username con backend real
 - Actions `45031929936` pasó audit/lint/build, responsive y E2E autenticado Chrome/API/MySQL **20/20**, cleanup correcto.
 - Misión global permanece abierta.
 
+## Próxima prueba negativa — 2026-11-22
+
+- E2E de Gestión de Conductores simula asignación HTTP 409, verifica mensaje legible y ausencia de toast de éxito, después ejecuta asignación real. Lint/build/discovery **20** pasan local; Actions pendiente.
+
 # Estado del proyecto
 
 Fecha de actualización: 2026-11-22.
