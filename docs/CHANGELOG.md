@@ -1,3 +1,7 @@
+## 2026-11-22 — Render seguro de Drivers no vinculados a User
+
+- Gestión de Equipo muestra fallback cuando un Driver no tiene `UserId`, sin bloquear el listado completo. E2E de regresión añadido; CI pendiente.
+
 ## 2026-11-22 — Bloquear consulta de detalle para Driver inactivo
 
 - `GET /Routes/{id}` valida conductor activo y asignación mediante `IsCurrentDriverAssigned`. E2E actualizado con detalle/listado/GPS; validación integrada pendiente.

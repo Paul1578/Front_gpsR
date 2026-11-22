@@ -1,3 +1,7 @@
+## Actualización — Drivers sin cuenta asociada — 2026-11-22
+
+- La vista Gestión de Equipo ahora representa un Driver nullable `UserId` como “Sin usuario vinculado”; antes la lectura `.slice` rompía el render. El E2E incluirá el caso. Validación integrada pendiente.
+
 ## Actualización — perfil Driver inactivo — 2026-11-22
 
 - El acceso al detalle de ruta también exige perfil Driver activo. La matriz E2E ahora verifica 403 en detalle, listado, GPS GET y POST; nueva Actions integrada pendiente.

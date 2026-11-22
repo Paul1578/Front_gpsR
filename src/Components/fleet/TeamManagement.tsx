@@ -451,7 +451,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                             Doc: {driver.documentNumber} · Tel: {driver.phoneNumber}
                           </p>
                           <p className="text-xs text-gray-400">
-                            Usuario: {user ? `@${user.usuario}` : driver.userId.slice(0, 6)}
+                            Usuario: {user ? `@${user.usuario}` : driver.userId ? driver.userId.slice(0, 6) : "Sin usuario vinculado"}
                           </p>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">

@@ -1985,6 +1985,8 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await page.getByRole("button", { name: "Mostrar bajas" }).click();
   const inactiveDriverCard = page.getByText(`${firstName} editado ${lastName}`).locator("xpath=../..");
   await expect(inactiveDriverCard).toContainText("Inactivo");
+  const unlinkedDriverCard = page.locator("div.space-y-3 > div").filter({ hasText: "Foreign Driver QA" });
+  await expect(unlinkedDriverCard).toContainText("Sin usuario vinculado");
 
   const reactivatePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&
