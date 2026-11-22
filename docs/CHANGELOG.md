@@ -201,3 +201,4 @@
 - El sidebar queda como drawer hasta 1024 px para liberar ancho operativo en tablets. El E2E mide un área `<main>` superior a 700 px a viewport 768; lint/build pasan localmente, Actions pendiente.
 - Primera Action del drawer detectó tres recorridos E2E que asumían menú fijo; se corrigieron los pasos de navegación. El fallo y la solución se registran en `docs/ERROR_LOG.md`; repetición integrada pendiente.
 - El constructor cambia a panel móvil/tablet: al ubicar origen/parada/destino abre el mapa, al seleccionar un punto regresa a paradas y detalles; se puede alternar manualmente. El helper E2E verifica ambos cambios; lint/build/discovery pasan localmente, browser/API/MySQL pendiente.
+- Actions `45007503895` detectó expectativas E2E antiguas de panel visible y drawer cerrado tras reload (15/18 pasaron); pruebas actualizadas a la nueva interacción, integración repetida pendiente.

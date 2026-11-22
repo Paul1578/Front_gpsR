@@ -60,8 +60,9 @@
 - Sidebar ya cambiado a drawer hasta 1024 px. Su E2E a 768 px verifica apertura del menú y ancho real de `<main>` >700 px; lint/build pasan localmente, CI pendiente antes de integrar.
 - Actions `45006627500` valida Driver a 320 px con E2E 18/18 + responsive 1/1.
 - Action `45006747816` para el drawer falló 3/18: las pruebas de Equipo, mapa tracking y creación route no abrían drawer al llegar a 768 px. Los clics ya están añadidos y el error quedó registrado en `docs/ERROR_LOG.md`.
+- Action `45007503895` volvió a fallar 3/18 (15 pasaron): dos E2E esperaban el botón `Seleccionando` dentro del panel oculto al abrir mapa, y tracking no reabría drawer después de reload. Cambios aplicados localmente: esperar `Ver paradas y detalles`, reabrir drawer y cubrir regreso a editor.
 - Constructor móvil/tablet implementa alternancia editor/mapa y vuelve a editor tras seleccionar punto. Lint/build/discovery 18 pasan; código y corrección de test están locales, falta commit/push y Action integrada.
-- Próximo: ejecutar Action actualizada de Front; comprobar mapa seleccionable, altas/edición en 320/768 y `main >700` a 768; después continuar CRUD/roles.
+- Próximo: lint/build/discovery, commit/push y Action integrada; corregir regresiones hasta 18/18, incluido cleanup; luego continuar CRUD/roles.
 - Próximo: commit/push de prueba responsive, esperar Actions, incorporar hallazgos del agente de auditoría y seleccionar siguiente brecha CRUD/roles/responsive. La política de promoción de miembros a Admin delegado sigue pendiente de respuesta del usuario.
 - No marcar misión completa: cobertura de CRUD/roles/responsive no exhaustiva; SMTP depende de credenciales externas y móvil nativo está pospuesto.
 

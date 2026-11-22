@@ -771,3 +771,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `45006747816` encontró tres E2E que navegaban al Mapa o a Rutas sin abrir el menú tras iniciar sesión/redimensionar a 768 px. El cambio de producto convirtió intencionalmente esa navegación en drawer.
 - Se añadieron clics explícitos al botón `Abrir menú` en los recorridos de Equipo, tracking y creación de ruta en tablet.
 - Prevención: al cambiar el breakpoint de navegación, buscar y validar cada recorrido de usuario que use el sidebar después de cambiar viewport o cargar sesión.
+
+## 2026-11-22 — E2E del constructor esperaba controles del editor oculto — CORREGIDO EN TESTS
+
+- Actions `45007503895` pasó 15/18 y detectó que la nueva UX cambia automáticamente al mapa al agregar/ubicar un punto; el test seguía esperando el botón `Seleccionando` dentro del panel editor oculto. La prueba móvil agotó también su tiempo al limpiar fixtures después del timeout principal.
+- Se cambió la expectativa a `Ver paradas y detalles`, que confirma que el mapa quedó abierto. El helper ya valida el regreso al editor después de fijar un punto.
+- En el mismo run, tracking falló tras `page.reload()` a 768 px porque no se volvió a abrir el drawer; se agregó el clic explícito.
+- Prevención: las pruebas deben observar el panel actualmente visible y cambios de navegación después de reload, no asumir que contenido oculto sigue accionable.

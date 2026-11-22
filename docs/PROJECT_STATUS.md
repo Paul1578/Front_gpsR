@@ -6,6 +6,7 @@
 - Actions `45006627500` success en commit `441ee24`: E2E autenticado **18/18**, responsive browser 1/1 y cleanup. Incluye Mi Ruta a 320×844, insignias GPS/vehículo sin solapamiento y diálogo de evidencia dentro del viewport.
 - La auditoría de UX identificó que la barra lateral consumía 256 px a 768 px y comprimía el área operativa. Se cambió a drawer hasta 1024 px; E2E requiere navegación por hamburger y `main > 700 px`. Lint/build/diff-check pasan; falta correr browser/API/MySQL sobre el commit.
 - Actions `45006747816` falló 3/18 por tests que asumían sidebar fijo al navegar a 768 px; 15 pasaron. Los tres recorridos ya abren drawer explícitamente; la repetición integrada sigue pendiente.
+- Actions `45007503895` falló 3/18 (15 pasaron): dos E2E esperaban `Seleccionando` en el editor oculto cuando el panel cambia al mapa; un flujo de tracking no reabría drawer tras reload. Ajustado y documentado; próxima ejecución pendiente.
 - El constructor de rutas ahora alterna editor/mapa en móvil y tablet y regresa al editor tras elegir un punto. Lint/build y discovery de 18 casos pasan; falta CI integrado.
 - Auditoría continúa abierta: faltan más operaciones CRUD, matriz de privilegios Admin y pruebas responsive de las vistas restantes. SMTP necesita configuración externa; móvil nativo pospuesto.
 
