@@ -1,3 +1,8 @@
+## Ampliación de acceso inactivo — 2026-11-22
+
+- El pase de controlador extendió `IsCurrentDriverAssigned` también a `GET /Routes/{id}`: antes del fix un perfil Driver inactivo podía seguir leyendo el detalle. El E2E ahora espera 403 en detalle/listado/GPS GET y POST con token vigente, y 200 tras reactivar el perfil.
+- Backend `41c01e7` ya incluye el fix; Release/xUnit local 61/61. Actions backend `45002562048` en curso. Front `01724b7` ejecuta matriz de otro Driver y GPS inactivo; Actions `45002396041` en curso. Para cobertura completa con detalle inactivo, se agregó una aserción adicional después de esa corrida: lint/build/discovery 18 y diff-check pasan; pendiente commit y nueva Actions integrada.
+
 ## Autorización de Driver y responsive de vehículos — 2026-11-22
 
 - Actions `45001695962` pasó para Front `1c108cc` + Backend `923072b`: audit, lint/build, responsive browser, suite autenticada y cleanup en MySQL; el ciclo CRUD del vehículo comprobó 320×844 y 768×1024.

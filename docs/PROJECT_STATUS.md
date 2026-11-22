@@ -1,3 +1,7 @@
+## Actualización — perfil Driver inactivo — 2026-11-22
+
+- El acceso al detalle de ruta también exige perfil Driver activo. La matriz E2E ahora verifica 403 en detalle, listado, GPS GET y POST; nueva Actions integrada pendiente.
+
 ## Actualización — 2026-11-22
 
 - Actions `45001695962` success para Front `1c108cc` + Backend `923072b`: responsive E2E CRUD vehículo a 320 y 768 px, Playwright API/MySQL y cleanup.

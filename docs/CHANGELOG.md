@@ -1,3 +1,7 @@
+## 2026-11-22 — Bloquear consulta de detalle para Driver inactivo
+
+- `GET /Routes/{id}` valida conductor activo y asignación mediante `IsCurrentDriverAssigned`. E2E actualizado con detalle/listado/GPS; validación integrada pendiente.
+
 ## 2026-11-22 — Matriz de autorización Driver en E2E
 
 - E2E ahora intenta desde Driver las operaciones de ruta, paradas, evidencia y GPS de un recurso asignado a otro conductor, compara persistencia para confirmar ausencia de mutación, y verifica bloqueo GPS con perfil desactivado. Lint/build y discovery 18 correctos; E2E real pendiente de Actions.

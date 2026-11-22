@@ -1511,6 +1511,8 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
     data: { isActive: false },
   });
   expect(deactivateDriver.status()).toBe(204);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}`, { headers })).status()).toBe(403);
+  expect((await page.request.get("/api/backend/Routes", { headers })).status()).toBe(403);
   expect((await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers })).status()).toBe(403);
   expect((await page.request.post(`/api/backend/Routes/${routeId}/positions`, {
     headers,
