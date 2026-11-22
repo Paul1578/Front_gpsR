@@ -564,3 +564,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `44992464372` volvió a fallar sólo en el caso nuevo: con viewport 768×1024 la página no renderiza `Abrir menú`; la barra lateral de escritorio/tablet está visible desde el inicio. El timeout de 8 s ahora identificó el locator exacto. Los otros 15 E2E y el cleanup del caso nuevo pasaron.
 - Corrección: eliminar la apertura del menú móvil y seleccionar directamente `Gestión de Rutas`, como ya hace el test tablet existente. El request context separado confirmó que cleanup devuelve respuestas aun cuando falla el flujo UI.
 - Verificación pendiente: lint/build y Actions integrado del siguiente SHA; contar el test tablet sólo tras completar y persistir la ruta en navegador/API/MySQL.
+
+# 2026-11-22 — El vehículo de prueba no aparecía en el selector — CORREGIDO
+
+- Actions `44992803081` avanzó por el mapa y la revisión tablet, pero agotó 8 s al asignar el vehículo: se creó por API después de la carga inicial del Dashboard, así que `FleetContext` conservó la lista anterior sin ese registro. Los otros 15 E2E pasaron y el fixture temporal sí se limpió.
+- Corrección: recargar Dashboard después del POST de vehículo y antes de entrar al constructor, replicando el patrón del E2E móvil ya validado.
+- Pendiente repetir Actions: el nuevo caso aún no ha guardado la ruta ni cuenta como aprobado.

@@ -123,3 +123,4 @@
 - Lint, build, discovery de 16 casos y diff check pasan localmente. El CI integrado Chrome/API/MySQL queda pendiente; el cleanup restaura la asignación de Driver y elimina las filas temporales.
 - La primera Actions `44991979019` detectó timeout del caso y fragilidad de cleanup ligado a page; solución registrada en `ERROR_LOG.md`, E2E ahora usa request independiente y timeout acotado por fase.
 - Actions `44992464372` reveló que tablet utiliza navegación lateral permanente y no el botón móvil; el E2E ya elige directamente la sección de rutas. Suite corregida pendiente de CI.
+- Actions `44992803081` encontró que el selector de recursos seguía usando la lista FleetContext previa al POST del vehículo de prueba. Se añadió recarga del dashboard antes de abrir el constructor.

@@ -627,6 +627,8 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
     expect(vehicleResponse.status()).toBe(201);
     vehicleId = (await vehicleResponse.json()).id as string;
 
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
     await expectNoHorizontalOverflow();
     await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
