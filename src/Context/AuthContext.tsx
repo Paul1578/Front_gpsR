@@ -762,13 +762,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.usuario,
         password: data.password,
       };
-      const response = await apiFetch<AuthResponseDto>("/Auth/register", {
+      await apiFetch<{ message: string }>("/Auth/register", {
         method: "POST",
         body: JSON.stringify(payload),
         skipAuth: true,
       });
       if (sessionVersion !== authSessionVersionRef.current) return false;
-      return applyAuthResponse(response, sessionVersion);
+      return true;
     } catch (error) {
       console.error("Error en registro:", error);
       return false;

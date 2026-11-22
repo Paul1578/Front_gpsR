@@ -355,3 +355,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action integrada `45063487802`: **31/33**. El mapa siguió excediendo `<main>` 43 px; ahora su wrapper también tiene ancho máximo y recorta overflow. El test de Historial esperaba 1, pero el flujo real agrega 3 evidencias; expectativa alineada a dos notas+foto. Volver a ejecutar 33 E2E.
 - Action integrada `45064475585`: **33/33 E2E autenticados**, Responsive browser check, lint, build y audit pasaron. Cubre mapa a 320 px e Historial/foto/descripción a 320/768 px.
+- Registro neutral: UI redirige a Login; E2E compara status/payload para email nuevo/duplicado y valida login posterior. Discovery sigue en 33 pruebas; lint/build pasan localmente. Action integrada pendiente.
+- Action `45065014129` pasó **33/33 E2E** con backend `30bcb2f`; no incluye aún el commit de registro neutral, que requiere nueva integración.

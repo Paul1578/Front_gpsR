@@ -734,3 +734,6 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Action `45063487802` volvió a fallar 2/33. Trace confirmó `main.scrollWidth=363` a viewport 320; añadido `w-full max-w-full overflow-hidden` al root y layout interno MapView. Historial mostraba 3 evidencias reales (dos notas + una foto), así que la aserción “1 evidencia” se actualizó a 3; conserva detalle de foto y descripción.
 - Action Front `45064475585` aprobó 33/33 E2E autenticados, incluidos responsive mapa a 320 px e Historial/foto/descrición Admin a 768 px. Run de backend usado por esa integración estaba en `1534828`; backend login anti-enumeración `30bcb2f` tiene su Action propia en curso y requiere nueva integración Front luego de terminar.
+
+- Registro público es neutral: `register` no persiste tokens; el formulario muestra el mensaje común y navega a Login. El E2E compara las respuestas de alta nueva/duplicada y autentica el usuario creado. Falta Action integrada con cambio frontend/backend actual.
+- La Action Front `45065014129` aprobó 33/33 y responsive check con backend `30bcb2f`, pero precede al cambio de registro neutral; ejecutar nuevo Action tras publicar ambos repos.

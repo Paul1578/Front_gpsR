@@ -125,7 +125,19 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
     response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Crear cuenta" }).click();
-  expect((await registrationPromise).status()).toBe(200);
+  const registrationResponse = await registrationPromise;
+  expect(registrationResponse.status()).toBe(200);
+  const neutralRegistrationResponse = await registrationResponse.json();
+  expect(neutralRegistrationResponse).toEqual({ message: "Si el registro puede completarse, podrás iniciar sesión con tus credenciales." });
+  const duplicateRegistration = await request.post("/api/backend/Auth/register", {
+    data: { username: "E2E duplicate", email: emailAddress, password },
+  });
+  expect(duplicateRegistration.status()).toBe(200);
+  expect(await duplicateRegistration.json()).toEqual(neutralRegistrationResponse);
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();

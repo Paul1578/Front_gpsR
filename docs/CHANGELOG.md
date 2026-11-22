@@ -448,3 +448,7 @@
 - Se limitaron anchos mínimos en el layout flex del Mapa para evitar overflow interno en 320 px. Historial normaliza evidencia del contrato real `points[].evidence`, incluyendo foto y descripción.
 - E2E agrega comprobación de detalle Admin a 768 px. Causas de CI y prevención en `docs/ERROR_LOG.md`.
 - Tras Action `45063487802`, el wrapper del mapa fuerza `w-full max-w-full overflow-hidden` y el test verifica las tres evidencias reales del flujo. Lint/build, discovery de 33 y diff-check pasan localmente; Action nueva pendiente.
+
+## 2026-11-22 — Registro de empresa con respuesta neutral
+
+- Registro ya no crea una sesión automáticamente. La respuesta uniforme lleva al usuario a Login; el E2E compara alta y email duplicado y luego autentica la empresa nueva.
