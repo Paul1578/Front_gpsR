@@ -24,6 +24,8 @@
 - Action `45074489447` en `00f3b7c` terminó 36/37; único fallo era el toast de bienvenida atrapado por un conteo global ARIA. Aserciones ahora usan los mensajes de error específicos. Repetir Action para validar también persistencia parcial de vehículo.
 - Action `45075092805` en `ae34fa9` terminó 36/37; al navegar a Usuarios, rutas/vehículos se recuperaban automáticamente antes del retry. Secuencia reordenada; nueva Action debe validar además el test de persistencia parcial del vehículo.
 - Action `45075805793` para `067793e` también terminó 36/37; el retry de flota disparó el refresco de miembros y quitó su botón. Secuencia reordenada a retry User antes de recuperación automática de flota.
+- El E2E ahora mantiene 503 independientes para endpoint de usuarios y endpoints de rutas/vehículos hasta ejecutar sus respectivos reintentos. Action de validación nueva pendiente.
+- Action `45075980605` en `4eec893` terminó 36/37; responsive 320/768 pasó, retry de flota fue único fallo. La prueba ahora usa banderas independientes por grupo.
 - Se amplió test del formulario empresa con interacción Driver sin overflow a 320/768 px; validación integrada pendiente.
 - Front local corrige actualización parcial del vehículo al fallar su segunda solicitud de cambio de estado; E2E fuerza 409 y verifica UI+GET. Falta validación local y Action del commit actual.
 - E2E actualizado: tab correcto, un retry conjunto, retry independiente de usuarios, conteos `—`. Gestión de Equipo ya presenta error compartido FleetContext. Solicitudes `/Users/my-team` obsoletas no pisan resultados nuevos.

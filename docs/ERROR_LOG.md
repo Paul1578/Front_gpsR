@@ -34,6 +34,13 @@
 - E2E ahora entra en Usuarios mientras el mock aún mantiene 503, verifica que el botón está visible, libera la respuesta y ejecuta retry de miembros primero. Luego comprueba que rutas/vehículos se recuperan con los renders/refrescos derivados y que Exportar vuelve a habilitarse. Los retries directos de flota siguen comprobados en pruebas específicas de su pantalla.
 - Prevención: probar cada botón antes de acciones que desencadenan recargas compartidas y pueden limpiar su estado.
 
+## 2026-11-22 — El mock compartía un único interruptor de fallo para tres APIs — CORREGIDO LOCALMENTE
+
+- El test usaba `shouldFail` común para `/Users/my-team`, `/Vehicles` y `/Routes`. Al reintentar un recurso, los efectos/recargas de contexto podían volver a consultar los otros endpoints y recibir 200 prematuramente; sus errores/botones desaparecían antes de su propio retry.
+- Se separó en `shouldFailUsers` y `shouldFailFleet`. Usuarios conserva 503 hasta su acción explícita; rutas y vehículos conservan 503 hasta que se ejecuta su retry conjunto. Luego se verifican mensajes específicos desaparecidos y exportación habilitada.
+- Prevención: los interceptores E2E deben modelar cada fuente de error de forma independiente, no usar un toggle global cuando se prueban reintentos por recurso.
+- Action `45075980605` sobre `4eec893` pasó 36/37 y reprodujo la carrera en el último reintento de flota; su prueba responsive de formulario a 320/768 px y 36 escenarios pasaron. La corrección de banderas separadas quedó en el siguiente HEAD.
+
 ## 2026-11-22 — Panel de empresa requería cobertura responsive estrecha — EN VALIDACIÓN
 
 - QA detectó que la prueba del formulario verificaba los campos Driver a 390 px y sólo medía el ancho general en 320 px dentro de otra pestaña; no probaba escribir ni la presentación del formulario en 320/768.

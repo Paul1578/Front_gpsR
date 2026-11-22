@@ -8,7 +8,9 @@
 - Action `45074489447` sobre `00f3b7c` pasó **36/37**; el único fallo esperaba cero alertas ARIA y capturaba el toast de bienvenida. El E2E ahora espera sólo la desaparición de los errores de carga específicos; ejecutar Action nueva.
 - Action `45075092805` sobre `ae34fa9` pasó **36/37**; al volver a Resumen después del retry User, rutas/vehículos ya se habían recuperado automáticamente y su retry no existía. E2E reordenado para reintentar primero esos recursos en Resumen, luego Usuarios.
 - Action `45075805793` para `067793e` pasó **36/37**; el retry de flota también disparó el refresco de Users y quitó su botón. E2E ahora ejecuta el retry de Users primero, luego verifica recuperación de flota.
+- El mock de la prueba ahora mantiene fallos independientes para Users y para Routes/Vehicles, evitando que refrescos automáticos entre endpoints devuelvan 200 antes del retry específico. Nueva Action pendiente.
 - E2E de administración ahora completa los campos Driver y comprueba formulario/overflow a 320 y 768 px; prueba responsive de este caso pendiente.
+- Action `45075980605` sobre `4eec893` pasó **36/37**; el caso responsive nuevo pasó, el único fallo fue que el botón retry de flota desapareció al recuperar recursos por una recarga de contexto. El mock queda ahora separado por grupos de endpoints.
 
 # 2026-11-22 — Sincronización de edición parcial de vehículo
 

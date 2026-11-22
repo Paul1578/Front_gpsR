@@ -60,11 +60,13 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 test("Administración distingue fallos de carga de una empresa vacía y permite reintentar", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin.");
 
-  let shouldFail = true;
+  let shouldFailUsers = true;
+  let shouldFailFleet = true;
   await page.route("**/api/backend/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
-    const isFleetRead = pathname.endsWith("/Users/my-team") || pathname.endsWith("/Vehicles") || pathname.endsWith("/Routes");
-    if (shouldFail && isFleetRead) {
+    const isTeamRead = route.request().method() === "GET" && pathname.endsWith("/Users/my-team");
+    const isFleetRead = route.request().method() === "GET" && (pathname.endsWith("/Vehicles") || pathname.endsWith("/Routes"));
+    if ((shouldFailUsers && isTeamRead) || (shouldFailFleet && isFleetRead)) {
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -97,11 +99,17 @@ test("Administración distingue fallos de carga de una empresa vacía y permite 
   await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
   const retryUsersButton = page.getByRole("button", { name: "Reintentar", exact: true });
   await expect(retryUsersButton).toBeVisible();
-  shouldFail = false;
+  shouldFailUsers = false;
   await retryUsersButton.click();
   await expect(page.getByText("No se pudo cargar el equipo. Revisa la conexión e inténtalo de nuevo.")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Resumen", exact: true }).click();
+  await expect(page.getByText("No se pudieron cargar las rutas.")).toBeVisible();
+  await expect(page.getByText("No se pudieron cargar los vehículos.")).toBeVisible();
+  const retryFleetButton = page.getByRole("button", { name: "Reintentar", exact: true }).first();
+  await expect(retryFleetButton).toBeVisible();
+  shouldFailFleet = false;
+  await retryFleetButton.click();
   await expect(page.getByText("No se pudieron cargar las rutas.")).toHaveCount(0);
   await expect(page.getByText("No se pudieron cargar los vehículos.")).toHaveCount(0);
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
