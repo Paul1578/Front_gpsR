@@ -213,7 +213,7 @@ export function MapView({ onBack }: MapViewProps) {
 
   // --------- UI ---------
   return (
-    <div className="flex flex-col h-full w-full bg-white border border-gray-200 rounded-2xl shadow-sm">
+    <div className="flex h-full min-w-0 flex-col bg-white border border-gray-200 rounded-2xl shadow-sm">
       {/* HEADER */}
       <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
         <div className="flex items-center gap-3">
@@ -262,9 +262,9 @@ export function MapView({ onBack }: MapViewProps) {
       )}
 
       {/* CONTENIDO */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50 lg:flex-row">
         {/* MAPA */}
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           {/* Panel flotante con info de la ruta seleccionada */}
           {selectedRoute && (
             <div className="absolute z-[400] top-3 left-3 right-3 md:left-4 md:right-auto max-w-sm">
@@ -342,7 +342,7 @@ export function MapView({ onBack }: MapViewProps) {
         </div>
 
         {/* SIDEBAR LISTA DE RUTAS */}
-        <aside className="w-full lg:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 md:p-4 space-y-3">
+        <aside className="w-full min-w-0 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 md:p-4 space-y-3 lg:w-80">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-gray-900">
               Rutas planificadas

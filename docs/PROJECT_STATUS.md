@@ -509,3 +509,8 @@ Fecha de actualización: 2026-11-22.
 
 - Action `45061522878` ejecutó 31/33. La foto falló porque el diálogo aún estaba en modo Nota; el timeout dejó una ruta y el retry chocó con ella (409), no era una colisión entre los dos drivers que se atribuyó inicialmente. El ciclo Driver en Equipo detectó 413 px a 320 px.
 - Se corrigió selección del modo Foto y el layout flex/grid de Dashboard/Equipo/Conductores. Falta nueva Action completa para verificar ambas correcciones.
+
+## Mapa estrecho y resumen de evidencias en Historial — CI PENDIENTE
+
+- Front Action `45062280254` llegó a **31/33**. Detectó 363 px de contenido en `<main>` del mapa a 320 px y que el resumen del Historial omitía evidencia guardada dentro de `points[].evidence`.
+- Fix en rama: `min-w-0` en ancestros del Mapa y normalización de evidencia por parada en Historial; E2E extiende el detalle Admin a 768 px. Lint/build/discovery (33) pasan localmente; Action integrada del nuevo SHA pendiente.

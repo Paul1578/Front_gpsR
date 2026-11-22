@@ -348,3 +348,7 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Evidencia: el diálogo conservó modo “Nota” cuando el test esperaba el campo de foto. Venció el límite de 30 s; el retry vio la ruta pendiente del primer intento y recibió 409 para el mismo Driver. Las trazas Playwright están descargadas y la causa quedó confirmada.
 - El segundo caso de Equipo midió el formulario CRUD de Driver a 413 px en viewport 320 px. Se añadieron `min-w-0` en sus ancestros y `w-full min-w-0` al form; la prueba selecciona explícitamente el modo Foto.
 - Estado de este fix: local y Actions pendientes.
+
+- Front Action `45062280254`: **31/33**. El caso de Mapa detectó overflow interno a 320 px (363 px) y el de evidencia llegó a Historial pero no encontró evidencia en `route.evidencias`; el endpoint la entrega en cada `points[].evidence`. Fix local mapea evidencia por parada y limita ancestros del mapa; se agregó aserción de detalle Admin a 768 px. Nueva ejecución pendiente.
+
+- Tras la Action `45062280254` (31/33), se corrigieron el desborde interno del mapa a 320 px y el mapeo de evidencia desde las paradas; el E2E ahora mide también el detalle Admin en 768 px. Lint/build, discovery 33 y diff-check pasan localmente. Action del SHA actualizado pendiente.

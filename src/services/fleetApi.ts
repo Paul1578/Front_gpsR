@@ -181,6 +181,18 @@ interface RawRoutePoint {
   Longitude?: number;
   name?: string;
   Name?: string;
+  evidence?: Array<{
+    type?: string;
+    content?: string;
+    description?: string;
+    createdAtUtc?: string;
+  }>;
+  Evidence?: Array<{
+    type?: string;
+    content?: string;
+    description?: string;
+    createdAtUtc?: string;
+  }>;
 }
 
 type RouteApiDtoWithSerializedPoints = RouteApiDto & {

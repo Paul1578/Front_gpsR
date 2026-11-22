@@ -77,7 +77,18 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
         const routesRes = await fetchRoutes(apiFetch);
 
         if (cancelled) return;
-        setRoutes(routesRes);
+        setRoutes(routesRes.map((route) => ({
+          ...route,
+          evidencias: (route.points ?? []).flatMap((point, pointIndex) =>
+            (point.evidence ?? point.Evidence ?? []).map((evidence, evidenceIndex) => ({
+              id: `${route.id}-${pointIndex}-${evidenceIndex}-${evidence.createdAtUtc ?? ""}`,
+              type: evidence.type === "image" ? "image" as const : "note" as const,
+              content: evidence.content ?? "",
+              description: evidence.description,
+              timestamp: evidence.createdAtUtc ?? "",
+            })),
+          ),
+        })));
       } catch (err) {
         console.error("Error cargando historial de rutas", err);
         if (!cancelled) setError("No se pudieron cargar las rutas");

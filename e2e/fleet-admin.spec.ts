@@ -2703,6 +2703,15 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   await expect(historyDialog).toContainText(photoDescription);
   const historyWidths = await historyPage.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
   expect(historyWidths.content).toBeLessThanOrEqual(historyWidths.viewport);
+  await historyPage.setViewportSize({ width: 768, height: 1024 });
+  const tabletHistoryDialog = await historyDialog.boundingBox();
+  expect(tabletHistoryDialog).not.toBeNull();
+  expect(tabletHistoryDialog!.x).toBeGreaterThanOrEqual(0);
+  expect(tabletHistoryDialog!.x + tabletHistoryDialog!.width).toBeLessThanOrEqual(768);
+  await expect(historyDialog.getByAltText("Evidencia")).toBeVisible();
+  await expect(historyDialog).toContainText(photoDescription);
+  const tabletHistoryWidths = await historyPage.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(tabletHistoryWidths.content).toBeLessThanOrEqual(tabletHistoryWidths.viewport);
   await historyPage.close();
   const persistedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
   expect(persistedVehicle.status()).toBe(200);

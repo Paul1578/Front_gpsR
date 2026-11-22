@@ -1218,3 +1218,16 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El segundo fallo estaba en “Gestión de Equipo”, dentro de su ciclo CRUD Driver: el `<main>` flex y los contenedores de Equipo/chofer no permitían encoger; el formulario medía 413 px en viewport 320 px. Se añadió `min-w-0` a los ancestros flex/grid y `w-full min-w-0` al formulario de edición.
 - Repetir lint/build, discovery y Action integrada; todavía no declarar estos dos escenarios validados.
 - Prevención: para diálogos reusados, seleccionar explícitamente cada modo antes de interactuar con campos específicos; un retry Playwright no garantiza estado de base limpio después de timeout si el test abandonó una mutación pendiente.
+
+## 2026-11-22 — Action Front 45062280254 detectó desborde del Mapa y evidencias de parada ausentes en resumen — CORRECCIÓN LOCAL; CI PENDIENTE
+
+- La tercera Action terminó 31/33. A 320 px, el contenido de `<main>` del mapa medía 363 px aunque el documento global no se desbordaba; el árbol flex del mapa/sidebar conservaba un ancho mínimo intrínseco. Se añadió `min-w-0` a los contenedores flex y panel lateral.
+- La foto y descripción se persistieron en `points[].evidence` de la API real, pero Historial sólo consultaba `route.evidencias` de nivel ruta. El detalle del historial no encontraba la evidencia al usar el endpoint actual. Se normalizan y aplanan evidencias desde los puntos al cargar la lista; el E2E ahora comprueba también el diálogo Admin a 768 px.
+- Las pruebas previas que ya pasan no sustituyen la Action nueva: repetir suite completa luego del commit.
+- Prevención: medir el `scrollWidth` de cada vista y `<main>`, no sólo del documento; seguir el contrato DTO real para evidencias por parada en listas y detalles.
+
+## 2026-11-22 — Contenido del mapa excedía `<main>` a 320 px — CORREGIDO; CI PENDIENTE
+
+- En `45062280254`, el documento global cabía pero `<main>` reportó 363 px al abrir mapa y seleccionar tracking. El contenedor vertical y su panel flex conservaban ancho mínimo intrínseco.
+- Fix: `min-w-0` en raíz, layout contenido, mapa y sidebar; Playwright revalida main/documento en 320 px.
+- `npm run lint`, `npm run build`, discovery de 33 y diff-check pasan con el SHA local. Integración completa pendiente.

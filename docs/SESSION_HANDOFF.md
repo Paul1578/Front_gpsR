@@ -721,3 +721,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Correcciones locales no publicadas: click explícito “Foto” en E2E; `min-w-0` en main/layout/Equipo/chofer y `w-full min-w-0` en form. `DriversManagement.tsx` también conserva su fix del caso móvil.
 - Backend `3f87af8` validado por Action `45061524504` (build/tests Release, tenant HTTP/MySQL, concurrencia/cleanup); documentación nueva `000dabc` registra evidencia. Branch frontend todavía requiere lint/build/discovery tras este parche y una Action nueva.
 - Sigue misión: no cerrar hasta validar los fixes y completar restantes CRUD/roles/responsive; móvil nativo aplazado, decisión de política Admin delegado pendiente, SMTP/infra productiva externos.
+
+## Continuación — mapa en 320 px e historial de evidencia real — 2026-11-22
+
+- Front Action `45062280254` falló 2/33 (31 pasaron): Mapa medía `main.scrollWidth=363` con viewport 320; el Historial no mostraba recuento de foto guardada porque leía `route.evidencias`, mientras la API devuelve evidencia en `points[].evidence`.
+- Frontend commit local: Mapa ahora limita anchos intrínsecos con `min-w-0`; Historial aplana evidencia real de cada parada y el E2E mide diálogo/foto/descrición Admin a 768 px. Lint, build, discovery de 33 pruebas y diff-check pasan; Action del nuevo SHA pendiente.
+- Backend commit `adcc286` publicado: validación de campos Vehicle y traducción de colisiones de placa CREATE/UPDATE a 409. Release local 103/103, build 0 warnings/0 errors; Action `45063399400` está en curso para smoke HTTP/MySQL.
+- Auditoría frontend read-only: pendientes para el siguiente lote son negativos de cambio rol/baja de Driver con ruta activa; cerrar ruta con parada sin evidencia; duplicate-email UI contra API real; historial Admin tablet. Consultar `docs/ERROR_LOG.md` y E2E actuales antes de implementarlos.
+- Las dos ramas permanecen separadas de `main`; no cerrar misión. SMTP/producción y app nativa delimitados, política Admin delegado sigue siendo decisión de producto pendiente.
+
+- Nueva corrección del lote: Mapa usa `min-w-0` en flex ancestors y paneles; Historial construye evidencia desde `RouteApiDto.points[].evidence` antes de pintar resumen/detalle. E2E mide diálogo Admin a 768×1024. Validación local final: lint/build, discovery 33, diff-check.

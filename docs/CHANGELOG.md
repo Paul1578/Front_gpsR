@@ -442,3 +442,8 @@
 
 - El test fotográfico selecciona ahora el modo Foto de forma explícita. Dashboard/Equipo limita el mínimo de ancho de ancestros flex y el formulario CRUD Driver ocupa el ancho disponible en móvil.
 - La traza de la falla, causa y prevención se registran en `docs/ERROR_LOG.md`; repetir CI antes de considerar verificado.
+
+## 2026-11-22 — Mapa y evidencia de parada en Historial
+
+- Se limitaron anchos mínimos en el layout flex del Mapa para evitar overflow interno en 320 px. Historial normaliza evidencia del contrato real `points[].evidence`, incluyendo foto y descripción.
+- E2E agrega comprobación de detalle Admin a 768 px. Causas de CI y prevención en `docs/ERROR_LOG.md`.
