@@ -73,6 +73,14 @@ Fecha de actualización: 2026-11-22.
 2. Configurar SMTP con credenciales vigentes; las credenciales DB/JWT locales ya fueron rotadas en backend. Validar cualquier entorno remoto por separado.
 3. Ampliar vistas/acciones responsive no cubiertas y mover fotos de JSON a almacenamiento de objetos antes de producción a escala. E2E frontend/API/MySQL ya pasó en Actions con fixtures efímeros.
 
+## Siguiente cobertura responsive — tracking del mapa tablet — 2026-11-22
+
+- Auditoría independiente identificó que el mapa a 768×1024 se abría sin verificar selección de ruta ni tracking.
+- Nuevo Playwright crea dos rutas reales mediante API/MySQL, registra GPS en una ruta iniciada, cambia la selección desde la lista, espera el GET de posiciones y verifica el marcador con viewport tablet y sin overflow en documento/`main`.
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**17 tests**) y `git diff --check` pasan localmente.
+- Front local `:3000` y API `:5048` no estaban disponibles (HTTP 000); no se creó fixture local. La ejecución y cleanup integrados en Actions están pendientes; no contar la cobertura como terminada hasta obtener el resultado.
+- SMTP real requiere credenciales externas; nativo móvil fue pospuesto por el usuario. Mantener misión activa y continuar con cobertura CRUD/responsive.
+
 ## Actualización de cierre E2E — 2026-11-21
 
 - Creación visual de ruta desde mapa móvil cubre origen, dos paradas con operaciones recogida y recogida+entrega, destino, asignación de recursos, orden persistido y borrado confirmado desde la UI. Suite Playwright Chrome/API/MySQL: 7/7.

@@ -292,3 +292,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - xUnit local 61/61. E2E móvil Admin crea Driver con documento existente pero email diferente; comprueba error y ausencia en GET `/Users/my-team`.
 - Front lint/build/discovery 16 pasan localmente. Publicar backend y frontend y verificar Actions con API/MySQL descartables; todavía no contar el flujo E2E.
 - Cerró el lote de documento duplicado Actions `44997054375`: Front `1bb7d71` contra Back `a7f7c4e`, xUnit 61/61, responsive 1/1, E2E 16/16, audit/lint/build y cleanup correctos. El siguiente trabajo sigue siendo ampliar CRUD, roles y responsive; la misión global continúa abierta.
+
+## Cobertura de selección y tracking en mapa tablet — 2026-11-22
+
+- Revisión independiente: Mapa se abría a 768×1024 y solo se comprobaba overflow; no había acción de selección ni prueba visual del tracking a ese ancho.
+- Añadí `Admin selecciona una ruta y consulta su tracking en el mapa tablet`: viewport 768×1024, dos rutas API, una en progreso con posición GPS persistida, selección alterna, GET de posiciones, marcador GPS y overflow de documento/`main`.
+- El test crea temporalmente un segundo Driver para cumplir las reglas de agenda, y en `finally` cancela/elimina rutas, restaura asignaciones y retira vehículos. El SQL cleanup del runner elimina el Driver/usuario por prefijo `fletflow.e2e.driver.*`.
+- Local: lint, build, discovery **17 tests** y `git diff --check` pasan. E2E autenticado local no ejecutable en esta sesión porque Front `:3000` y API `:5048` responden HTTP 000. El caso queda pendiente de Actions integrado.
+- Las rutas equivocadas de inspección se corrigieron y documentaron en `ERROR_LOG.md`. Próximo: commit/push de Front y validar Playwright + cleanup con backend feature antes de elegir otra brecha.

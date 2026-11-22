@@ -158,6 +158,200 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
 });
 
+test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async ({ page, request }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere cuenta Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta mapa ${suffix}`;
+  const secondRouteName = `E2E QA ruta mapa alterna ${suffix}`;
+  const secondDriverEmail = `fletflow.e2e.driver.map.${suffix}@example.test`;
+  let firstVehicleId: string | undefined;
+  let secondVehicleId: string | undefined;
+  let firstRouteId: string | undefined;
+  let secondRouteId: string | undefined;
+  let secondDriverId: string | undefined;
+  const originalDriverResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(originalDriverResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await originalDriverResponse.json()).vehicleId as string | null;
+
+  try {
+    const secondDriverResponse = await request.post("/api/backend/Users", {
+      headers,
+      data: {
+        username: `E2E QA Map ${suffix}`,
+        email: secondDriverEmail,
+        password: `MapQA-${randomUUID()}aA1!`,
+        roleName: "Driver",
+        firstName: "E2E QA Map",
+        lastName: suffix,
+        documentNumber: `E2EQA${suffix}`,
+        phoneNumber: "0990000000",
+      },
+    });
+    expect(secondDriverResponse.status()).toBe(200);
+    const secondDriver = await secondDriverResponse.json();
+    secondDriverId = secondDriver.driverId as string;
+    const activateUserResponse = await request.put(`/api/backend/Users/${secondDriver.id}/status?isActive=true`, { headers });
+    expect(activateUserResponse.status()).toBe(200);
+
+    const firstVehicleResponse = await request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Map tracking", year: 2025 },
+    });
+    expect(firstVehicleResponse.status()).toBe(201);
+    firstVehicleId = (await firstVehicleResponse.json()).id as string;
+    const secondVehicleResponse = await request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}B`, brand: "FleetFlow QA", model: "Map selection", year: 2025 },
+    });
+    expect(secondVehicleResponse.status()).toBe(201);
+    secondVehicleId = (await secondVehicleResponse.json()).id as string;
+
+    const firstRouteResponse = await request.post("/api/backend/Routes", {
+      headers,
+      data: {
+        name: routeName,
+        cargoDescription: "Tracking real para prueba responsive",
+        vehicleId: firstVehicleId,
+        driverId: driverIdFixture,
+        points: [
+          { lat: -0.18, lng: -78.46, name: "Origen tracking QA", operation: 0, status: 0 },
+          { lat: -0.2, lng: -78.48, name: "Destino tracking QA", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(firstRouteResponse.status()).toBe(201);
+    firstRouteId = (await firstRouteResponse.json()).id as string;
+    const startRouteResponse = await request.put(`/api/backend/Routes/${firstRouteId}/status`, {
+      headers,
+      data: { status: 1 },
+    });
+    expect(startRouteResponse.status()).toBe(204);
+    const positionResponse = await request.post(`/api/backend/Routes/${firstRouteId}/positions`, {
+      headers,
+      data: { latitude: -0.185, longitude: -78.465, recordedAt: new Date().toISOString(), speedKmh: 0, heading: 0 },
+    });
+    expect(positionResponse.status()).toBe(200);
+
+    const secondRouteResponse = await request.post("/api/backend/Routes", {
+      headers,
+      data: {
+        name: secondRouteName,
+        cargoDescription: "Ruta alterna de selección QA",
+        vehicleId: secondVehicleId,
+        driverId: secondDriverId,
+        points: [
+          { lat: -0.17, lng: -78.45, name: "Origen alterno QA", operation: 0, status: 0 },
+          { lat: -0.21, lng: -78.49, name: "Destino alterno QA", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(secondRouteResponse.status()).toBe(201);
+    secondRouteId = (await secondRouteResponse.json()).id as string;
+
+    // El snapping es una mejora visual opcional; el caso valida el mapa y el tracking de la API.
+    await page.route("https://router.project-osrm.org/**", async (route) => {
+      await route.fulfill({ status: 503, body: "OSRM indisponible durante la prueba" });
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+    const map = page.locator(".leaflet-container");
+    await expect(map).toBeVisible();
+    const routeList = page.locator("aside").filter({ hasText: "Rutas planificadas" });
+    const alternateRouteButton = routeList.getByRole("button").filter({ hasText: secondRouteName });
+    const trackingRouteButton = routeList.getByRole("button").filter({ hasText: routeName });
+    await expect(alternateRouteButton).toBeVisible();
+    await expect(trackingRouteButton).toBeVisible();
+    await alternateRouteButton.click();
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(secondRouteName);
+
+    const positionsRead = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${firstRouteId}/positions`) &&
+      response.request().method() === "GET",
+    );
+    await trackingRouteButton.click();
+    expect((await positionsRead).status()).toBe(200);
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(routeName);
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toBeVisible();
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.mainContent).toBeLessThanOrEqual(widths.main);
+  } finally {
+    const cleanupIssues: string[] = [];
+    for (const routeId of [secondRouteId, firstRouteId]) {
+      if (!routeId) continue;
+      try {
+        const currentRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers });
+        if (currentRoute.ok()) {
+          const status = (await currentRoute.json()).status;
+          if (status === 1 || status === "InProgress") {
+            const cancel = await request.put(`/api/backend/Routes/${routeId}/status`, { headers, data: { status: 3 } });
+            if (cancel.status() !== 204) cleanupIssues.push(`No se pudo cancelar ruta ${routeId}: HTTP ${cancel.status()}`);
+          }
+          const remove = await request.delete(`/api/backend/Routes/${routeId}`, { headers });
+          if (![200, 204, 404].includes(remove.status())) cleanupIssues.push(`No se pudo retirar ruta ${routeId}: HTTP ${remove.status()}`);
+        } else if (currentRoute.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar ruta ${routeId}: HTTP ${currentRoute.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de ruta ${routeId}: ${String(error)}`);
+      }
+    }
+    for (const [driverId, vehicleId, previousVehicleId] of [
+      [driverIdFixture!, firstVehicleId, originalDriverVehicleId],
+      [secondDriverId, secondVehicleId, null],
+    ] as Array<[string | undefined, string | undefined, string | null]>) {
+      if (!driverId || !vehicleId) continue;
+      try {
+        const driverResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers });
+        if (driverResponse.ok() && (await driverResponse.json()).vehicleId === vehicleId) {
+          const restore = previousVehicleId
+            ? await request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, { headers, data: { vehicleId: previousVehicleId } })
+            : await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers });
+          if (restore.status() !== 204) cleanupIssues.push(`No se pudo restaurar Driver ${driverId}: HTTP ${restore.status()}`);
+        } else if (!driverResponse.ok() && driverResponse.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar Driver ${driverId}: HTTP ${driverResponse.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de Driver ${driverId}: ${String(error)}`);
+      }
+    }
+    for (const vehicleId of [firstVehicleId, secondVehicleId]) {
+      if (!vehicleId) continue;
+      try {
+        const remove = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
+        if (![200, 204, 404].includes(remove.status())) cleanupIssues.push(`No se pudo retirar vehículo ${vehicleId}: HTTP ${remove.status()}`);
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de vehículo ${vehicleId}: ${String(error)}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup del mapa debe retirar rutas/vehículos y restaurar asignaciones").toEqual([]);
+  }
+});
+
 test("Admin crea, edita y elimina un vehículo desde la UI móvil", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 

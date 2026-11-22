@@ -623,3 +623,17 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Corrección: abrir `/home/leonardo/Back_GPS/scripts/run-e2e-local.sh` y `cleanup-e2e.sql` desde la raíz real del backend. La inspección confirma que trap ejecuta cleanup SQL al salir; Actions `44996497487` terminó todos los pasos y detuvo la API/MySQL.
 - Prevención: no inferir que el checkout hermano está montado dentro del repositorio frontend; usar la raíz absoluta registrada en AGENTS.md.
 - Actions `44997054375` corrigió la validación pendiente: 61/61 xUnit, responsive 1/1 y E2E 16/16; documento duplicado retorna 409 y GET del equipo confirmó ausencia de la cuenta. Job y cleanup finalizaron en success.
+
+## 2026-11-22 — Auditoría responsive con raíces/rutas equivocadas — CORREGIDO
+
+- Durante la revisión de tablet se asumieron rutas de Next (`app/dashboard/routes/history/page.tsx`) y carpetas `app/`/`components/` que no existen en este frontend; también se leyó `e2e/fleet-admin.spec.ts` y `fletflow/Application/...` desde el checkout Backend, aunque las rutas correctas están en Front y la capa backend se llama `Aplication`.
+- Los comandos devolvieron “No such file or directory” y no modificaron datos ni archivos. La inspección correcta confirmó `src/Components/fleet/RouteHistory.tsx`, `MapView.tsx`, `RoutesMapView.tsx` y `ProfileView.tsx`; backend `fletflow/Aplication/Fleet/Commands/CreateRouteCommand.cs`.
+- Corrección: comprobar la raíz y localizar primero con `rg --files` antes de leer rutas relativas. Se leyó además la guía local de Next 16 sobre interacciones y desarrollo antes de editar el E2E.
+- Prevención: mantener separadas las rutas de los repositorios hermano y no inferir la estructura App Router estándar a partir de que el proyecto use Next.
+
+## 2026-11-22 — E2E de tracking tablet pendiente de ejecución integrada — EN VALIDACIÓN
+
+- El inventario independiente encontró que la vista Mapa se abría a 768×1024 sin probar la selección de ruta ni el tracking.
+- Se añadió un E2E con dos rutas reales API/MySQL, selección alterna, GET de posiciones y marcador GPS visible; usa geometría OSRM como dependencia visual opcional fallable y mide overflow de documento y `main`.
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (17 tests) y `git diff --check` pasan. La ejecución local autenticada no pudo arrancar porque Front `:3000` y API `:5048` devuelven HTTP 000; no se crearon fixtures locales.
+- Debe ejecutarse en Actions integrada antes de contar el caso como cubierto. El runner final elimina rutas/vehículos por API y limpia el Driver adicional (`fletflow.e2e.driver.*`, documento/vehículo `E2EQA`) desde `cleanup-e2e.sql`.
