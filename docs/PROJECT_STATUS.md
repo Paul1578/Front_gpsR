@@ -14,7 +14,7 @@ Fecha de actualización: 2026-11-22.
 - Ejecución Driver conectada a estado y evidencia persistida por parada; fin de ruta valida estado y evidencia.
 - Mapa usa GPS real del navegador o posición guardada; se eliminó movimiento ficticio.
 - `npm run lint`, `npm run build` y `npm audit` correctos (0 vulnerabilidades reportadas); coordinadas ficticias y notificaciones de muestra retiradas.
-- Backend .NET 8 y suite actual correctos: 45/45; MySQL activo y migración tenant aplicada.
+- Backend .NET 8: último CI relacionado con Front pasó Release 57/57; MySQL y migración tenant se validan en instancia descartable del workflow.
 - E2E HTTP/MySQL probó ruta con recogida+entrega, evidencia, GPS y cierre; filas temporales borradas.
 - Chrome headless confirmó creación real de ruta en la UI (cuatro pasos): mapa con marcadores A/B/1, asignación de vehículo y conductor, revisión, guardado y lectura autenticada de los 3 puntos con operación `PickupAndDelivery` persistida.
 - Alta de Driver envía datos completos en una sola operación y muestra aviso si el servidor no pudo entregar correo.
@@ -50,9 +50,9 @@ Fecha de actualización: 2026-11-22.
 
 ## Pendiente
 
-1. Completar E2E visual de otras vistas y acciones restantes; Historial ya tiene prueba móvil de filtro/detalle, pero todavía no se cubre cada vista ni cada acción de equipo/rutas.
+1. Completar E2E visual de otras vistas/acciones CRUD; la suite actual tiene 15/15 en CI, pero no cubre cada vista ni cada acción de equipo/rutas.
 2. Configurar SMTP con credenciales vigentes; las credenciales DB/JWT locales ya fueron rotadas en backend. Validar cualquier entorno remoto por separado.
-3. Ejecutar en GitHub el E2E frontend+API/MySQL ahora integrado al workflow con fixtures efímeros; ampliar vistas/acciones responsive aún no cubiertas. Mover fotos de JSON a almacenamiento de objetos antes de producción a escala.
+3. Ampliar vistas/acciones responsive no cubiertas y mover fotos de JSON a almacenamiento de objetos antes de producción a escala. E2E frontend/API/MySQL ya pasó en Actions con fixtures efímeros.
 
 ## Actualización de cierre E2E — 2026-11-21
 

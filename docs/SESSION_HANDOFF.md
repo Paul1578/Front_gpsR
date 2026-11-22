@@ -46,10 +46,10 @@
 
 ## Pendiente para continuar
 
-1. Completar E2E visual CRUD y negativas de permisos restantes; smoke HTTP autenticado ya se ejecutó con fixture efímero, pero requiere credenciales QA persistentes para automatizarlo en CI.
+1. Completar E2E visual CRUD y negativas de permisos aún no cubiertas; matriz parcial User/Driver/Logistics/Manager ya pasó 15/15 en Actions, sin necesitar credenciales persistentes.
 2. Revisar vistas responsive restantes; constructor tablet y operación Driver móvil ya se verificaron en sesiones previas.
 3. Configurar SMTP vigente; para cualquier ambiente remoto verificar y rotar credenciales por separado.
-4. Automatizar E2E HTTP/MySQL en CI y mover fotos a object storage antes de escalar.
+4. E2E HTTP/MySQL ya está automatizado en CI; mover fotos a object storage antes de escalar.
 
 ## Errores QA documentados
 
