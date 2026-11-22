@@ -342,3 +342,9 @@
 - Se añadió estado de carga explícito en el contexto y Gestión de Vehículos, previo a los estados de error, lista vacía y resultados.
 - Playwright mantiene pendiente la respuesta inicial para comprobar que la vista no afirma que la flota está vacía; luego verifica 503, reintento y unidad recuperada a 320 px.
 - Pruebas locales: load-errors 5/5, lint, build, discovery Playwright 23 y diff-check pasan. Actions integrada del commit aún pendiente.
+
+## 2026-11-22 — Estado de carga para rutas
+
+- Gestión de Rutas diferencia carga pendiente, fallo de API, lista vacía confirmada y resultados; reintentar también comunica la carga.
+- Playwright prueba 503 → reintento con ruta recuperada en viewport 320 px.
+- Verificación local: test enfocado 1/1, spec de estados 6/6, lint/build y discovery 24 pasan. CI integrado pendiente.

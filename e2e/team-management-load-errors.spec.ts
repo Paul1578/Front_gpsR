@@ -223,6 +223,115 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("Gestión de Rutas muestra carga antes de error/vacío y recupera rutas al reintentar", async ({ page }) => {
+  let routesRequestFails = true;
+  let releaseInitialRoutesFailure: () => void = () => {};
+  let notifyInitialRoutesRequest: () => void = () => {};
+  const initialRoutesRequestStarted = new Promise<void>((resolve) => {
+    notifyInitialRoutesRequest = resolve;
+  });
+  const initialRoutesFailureGate = new Promise<void>((resolve) => {
+    releaseInitialRoutesFailure = resolve;
+  });
+  await page.setViewportSize({ width: 320, height: 844 });
+
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "routes-load-test-admin",
+          email: "admin@example.test",
+          username: "admin@example.test",
+          firstName: "Admin",
+          lastName: "QA",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
+      if (routesRequestFails) {
+        notifyInitialRoutesRequest();
+        await initialRoutesFailureGate;
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "route-load-fixture",
+            name: "QA-ROUTE-01",
+            vehicleId: "vehicle-route-fixture",
+            driverId: "driver-route-fixture",
+            points: [],
+            status: 0,
+            isActive: true,
+            createdAtUtc: "2026-11-22T12:00:00Z",
+          }]),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+
+  await expect(page.getByRole("status")).toHaveText("Cargando rutas…");
+  await expect(page.getByText("Aún no tienes rutas", { exact: true })).toHaveCount(0);
+  await initialRoutesRequestStarted;
+  releaseInitialRoutesFailure();
+
+  const routesAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" });
+  await expect(routesAlert).toBeVisible();
+  await expect(page.getByText("Aún no tienes rutas", { exact: true })).toHaveCount(0);
+
+  routesRequestFails = false;
+  const recoveredRoutes = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Routes") &&
+    response.status() === 200,
+  );
+  await routesAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredRoutes;
+  await expect(routesAlert).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "QA-ROUTE-01" })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;

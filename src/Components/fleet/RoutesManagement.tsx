@@ -51,7 +51,7 @@ const validPoint = (point: PickerPoint | null) =>
   !(Math.abs(point.lat) < 0.0001 && Math.abs(point.lng) < 0.0001);
 
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
-  const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, retryFleetData } = useFleet();
+  const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, routesLoading, retryFleetData } = useFleet();
   const drivers = routeAssignmentDrivers.map((driver) => ({
     driverKey: driver.id,
     nombres: driver.firstName,
@@ -400,7 +400,11 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
               <button type="button" onClick={clearRouteFilters} className="rounded-md px-2 py-1 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600">Limpiar filtros</button>
             </div>}
           </div>
-          {loadErrors.includes("rutas") && routes.length === 0 ? null : routes.length === 0 ? (
+          {routesLoading ? (
+            <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+              Cargando rutas…
+            </p>
+          ) : loadErrors.includes("rutas") && routes.length === 0 ? null : routes.length === 0 ? (
             <div className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
               <RouteIcon size={42} className="mb-4 text-slate-300" />
               <h2 className="font-semibold text-slate-800">

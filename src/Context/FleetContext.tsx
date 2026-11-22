@@ -127,6 +127,7 @@ interface FleetContextType {
   routeAssignmentDrivers: RouteAssignmentDriver[];
   loadErrors: string[];
   vehiclesLoading: boolean;
+  routesLoading: boolean;
   retryFleetData: () => Promise<void>;
 
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<ActionResult>;
@@ -598,6 +599,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [routeAssignmentVehicles, setRouteAssignmentVehicles] = useState<RouteAssignmentVehicle[]>([]);
   const [routeAssignmentDrivers, setRouteAssignmentDrivers] = useState<RouteAssignmentDriver[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [routesLoading, setRoutesLoading] = useState(false);
   const driversRequestSequence = useRef(0);
   const [fleetOwnerId, setFleetOwnerId] = useState<string | null>(null);
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
@@ -615,6 +617,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setRouteAssignmentDrivers([]);
     setLoadErrors([]);
     setVehiclesLoading(false);
+    setRoutesLoading(false);
     setFleetOwnerId(user?.id ?? null);
   }, [user?.id]);
 
@@ -843,13 +846,19 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadRoutes = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
-      if (user?.role === "usuario") return;
+      if (user?.role === "usuario") {
+        setRoutesLoading(false);
+        return;
+      }
+      setRoutesLoading(true);
       try {
         await refreshRoutes();
       } catch (error) {
         if (isAuthError(error)) return;
         setResourceError("rutas", true);
         console.error("Error cargando rutas desde API", error);
+      } finally {
+        setRoutesLoading(false);
       }
     };
 
@@ -896,7 +905,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       try { await refreshDrivers(); } catch { failures.push("conductores"); }
     }
     if (user?.role !== "usuario") {
+      setRoutesLoading(true);
       try { await refreshRoutes(); } catch { failures.push("rutas"); }
+      finally { setRoutesLoading(false); }
     }
     setLoadErrors(failures);
   };
@@ -1243,6 +1254,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         routeAssignmentDrivers: userOwnsLoadedData ? routeAssignmentDrivers : [],
         loadErrors: userOwnsLoadedData ? loadErrors : [],
         vehiclesLoading: userOwnsLoadedData && vehiclesLoading,
+        routesLoading: userOwnsLoadedData && routesLoading,
         retryFleetData,
         addVehicle,
         getInactiveVehicles,

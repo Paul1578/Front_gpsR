@@ -597,3 +597,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - No cambiar la concesión de rol Admin delegado hasta recibir respuesta de producto. SMTP actualizado y certificado/volumen de producción son dependencias externas; móvil nativo está pospuesto.
 
 - Actions Front `45039605708` pasó para `36f9bd8`: backend checks, audit/lint/build, responsive 1/1, E2E Chrome/API/MySQL 23/23 y cleanup. Incluye carga pendiente → error → retry en Gestión de Vehículos.
+
+## Continuación Front — carga inicial de rutas — 2026-11-22
+
+- En `refactor/route-builder`, `FleetContext` expone `routesLoading` y Gestión de Rutas muestra “Cargando rutas…” durante GET `/Routes` y al reintentar.
+- E2E bloquea la primera respuesta, verifica que no se anuncie “Aún no tienes rutas”, devuelve 503, reintenta, carga `QA-ROUTE-01` y confirma viewport 320 px.
+- Local: test enfocado de rutas 1/1; `team-management-load-errors.spec.ts` **6/6**; lint/build, discovery Playwright **24**, diff-check pasan. Actions integrado pendiente.
+- Backend `b664b2c` pasó Actions `45040550853` (xUnit 86/86, Release, HTTP/MySQL isolation, concurrencia y cleanup). El Front Actions `45040095930` pasó contra backend previo `d73a4d6`; la próxima corrida con este cambio debe descargar `a18a34f` (docs del código backend `b664b2c`).
+- Política Admin delegado sigue pendiente de producto; no modificar sin respuesta. Móvil nativo aplazado; SMTP/infra PFX externos.

@@ -434,3 +434,8 @@ Fecha de actualización: 2026-11-22.
 - Continúa abierta la auditoría integral: CRUD y matriz de roles/responsive por cerrar, política de promoción Admin delegada sin decisión de producto; SMTP real externo y móvil nativo aplazado por el usuario.
 
 - Actions `45039605708` pasó para Front `36f9bd8`: responsive 1/1, E2E Chrome/API/MySQL 23/23, backend checks, audit, lint, build y cleanup. La carga pendiente/error/reintento de Vehículos quedó validada integrada.
+
+## Estado de carga en Gestión de Rutas — 2026-11-22
+
+- Añadido estado accesible para la petición inicial y los reintentos; no se muestra lista vacía hasta una respuesta exitosa del backend.
+- Playwright local 6/6 del spec de carga/error, test enfocado 1/1, lint/build y discovery 24 pasan. Actions integrado pendiente.

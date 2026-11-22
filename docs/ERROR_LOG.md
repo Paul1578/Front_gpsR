@@ -1067,3 +1067,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Actions `45039605708` validó Front `36f9bd8`: backend Release/xUnit y smokes, audit de dependencias, lint/build, responsive **1/1**, E2E autenticado Chrome/API/MySQL **23/23** y cleanup success.
 - Incluye el nuevo E2E de carga pendiente → 503 → retry → datos visibles a 320 px.
+
+## 2026-11-22 — Gestión de Rutas mostraba lista vacía durante carga — CORREGIDO; CI PENDIENTE
+
+- Hallazgo: antes de que terminara GET `/Routes`, la pantalla podía enseñar “Aún no tienes rutas”. Un retraso o fallo de API se confundía con flota logística vacía.
+- Solución: `FleetContext` expone `routesLoading`; la vista muestra “Cargando rutas…” y reserva el estado vacío para una respuesta exitosa sin rutas. El reintento también activa el estado de carga.
+- Nuevo Playwright retiene el GET inicial, verifica carga y ausencia de vacío, libera 503, comprueba alerta, reintenta con 200 y ve `QA-ROUTE-01`; viewport 320 px sin overflow.
+- Validación local: spec completo de carga/error **6/6**, test enfocado de rutas 1/1, lint/build, discovery **24** y diff-check pasan. Actions integrado pendiente.
