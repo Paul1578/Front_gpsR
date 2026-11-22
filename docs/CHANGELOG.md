@@ -363,4 +363,4 @@
 # 2026-11-22 — Mi Ruta: responsive tablet
 
 - El E2E de Driver ahora mide la vista inicial/acción y el diálogo de evidencia a 768×1024 además de 320×844; comprueba overflow del documento y área principal y confirma que el estado final se mantiene en tablet.
-- Lint/build/discovery 26 pasan localmente. El E2E autenticado se omite sin fixture local; Actions integrated previo `45043342482` pasó 26/26 y no incluye este test actualizado.
+- Lint/build/discovery 26 pasan localmente. El E2E autenticado se omite sin fixture local; Actions `45043898907` validó este cambio: E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup.

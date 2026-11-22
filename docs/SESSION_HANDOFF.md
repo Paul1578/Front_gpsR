@@ -633,3 +633,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - La auditoría encontró y corrigió el conteo obsoleto “21 pruebas” en el encabezado de `PROJECT_STATUS.md` (suite actual 26). También registró una búsqueda `rg` con rutas/capitalización equivocadas; resuelta usando `src/Components/fleet`.
 - Action `45043342482` pasó en docs SHA `9793aa5` (código `c6441b6`): 26/26 E2E y responsive 1/1, pero antecede a este cambio y no lo valida.
 - Próximo: diff-check, commit/push de la prueba/documentación, seguir Actions exacto; si falla, corregir y repetir. Después continuar con áreas CRUD/responsive restantes.
+
+
+## Continuación — cobertura tablet Driver y consistencia de rutas — 2026-11-22
+
+- Front `0dd5099` cubre Mi Ruta a 320/768 px; Actions `45043898907` pasó E2E 26/26, responsive 1/1, backend Release, audit/lint/build y cleanup. El bypass local de fixture Driver quedó compensado por CI con API/MySQL real descartable.
+- Auditoría backend encontró que se podía iniciar una ruta de Driver cuyo usuario vinculado estaba inactivo, dejando vehículo `OnRoute`; también se podía desactivar la cuenta durante ruta `InProgress`. Backend `190f284` bloquea ambas operaciones bajo locks transaccionales y comprueba que no haya mutaciones indebidas. Release xUnit 88/88 y Actions `45045070288` pasó smoke tenant/flota, concurrencia y cleanup.
+- Docs backend `e24e371` tiene Actions `45045329470` en curso al último chequeo. Debe completarse además una corrida Front integrada con el backend `190f284` (rama backend se resuelve al HEAD publicado).
+- Documentación del hallazgo y prevención en Front `ERROR_LOG.md`; la cuenta de prueba local se dejó intacta. Misión abierta: seguir cubriendo CRUD, permisos/roles y responsive; móvil nativo aplazado; SMTP y aprovisionamiento productivo externos.

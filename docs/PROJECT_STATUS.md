@@ -453,8 +453,8 @@ Fecha de actualización: 2026-11-22.
 - El commit previo Front `5bc0bff` también pasó Actions `45041860522` con 24/24 E2E.
 - Misión integral abierta. Faltan ciclos CRUD/responsive que se cubrirán progresivamente, decisión de política para Admin delegado, SMTP actualizado/infraestructura de certificado. Móvil nativo está aplazado por decisión del usuario.
 
-## Mi Ruta de Driver — cobertura tablet añadida localmente
+## Mi Ruta de Driver — cobertura tablet validada por Actions
 
 - El E2E autenticado existente probaba navegación, GPS, inicio/fin de parada y evidencia sólo a 320×844. Ahora comprueba vista inicial y acción en 768×1024, límites/controles del diálogo de evidencia a 320 y 768 px, vuelta a 320 y estado final a 768 px; mide overflow de documento y `<main>`.
-- `npm run lint`, `npm run build`, discovery Playwright **26** y diff-check pasan localmente. La prueba de API/MySQL se omitió en local porque no hay fixture QA; Actions integrado debe ejecutarla en el entorno descartable.
-- Actions `45043342482` pasó para el commit de documentación `9793aa5` (código `c6441b6`): E2E **26/26**, responsive 1/1, backend Release, audit/lint/build y cleanup. No incluye aún esta ampliación responsive.
+- `npm run lint`, `npm run build`, discovery Playwright **26** y diff-check pasan localmente. La prueba de API/MySQL se omitió en local porque no hay fixture QA; Actions `45043898907` la ejecutó con datos descartables y cleanup correcto.
+- Actions `45043898907` pasó para Front `0dd5099`: E2E **26/26**, responsive 1/1, backend Release, audit/lint/build y cleanup. Validó el recorrido ampliado de Driver a 320/768 px. Backend usado: `a18a34f`. El fix backend `190f284` pasó por separado en `45045070288` (xUnit **88/88**, smoke tenant/flota, concurrencia de rutas y cleanup). La siguiente validación debe cruzar ambos commits.

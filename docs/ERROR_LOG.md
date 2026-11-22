@@ -1101,3 +1101,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La primera corrida de regresión falló porque `getByLabel("Contraseña")` seleccionaba también el botón “Mostrar contraseña”; selector cambiado a role textbox. ESLint detectó dos dependencias del hook; corregidas. Repetición enfocada pasó; lint/build/discovery **25**/diff-check pasan.
 - Actions `45040955335` ya pasó para el código anterior de `98f7c67`: E2E **24/24**, responsive, lint/build/audit y Backend `a18a34f`. El fix de aislamiento de cuenta aún requiere una nueva Action integrada.
 - Intento inicial de subagente adicional chocó con el límite de threads abiertos. Se cerró el agente backend ya completado y se lanzó la auditoría con éxito; sin cambio de código por ese error.
+
+
+## 2026-11-22 — Falta de cobertura tablet en Mi Ruta — CORREGIDO Y VALIDADO
+
+- Hallazgo de auditoría: Driver tenía E2E de GPS/parada/evidencia en móvil estrecho, pero no verificaba el viewport tablet de 768 px.
+- Solución: el E2E ahora valida vista y acción iniciales, ausencia de overflow, límites y controles del diálogo de evidencia en 320/768 px, y estado final a 768 px.
+- No se ejecutó localmente por ausencia de fixture/credenciales Driver QA; CI sí ejecuta el flujo con API/MySQL descartables. Actions `45043898907` pasó el commit `0dd5099`: E2E 26/26, responsive 1/1, build/audit y cleanup.
+- Prevención: la matriz responsive debe cubrir cada rol operativo y las acciones principales, no sólo la navegación y las pantallas administrativas.
