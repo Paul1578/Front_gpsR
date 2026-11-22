@@ -316,3 +316,9 @@
 
 - Actions `45030366554` validó Front `505d6c3` con Backend `43c074d`: xUnit 80/80, audit/lint/build, responsive 1/1, E2E API/MySQL 20/20 y cleanup.
 - Las nuevas pruebas backend verifican que Driver no acceda a ruta de otro Driver del mismo tenant y que EmailOutbox descifre/entregue o pase a dead-letter correctamente.
+
+## 2026-11-22 — Dashboard Logistics: error y recuperación
+
+- Añadida cobertura E2E del 503 y recuperación de `Routes/assignment-options`, cifra no disponible, alerta y conteo recuperado.
+- El caso confirma que Logistics no solicita GET `/Vehicles` y que el dashboard no desborda a 390 px.
+- Validación local: lint/build, discovery 22, E2E enfocado 1/1 y diff-check correctos; CI integrado pendiente.

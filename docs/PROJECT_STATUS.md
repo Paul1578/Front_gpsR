@@ -409,3 +409,10 @@ Fecha de actualización: 2026-11-22.
 - El Backend `43c074d` pasó además Actions `45030208849`: smoke HTTP/MySQL tenant y Driver del mismo tenant, autorización, rutas/concurrencia y limpieza sin fixtures QA.
 - Outbox quedó automatizado en SQLite para entrega/descifrado y dead-letter al intento 12. SMTP real requiere credenciales externas; nativo móvil sigue pospuesto por el usuario.
 - La misión sigue abierta: completar vistas/acciones CRUD y responsive aún no cubiertas y resolver la política de promoción Admin delegado. No declarar la auditoría integral completa.
+
+## Actualización 2026-11-22 — error/reintento del dashboard Logistics
+
+- Dashboard Logística: caso E2E local cubre caída 503 de assignment-options, cifra `—`, alerta, botón Reintentar y recuperación con conteo real del fixture de prueba. Comprueba que no se consulte el endpoint administrativo `/Vehicles` y que no haya overflow a 390 px.
+- Lint/build/discovery 22 y caso enfocado 1/1 pasan localmente; Actions integrado pendiente.
+- En Backend, CRUD de Driver para Manager y pruebas de aislamiento multiempresa quedaron validadas por Actions `45036129217` sobre SHA `54c1bba`; xUnit y smokes HTTP/MySQL/concurrencia pasaron.
+- Pendiente global: continuar con acciones CRUD/responsive no cubiertas; decisión de producto para Admin delegado; credenciales SMTP vigentes. Móvil nativo sigue aplazado por el usuario.

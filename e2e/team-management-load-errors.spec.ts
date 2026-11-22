@@ -1,5 +1,110 @@
 import { expect, test } from "@playwright/test";
 
+test("Dashboard de Logistics muestra error de opciones de flota y recupera al reintentar", async ({ page }) => {
+  let assignmentOptionsFail = true;
+  let forbiddenVehicleListRequests = 0;
+  let successfulAssignmentOptionsRequests = 0;
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "logistics-dashboard-test",
+          email: "logistics@example.test",
+          username: "logistics@example.test",
+          firstName: "Logistics",
+          lastName: "QA",
+          roles: ["Logistics"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      if (assignmentOptionsFail) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+        });
+      } else {
+        successfulAssignmentOptionsRequests += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            vehicles: [{ id: "vehicle-logistics-1", plate: "GYA-1234", brand: "Fleet", model: "Van", year: 2025, status: 1 }],
+            drivers: [],
+          }),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname === "/api/backend/Vehicles") {
+      forbiddenVehicleListRequests += 1;
+      await route.fulfill({ status: 403, contentType: "application/json", body: "{}" });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (["/Users/my-team", "/Drivers"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 403, contentType: "application/json", body: "{}" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+
+  const availableVehiclesStat = page
+    .getByText("Vehículos Disponibles", { exact: true })
+    .locator("xpath=..");
+  await expect(availableVehiclesStat.locator("p").nth(1)).toHaveText("—");
+  const fleetAlert = page.getByRole("alert").filter({ hasText: "opciones de asignación" });
+  await expect(fleetAlert).toContainText("Las cifras marcadas con — no están disponibles");
+  await expect(page.getByText("No hay vehículos disponibles")).toHaveCount(0);
+
+  assignmentOptionsFail = false;
+  const recoveredOptions = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname.endsWith("/Routes/assignment-options") &&
+    response.status() === 200,
+  );
+  await fleetAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredOptions;
+  await expect(fleetAlert).toHaveCount(0);
+  await expect(availableVehiclesStat.locator("p").nth(1)).toHaveText("1");
+  expect(successfulAssignmentOptionsRequests).toBeGreaterThan(0);
+  expect(forbiddenVehicleListRequests).toBe(0);
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;

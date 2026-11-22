@@ -274,3 +274,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Actions `45030366554` success: backend Release/xUnit **80/80**, npm audit, lint, build, responsive browser **1/1** y Playwright autenticado Chrome/API/MySQL **20/20**.
 - Runner ejecutó cleanup de la DB MySQL efímera; backend descargado `43c074d`. El backend ya había pasado su propio HTTP/MySQL smoke `45029798323` y el worker outbox está cubierto por SQLite.
+
+## Dashboard Logistics: error y reintento de flota
+
+- Nuevo caso de Playwright valida el endpoint autorizado `/Routes/assignment-options`: un 503 se representa con `—` y alerta (sin confundirlo con cero vehículos); tras Reintentar, el endpoint devuelve un vehículo y el dashboard presenta `1`.
+- El test verifica además que el navegador no use GET `/Vehicles` para el rol Logistics y mide overflow a 390×844.
+- Verificación local: caso enfocado **1/1**, `npm run lint`, `npm run build`, discovery **22 tests** y `git diff --check` correctos.
+- E2E integrado con API/MySQL descartable pendiente en Actions para el SHA que incluye esta prueba.

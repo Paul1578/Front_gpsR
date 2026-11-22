@@ -547,3 +547,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Segundo intento alcanzó responsive pero el cleanup llamó DELETE Driver (405); controlador sólo ofrece baja lógica PUT status. Fixture pasó a prefijos que cubre cleanup-e2e.sql, cleanup usa baja lógica. Runner path correcto está en Back_GPS/scripts/run-e2e-local.sh.
 - Validación: lint/build/discovery 20; runner Chrome/API/MySQL local final **20/20**. Docker DB descartable y DataProtection key dir removidos. Actions Front previo 45027026835 fue success pero usó Front 82941b8 antes de estos tests y por tanto no valida el lote; publicar y revisar Actions nuevo.
 - Próximo: push lote Front y documentación backend del Actions 45027017954; verificar nuevo CI integrado Front y backend. Continuar auditoría de brechas pendientes.
+
+## 2026-11-22 — siguiente corte
+
+- Ramas: Front `refactor/route-builder`; Back `chore/stabilize-fleet-platform`, ambas sin cambios en `main`.
+- Backend `54c1bba` quedó validado por Actions `45036129217`: CRUD Manager Driver, aislamiento y smokes MySQL; árbol limpio.
+- Front añadió E2E de error/reintento del dashboard Logistics: 503 → alerta y `—` → retry → 1 vehículo; verifica no GET `/Vehicles` y responsive a 390 px. Local: test enfocado 1/1, lint/build, discovery 22 y diff-check pasan.
+- Actions Front `45036249291` valida HEAD `4e3ddc8` y seguía ejecutando E2E cuando se empezó este cambio. No cubre el caso nuevo porque aún no está publicado; consultar run antes de publicar el nuevo commit.
+- Próximo: publicar el caso nuevo después de confirmar resultado del run previo; ejecutar Actions integrado y documentar resultado. Seguir auditando CRUD/roles/responsive; no cerrar misión.
+- Límites actuales: móvil nativo diferido por decisión del usuario; SMTP real requiere credenciales actualizadas; la política de Admin delegado necesita decisión de producto.

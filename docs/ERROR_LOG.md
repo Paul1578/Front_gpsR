@@ -1011,3 +1011,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Error: la actualización de evidencia de Actions agregó una línea vacía al final de `docs/TESTING.md`; `git diff --check` impidió el commit documental.
 - Solución: quitar el espacio final y repetir diff-check antes de publicar.
+
+## 2026-11-22 — Dashboard de Logistics no tenía E2E de error y recuperación de flota — CORREGIDO; CI PENDIENTE
+
+- Brecha de cobertura: el dashboard ya usa `Routes/assignment-options` y marca la cifra con `—` cuando falla, pero sólo se había probado el caso exitoso.
+- Solución de cobertura: nuevo Playwright provoca 503, verifica alerta, cifra no disponible y ausencia de estado vacío; luego reintenta con una respuesta que contiene un vehículo y exige que aparezca la cifra 1.
+- El caso también comprueba que Logistics no solicite GET `/Vehicles` y que la página no desborde a 390×844.
+- Ejecución local: caso enfocado **1/1**; lint, build, discovery **22** y `git diff --check` correctos. Actions integrada aún pendiente para el commit de esta prueba.
+- Prevención: para cada recurso restringido, comprobar estados error/recuperación y la fuente autorizada de datos, además del resultado normal.
