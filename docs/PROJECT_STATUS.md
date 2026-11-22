@@ -1,12 +1,13 @@
 # Estado actual — 2026-11-22
 
 - Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
-- Último pase remoto previo a este lote: Front `1a893c9` Action `45055100816` pasó 33/33. La validación local actual ya cubre cambios todavía no integrados.
+- Front `50bf9d0` Action [`45058535602`](https://github.com/Paul1578/Front_gpsR/actions/runs/45058535602) pasó: backend Release/xUnit, audit, lint/build, responsive **1/1**, E2E integrado **33/33**, cleanup.
+- Backend `22c2fb6` Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) pasó: build/test, tenant HTTP/MySQL, concurrencia y cleanup.
 - `FleetContext` ahora carga opciones de ruta para Manager. El E2E crea/persiste una ruta Manager, comprueba edición/cancelación móvil y creación de cuentas/responsive a 320/768 px.
 - Validación local: lint/build correctos, `npm audit` 0 vulnerabilidades, 33 pruebas descubiertas y E2E autenticado API/MySQL efímero **33/33** con cleanup.
 - Los fallos intermedios y su solución están documentados en `docs/ERROR_LOG.md`.
 - Pendientes globales: CRUD/roles/responsive de otras superficies; definir si Admin delegado puede asignar Admin; app nativa aplazada por el usuario. SMTP real, PFX/keys y despliegue productivo dependen de configuración externa.
-- Actions remotas para este lote y revisión restante siguen pendientes; la misión no está completa.
+- Acciones remotas sobre estos commits están verdes. Pendiente ampliar CRUD/roles/responsive de otras superficies; la misión global no está completa.
 
 # Estado actual — 2026-11-22
 

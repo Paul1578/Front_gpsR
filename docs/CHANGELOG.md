@@ -5,6 +5,7 @@
 - Alta Manager/Logistics probada a 320/768 px; edición/estado de User a 320 px.
 - Etiqueta accesible de salida distingue edición de creación; runner E2E acepta args Playwright.
 - Local: 33/33 E2E, lint/build/audit correctos. Incidencias y resoluciones en `ERROR_LOG.md`.
+- Action `45058535602` sobre `50bf9d0` pasó responsive 1/1, E2E 33/33, backend Release/xUnit, audit/lint/build y cleanup.
 
 ## 2026-11-22 — Constructor de rutas sin ubicaciones ficticias
 

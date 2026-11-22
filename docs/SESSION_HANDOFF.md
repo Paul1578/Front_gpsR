@@ -3,10 +3,11 @@
 - Ramas Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` intacta.
 - Front carga opciones de ruta para `manager`; E2E crea/persiste una ruta Manager con parada Delivery, edita/cancela en móvil y abre el constructor a 768 px. Alta Manager/Logistics comprobada a 320/768; ciclo de User editado y activación a 320.
 - UX: control de salida de edición anuncia “Cancelar edición”. El runner backend acepta args Playwright, por ejemplo `bash scripts/run-e2e-local.sh --grep 'texto'`.
-- Front validado local: lint/build, audit 0 vulnerabilidades, E2E autenticado **33/33**, cleanup MySQL correcto.
+- Front validado local y en Action [`45058535602`](https://github.com/Paul1578/Front_gpsR/actions/runs/45058535602): lint/build, audit 0 vulnerabilidades, responsive **1/1**, E2E autenticado **33/33**, cleanup MySQL correcto.
 - Backend `/Auth/logout` valida la propiedad del refresh token; dos regresiones xUnit. Release build limpio, xUnit **99/99**, smoke tenant HTTP/MySQL y concurrencia exit 0 con cleanup.
 - Los errores intermedios y sus soluciones están en `docs/ERROR_LOG.md` de ambos repos.
-- Pendiente: commit/push y Actions en ambas ramas; después continuar la matriz CRUD/roles/responsive. Admin delegado requiere decisión de política; SMTP/PFX/infra productiva son externos y nativo móvil está aplazado.
+- Backend Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) también pasó build/tests, smoke HTTP tenant y concurrencia, cleanup. Commits Front `50bf9d0` y Backend `22c2fb6` están publicados en sus ramas.
+- Siguiente: continuar la matriz CRUD/roles/responsive. Admin delegado requiere decisión de política; SMTP/PFX/infra productiva son externos y nativo móvil está aplazado.
 
 ## Session handoff — Constructor de rutas y CRUD Driver responsive — 2026-11-22
 

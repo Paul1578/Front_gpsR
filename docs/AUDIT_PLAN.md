@@ -39,6 +39,13 @@ El trabajo se realiza en ramas separadas de `main`:
 
 El usuario aclaró que la app móvil nativa queda para después. Esta fase requiere web responsive en escritorio/tablet/móvil. El stack real del repositorio es Next.js 16 + React 19, no React Native/React Native Web; no se hará una migración de stack durante este refactor.
 
+## Actualización integrada — 2026-11-22
+
+- Front `50bf9d0` Action `45058535602`: audit/lint/build, responsive **1/1**, backend Release/xUnit, Playwright API/MySQL **33/33** y cleanup pasaron.
+- Backend `22c2fb6` Action `45058536309`: Release build/xUnit, aislamiento tenant HTTP/MySQL, concurrencia y cleanup pasaron. Localmente xUnit **99/99** y smokes tenant/concurrency exit 0.
+- Cerrados este pase: Manager crea desde UI una ruta multi-punto con Delivery y la persiste; constructor móvil 320/tablet 768; alta Manager/Logistics responsive; edición/estado User a 320; logout no revoca refresh ajeno.
+- Continúan abiertos otros recorridos CRUD/roles/responsive, Super Admin y privilegio de Admin delegado sin política acordada, y preparación de despliegue. No declarar completa la misión.
+
 ## Misión completa
 
 El texto completo quedó disponible el 2026-11-21. Incluye arquitectura, seguridad, aislamiento tenant, CRUD, responsive, E2E y documentación. SMTP real es la limitación funcional externa acordada; las tareas de pruebas y preparación para producción pendientes quedan listadas abajo.

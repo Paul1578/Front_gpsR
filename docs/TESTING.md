@@ -23,6 +23,7 @@
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npx playwright test --list` (**33**) y `git diff --check`: correctos.
 - Runner `scripts/run-e2e-local.sh` contra API y MySQL 8 efímero: **33/33** Chrome/API/MySQL; incluye creación Manager de ruta con punto Delivery, persistencia, edición/cancelación, alta Manager/Logistics en 320/768 px y ciclo User a 320 px. Cleanup final sin residuos.
 - E2E Manager aislado pasó **1/1** antes de la suite completa.
+- Action `45058535602` sobre Front `50bf9d0` pasó audit, lint/build, responsive **1/1**, Release/xUnit del Backend, E2E integrado **33/33** y cleanup.
 - La primera corrida integrada fue 32/33. Se corrigieron guardas de rol, fixture Driver no asignable, selector Editar, aria-label de edición y prefijo del cleanup SQL; el primer cleanup falló por FK en el contenedor descartable, que se eliminó completamente. El siguiente pase focal y el suite final pasaron.
 
 # Pruebas frontend
