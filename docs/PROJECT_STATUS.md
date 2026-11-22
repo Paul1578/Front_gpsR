@@ -128,3 +128,9 @@ Fecha de actualización: 2026-11-21.
 - GitHub Actions frontend run `44982243409` finalizó `success` para `6e37c4d`; Actions backend run `44982244087` también pasó para `4cf62a3`.
 - Frontend local: lint, build, audit de producción y Playwright autenticado Chrome/API/MySQL 14/14 aprobados. Backend: suite Release 54/54 tras agregar pruebas de recovery.
 - La misión sigue abierta: ampliar pantallas y operaciones CRUD/responsive aún no cubiertas; SMTP requiere configuración externa. Móvil nativo pospuesto por decisión del usuario.
+
+## Ampliación de lifecycle del equipo — 2026-11-21
+
+- Playwright ahora crea un usuario `User` desde Gestión de Equipo, cambia su estado a inactivo/reactivado desde UI y comprueba ambas escrituras vía `/Users/my-team`.
+- `npm run lint`, `npm run build` y `git diff --check` pasaron localmente. CI integrado ejecutará este caso contra Chrome/API/MySQL desechables tras publicar el commit.
+- Misión activa; queda recorrer otras pantallas y estados responsive no cubiertos.

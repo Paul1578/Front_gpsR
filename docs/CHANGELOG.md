@@ -80,3 +80,7 @@
 
 - GitHub Actions frontend y backend pasaron para las ramas feature publicadas (`44982243409`, `44982244087`).
 - E2E frontend local contra Chrome/API/MySQL: 14/14; lint, build y audit npm correctos.
+
+## 2026-11-21 — Cobertura de estado de usuarios
+
+- E2E de equipo añade desactivación/reactivación visual de usuario con verificación de persistencia API.

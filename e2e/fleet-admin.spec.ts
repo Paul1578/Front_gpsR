@@ -984,12 +984,34 @@ test("Admin crea un Driver desde Equipo y gestiona edición, baja y reactivació
   await userDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
   const createRegularUserResponse = await createRegularUserResponsePromise;
   expect(createRegularUserResponse.status()).toBe(200);
-  expect((await createRegularUserResponse.json()).role).toBe("User");
+  const createdRegularUser = await createRegularUserResponse.json();
+  expect(createdRegularUser.role).toBe("User");
   const teamUsersAfterCreate = await page.request.get("/api/backend/Users/my-team", { headers });
   expect(teamUsersAfterCreate.status()).toBe(200);
   expect((await teamUsersAfterCreate.json()).some((member: { email: string; roles: string[] }) =>
     member.email === regularUserEmail && member.roles.includes("User"),
   )).toBe(true);
+
+  const regularUserCard = page
+    .getByRole("heading", { name: `user${suffix}`, exact: true })
+    .locator("xpath=../../../..");
+  const deactivateRegularUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await regularUserCard.getByRole("button", { name: "Activo", exact: true }).click();
+  expect((await deactivateRegularUserPromise).status()).toBe(200);
+  const inactiveRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect((await inactiveRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(false);
+
+  const reactivateRegularUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await regularUserCard.getByRole("button", { name: "Inactivo", exact: true }).click();
+  expect((await reactivateRegularUserPromise).status()).toBe(200);
+  const activeRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect((await activeRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(true);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

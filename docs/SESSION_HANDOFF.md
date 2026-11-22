@@ -175,3 +175,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `refactor/route-builder` SHA `6e37c4d`: Actions run `44982243409` success. Backend hermano `chore/stabilize-fleet-platform` SHA `4cf62a3`: run `44982244087` success.
 - Pruebas locales frontend: lint/build/npm audit sin hallazgos y Playwright autenticado 14/14 contra API/MySQL. Backend incorporó tests de recuperación/activación: suite 54/54.
 - Siguiente: continuar cobertura restante de CRUD y responsive. No cerrar misión; SMTP externo pendiente, nativo móvil aplazado.
+
+## Próximo caso E2E — estado de usuario — 2026-11-21
+
+- `e2e/fleet-admin.spec.ts` extendido para activar y desactivar desde UI una cuenta con rol User, verificando persistencia en API. Se suma a la prueba de creación ya existente.
+- Lint/build y diff check locales pasaron; falta publicar y esperar Actions de este cambio. Runner integrado usa Chrome, backend y MySQL efímeros.

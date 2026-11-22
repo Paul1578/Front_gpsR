@@ -121,3 +121,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Frontend Actions run `44982243409` completado `success` en SHA `6e37c4d`; incluye checks publicados y E2E integrado.
 - Backend Actions run `44982244087` completado `success` en SHA `4cf62a3`; suite local posterior ampliada a 54/54 con recovery/activación.
 - Localmente frontend lint/build/audit y Playwright autenticado Chrome/API/MySQL 14/14 pasaron.
+
+## Estado de usuario en equipo — 2026-11-21
+
+- El E2E de Gestión de Equipo ahora crea una cuenta `User`, la desactiva y reactiva desde botones de UI, y comprueba el estado persistido usando `GET /Users/my-team` después de cada operación.
+- Validación previa a CI: lint, build y `git diff --check` completados correctamente; Actions pendiente para el SHA siguiente.
