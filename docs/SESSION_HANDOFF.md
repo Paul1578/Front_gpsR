@@ -184,3 +184,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Confirmado después del push: Actions `44982723150` success en `96caf15`, incluidos el E2E de activar/desactivar User y la integración Chrome/API/MySQL. Próximo lote puede empezar sobre `refactor/route-builder` limpio.
 
 - Último E2E remoto: `44983346765` success para `2eb0102`, contra backend `cff33c6`; 14/14 Playwright, responsive 1/1, lint/build/audit verdes. Branch `refactor/route-builder` queda limpia.
+
+- Último CI frontend `44983694110` success en `0236c49`, E2E 14/14 y responsive 1/1; el backend de esa corrida ya incluía `TokenVersion` y los 56 xUnit quedaron verdes en su propio run `44983763612`.
