@@ -582,9 +582,11 @@ test("Admin crea una ruta desde el mapa móvil y la elimina con confirmación", 
   }
 });
 
-test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", async ({ page }) => {
+test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", async ({ page, request }) => {
   test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(email!);
@@ -602,7 +604,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   const routeName = `E2E QA tablet ${suffix}`;
   let vehicleId: string | undefined;
   let routeId: string | undefined;
-  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
   expect(driverBeforeResponse.status()).toBe(200);
   const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
 
@@ -618,7 +620,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   };
 
   try {
-    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+    const vehicleResponse = await request.post("/api/backend/Vehicles", {
       headers,
       data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tablet route", year: 2025 },
     });
@@ -668,7 +670,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
     expect(createResponse.status()).toBe(201);
     routeId = (await createResponse.json()).id as string;
 
-    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    const persistedResponse = await request.get(`/api/backend/Routes/${routeId}`, { headers });
     expect(persistedResponse.status()).toBe(200);
     const persistedRoute = await persistedResponse.json();
     expect(persistedRoute.name).toBe(routeName);
@@ -683,25 +685,25 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   } finally {
     const cleanupIssues: string[] = [];
     if (routeId) {
-      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      const cleanupRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
       if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
         cleanupIssues.push(`No se pudo retirar la ruta tablet temporal: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
       }
     }
     if (vehicleId) {
-      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      const currentDriverResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
       if (currentDriverResponse?.status() === 200) {
         const currentVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
         if (currentVehicleId === vehicleId) {
           const restoreAssignment = originalDriverVehicleId
-            ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers, data: { vehicleId: originalDriverVehicleId } })
-            : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+            ? await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers, data: { vehicleId: originalDriverVehicleId } })
+            : await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
           if (restoreAssignment.status() !== 204) cleanupIssues.push(`No se pudo restaurar el vehículo anterior del Driver: HTTP ${restoreAssignment.status()}`);
         }
       } else {
         cleanupIssues.push(`No se pudo verificar la asignación del Driver: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
       }
-      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
       if (!cleanupVehicle || ![200, 204, 404].includes(cleanupVehicle.status())) {
         cleanupIssues.push(`No se pudo retirar el vehículo tablet temporal: HTTP ${cleanupVehicle?.status() ?? "sin respuesta"}`);
       }

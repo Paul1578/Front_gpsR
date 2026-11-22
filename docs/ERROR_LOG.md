@@ -552,3 +552,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Durante el inventario cruzado se ejecutó `rg` desde el repositorio equivocado usando rutas relativas `BackEnd_Gps`/`src`; `rg` devolvió “No such file or directory” y esos intentos no inspeccionaron archivos ni cambiaron estado.
 - Corrección: ejecutar cada búsqueda desde la raíz de su repositorio y usar sus rutas reales (`src` en Front; `fletflow` y `BackEnd_Gps.Tests` en Back). Repetición del inventario Backend encontró el uso esperado de refresh token y ningún TODO/FIXME/NotImplementedException en el alcance buscado.
 - Prevención: confirmar `pwd` y `rg --files` del repositorio objetivo antes de búsquedas con prefijos de directorio.
+
+# 2026-11-22 — E2E de ruta tablet expiró antes de cerrar — EN VALIDACIÓN
+
+- Actions `44991979019` pasó build backend (57/57), audit/lint/build frontend y responsive 1/1; de los E2E autenticados, **15 pasaron y el nuevo tablet expiró** al timeout general de 30 s. El `finally` estaba usando `page.request`, ligado al contexto del navegador que Playwright cerró al cortar el test; por eso las consultas de cleanup fallaron sin respuesta. La base era descartable y el runner elimina sus datos QA al finalizar.
+- El workflow no publicó el trace de ese fallo, así que el paso de UI que agotó los 30 s no puede afirmarse con evidencia. Corrección aplicada para la repetición: elevar a 90 s el límite total solo de este flujo, limitar esperas de UI a 8 s para obtener locator/paso concretos y usar el fixture independiente `request` en setup, verificación y cleanup para que siga vivo ante errores del page.
+- Estado: lint/build/discovery local ya habían pasado el primer SHA; falta repetir Actions con estas correcciones y confirmar 16/16, persistencia tablet y limpieza.

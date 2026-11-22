@@ -8,6 +8,7 @@ Fecha de actualización: 2026-11-22.
 - Evidencia de la corrida: backend Release build correcto y xUnit 57/57; `npm audit` sin vulnerabilidades; lint y build Next correctos; responsive 1/1; Playwright autenticado Chrome/API/MySQL 15/15 sin skips.
 - Este corte confirma integración de ambas ramas publicadas. No implica que el catálogo completo de CRUD, todos los roles o todas las vistas responsive estén cubiertos; permanecen como trabajo activo.
 - Se añadió un E2E real para crear y persistir una ruta con parada recogida+entrega en tablet (768×1024), comprobando overflow en cada paso y cleanup de ruta/vehículo/asignación. ESLint, build y discovery **16 tests** pasan localmente; la ejecución navegador/API/MySQL queda pendiente del Actions del nuevo commit.
+- Primera corrida del nuevo E2E: Actions `44991979019` encontró timeout de 30 s en el caso tablet (15 E2E restantes pasaron). Cleanup del caso dependía del contexto de página cerrado por el timeout; se separó a `APIRequestContext` del fixture `request`, se amplió timeout total del caso a 90 s y se acotaron los waits UI a 8 s. Revalidación integrada pendiente; detalle en `docs/ERROR_LOG.md`.
 
 ## Ramas
 

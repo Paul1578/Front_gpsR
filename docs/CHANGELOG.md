@@ -121,3 +121,4 @@
 
 - Se agregó un E2E de Admin que crea por UI una ruta con parada recogida+entrega en 768×1024, verifica la persistencia exacta de sus tres puntos y comprueba overflow en las cuatro etapas.
 - Lint, build, discovery de 16 casos y diff check pasan localmente. El CI integrado Chrome/API/MySQL queda pendiente; el cleanup restaura la asignación de Driver y elimina las filas temporales.
+- La primera Actions `44991979019` detectó timeout del caso y fragilidad de cleanup ligado a page; solución registrada en `ERROR_LOG.md`, E2E ahora usa request independiente y timeout acotado por fase.
