@@ -258,3 +258,7 @@
 - Commit `d10e442`, Actions `45017898939`: audit/lint/build, responsive **1/1** y E2E autenticado Chrome/API/MySQL **18/18**; cleanup success.
 - El E2E del Dashboard compara las cuatro cifras visibles de rutas/vehículos con las colecciones autenticadas reales de Routes y Vehicles.
 - Front consume `createdAtUtc`, quita la fecha creada artificialmente y ordena “Actividad Reciente”; E2E exige timestamp real y valida el primer registro.
+
+# 2026-11-22 — Fecha real de creación de rutas validada
+
+- Front `cacb72e` consume `CreatedAtUtc`, evita fechas inventadas y ordena la actividad con timestamps reales. Actions `45020301540` pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **18/18** y cleanup completo. Backend `e31e3cc` ejecutó la migración y smoke MySQL en Actions `45020146775`.

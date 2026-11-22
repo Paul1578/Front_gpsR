@@ -455,3 +455,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Dos auditorías independientes confirmaron que la política de delegación del rol Admin está pendiente; pregunta al usuario enviada, no cambiar ese permiso hasta su respuesta. Continuar con otros CRUD/roles/responsive; SMTP externo sin credenciales y app nativa móvil aplazada.
 - Dashboard: las tarjetas ya derivan de `/Routes` y `/Vehicles` y los errores muestran `—`; faltaba comprobar cifras en navegador. E2E tablet consulta ambas APIs autenticadas y coteja rutas activas/pendientes/completadas y vehículos disponibles. Un primer build falló TS2552 por no inyectar fixture `request`; corregido y registrado. Lint/build/discovery (18)/diff-check pasan local; publicar y verificar Actions/cleanup.
 - Hallazgo adicional: `fechaCreacion` era `PlannedStart` o `new Date()` y la consulta no ordenaba reciente. Backend añade `CreatedAtUtc` nullable/migración y preservación al editar; Front la usa sin inventar fechas y ordena la actividad; E2E valida timestamp/orden. Back Release 73/73 y shell syntax; Front lint/build/discovery 18. Commit/push y Actions integrado pendientes.
+
+## Fecha real de creación de rutas — Front y Back validados — 2026-11-22
+
+- Backend `e31e3cc`: Actions `45020146775` success con migración `CreatedAtUtc`, build, xUnit 73/73, smoke HTTP/MySQL y precisión `datetime(6)`.
+- Front `cacb72e`: Actions `45020301540` success con audit/lint/build, responsive 1/1, E2E autenticado Chrome/API/MySQL 18/18 y cleanup. Primera actividad del dashboard y fecha de creación contrastadas contra API real.
+- El error de precisión del primer smoke backend `45019828759` está corregido/documentado.
+- Hallazgos siguientes en progreso: invalidación de JWT al desactivar/reactivar y mutación del catálogo global de roles. Política de promoción a Admin delegado sigue pendiente de respuesta.

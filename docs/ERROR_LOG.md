@@ -876,3 +876,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - E2E amplía Manager UI con crear/editar/asignar/desasignar/baja/reactivación de Driver y verificación de persistencia/ausencia de 403 de equipo; CI integrada pendiente.
 - Prevención: no agrupar entidades con matrices de autorización distintas en una sola pantalla; evitar solicitar endpoints no autorizados desde el arranque.
 - Error de edición del test: dos parches de contexto esperaban que la secuencia de status/baja fuese distinta de la que había en el spec; `apply_patch` los rechazó sin aplicar cambios. Se volvió a leer el bloque actual y se dividieron las ediciones con anclas exactas antes de lint/build.
+
+## 2026-11-22 — Python heredoc con comillas multilinea inválidas — CORREGIDO
+
+- Al intentar actualizar cuatro documentos, el script Python quedó con una cadena de handoff sin cerrar y terminó con `SyntaxError`; no se modificó ningún archivo ni se creó commit.
+- Solución: escribir los fragmentos multilínea mediante heredoc `cat` y mantener cada bloque de documento en su propio comando.
+- Prevención: validar scripts de actualización documental antes de staging y comprobar `git status` tras cualquier error.
+
+## 2026-11-22 — Fecha real de creación de ruta — VALIDADO EN CI
+
+- Actions `45020301540` para Front `cacb72e` pasó lint/build/audit, responsive **1/1**, E2E autenticado Chrome/API/MySQL **18/18** y cleanup.
+- Backend Actions `45020146775` confirmó migración, persistencia `CreatedAtUtc`, edición inmutable y smoke MySQL. El fallo inicial por precisión `datetime(6)` se resolvió y quedó registrado en backend.

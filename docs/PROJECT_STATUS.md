@@ -338,3 +338,8 @@ Fecha de actualización: 2026-11-22.
 - Auditoría siguiente detectó que UI no cubría asignación de rol Manager (fixture se cambiaba por API) y el diálogo no se medía a 320/768. Commit `d10e442`: lint/build/discovery 18 local y Actions `45017898939` completas; responsive **1/1**, E2E Chrome/API/MySQL **18/18**, cleanup success.
 - Cobertura Dashboard: el E2E ahora compara sus cuatro cifras con las APIs autenticadas reales. Lint/build/discovery (18) y diff-check pasan local; Actions integrada pendiente.
 - Hallazgo de fecha: `PlannedStart` se presentaba como creación y había fallback al reloj actual. Front ahora distingue `createdAtUtc` nullable, evita fecha inventada y ordena actividad. Local lint/build/discovery 18 y diff-check pasan; API/MySQL y Actions del nuevo SHA pendientes.
+
+## Fecha real de creación de rutas — validada
+
+- Front `cacb72e` consume `createdAtUtc` nullable, no inventa fechas legacy y ordena la actividad con timestamps reales.
+- Actions `45020301540`: audit/lint/build, responsive **1/1**, Playwright autenticado API/MySQL **18/18**, cleanup success. Backend `45020146775` validó migración/persistencia y que editar no cambia el timestamp.
