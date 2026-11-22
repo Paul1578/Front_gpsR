@@ -252,3 +252,4 @@
 - Separada de Gestión de Equipo: Admin y Manager acceden a la pantalla Drivers; Manager puede crear conductores sin cuenta vinculada, editar, asignar/quitar vehículos y cambiar estado. Gestión de usuarios queda sólo para Admin.
 - AuthContext deja de solicitar `/Users/my-team` a Manager/Logistics. E2E integrado añade el ciclo de Driver y la matriz UI; validación CI pendiente.
 - Contrato documento/teléfono unificado a 20 caracteres entre formulario, API y persistencia; responsive E2E ahora comprueba el panel y tarjeta creada a 320 px.
+- El formulario de Drivers que Admin conserva dentro de Gestión de Equipo ahora comparte los mismos límites y requeridos; E2E agrega checks del formulario a 768 px.

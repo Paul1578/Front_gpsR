@@ -13,6 +13,13 @@
 - Se fijó `maxLength=20` en ambos campos y el comando de creación backend valida longitudes y campos obligatorios antes de persistir; hay pruebas unitarias para el límite, su aceptación exacta y el trim.
 - La revisión responsive medía sólo el documento antes de crear una tarjeta. El E2E ahora mide `main.scrollWidth/clientWidth` y la tarjeta del Driver creado en 320 px.
 - Verificación local pendiente para este SHA; repetir E2E integrado/API/MySQL en Actions.
+- Validación del commit base `88b0907`: Actions `45016257079` pasó responsive 1/1 y E2E 18/18 con API/MySQL. Los hallazgos adicionales del formulario Equipo/tablet se corrigieron después y requieren su propia integración.
+
+## 2026-11-22 — Gestión de Equipo no aplicaba límites del nuevo formulario Driver — CORREGIDO
+
+- La auditoría detectó que Admin conserva la creación de Drivers dentro de Gestión de Equipo, donde documento/teléfono no tenían `maxLength` y los campos del perfil no eran obligatorios, a diferencia de la pantalla nueva.
+- Se alineó el formulario de Equipo con campos requeridos y límites 100 para nombres/20 para documento y teléfono. El E2E Admin comprueba ambos atributos; el E2E de Manager verifica acciones y formulario de Drivers también a 768 px.
+- Lint/build/discovery Playwright 18 y diff-check pasan localmente. Actions para este segundo ajuste quedan pendientes.
 
 ## 2026-11-21 — Playwright autenticado local omitido por falta de entorno QA
 

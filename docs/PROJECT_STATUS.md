@@ -333,3 +333,5 @@ Fecha de actualización: 2026-11-22.
 - E2E extendido para ciclo Driver desde UI a 320/390/768 px, persistencia API y ausencia de 403 de Users. Local `npm run lint`, `npm run build`, discovery 18 y `git diff --check` pasan; Actions pendiente.
 - Auditoría adicional detectó límites UI/backend distintos para documento/teléfono y una medición responsive que no examinaba `main` ni la tarjeta nueva. Límites fijados a 20 en ambos lados y E2E ampliado.
 - Verificación local del SHA actual: `npm run lint`, `npm run build`, discovery Playwright **18 tests** y `git diff --check` pasan. Actions API/MySQL pendiente.
+- Auditoría read-only detectó un formulario duplicado de Admin sin restricciones y falta de cobertura tablet para la pantalla nueva. Equipo ahora exige perfil y comparte límites; E2E verifica atributos y la vista Manager con tarjeta/controles a 768×1024. Lint/build/discovery 18/diff-check pasan localmente; Actions nuevo SHA pendiente.
+- Integración del commit `88b0907` pasó Actions `45016257079`: audit/lint/build, responsive **1/1**, E2E autenticado Chrome/API/MySQL **18/18** y cleanup. El ajuste posterior del formulario Admin y tablet aún no está en ese run.

@@ -1502,6 +1502,13 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
 
       await managerPage.setViewportSize({ width: 768, height: 1024 });
       await expectManagerNoOverflow();
+      await expect(managerDriverCard).toBeVisible();
+      await expect(managerDriverCard.getByRole("button", { name: "Editar" })).toBeVisible();
+      await expect(managerDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+      await expect(managerPage.getByLabel("Documento del conductor")).toBeVisible();
+      await expect(managerPage.getByLabel("Teléfono del conductor")).toBeVisible();
+      const tabletDriverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
+      expect(tabletDriverCardDimensions.scroll).toBeLessThanOrEqual(tabletDriverCardDimensions.client);
       await managerPage.getByRole("button", { name: "Abrir menú" }).click();
       await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
       await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
@@ -2306,6 +2313,8 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await page.getByRole("button", { name: "Gestionar choferes" }).click();
   await page.setViewportSize({ width: 768, height: 1024 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByPlaceholder("Documento")).toHaveAttribute("maxlength", "20");
+  await expect(page.getByPlaceholder("Teléfono")).toHaveAttribute("maxlength", "20");
   const unlinkedFirstName = `Chofer libre ${suffix}`;
   const unlinkedDocument = `E2EQA${suffix}U`;
   await page.getByRole("combobox", { name: "Usuario vinculado al chofer" }).selectOption("");

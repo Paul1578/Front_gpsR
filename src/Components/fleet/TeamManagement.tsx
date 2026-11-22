@@ -414,6 +414,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 </select>
                 <input
                   type="text"
+                  required
+                  maxLength={100}
                   value={createDriverForm.firstName}
                   onChange={(e) => setCreateDriverForm({ ...createDriverForm, firstName: e.target.value })}
                   placeholder="Nombres"
@@ -421,6 +423,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 />
                 <input
                   type="text"
+                  required
+                  maxLength={100}
                   value={createDriverForm.lastName}
                   onChange={(e) => setCreateDriverForm({ ...createDriverForm, lastName: e.target.value })}
                   placeholder="Apellidos"
@@ -428,6 +432,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 />
                 <input
                   type="text"
+                  required
+                  maxLength={20}
                   value={createDriverForm.documentNumber}
                   onChange={(e) => setCreateDriverForm({ ...createDriverForm, documentNumber: e.target.value })}
                   placeholder="Documento"
@@ -435,6 +441,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 />
                 <input
                   type="text"
+                  required
+                  maxLength={20}
                   value={createDriverForm.phoneNumber}
                   onChange={(e) => setCreateDriverForm({ ...createDriverForm, phoneNumber: e.target.value })}
                   placeholder="Teléfono"
