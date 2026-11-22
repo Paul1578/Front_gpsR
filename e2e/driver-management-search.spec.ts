@@ -111,7 +111,7 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   const headers = { Authorization: `Bearer ${accessToken}` };
 
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase();
-  const vehiclePlate = `E2EQA${suffix}`;
+  const vehiclePlate = `E2EQA${suffix}V`;
   const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
     headers,
     data: { plate: vehiclePlate, brand: "QA", model: "Responsive", year: 2025 },
@@ -126,7 +126,7 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   await page.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Conductores" })).toBeVisible();
 
-  const documentNumber = `E2EQA${suffix}`;
+  const documentNumber = `E2EQA${suffix}D`;
   await page.getByLabel("Nombres del conductor").fill("QA Responsive");
   await page.getByLabel("Apellidos del conductor").fill("Temporal");
   await page.getByLabel("Documento del conductor").fill(documentNumber);
@@ -139,10 +139,14 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   expect(mobileFormBounds!.x + mobileFormBounds!.width).toBeLessThanOrEqual(320);
   await page.getByRole("button", { name: "Crear conductor" }).click();
 
-  const driverCard = page.locator('[data-testid^="managed-driver-"]').filter({ hasText: documentNumber });
+  const driversResponse = await page.request.get("/api/backend/Drivers", { headers });
+  expect(driversResponse.status()).toBe(200);
+  const persistedDrivers = await driversResponse.json() as { id: string; documentNumber: string }[];
+  const createdDriver = persistedDrivers.find((driver) => driver.documentNumber === documentNumber);
+  expect(createdDriver).toBeTruthy();
+  createdDriverId = createdDriver!.id;
+  const driverCard = page.getByTestId(`managed-driver-${createdDriverId}`);
   await expect(driverCard).toBeVisible();
-  createdDriverId = (await driverCard.getAttribute("data-testid"))?.replace("managed-driver-", "");
-  expect(createdDriverId).toBeTruthy();
 
   await driverCard.getByRole("button", { name: "Editar" }).click();
   await page.getByLabel("Apellidos del conductor").fill("Editado en móvil");

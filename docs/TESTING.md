@@ -8,6 +8,7 @@
 - Nuevo Playwright en `e2e/driver-management-search.spec.ts`: alta desde la pantalla dedicada, edición, asignación y retiro de Vehicle, baja/reactivación; consulta API verifica persistencia. Interacciones a 320 px y comprobación tablet a 768 px.
 - Local: `npm run lint`, `npm run build`, descubrimiento Playwright **38 tests** y `git diff --check` pasan. La Action de API/MySQL y el cleanup son requeridos para validar el caso integrado.
 - Action `45078351055` ejecutó **37/38**; trace identificó un selector sin opciones por cache/contexto anterior a la creación del Vehicle de fixture. El test recarga la aplicación antes de navegar para hidratar de nuevo FleetContext; Action posterior pendiente.
+- Action `45079269083` ejecutó **37/38**; locator ambiguo por compartir texto entre placa y documento en las tarjetas. Corregido con sufijos distintos y `data-testid` derivado del DriverId consultado por API; nueva Action pendiente.
 
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
 - El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.

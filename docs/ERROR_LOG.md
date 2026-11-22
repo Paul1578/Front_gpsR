@@ -1368,3 +1368,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Action `45078351055` ejecutó 38 escenarios y falló sólo el nuevo CRUD de conductores al seleccionar el Vehicle. El trace confirmó que el vehículo QA se creó por API después del login, pero `FleetContext` no había recargado su lista; el `<select>` sólo contenía “Selecciona vehículo”. El resto del flujo (alta/edición) sí se ejecutó y el cleanup integrado corrió.
 - El test ahora recarga la página después de provisionar el vehículo, antes de abrir Gestión de Conductores, para que el contexto consulte la flota persistida como ocurriría al entrar en una sesión actualizada. Repetir Action API/MySQL para verificar asignación, desasignación y cleanup.
 - Prevención: cuando un E2E crea por API recursos que una vista ya cargada consume desde contexto global, refrescar esa fuente antes de probar los controles dependientes y confirmar opciones en el snapshot/trace.
+
+## 2026-11-22 — Locator de la tarjeta Driver coincidía con opciones de flota — CORREGIDO LOCALMENTE
+
+- Action `45079269083` ejecutó 37/38. El nuevo caso alcanzó la tarjeta, pero `filter({ hasText: documentNumber })` coincidía con varias tarjetas porque el vehículo y el documento compartían el mismo texto; todas las tarjetas activas contienen ese vehículo en su selector.
+- Se separaron placa/documento con sufijos distintos y ahora el test consulta el ID creado desde `GET /Drivers`, usando `data-testid="managed-driver-{id}"`. No se relajó la aserción.
+- Prevención: las tarjetas contienen texto auxiliar en selectores; para identificar recursos creados usar el ID persistido por API y mantener las claves de vehículo/documento distintas.
+- La primera validación de build de esta corrección encontró una redeclaración TypeScript: el nombre `persistedDriver` ya identificaba la respuesta HTTP de verificación final. Se renombró la variable del lookup inicial a `createdDriver`; repetir lint/build y ejecutar Action.
