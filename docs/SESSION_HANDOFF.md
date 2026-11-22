@@ -186,3 +186,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Último E2E remoto: `44983346765` success para `2eb0102`, contra backend `cff33c6`; 14/14 Playwright, responsive 1/1, lint/build/audit verdes. Branch `refactor/route-builder` queda limpia.
 
 - Último CI frontend `44983694110` success en `0236c49`, E2E 14/14 y responsive 1/1; el backend de esa corrida ya incluía `TokenVersion` y los 56 xUnit quedaron verdes en su propio run `44983763612`.
+
+## Próxima verificación — operación real del Driver
+
+- Cambio local sin publicar en `e2e/fleet-admin.spec.ts`: extiende el caso Driver para crear vehículo/ruta efímeros, completar una parada `pickup_and_delivery` con evidencia desde móvil, cerrar ruta y verificar status/vehículo en API.
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` pasan; debe publicarse y esperarse Actions integrado. Fallos deben quedar registrados aquí y en `ERROR_LOG.md`.

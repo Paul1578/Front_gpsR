@@ -612,9 +612,41 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
 });
 
 test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page }) => {
-  test.skip(!driverEmail || !driverPassword, "Requiere fixture Driver del runner.");
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const adminLogin = await page.request.post("/api/backend/Auth/login", {
+    data: { email, password },
+  });
+  expect(adminLogin.status()).toBe(200);
+  const adminToken = await adminLogin.json();
+  const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
+  const plate = `E2EQA${suffix}`;
+  const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate, brand: "FleetFlow QA", model: "Driver route", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicleId = (await vehicleResponse.json()).id as string;
+  const routeName = `E2E QA ruta conductor ${suffix}`;
+  const routeResponse = await page.request.post("/api/backend/Routes", {
+    headers: adminHeaders,
+    data: {
+      name: routeName,
+      cargoDescription: "Prueba operativa Driver",
+      vehicleId,
+      driverId: driverIdFixture,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen E2E", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Entrega E2E", operation: 3 },
+        { lat: -0.2, lng: -78.48, name: "Destino E2E", operation: 0 },
+      ],
+    },
+  });
+  expect(routeResponse.status()).toBe(201);
+  const routeId = (await routeResponse.json()).id as string;
+
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(driverEmail!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
@@ -634,6 +666,60 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   const headers = { Authorization: `Bearer ${driverToken}` };
   const vehiclesResponse = await page.request.get("/api/backend/Vehicles", { headers });
   expect(vehiclesResponse.status()).toBe(403);
+
+  await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+  await expect(page.getByText(routeName, { exact: true })).toBeVisible();
+  const startRoutePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Iniciar Ruta" }).click();
+  expect((await startRoutePromise).status()).toBe(204);
+
+  const stopCard = page.locator("article").filter({ hasText: "Entrega E2E" });
+  await expect(stopCard).toContainText("Recogida y entrega");
+  const startStopPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
+    response.request().method() === "PUT",
+  );
+  await stopCard.getByRole("button", { name: "Iniciar parada" }).click();
+  expect((await startStopPromise).status()).toBe(204);
+
+  await stopCard.getByRole("button", { name: "Evidencia" }).click();
+  const evidenceDialog = page.getByRole("dialog");
+  await evidenceDialog.getByRole("button", { name: "Nota" }).click();
+  await evidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recibido por cliente E2E");
+  const evidencePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&
+    response.request().method() === "POST",
+  );
+  await evidenceDialog.getByRole("button", { name: "Agregar Nota" }).click();
+  expect((await evidencePromise).ok()).toBe(true);
+
+  const completeStopPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
+    response.request().method() === "PUT",
+  );
+  await stopCard.getByRole("button", { name: "Marcar completada" }).click();
+  expect((await completeStopPromise).status()).toBe(204);
+  await expect(stopCard).toContainText("Completada");
+  await expect(stopCard).toContainText("Recibido por cliente E2E");
+
+  const completeRoutePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Completar", exact: true }).click();
+  expect((await completeRoutePromise).status()).toBe(204);
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+
+  const persistedRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+  expect(persistedRoute.status()).toBe(200);
+  expect((await persistedRoute.json()).status).toBe(2);
+  const persistedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+  expect(persistedVehicle.status()).toBe(200);
+  expect((await persistedVehicle.json()).status).toBe(0);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

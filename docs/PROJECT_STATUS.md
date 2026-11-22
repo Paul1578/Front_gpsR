@@ -142,3 +142,9 @@ Fecha de actualización: 2026-11-21.
 - Verificación posterior a la actualización backend `cff33c6`: Actions frontend `44983346765` pasó lint/build/audit, 1/1 responsive browser y **14/14** Playwright autenticado contra Chrome/API/MySQL. Incluyó la migración y las nuevas operaciones del equipo.
 
 - Actions frontend `44983694110` terminó `success` para `0236c49` contra backend actualizado: responsive browser **1/1**, Playwright Chrome/API/MySQL **14/14**, lint/build/audit verdes.
+
+## E2E operativo de Driver — 2026-11-21
+
+- El caso Driver ahora crea una ruta real de prueba con parada de recogida y entrega, inicia la ruta desde Mi Ruta, cambia el estado de la parada, registra nota de evidencia y completa la ruta desde la UI móvil.
+- Verifica por API que la ruta quede completada y el vehículo disponible; recursos usan prefijos retirados por el cleanup aislado.
+- Lint/build y listado Playwright pasan localmente. Falta el run integrado después del push para comprobar el recorrido Chrome/API/MySQL.

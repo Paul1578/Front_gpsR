@@ -132,3 +132,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Repetición integrada con backend actualizado `cff33c6`: Actions `44983346765` success, responsive 1/1 y Playwright Chrome/API/MySQL **14/14**; lint, build y audit también pasaron.
 
 - Actions `44983694110`: **14/14** E2E y 1/1 responsive, éxito completo con backend branch actualizado y MySQL descartable. Lint/build/audit correctos.
+
+## Driver completa recogida/entrega en móvil — 2026-11-21
+
+- Ampliado el E2E Driver: recibe una ruta real de la API, inicia desde Mi Ruta, inicia la parada, agrega evidencia de nota, marca completada y cierra la ruta; API debe mostrar ruta Completed y vehículo Available.
+- Viewport 390×844. Lint, build y discovery de 14 tests pasan localmente; MySQL/Chrome integrado queda pendiente de Actions del nuevo SHA.

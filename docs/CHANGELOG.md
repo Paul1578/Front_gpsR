@@ -90,3 +90,7 @@
 - Actions `44983346765` pasó E2E autenticado 14/14 y responsive 1/1 con backend actualizado y MySQL desechable.
 
 - Actions `44983694110` confirmó 14/14 E2E integrados y 1/1 responsive browser.
+
+## 2026-11-21 — Prueba del ciclo operativo de Driver
+
+- E2E móvil cubre ruta asignada, recogida/entrega, evidencia obligatoria y disponibilidad del vehículo al completar.
