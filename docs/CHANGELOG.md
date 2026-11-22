@@ -111,4 +111,4 @@
 ## 2026-11-22 — Matriz de permisos y responsive de errores
 
 - Se ampliaron las denegaciones API esperadas para User, Driver, Logistics y Manager; Equipo/Choferes ahora comprueban error/reintento a 390×844.
-- Lint, build, diff check y discovery de 15 tests pasan; spec de errores pasa 2/2. La matriz espera ejecución integrada en Actions con API/MySQL descartables.
+- Lint, build, diff check y discovery de 15 tests pasan; spec de errores pasa 2/2. Actions `44989454133` para `286b100` terminó success: xUnit 57/57, Playwright 15/15 sin skips, responsive 1/1 y audit/lint/build verdes.

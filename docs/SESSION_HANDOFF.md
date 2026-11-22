@@ -244,4 +244,4 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - En `team-management-load-errors.spec.ts`, errores y reintentos de Equipo/Choferes comprueban 390×844 y ausencia de overflow. El spec pasó 2/2 localmente.
 - Estado combinado: lint/build, discovery (15) y `git diff --check` pasan. Matriz API no ejecutada porque API/Frontend locales responden HTTP 000 y no hay credenciales QA; Actions debe ejecutarla con DB efímera.
 - El primer build detectó error TypeScript por capturar headers mutables no inicializados; se pasan explícitamente a cada factory y el build posterior pasó. Ver `docs/ERROR_LOG.md`.
-- Próximo: integrar, ejecutar Actions y corregir cualquier diferencia de status HTTP. No declarar completa la matriz hasta tener resultado real.
+- La matriz comprobó los HTTP 403 esperados con API y MySQL efímeros. El commit `286b100` pasó Actions `44989454133`: xUnit 57/57; Playwright autenticado 15/15 sin skips; responsive 1/1; audit/lint/build correctos. Se corrigió el detalle de `ERROR_LOG.md`; continuar con la cobertura global restante.

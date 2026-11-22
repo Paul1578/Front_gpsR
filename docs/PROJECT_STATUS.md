@@ -179,9 +179,10 @@ Fecha de actualización: 2026-11-22.
 - La auditoría sigue abierta: ampliar CRUD, autorizaciones/mutaciones y vistas responsive no cubiertas. Los E2E actuales no se consideran cobertura exhaustiva.
 - Fuera de capacidad local o aplazado por decisión: SMTP válido, aplicación nativa, Super Admin global aún no definido, y componentes de despliegue productivo como dominio/TLS, almacenamiento de objetos y rate limiting distribuido.
 
-## Cobertura añadida, CI pendiente — 2026-11-22
+## Cobertura añadida y CI validada — 2026-11-22
 
 - En `refactor/route-builder`, Playwright descubre ahora 15 casos. Lint, build de producción y diff check pasan; el spec de errores Equipo/Choferes se ejecutó 2/2 a 390×844.
-- Se añadió cobertura negativa de operaciones por rol para User, Driver, Logistics y Manager. Falta Actions/API/MySQL para confirmar los códigos HTTP reales; el runner remoto provisiona fixtures y recursos desechables.
+- Se añadió cobertura negativa de operaciones por rol para User, Driver, Logistics y Manager. Actions/API/MySQL confirmó los códigos HTTP; el runner provisionó fixtures y recursos desechables.
 - La API y el frontend locales no estaban disponibles para E2E autenticado (HTTP 000). La matriz no se presenta como verificada.
-- La auditoría sigue activa: falta validar la matriz en CI y ampliar CRUD/responsive fuera de las vistas cubiertas. SMTP, app nativa pospuesta, Super Admin sin contrato backend y requisitos de producción siguen delimitados como pendientes externos/de producto.
+- La auditoría sigue activa: falta ampliar CRUD y responsive fuera de las vistas cubiertas. SMTP, app nativa pospuesta, Super Admin sin contrato backend y requisitos de producción siguen delimitados como pendientes externos/de producto.
+- Actions `44989454133` para `286b100` pasó: matriz ejecutada sin skips dentro de Playwright 15/15, responsive 1/1, xUnit 57/57 y audit/lint/build verdes.
