@@ -11,6 +11,7 @@
 - Action `45079269083` ejecutó 37/38; el locator por documento coincidía con otras tarjetas al repetir el texto de placa en sus selectores. Se diferenció placa/documento y el test ahora ubica por ID leído desde API.
 - Action `45080069469` falló la lectura persistida posterior a una asignación; `45080342001` terminó success con ese caso marcado flaky (fallo inicial, retry aprobado). El siguiente test compara el GET directo del API con el acceso vía rewrite Next para aislar el origen.
 - Action `45081264602` mostró que falla también el GET directo (no es la rewrite). El nuevo E2E consulta `Drivers.VehicleId` en el MySQL temporal para decidir si la pérdida ocurre al escribir o al leer.
+- Action `45081992619` confirmó VehicleId NULL en SQL tras 204; configuración temporal CI a un worker diagnostica si tests concurrentes alteran fixtures compartidos.
 
 - Corregidos selectores/secuencia del E2E de fallos 503, que buscaba exportar en el tab equivocado y duplicaba un retry conjunto.
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.

@@ -9,6 +9,9 @@ const chromePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  // Las pruebas E2E comparten el mismo tenant temporal y algunas cambian asignaciones.
+  // Un worker evita carreras entre fixtures; cada prueba conserva sus asserts API/MySQL.
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",

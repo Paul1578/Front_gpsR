@@ -9,6 +9,7 @@
 - `team-search.spec.ts` amplía búsqueda de miembros a 320 px y Driver a 768 px además de 390 px; overflow verificado. Lint/build/discovery 38 pasan; Action `45080342001` pasó la suite, incluido el caso responsive.
 - Worktree Front incluye cambio local sin commit para comparar asignación por API directa y por rewrite Next; aún falta lint/build/discovery, commit/push y Action integrada. Smoke backend asigna a Driver sin UserId y valida GET/DB, pero no explica la flakiness del E2E.
 - Action `45081264602` falló/flaky en GET directo también (`vehicleId:null`), descartando rewrite como causa. Test local añade consulta SQL a MySQL efímero antes de GET para separar escritura de lectura; aún validar local lint/build/discovery, publicar y seguir Action.
+- Action `45081992619` confirmó SQL `VehicleId=NULL` tras 204, luego retry pasó. Playwright CI ahora usa un worker para probar interferencia entre fixtures; commit/Action y nuevo resultado pendientes. Backend 5c8fb4f pasó xUnit 112/112 + smoke en Action `45081478212`.
 - Error local de TypeScript por redeclarar `persistedDriver` durante la corrección del locator quedó renombrado a `createdDriver` y registrado en `ERROR_LOG.md`.
 - Mantener misión abierta: cubrir CRUD/roles/responsive progresivamente. Admin delegado y desvinculación User↔Driver esperan respuesta; app nativa diferida y SMTP/infra productiva externas.
 

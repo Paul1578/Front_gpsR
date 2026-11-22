@@ -12,6 +12,7 @@
 - Action `45080069469` ejecutó **37/38**; UI mostró placa tras PUT 204, pero GET de Driver retornó `vehicleId:null`. Action `45080342001` finalizó success con 37 passed y **1 flaky**: el intento inicial falló igual y el retry pasó. No se considera validada la persistencia estable; ver `ERROR_LOG.md`.
 - El siguiente test consulta el mismo Driver por el origen API directo y por `/api/backend`, comparando ambos `vehicleId` para localizar divergencia de persistencia/instancia o rewrite.
 - Action `45081264602` confirmó que el GET directo al origen API también devolvió null; no se atribuye a Next rewrite. El test ahora lee además `Drivers.VehicleId` del MySQL efímero usando el cliente instalado por CI, para separar escritura de lectura.
+- Action `45081992619` leyó SQL `VehicleId=NULL` tras el PUT 204; la corrida pasó sólo tras retry. Config CI de Playwright cambia a un worker para aislar interferencia entre pruebas; Action siguiente pendiente.
 
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
 - El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.
