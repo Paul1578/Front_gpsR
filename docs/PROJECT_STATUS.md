@@ -1,5 +1,12 @@
 # Estado actual — 2026-11-22
 
+- Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; ramas `main` intactas.
+- Front `c4c5a10`: Action `45048803279` ejecutó 28 E2E: **26 pasaron, 2 fallaron** por usar selector de hamburger móvil en viewport desktop. El selector quedó corregido con viewport explícito 390×844; hay E2E y fixes nuevos de Mi Ruta aún sin CI. La iteración actual añade 2 E2E más (30 total).
+- Lint y build de los cambios actuales pasan; Playwright discovery lista **30 pruebas**. Pendiente Action integrada que incluya backend actual y pruebas nuevas de logout/offboarding, prioridad Driver, 503/reintento y siguiente parada.
+- Criterios globales siguen abiertos: más CRUD, roles y responsive; decisión pendiente de política Admin delegado. SMTP/PFX/infrastructura productiva externas; app nativa aplazada.
+
+# Estado actual — 2026-11-22
+
 - Front rama `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; no se trabaja en `main`.
 - Front integrado `38c58d6` pasó Action `45047502825` (26 E2E, responsive, backend build/tests, audit/lint/build y cleanup), contra backend previo.
 - Cambios Front locales: logout-all visible sin abrir el formulario de contraseña; E2E de dos sesiones y de baja de miembro con revocación access/refresh; el runner crea un fixture User adicional activo. Lint pasa y Playwright descubre **28 pruebas**; build y E2E integrado nuevos pendientes.

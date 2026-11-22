@@ -1124,3 +1124,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La prueba de baja usa un segundo usuario QA activo creado por `run-e2e-local.sh`, ya que los usuarios invitación creados en UI no se pueden autenticar sin el correo real; el fixture se crea en MySQL descartable y el cleanup existente lo elimina por prefijo.
 - Lint y Playwright discovery pasan localmente. E2E autenticado API/MySQL, build y Actions del nuevo SHA pendientes.
 - Prevención: para revocaciones de sesión, cubrir éxito/error, tokens en otra sesión y cambios administrativos de estado; las pruebas deben autenticarse con fixtures activos de la base desechable.
+
+## 2026-11-22 — “Mi Ruta” priorizaba mal y ocultaba errores — CORREGIDO; E2E INTEGRADO PENDIENTE
+
+- Auditoría independiente encontró que dashboard y vista Driver usaban el primer estado Pending/InProgress, sin priorizar InProgress; además, la vista mostraba “No tienes rutas asignadas” durante carga/fallo, y el indicador siempre señalaba `puntos[0]` aunque se completara.
+- Solución: ambas vistas prefieren InProgress; la carga inicial muestra estado `status`; fallo de GET `/Routes` muestra alerta con reintento y no afirma que la lista está vacía; “Siguiente punto” busca la primera parada operativa que no esté completada/omitida.
+- Se añadieron E2E con API/MySQL real para Driver con ruta en curso + pendiente, error 503 y retry; el flujo Driver real ahora verifica el cambio del siguiente punto tras completar recogida/entrega. Lint/build local pasaron y Playwright descubre 30 tests; E2E de esos cambios aún pendiente.
+
+## 2026-11-22 — E2E de logout/offboarding falló por asumir menú móvil en viewport escritorio — CORREGIDO
+
+- Action `45048803279` pasó lint/build/responsive y 26/28 E2E; los dos nuevos tests se bloquearon esperando “Abrir menú” porque Playwright inicia con viewport desktop, donde la navegación lateral ya está visible. El código de logout y offboarding no llegó a ejecutarse en esos casos.
+- Corrección: fijar explícitamente 390×844 px en ambos flujos antes de usar el menú tipo drawer. Prevenir: definir el viewport esperado antes de interactuar con navegación responsive. Repetir E2E integrado tras publicar el SHA actualizado.

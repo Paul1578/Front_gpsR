@@ -390,3 +390,8 @@
 - La acción de cierre de sesión global ahora se encuentra visible en el bloque Seguridad, independiente del formulario de contraseña.
 - Se añadieron E2E reales para logout-all entre contextos independientes y para revocación de access/refresh al desactivar desde Gestión de Equipo.
 - Runner E2E prepara una cuenta User QA adicional aislada, activa y eliminable por cleanup.
+
+## 2026-11-22 — Mi Ruta: orden, estados de carga y siguiente operación
+
+- La ruta en curso ahora tiene prioridad sobre pendientes en Dashboard y Mi Ruta. Se distinguen carga y fallo de API con un reintento en vez de presentar datos vacíos engañosos. El indicador “Siguiente punto” avanza tras completar/omitir paradas.
+- E2E cubre la prioridad, error 503/reintento y operación con dos paradas.

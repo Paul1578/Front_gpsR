@@ -1,3 +1,11 @@
+## Session handoff — Mi Ruta y auditoría de sesiones — 2026-11-22
+
+- Front `refactor/route-builder`, backend `chore/stabilize-fleet-platform`; no cambios en main.
+- Action Front `45048803279` en `c4c5a10`: **26/28 E2E**; dos errores de locator por viewport de escritorio esperando hamburger móvil. Corregido al fijar 390×844 en ambos tests; causa y prevención documentadas.
+- Auditoría Front independiente halló prioridad de ruta activa, error/empty de Mi Ruta y next-point obsoletos. Fixes de `DriverView`/`MainDashboard` y E2E para prioridad con APIs/MySQL, 503/retry y dos paradas están en progreso; correr lint/build, revisar fixtures/cleanup y lanzar CI de nuevo.
+- Backend auditoría encontró revocación de refresh no serializada en cambio de rol y desasignación/baja/cambio de rol dejando ruta Pending huérfana. Código y tests locales corregidos (97/97); smoke tenant/concurrencia ampliados, validar con Release y CI MySQL.
+- No concluir misión global; continuar auditando CRUD/roles/responsive y registrar regresiones.
+
 ## Session handoff — Cierre global visible y revocación E2E — 2026-11-22
 
 - Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; `main` intacta. Front `38c58d6` pasó Action `45047502825` (26 E2E, responsive, build/lint/audit, backend tests y cleanup).

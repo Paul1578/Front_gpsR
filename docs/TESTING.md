@@ -299,3 +299,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - E2E añadidos: dos contextos de navegador inician sesión; logout-all termina la sesión actual y el refresh del segundo contexto recibe 401; otro caso autentica un miembro, lo da de baja desde Gestión de Equipo y comprueba 401 tanto de refresh como de access.
 - El runner crea una cuenta de baja independiente para mantener aislado el test de cambio de contraseña y la elimina con el cleanup de fixtures `fletflow.e2e.user.*`.
 - ESLint y `npm run build` pasan; Playwright descubre **28 pruebas**. Suite autenticada contra API/MySQL descartable pendiente.
+
+## E2E de Mi Ruta y cierre de sesiones — 2026-11-22
+
+- Acción Front `45048803279`: 26/28 E2E pasaron. Los dos fallos esperaban el botón responsive “Abrir menú” con el viewport desktop por defecto; corregido fijando 390×844 en logout-all y offboarding. El fallo y prevención están en `ERROR_LOG.md`.
+- Mi Ruta: agregados casos para ruta InProgress sobre Pending más reciente, GET `/Routes` 503 y retry, y avance de “Siguiente punto” al completar dos operaciones. `npm run lint`, `npm run build` y discovery **30** pasaron tras el ajuste del viewport. E2E autenticado integrado de estas pruebas sigue pendiente.

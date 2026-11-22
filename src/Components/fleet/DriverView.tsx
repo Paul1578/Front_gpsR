@@ -31,6 +31,8 @@ interface DriverViewProps {
 export function DriverView({ onBack }: DriverViewProps = {}) {
   const {
     routes,
+    routesLoading,
+    loadErrors,
     vehicles,
     drivers,
     refreshDrivers,
@@ -38,6 +40,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     updateRoutePointStatus,
     addRoutePointEvidence,
     registerRoutePosition,
+    retryFleetData,
   } = useFleet();
   const { user } = useAuth();
   const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
@@ -64,9 +67,9 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   }, [driverId, drivers.length, refreshDrivers, user]);
 
   const myRoutes = routes.filter((r) => r.conductorId === driverId);
-  const activeRoute = myRoutes.find(
-    (r) => r.estado === "en_progreso" || r.estado === "pendiente",
-  );
+  const activeRoute =
+    myRoutes.find((r) => r.estado === "en_progreso") ??
+    myRoutes.find((r) => r.estado === "pendiente");
   const operationalStops = activeRoute
     ? [
         ...(activeRoute.origen ? [{ pointIndex: 0, point: activeRoute.origen }] : []),
@@ -286,6 +289,27 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     );
   }
 
+  if (!activeRoute && routesLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white p-4">
+        <p role="status" className="text-sm text-gray-500">Cargando tus rutas...</p>
+      </div>
+    );
+  }
+
+  if (!activeRoute && loadErrors.includes("rutas")) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white p-4">
+        <div role="alert" className="max-w-md rounded-lg border border-red-200 bg-red-50 p-5 text-center text-sm text-red-800">
+          <p>No se pudieron cargar tus rutas. No podemos confirmar si tienes una ruta asignada.</p>
+          <button onClick={() => void retryFleetData()} className="mt-3 rounded-md bg-white px-3 py-2 font-semibold text-red-800">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!activeRoute) {
     return (
       <div className="h-full flex items-center justify-center bg-white p-4">
@@ -336,8 +360,9 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   }
 
   const vehicle = getVehicleInfo(activeRoute.vehiculoId);
-  const nextPoint =
-    activeRoute.puntos[0] ?? activeRoute.destino ?? activeRoute.origen ?? null;
+  const nextPoint = operationalStops.find(
+    ({ point }) => !["completed", "skipped"].includes(point.status ?? "pending"),
+  )?.point ?? null;
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -372,6 +397,12 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
       </div>
 
       <div className="flex-1 overflow-auto">
+        {loadErrors.includes("rutas") && (
+          <div role="alert" className="m-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <span>No se pudo actualizar la lista de rutas. Se muestra la última información disponible.</span>
+            <button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button>
+          </div>
+        )}
         <div className="relative h-[300px] md:h-[400px] bg-gray-100">
           <DriverRouteMap
             currentLocation={currentLocation}
@@ -401,7 +432,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
           <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg px-3 py-2 z-10">
             <p className="text-xs text-gray-500">Siguiente punto</p>
             <p className="text-sm text-gray-900">
-              {nextPoint?.nombre || "No disponible"}
+              {nextPoint?.nombre || "No hay paradas pendientes"}
             </p>
           </div>
 

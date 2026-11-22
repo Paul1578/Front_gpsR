@@ -2098,6 +2098,117 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
   }
 });
 
+test("Mi Ruta prioriza una ruta en curso sobre una pendiente más reciente", async ({ page, request }) => {
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y MySQL descartable.");
+
+  const adminLogin = await request.post("/api/backend/Auth/login", { data: { email, password } });
+  expect(adminLogin.status()).toBe(200);
+  const adminTokens = await adminLogin.json();
+  const adminHeaders = { Authorization: `Bearer ${adminTokens.token ?? adminTokens.accessToken}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const inProgressName = `E2E QA ruta en curso primero ${suffix}`;
+  const pendingName = `E2E QA ruta pendiente reciente ${suffix}`;
+  const plate = `E2EQA${suffix}P`;
+  const driverBefore = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers: adminHeaders });
+  expect(driverBefore.status()).toBe(200);
+  const originalVehicleId = (await driverBefore.json()).vehicleId as string | null;
+  const vehicleResponse = await request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate, brand: "FleetFlow QA", model: "Driver route priority", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicleId = (await vehicleResponse.json()).id as string;
+  let inProgressRouteId: string | undefined;
+  let pendingRouteId: string | undefined;
+
+  try {
+    const routePayload = (name: string, start: string, end: string) => ({
+      name,
+      vehicleId,
+      driverId: driverIdFixture,
+      plannedStart: start,
+      plannedEnd: end,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen prioridad", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Entrega prioridad", operation: 3 },
+        { lat: -0.2, lng: -78.48, name: "Destino prioridad", operation: 0 },
+      ],
+    });
+    const inProgressRoute = await request.post("/api/backend/Routes", {
+      headers: adminHeaders,
+      data: routePayload(inProgressName, "2040-01-01T08:00:00Z", "2040-01-01T10:00:00Z"),
+    });
+    expect(inProgressRoute.status()).toBe(201);
+    inProgressRouteId = (await inProgressRoute.json()).id as string;
+    const pendingRoute = await request.post("/api/backend/Routes", {
+      headers: adminHeaders,
+      data: routePayload(pendingName, "2041-01-01T08:00:00Z", "2041-01-01T10:00:00Z"),
+    });
+    expect(pendingRoute.status()).toBe(201);
+    pendingRouteId = (await pendingRoute.json()).id as string;
+    const startRoute = await request.put(`/api/backend/Routes/${inProgressRouteId}/status`, {
+      headers: adminHeaders,
+      data: { status: 1 },
+    });
+    expect(startRoute.status()).toBe(204);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(driverEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const dashboardRouteCard = page.getByRole("button", { name: /Ruta Activa/ });
+    await expect(dashboardRouteCard).toContainText(inProgressName);
+    await expect(dashboardRouteCard).not.toContainText(pendingName);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+    await expect(page.getByText(inProgressName, { exact: true })).toBeVisible();
+    await expect(page.getByText(pendingName, { exact: true })).toHaveCount(0);
+  } finally {
+    if (inProgressRouteId) {
+      await request.put(`/api/backend/Routes/${inProgressRouteId}/status`, { headers: adminHeaders, data: { status: 3 } }).catch(() => undefined);
+    }
+    if (pendingRouteId) {
+      await request.put(`/api/backend/Routes/${pendingRouteId}/status`, { headers: adminHeaders, data: { status: 3 } }).catch(() => undefined);
+    }
+    if (originalVehicleId) {
+      await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers: adminHeaders, data: { vehicleId: originalVehicleId } }).catch(() => undefined);
+    } else {
+      await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers: adminHeaders }).catch(() => undefined);
+    }
+    if (pendingRouteId) await request.delete(`/api/backend/Routes/${pendingRouteId}`, { headers: adminHeaders }).catch(() => undefined);
+    if (inProgressRouteId) await request.delete(`/api/backend/Routes/${inProgressRouteId}`, { headers: adminHeaders }).catch(() => undefined);
+    await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders }).catch(() => undefined);
+  }
+});
+
+test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite reintentar", async ({ page }) => {
+  test.skip(!driverEmail || !driverPassword, "Requiere cuenta QA Driver.");
+
+  let routeReads = 0;
+  await page.route("**/api/backend/Routes", async (route) => {
+    if (route.request().method() === "GET" && routeReads++ === 0) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(driverEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("alert")).toContainText("No se pudieron cargar tus rutas");
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("No se pudieron cargar tus rutas");
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Reintentar" }).click();
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+});
+
 test("Driver sólo ve su operación y la API protege recursos administrativos", async ({ page, request }) => {
   test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
@@ -2143,6 +2254,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
       points: [
         { lat: -0.18, lng: -78.46, name: "Origen E2E", operation: 0 },
         { lat: -0.19, lng: -78.47, name: "Entrega E2E", operation: 3 },
+        { lat: -0.195, lng: -78.475, name: "Parada secundaria E2E", operation: 1 },
         { lat: -0.2, lng: -78.48, name: "Destino E2E", operation: 0 },
       ],
     },
@@ -2264,6 +2376,30 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect((await completeStopPromise).status()).toBe(200);
   await expect(stopCard).toContainText("Completada");
   await expect(stopCard).toContainText("Recibido por cliente E2E");
+  const nextPointBadge = page.locator(".absolute.bottom-4.left-4");
+  await expect(nextPointBadge).toContainText("Parada secundaria E2E");
+
+  const secondaryStop = page.locator("article").filter({ hasText: "Parada secundaria E2E" });
+  const startSecondaryStop = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/status`) && response.request().method() === "PUT",
+  );
+  await secondaryStop.getByRole("button", { name: "Iniciar parada" }).click();
+  expect((await startSecondaryStop).status()).toBe(200);
+  await secondaryStop.getByRole("button", { name: "Evidencia" }).click();
+  const secondaryEvidenceDialog = page.getByRole("dialog");
+  await secondaryEvidenceDialog.getByRole("button", { name: "Nota" }).click();
+  await secondaryEvidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recogida secundaria confirmada");
+  const secondaryEvidence = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/evidence`) && response.request().method() === "POST",
+  );
+  await secondaryEvidenceDialog.getByRole("button", { name: "Agregar Nota" }).click();
+  expect((await secondaryEvidence).status()).toBe(200);
+  const completeSecondaryStop = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/status`) && response.request().method() === "PUT",
+  );
+  await secondaryStop.getByRole("button", { name: "Marcar completada" }).click();
+  expect((await completeSecondaryStop).status()).toBe(200);
+  await expect(nextPointBadge).toContainText("No hay paradas pendientes");
 
   const completeRoutePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
@@ -2999,6 +3135,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", async ({ page, browser }) => {
   test.skip(!userEmail || !userPassword, "Requiere cuenta QA User con credenciales activas.");
 
+  await page.setViewportSize({ width: 390, height: 844 });
   const secondContext = await browser.newContext();
   const secondPage = await secondContext.newPage();
   try {
@@ -3095,6 +3232,7 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
 test("desactivar un usuario desde Equipo revoca su sesión y refresh token", async ({ page, browser }) => {
   test.skip(!email || !password || !deactivationUserEmail || !deactivationUserPassword || !allowMutations, "Requiere cuentas QA activas y base descartable.");
 
+  await page.setViewportSize({ width: 390, height: 844 });
   const userContext = await browser.newContext();
   const userPage = await userContext.newPage();
   try {

@@ -9,7 +9,7 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onNavigate }: MainDashboardProps) {
-  const { vehicles, routes, routeAssignmentVehicles, loadErrors, retryFleetData } = useFleet();
+  const { vehicles, routes, routeAssignmentVehicles, loadErrors, routesLoading, retryFleetData } = useFleet();
   const { user, getAllUsers } = useAuth();
 
   const users = getAllUsers();
@@ -238,8 +238,9 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 
   // Para choferes, mostrar su dashboard específico
   if (user?.role === "chofer" && user?.permissions.canViewOwnRoute && !user?.permissions.canViewMap) {
-    const myRoutes = routes;
-    const myActiveRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
+    const myRoutes = user.driverId ? routes.filter((route) => route.conductorId === user.driverId) : routes;
+    const myActiveRoute = myRoutes.find((route) => route.estado === "en_progreso") ??
+      myRoutes.find((route) => route.estado === "pendiente");
 
     return (
       <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -258,7 +259,17 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
             </div>
 
             {/* Ruta activa o mensaje */}
-            {myActiveRoute ? (
+            {loadErrors.includes("rutas") && (
+              <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                <span>No se pudieron cargar tus rutas. Las rutas asignadas pueden no aparecer.</span>
+                <button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button>
+              </div>
+            )}
+            {routesLoading && !myActiveRoute ? (
+              <div role="status" className="mb-6 rounded-xl border border-blue-100 bg-white p-6 text-center text-sm text-gray-600">
+                Cargando tus rutas...
+              </div>
+            ) : loadErrors.includes("rutas") && !myActiveRoute ? null : myActiveRoute ? (
               <div className="mb-6">
                 <button
                   onClick={() => onNavigate("driver")}
