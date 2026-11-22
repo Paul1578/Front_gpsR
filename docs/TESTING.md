@@ -128,3 +128,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Validación previa a CI: lint, build y `git diff --check` completados correctamente; Actions pendiente para el SHA siguiente.
 
 - Resultado de Actions `44982723150`: `success` para `96caf15`. El caso de alta/estado/reactivación de User y el resto de Playwright autenticado pasaron contra el backend de la rama y MySQL descartable.
+
+- Repetición integrada con backend actualizado `cff33c6`: Actions `44983346765` success, responsive 1/1 y Playwright Chrome/API/MySQL **14/14**; lint, build y audit también pasaron.

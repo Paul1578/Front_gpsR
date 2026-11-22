@@ -138,3 +138,5 @@ Fecha de actualización: 2026-11-21.
 ## Resultado del lifecycle de User en CI — 2026-11-21
 
 - Run frontend Actions `44982723150` terminó `success` para `96caf15`; validó lint, build y Playwright integrado con API/MySQL temporal, incluyendo crear User, darlo de baja y reactivarlo desde UI con persistencia.
+
+- Verificación posterior a la actualización backend `cff33c6`: Actions frontend `44983346765` pasó lint/build/audit, 1/1 responsive browser y **14/14** Playwright autenticado contra Chrome/API/MySQL. Incluyó la migración y las nuevas operaciones del equipo.
