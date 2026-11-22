@@ -5,8 +5,9 @@
 - Ramas activas: Front `refactor/route-builder` (`4206b0d`) y Backend `chore/stabilize-fleet-platform` (`fa16d05`); ambas publicadas, main intacta.
 - Backend smoke amplía 403 Manager sobre Users/Roles y 403 Logistics para mutaciones Vehicle/Driver; compara snapshots SQL. La corrida local API/MySQL descartable pasó. Action `45080063668` en curso.
 - Front E2E agregado completa alta, edición, asignación/desasignación y baja/reactivación en Gestión de Conductores. CI `45079269083` halló locator ambiguo (placa/documento repetidos); test corregido para usar DriverId de API. Lint/build/discovery 38 pasan antes de último ajuste responsive.
-- Front Action `45080069469` ejecuta los 38 E2E del commit `4206b0d`; ya superó backend, audit, lint, build, Chromium y check responsive, y está en E2E API/MySQL.
-- `team-search.spec.ts` amplía búsqueda de miembros interactiva a 320 px y de Driver a 768 px además de 390 px; ambas medidas comprueban overflow. Este cambio pasa localmente lint/build/discovery 38/diff-check; está sin commit y requiere nueva Action integrada.
+- Action Front `45080069469` falló 37/38: UI reflejó placa por estado optimista pero GET Driver retornó `vehicleId:null` después de PUT 204. La Action `45080342001` para `e18ea0f` pasó con 37 y marcó 1 flaky en el mismo paso (falló primer intento, retry pasó). No declarar persistencia validada; revisar causa backend/DB/concurrencia con traces; detalle `ERROR_LOG.md`.
+- `team-search.spec.ts` amplía búsqueda de miembros a 320 px y Driver a 768 px además de 390 px; overflow verificado. Lint/build/discovery 38 pasan; Action `45080342001` pasó la suite, incluido el caso responsive.
+- Worktree Front incluye cambio local sin commit para comparar asignación por API directa y por rewrite Next; aún falta lint/build/discovery, commit/push y Action integrada. Smoke backend asigna a Driver sin UserId y valida GET/DB, pero no explica la flakiness del E2E.
 - Error local de TypeScript por redeclarar `persistedDriver` durante la corrección del locator quedó renombrado a `createdDriver` y registrado en `ERROR_LOG.md`.
 - Mantener misión abierta: cubrir CRUD/roles/responsive progresivamente. Admin delegado y desvinculación User↔Driver esperan respuesta; app nativa diferida y SMTP/infra productiva externas.
 

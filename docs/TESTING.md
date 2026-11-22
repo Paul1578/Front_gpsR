@@ -3,12 +3,14 @@
 - Action `45076629351` en SHA `2147be7`: **37/37 E2E** autenticados con API/MySQL efímeros, responsive **1/1**, audit/lint/build y cleanup correctos. Incluye 503 separados para Users y Routes/Vehicles, reintentos recuperables, exportación parcial bloqueada, formulario Driver a 320/768 px y regresión de persistencia parcial Vehicle.
 - Action `45077576665` en docs HEAD `8887649` repitió esos checks sin cambios funcionales: **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup success.
 
-## CRUD responsive de Gestión de Conductores — Action pendiente
+## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente
 
 - Nuevo Playwright en `e2e/driver-management-search.spec.ts`: alta desde la pantalla dedicada, edición, asignación y retiro de Vehicle, baja/reactivación; consulta API verifica persistencia. Interacciones a 320 px y comprobación tablet a 768 px.
 - Local: `npm run lint`, `npm run build`, descubrimiento Playwright **38 tests** y `git diff --check` pasan. La Action de API/MySQL y el cleanup son requeridos para validar el caso integrado.
-- Action `45078351055` ejecutó **37/38**; trace identificó un selector sin opciones por cache/contexto anterior a la creación del Vehicle de fixture. El test recarga la aplicación antes de navegar para hidratar de nuevo FleetContext; Action posterior pendiente.
-- Action `45079269083` ejecutó **37/38**; locator ambiguo por compartir texto entre placa y documento en las tarjetas. Corregido con sufijos distintos y `data-testid` derivado del DriverId consultado por API; nueva Action pendiente.
+- Action `45078351055` ejecutó **37/38**; trace identificó un selector sin opciones por contexto anterior a la creación del Vehicle. El test recarga antes de navegar.
+- Action `45079269083` ejecutó **37/38**; locator ambiguo al compartir texto placa y documento. Corregido con claves distintas e ID de Driver consultado por API.
+- Action `45080069469` ejecutó **37/38**; UI mostró placa tras PUT 204, pero GET de Driver retornó `vehicleId:null`. Action `45080342001` finalizó success con 37 passed y **1 flaky**: el intento inicial falló igual y el retry pasó. No se considera validada la persistencia estable; ver `ERROR_LOG.md`.
+- El siguiente test consulta el mismo Driver por el origen API directo y por `/api/backend`, comparando ambos `vehicleId` para localizar divergencia de persistencia/instancia o rewrite.
 
 - `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
 - El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.

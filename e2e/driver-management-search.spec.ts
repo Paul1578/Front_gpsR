@@ -160,8 +160,13 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   await driverCard.getByLabel("Vehículo para QA Responsive").selectOption(createdVehicleId!);
   await driverCard.getByRole("button", { name: "Asignar" }).click();
   await expect(driverCard).toContainText(vehiclePlate);
-  const assignedDriver = await page.request.get(`/api/backend/Drivers/${createdDriverId}`, { headers });
-  expect((await assignedDriver.json()).vehicleId).toBe(createdVehicleId);
+  const apiOrigin = (process.env.FLETFLOW_API_URL ?? "http://127.0.0.1:5048").replace(/\/api\/?$/, "").replace(/\/$/, "");
+  const assignedDriverDirect = await page.request.get(`${apiOrigin}/api/Drivers/${createdDriverId}`, { headers });
+  expect(assignedDriverDirect.status()).toBe(200);
+  expect((await assignedDriverDirect.json()).vehicleId).toBe(createdVehicleId);
+  const assignedDriverThroughFrontend = await page.request.get(`/api/backend/Drivers/${createdDriverId}`, { headers });
+  expect(assignedDriverThroughFrontend.status()).toBe(200);
+  expect((await assignedDriverThroughFrontend.json()).vehicleId).toBe(createdVehicleId);
 
   await driverCard.getByRole("button", { name: "Quitar" }).click();
   await expect(driverCard).toContainText("Sin vehículo asignado");

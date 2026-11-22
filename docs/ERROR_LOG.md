@@ -1375,3 +1375,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se separaron placa/documento con sufijos distintos y ahora el test consulta el ID creado desde `GET /Drivers`, usando `data-testid="managed-driver-{id}"`. No se relajó la aserción.
 - Prevención: las tarjetas contienen texto auxiliar en selectores; para identificar recursos creados usar el ID persistido por API y mantener las claves de vehículo/documento distintas.
 - La primera validación de build de esta corrección encontró una redeclaración TypeScript: el nombre `persistedDriver` ya identificaba la respuesta HTTP de verificación final. Se renombró la variable del lookup inicial a `createdDriver`; repetir lint/build y ejecutar Action.
+
+## 2026-11-22 — Asignación de vehículo no quedó confirmada por API en E2E — INVESTIGACIÓN ABIERTA
+
+- Action `45080069469` (SHA `4206b0d`) ejecutó **37/38**: al asignar un vehículo a un Driver recién creado, la UI mostró la placa pero `GET /Drivers/{id}` devolvió `vehicleId: null`. El locator ya apuntaba al ID real consultado desde API. Action `45080342001` (SHA `e18ea0f`) terminó success con **1 flaky**: el mismo caso falló igual en el intento inicial y pasó en retry; no se cuenta como pase estable.
+- Trace confirma `PUT /Drivers/{id}/assign-vehicle` body correcto y HTTP 204; el estado mostrado en la tarjeta provino de la actualización optimista del contexto. Esto puede ocultar que la API no haya persistido. Smoke backend separado sí valida asignación/lectura de un Driver sin UserId, pero aún no se identifica la diferencia de esta corrida integrada.
+- No se relajó la comprobación de persistencia ni se declaró el CRUD validado. El siguiente E2E compara GET directo al origen API con GET por la rewrite `/api/backend` para separar persistencia/instancia de proxy; luego repetir el flujo integrado.
+- Prevención: para acciones que responden 204, verificar siempre el recurso persistido; el estado optimista del frontend por sí solo no demuestra éxito durable.

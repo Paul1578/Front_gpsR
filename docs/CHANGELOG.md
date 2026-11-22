@@ -3,12 +3,13 @@
 - Resolución integrada en Action `45076629351` (`2147be7`): **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup API/MySQL correctos. Los fallos 503 de usuarios y flota permanecen independientes hasta sus respectivos reintentos.
 - El panel Driver se prueba sin mutaciones a 320/768 px; los estados de error no se convierten en ceros.
 
-## 2026-11-22 — CRUD de pantalla dedicada de conductores — E2E PENDIENTE
+## 2026-11-22 — CRUD de pantalla dedicada de conductores — asignación persistida en investigación
 
 - Auditoría encontró que `DriversManagement` ofrecía alta, edición, asignación, desasignación y baja/reactivación pero su E2E sólo hacía búsqueda.
 - Se agregó un flujo a 320/768 px y verificación de persistencia con API autenticada. Lint/build y discovery 38 pasan local; falta Action integrada.
 - Action `45078351055` ejecutó 37/38; el fallo fue un Vehicle creado después de hidratar FleetContext. Se agregó reload del dashboard antes de navegar al CRUD; nueva Action pendiente.
 - Action `45079269083` ejecutó 37/38; el locator por documento coincidía con otras tarjetas al repetir el texto de placa en sus selectores. Se diferenció placa/documento y el test ahora ubica por ID leído desde API.
+- Action `45080069469` falló la lectura persistida posterior a una asignación; `45080342001` terminó success con ese caso marcado flaky (fallo inicial, retry aprobado). El siguiente test compara el GET directo del API con el acceso vía rewrite Next para aislar el origen.
 
 - Corregidos selectores/secuencia del E2E de fallos 503, que buscaba exportar en el tab equivocado y duplicaba un retry conjunto.
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.

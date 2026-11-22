@@ -1,6 +1,7 @@
 ## Estado actual — 2026-11-22
 
-- Front `4206b0d` publicado en `refactor/route-builder`; lint/build correctos, discovery **38 E2E**. Action `45080069469` ejecuta el suite API/MySQL con backend actualizado. El nuevo CRUD Driver corrige locator ambiguo por IDs persistidos.
+- Front `e18ea0f` publicado: Action `45080342001` terminó success con 37 passed y 1 flaky (asignación Driver/Vehicle falló en intento inicial, pasó en retry). El E2E local ahora compara GET directo al backend y vía rewrite `/api/backend` para diagnosticar. Persistencia estable abierta; ver `ERROR_LOG.md`.
+- El diagnóstico directo vs. rewrite pasa localmente lint/build y discovery **38 tests**; el cambio quedó pendiente de commit/Action.
 - Backend `fa16d05` publicado en `chore/stabilize-fleet-platform`; smoke local amplía 403 de Manager/Logistics con snapshots MySQL intactos. Action `45080063668` en curso.
 - E2E de búsqueda de Equipo ampliado: miembros interactivos a 320 px, conductores a 768 px y comprobación de overflow; lint/build, discovery **38 tests** y diff-check pasan local. Cambios pendientes de commit/Action. La Action previa `45080069469` está ejecutando los 38 E2E con backend `fa16d05`.
 - Misión abierta: quedan más criterios de CRUD/roles/responsive. Admin delegado y desvinculación User↔Driver siguen a la espera de decisión; app nativa aplazada y SMTP/infraestructura productiva externos.
