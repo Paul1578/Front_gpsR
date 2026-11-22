@@ -354,3 +354,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Tras la Action `45062280254` (31/33), se corrigieron el desborde interno del mapa a 320 px y el mapeo de evidencia desde las paradas; el E2E ahora mide también el detalle Admin en 768 px. Lint/build, discovery 33 y diff-check pasan localmente. Action del SHA actualizado pendiente.
 
 - Action integrada `45063487802`: **31/33**. El mapa siguió excediendo `<main>` 43 px; ahora su wrapper también tiene ancho máximo y recorta overflow. El test de Historial esperaba 1, pero el flujo real agrega 3 evidencias; expectativa alineada a dos notas+foto. Volver a ejecutar 33 E2E.
+- Action integrada `45064475585`: **33/33 E2E autenticados**, Responsive browser check, lint, build y audit pasaron. Cubre mapa a 320 px e Historial/foto/descripción a 320/768 px.

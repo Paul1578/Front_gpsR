@@ -1232,8 +1232,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Fix: `min-w-0` en raíz, layout contenido, mapa y sidebar; Playwright revalida main/documento en 320 px.
 - `npm run lint`, `npm run build`, discovery de 33 y diff-check pasan con el SHA local. Integración completa pendiente.
 
-## 2026-11-22 — Action Front 45063487802 repitió overflow de mapa y corrigió aserción de evidencia — EN CORRECCIÓN
+## 2026-11-22 — Action Front 45063487802 repitió overflow de mapa y corrigió aserción de evidencia — CORREGIDO Y VALIDADO
 
 - La suite integrada volvió a medir `main.scrollWidth=363` a 320 px; `min-w-0` solo no limitó el área desplazable interna del mapa. Se añade ancho `w-full/max-w-full` y `overflow-hidden` al contenedor del mapa y a su layout.
 - Historial ya normalizaba la respuesta real: la operación E2E agrega dos notas y una foto, por eso la tarjeta mostraba **3 evidencias**, no 1. Se corrige la expectativa manteniendo aserciones de foto/descrición en el detalle.
-- Acción fallida: `45063487802`, **31/33**; la corrección requiere nueva Action.
+- Acción fallida: `45063487802`, **31/33**. La corrección pasó los 33 E2E autenticados en Action `45064475585`.

@@ -516,3 +516,4 @@ Fecha de actualización: 2026-11-22.
 - Fix en rama: `min-w-0` en ancestros del Mapa y normalización de evidencia por parada en Historial; E2E extiende el detalle Admin a 768 px. Lint/build/discovery (33) pasan localmente; Action integrada del nuevo SHA pendiente.
 
 - Front Action `45063487802` repitió overflow del `<main>` a 363 px; el wrapper aún debía recortar el ancho interno del mapa. La evidencia apareció y fueron 3 eventos (dos notas + foto), por lo que se corrigió la expectativa de tarjeta de 1 a 3. Action quedó 31/33; nuevo SHA pendiente.
+- Action Front `45064475585` pasó **33/33 E2E autenticados**, además de lint/build/audit/responsive; verificó mapa 320 px, evidencia real e Historial Admin a 768 px. Móvil nativo sigue aplazado por decisión de producto.
