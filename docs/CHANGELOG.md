@@ -94,3 +94,5 @@
 ## 2026-11-21 — Prueba del ciclo operativo de Driver
 
 - E2E móvil cubre ruta asignada, recogida/entrega, evidencia obligatoria y disponibilidad del vehículo al completar.
+
+- Se corrigió E2E Driver: aserción del endpoint de parada alineada a HTTP 200 y cleanup garantizado si falla el flujo; repetir CI antes de validar.

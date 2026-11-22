@@ -148,3 +148,5 @@ Fecha de actualización: 2026-11-21.
 - El caso Driver ahora crea una ruta real de prueba con parada de recogida y entrega, inicia la ruta desde Mi Ruta, cambia el estado de la parada, registra nota de evidencia y completa la ruta desde la UI móvil.
 - Verifica por API que la ruta quede completada y el vehículo disponible; recursos usan prefijos retirados por el cleanup aislado.
 - Lint/build y listado Playwright pasan localmente. Falta el run integrado después del push para comprobar el recorrido Chrome/API/MySQL.
+
+- Primer run del nuevo E2E Driver (`44984300436`) detectó contrato incorrecto del test (esperaba 204; API devuelve 200) y falta de cleanup tras fallo; ambas causas se corrigieron y están en `ERROR_LOG.md`. Lint/build/discovery pasan; Actions debe repetirse antes de contar el flujo como cubierto.

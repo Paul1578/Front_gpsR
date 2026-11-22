@@ -647,6 +647,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
   expect(routeResponse.status()).toBe(201);
   const routeId = (await routeResponse.json()).id as string;
 
+  try {
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(driverEmail!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
@@ -684,7 +685,7 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
     response.request().method() === "PUT",
   );
   await stopCard.getByRole("button", { name: "Iniciar parada" }).click();
-  expect((await startStopPromise).status()).toBe(204);
+  expect((await startStopPromise).status()).toBe(200);
 
   await stopCard.getByRole("button", { name: "Evidencia" }).click();
   const evidenceDialog = page.getByRole("dialog");
@@ -726,6 +727,15 @@ test("Driver sólo ve su operación y la API protege recursos administrativos", 
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  } finally {
+    await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+      headers: adminHeaders,
+      data: { status: 3 },
+    }).catch(() => undefined);
+    await page.request.delete(`/api/backend/Routes/${routeId}`, {
+      headers: adminHeaders,
+    }).catch(() => undefined);
+  }
 });
 
 test("un Admin de otra empresa no puede consultar ni modificar recursos de flota ajenos", async ({ page }) => {

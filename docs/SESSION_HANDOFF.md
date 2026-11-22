@@ -191,3 +191,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Cambio local sin publicar en `e2e/fleet-admin.spec.ts`: extiende el caso Driver para crear vehículo/ruta efímeros, completar una parada `pickup_and_delivery` con evidencia desde móvil, cerrar ruta y verificar status/vehículo en API.
 - `npm run lint`, `npm run build`, `npm run test:e2e -- --list` y `git diff --check` pasan; debe publicarse y esperarse Actions integrado. Fallos deben quedar registrados aquí y en `ERROR_LOG.md`.
+
+- E2E de Driver pendiente de repetición: run `44984300436` falló porque la prueba esperaba 204 en status de parada (contrato real 200) y dejó ruta activa, causando 409 en retry y tenant test. Aserción actualizada y `finally` cancela/baja la ruta. Confirmar siguiente run verde y si el cleanup permite cross-tenant posterior.

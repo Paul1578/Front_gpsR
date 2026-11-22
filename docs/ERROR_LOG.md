@@ -509,3 +509,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El selector `getByRole(button, {name:"Usuario", exact:true})` no encontraba la tarjeta porque su nombre accesible incluye también la descripción. Se inspeccionó el snapshot DOM y se usó una expresión regular que valida el prefijo del nombre completo.
 - La prueba de persistencia buscaba `member.role`; `/Users/my-team` entrega `roles: string[]`. Se alineó la aserción al DTO real y se comprobó que la lista contiene `User`.
 - Verificación tras ambas correcciones: suite Playwright autenticada Chrome/API/MySQL **14/14**, incluyendo alta UI y lectura persistida. Base efímera eliminada.
+
+## 2026-11-22 — E2E de Driver esperaba 204 para estado de parada y dejó una ruta activa — CORREGIDO, REPETIR CI
+
+- El endpoint `PUT /Routes/{id}/points/{index}/status` responde `200` con la ruta, mientras que el test esperaba `204`. La aserción queda alineada al contrato observado en el controlador.
+- Al fallar la aserción antes de completar la ruta, quedaba una ruta InProgress en el MySQL de esa ejecución. El retry y el test cross-tenant intentaban usar el mismo Driver y recibían 409 por conflicto de agenda; no fue una regresión de backend.
+- Se añadió `finally` que cancela y da de baja la ruta temporal aun cuando falle la prueba. Los nombres/placas mantienen el prefijo del cleanup existente.
+- Actions `44984300436` falló sólo en este nuevo caso y en los casos posteriores afectados por ese residuo. Corregido localmente; lint/build/discovery pasan. Pendiente repetir Actions en el siguiente SHA.
