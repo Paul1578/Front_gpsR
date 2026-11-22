@@ -1362,3 +1362,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Auditoría responsive observó que el test de la pantalla dedicada sólo creaba un Driver por API y probaba búsqueda, aunque la vista implementa alta, edición, asignación/desasignación y baja/reactivación. El CRUD en Gestión de Equipo no valida esta pantalla independiente.
 - Se añadió un flujo Playwright con interacciones a 320 px, verificación a 768 px y lecturas autenticadas API para comprobar persistencia. Lint/build, discovery 38 y diff-check pasan; Action E2E y limpieza integrada todavía pendientes.
 - Prevención: cubrir cada flujo de CRUD en la vista operativa donde se ofrece, no inferir su funcionamiento desde otra pantalla que comparte el backend.
+
+## 2026-11-22 — Selector de vehículo del E2E conservó contexto anterior — CORREGIDO LOCALMENTE
+
+- Action `45078351055` ejecutó 38 escenarios y falló sólo el nuevo CRUD de conductores al seleccionar el Vehicle. El trace confirmó que el vehículo QA se creó por API después del login, pero `FleetContext` no había recargado su lista; el `<select>` sólo contenía “Selecciona vehículo”. El resto del flujo (alta/edición) sí se ejecutó y el cleanup integrado corrió.
+- El test ahora recarga la página después de provisionar el vehículo, antes de abrir Gestión de Conductores, para que el contexto consulte la flota persistida como ocurriría al entrar en una sesión actualizada. Repetir Action API/MySQL para verificar asignación, desasignación y cleanup.
+- Prevención: cuando un E2E crea por API recursos que una vista ya cargada consume desde contexto global, refrescar esa fuente antes de probar los controles dependientes y confirmar opciones en el snapshot/trace.

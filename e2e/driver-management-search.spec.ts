@@ -119,6 +119,9 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   expect(vehicleResponse.status()).toBe(201);
   createdVehicleId = (await vehicleResponse.json() as { id: string }).id;
 
+  // Refresh FleetContext so the selector sees the vehicle provisioned after login.
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Conductores" })).toBeVisible();
@@ -149,6 +152,7 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   expect(updatedDriver.status()).toBe(200);
   expect((await updatedDriver.json()).lastName).toBe("Editado en móvil");
 
+  await expect(driverCard.getByRole("option", { name: new RegExp(vehiclePlate) })).toBeAttached();
   await driverCard.getByLabel("Vehículo para QA Responsive").selectOption(createdVehicleId!);
   await driverCard.getByRole("button", { name: "Asignar" }).click();
   await expect(driverCard).toContainText(vehiclePlate);

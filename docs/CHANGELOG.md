@@ -7,6 +7,7 @@
 
 - Auditoría encontró que `DriversManagement` ofrecía alta, edición, asignación, desasignación y baja/reactivación pero su E2E sólo hacía búsqueda.
 - Se agregó un flujo a 320/768 px y verificación de persistencia con API autenticada. Lint/build y discovery 38 pasan local; falta Action integrada.
+- Action `45078351055` ejecutó 37/38; el fallo fue un Vehicle creado después de hidratar FleetContext. Se agregó reload del dashboard antes de navegar al CRUD; nueva Action pendiente.
 
 - Corregidos selectores/secuencia del E2E de fallos 503, que buscaba exportar en el tab equivocado y duplicaba un retry conjunto.
 - El resumen de exportación muestra carga/error con ellipsis o raya y no ceros no verificados. AuthContext ignora respuestas de solicitudes de usuarios obsoletas.

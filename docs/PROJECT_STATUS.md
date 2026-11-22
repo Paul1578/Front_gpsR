@@ -2,7 +2,7 @@
 
 - Front `refactor/route-builder`: `2147be7` pasó Action `45076629351` y documentación HEAD `8887649` pasó `45077576665`: ambas con **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup API/MySQL exitosos.
 - El formulario Driver del panel se comprobó a 320/768 px; el guardado parcial de Vehicle actualiza la UI cuando persiste detalle pero falla el cambio de estado. E2E integrado queda cubierto por Actions recientes.
-- Auditoría responsive encontró que la pantalla dedicada Gestión de Conductores sólo tenía búsqueda E2E. Se añadió un test de alta/edición/asignación/desasignación/baja/reactivación con persistencia API a 320/768 px; lint/build pasan y discovery sube a **38 tests**. El E2E real queda pendiente de Action integrada.
+- Auditoría responsive encontró que la pantalla dedicada Gestión de Conductores sólo tenía búsqueda E2E. Nuevo test de alta/edición/asignación/desasignación/baja/reactivación llega a **38 tests**. Action `45078351055` ejecutó 37/38: falló la asignación porque el fixture Vehicle se creó después del cache de FleetContext; el trace motivó un reload previo a navegar. Lint/build/discovery local pasan; nueva Action pendiente.
 - Front `5d4e290` también pasó Action `45071113746`: 36/36 E2E, responsive 1/1, backend xUnit 110/110 y cleanup.
 - Backend `87b208e` pasó Action `45071475764`: build, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup; adicionalmente smoke local efímero completo.
 - Misión abierta. No hay definición de producto sobre Admin delegado ni desvinculación de User/Driver; móvil nativo aplazado y SMTP/infraestructura de producción son externos.
