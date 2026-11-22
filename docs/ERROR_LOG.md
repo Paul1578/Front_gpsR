@@ -9,6 +9,7 @@
 - Action `45053782460` terminó **30/31**; el cleanup funcionó y el único fallo siguió en el nombre de destino, sobrescrito por el click de mapa. El nuevo orden conserva la verificación pendiente, fija coordenadas, y luego aplica el nombre final desde el editor visible. La repetición con ese cambio y los nuevos casos de roles está pendiente.
 - Action integrada `45054550439` comprueba el fix y los E2E nuevos de Manager/Logistics.
 - Action `45054550439` pasó **32/33**, incluido el E2E de altas Manager/Logistics. El nuevo flujo Manager ingresó a Rutas, pero el test esperaba heading “Gestión de Rutas”; el h1 real es “Rutas”. Causa: selector E2E no coincide con el texto accesible real, no error de permisos ni UI. Corregido el locator a `heading: Rutas` para la lista y al cancelar el constructor. Repetir Action completa.
+- Action de repetición `45055100816` sobre `1a893c9` en curso.
 
 # 2026-11-22 — Action 45051132073: timeout de test de mapa y menú responsive — CORREGIDO
 

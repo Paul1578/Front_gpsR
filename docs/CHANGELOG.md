@@ -378,6 +378,7 @@
 - La selección del mapa reemplazaba también el nombre por la etiqueta genérica “Destino”. El E2E verifica pendiente, fija punto y vuelve a escribir el nombre después de regresar al editor.
 - Añadidos E2E para alta de roles Manager/Logistics desde Equipo y para el dashboard/responsive Manager con acceso a Gestión de Rutas y su constructor. Local lint/build/discovery 33 correctos; Action integrada pendiente.
 - Action `45054550439` pasó **32/33**; altas directas de Manager/Logistics y punto móvil pasaron. El único fallo fue esperar el h1 “Gestión de Rutas”, cuando la lista muestra “Rutas”; selector corregido y Action repetida pendiente.
+- Action `45055100816` repite los **33** escenarios después del fix; pendiente.
 
 # 2026-11-22 — Mi Ruta: responsive tablet
 

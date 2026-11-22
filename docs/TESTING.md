@@ -29,6 +29,7 @@
 - Corrección posterior de nombre de destino aplica la etiqueta después de fijar el punto. Cobertura añadida para alta directa de Manager/Logistics y acceso responsive de Manager al constructor. Lint/build pasan; discovery ahora **33**; Action integrada pendiente.
 - Action `45054550439`, SHA `a2c1ca1`: valida mapa final y roles; concluyó con **32/33**; detalle del único fallo abajo.
 - Resultado `45054550439`: backend/audit/lint/build/responsive pasan; **32/33 E2E** y cleanup. Alta Manager/Logistics pasó; el único fallo fue heading incorrecto del nuevo test de Manager (esperaba “Gestión de Rutas”, h1 real “Rutas”). Locator corregido; nueva Action pendiente.
+- Action `45055100816`, SHA `1a893c9`: repite suite completa con locator del encabezado Rutas corregido; en curso.
 - Constructor de rutas: el caso existente agrega tres paradas, elimina una, reordena otra y crea la ruta desde el navegador. La aserción API ahora compara cada punto persistido por nombre y operación en orden exacto (incluye origen/destino sin operación), lo que demuestra que la parada eliminada no quedó y que los tipos siguieron a sus paradas al reordenar. El `finally` verifica las respuestas de limpieza de la ruta y vehículo.
 - Intento Playwright autenticado local: `CI=true npm run test:e2e -- --grep "Admin crea una ruta desde el mapa móvil"` arrancó Next y reportó 1 skipped; faltaban credenciales QA/mutaciones y API no estaba activa (Swagger local HTTP 000). No se crearon fixtures; para resultado funcional se requiere el runner con API/MySQL descartables y variables QA.
 
