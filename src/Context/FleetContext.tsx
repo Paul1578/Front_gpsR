@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   ReactNode,
@@ -593,6 +594,9 @@ const toApiRoutePayload = (route: Partial<Route>) => {
 
 export function FleetProvider({ children }: { children: ReactNode }) {
   const { apiFetch, isAuthenticated, isLoadingUser, user } = useAuth();
+  const ownerIdRef = useRef<string | null>(user?.id ?? null);
+  const ownerSessionVersionRef = useRef(0);
+  const ownerRequestControllerRef = useRef(new AbortController());
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -608,8 +612,51 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       ? current.includes(resource) ? current : [...current, resource]
       : current.filter((item) => item !== resource)), []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    ownerIdRef.current = user?.id ?? null;
+    ownerSessionVersionRef.current += 1;
     driversRequestSequence.current += 1;
+    const previousController = ownerRequestControllerRef.current;
+    ownerRequestControllerRef.current = new AbortController();
+    previousController.abort();
+    return () => ownerRequestControllerRef.current.abort();
+  }, [user?.id]);
+
+  const captureOwnerSession = useCallback(() => ({
+    ownerId: ownerIdRef.current,
+    version: ownerSessionVersionRef.current,
+  }), []);
+  const isCurrentOwnerSession = useCallback((session: ReturnType<typeof captureOwnerSession>) =>
+    session.ownerId !== null &&
+    session.ownerId === ownerIdRef.current &&
+    session.version === ownerSessionVersionRef.current, []);
+
+  const apiFetchForOwner = useCallback(async <T,>(path: string, options: RequestInit = {}): Promise<T> => {
+    const session = captureOwnerSession();
+    const ownerSignal = ownerRequestControllerRef.current.signal;
+    const requestController = new AbortController();
+    const abortRequest = () => requestController.abort();
+    if (ownerSignal.aborted || options.signal?.aborted) abortRequest();
+    else {
+      ownerSignal.addEventListener("abort", abortRequest, { once: true });
+      options.signal?.addEventListener("abort", abortRequest, { once: true });
+    }
+
+    try {
+      const result = await apiFetch<T>(path, { ...options, signal: requestController.signal });
+      if (!isCurrentOwnerSession(session)) {
+        const error = new Error("Fleet response belongs to an inactive account session.");
+        error.name = "AbortError";
+        throw error;
+      }
+      return result;
+    } finally {
+      ownerSignal.removeEventListener("abort", abortRequest);
+      options.signal?.removeEventListener("abort", abortRequest);
+    }
+  }, [apiFetch, captureOwnerSession, isCurrentOwnerSession]);
+
+  useEffect(() => {
     setVehicles([]);
     setRoutes([]);
     setDrivers([]);
@@ -622,6 +669,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const isAuthError = useCallback((error: unknown) => {
+    if ((error as { name?: string } | null)?.name === "AbortError") return true;
     const status = (error as { status?: number } | null)?.status;
     return status === 401 || status === 403;
   }, []);
@@ -629,7 +677,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const refreshRouteAssignmentOptions = useCallback(async () => {
     if (!apiFetch || !user || !["gerente", "logistica"].includes(user.role)) return;
     try {
-      const options = await apiFetch<ApiRouteAssignmentOptions>("/Routes/assignment-options");
+      const options = await apiFetchForOwner<ApiRouteAssignmentOptions>("/Routes/assignment-options");
       setRouteAssignmentVehicles(options.vehicles.map((vehicle) => ({
         id: vehicle.id,
         placa: vehicle.plate,
@@ -644,7 +692,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       if (!isAuthError(error)) setResourceError("opciones de asignación", true);
       throw error;
     }
-  }, [apiFetch, isAuthError, setResourceError, user]);
+  }, [apiFetch, apiFetchForOwner, isAuthError, setResourceError, user]);
 
   useEffect(() => {
     if (!apiFetch || isLoadingUser || !isAuthenticated || !user || !["gerente", "logistica"].includes(user.role)) return;
@@ -661,9 +709,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setVehiclesLoading(false);
         return;
       }
+      const ownerSession = captureOwnerSession();
       setVehiclesLoading(true);
       try {
-        const data = await apiFetch<ApiVehicle[]>("/Vehicles");
+        const data = await apiFetchForOwner<ApiVehicle[]>("/Vehicles");
         const active = data.filter((vehicle) => vehicle.isActive !== false);
         setVehicles(active.map(mapApiVehicle));
         setResourceError("vehículos", false);
@@ -672,11 +721,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setResourceError("vehículos", true);
         console.error("Error cargando vehículos desde API", error);
       } finally {
-        setVehiclesLoading(false);
+        if (isCurrentOwnerSession(ownerSession)) setVehiclesLoading(false);
       }
     };
     void loadVehicles();
-  }, [apiFetch, isAuthenticated, isAuthError, isLoadingUser, setResourceError, user?.role]);
+  }, [apiFetch, apiFetchForOwner, captureOwnerSession, isAuthenticated, isAuthError, isCurrentOwnerSession, isLoadingUser, setResourceError, user?.role]);
 
   const addVehicle = async (
     vehicle: Omit<Vehicle, "id">,
@@ -690,7 +739,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         description: vehicle.descripcion ?? "",
       };
 
-      const created = await apiFetch<ApiVehicle>("/Vehicles", {
+      const created = await apiFetchForOwner<ApiVehicle>("/Vehicles", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -733,14 +782,14 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           description: vehicleData.descripcion ?? current?.descripcion ?? "",
         };
 
-        await apiFetch(`/Vehicles/${id}`, {
+        await apiFetchForOwner(`/Vehicles/${id}`, {
           method: "PUT",
           body: JSON.stringify(payload),
         });
       }
 
       if (nextEstado && current?.estado !== nextEstado) {
-        await apiFetch(`/Vehicles/${id}/status`, {
+        await apiFetchForOwner(`/Vehicles/${id}/status`, {
           method: "PUT",
           body: JSON.stringify({ status: stateToStatusNumber(nextEstado) }),
         });
@@ -764,7 +813,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const deleteVehicle = async (id: string): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Vehicles/${id}`, { method: "DELETE" });
+      await apiFetchForOwner(`/Vehicles/${id}`, { method: "DELETE" });
 
       const updatedVehicles = vehicles.filter((v) => v.id !== id);
       setVehicles(updatedVehicles);
@@ -781,7 +830,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const getInactiveVehicles = async (): Promise<Vehicle[]> => {
     try {
-      const data = await apiFetch<ApiVehicle[]>("/Vehicles?onlyActive=false");
+      const data = await apiFetchForOwner<ApiVehicle[]>("/Vehicles?onlyActive=false");
       return data.filter((vehicle) => vehicle.isActive === false).map(mapApiVehicle);
     } catch (error) {
       return Promise.reject(error);
@@ -790,9 +839,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const reactivateVehicle = async (id: string): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Vehicles/${id}/reactivate`, { method: "POST" });
+      await apiFetchForOwner(`/Vehicles/${id}/reactivate`, { method: "POST" });
       try {
-        const activeVehicles = await apiFetch<ApiVehicle[]>("/Vehicles?onlyActive=true");
+        const activeVehicles = await apiFetchForOwner<ApiVehicle[]>("/Vehicles?onlyActive=true");
         setVehicles(activeVehicles.map(mapApiVehicle));
         setResourceError("vehículos", false);
         return { ok: true, message: "Vehículo reactivado" };
@@ -814,33 +863,34 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const refreshRoutes = useCallback(async () => {
     if (!apiFetch) return;
 
-    const data = await apiFetch<ApiRoute[]>("/Routes");
+    const data = await apiFetchForOwner<ApiRoute[]>("/Routes");
     const active = data.filter((route) => route.isActive !== false);
 
     setRoutes(active.map(mapApiRoute));
     setResourceError("rutas", false);
-  }, [apiFetch, setResourceError]);
+  }, [apiFetch, apiFetchForOwner, setResourceError]);
 
   const refreshDrivers = useCallback(
     async (onlyActive = true) => {
       if (!apiFetch || user?.role === "chofer" || user?.role === "usuario") return;
       const requestSequence = ++driversRequestSequence.current;
+      const ownerSession = captureOwnerSession();
       const query = onlyActive ? "?onlyActive=true" : "";
       try {
-        const data = await apiFetch<ApiDriver[]>(`/Drivers${query}`);
-        if (requestSequence !== driversRequestSequence.current) return;
+        const data = await apiFetchForOwner<ApiDriver[]>(`/Drivers${query}`);
+        if (requestSequence !== driversRequestSequence.current || !isCurrentOwnerSession(ownerSession)) return;
         const visibleDrivers = onlyActive
           ? data.filter((driver) => driver.isActive !== false)
           : data;
         setDrivers(visibleDrivers.map(mapApiDriver));
         setResourceError("conductores", false);
       } catch (error) {
-        if (requestSequence !== driversRequestSequence.current) return;
+        if (requestSequence !== driversRequestSequence.current || !isCurrentOwnerSession(ownerSession)) return;
         setResourceError("conductores", true);
         throw error;
       }
     },
-    [apiFetch, setResourceError, user?.role],
+    [apiFetch, apiFetchForOwner, captureOwnerSession, isCurrentOwnerSession, setResourceError, user?.role],
   );
 
   useEffect(() => {
@@ -850,6 +900,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setRoutesLoading(false);
         return;
       }
+      const ownerSession = captureOwnerSession();
       setRoutesLoading(true);
       try {
         await refreshRoutes();
@@ -858,12 +909,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setResourceError("rutas", true);
         console.error("Error cargando rutas desde API", error);
       } finally {
-        setRoutesLoading(false);
+        if (isCurrentOwnerSession(ownerSession)) setRoutesLoading(false);
       }
     };
 
     void loadRoutes();
-  }, [apiFetch, isAuthenticated, isAuthError, isLoadingUser, refreshRoutes, setResourceError, user?.role]);
+  }, [apiFetch, captureOwnerSession, isAuthenticated, isAuthError, isCurrentOwnerSession, isLoadingUser, refreshRoutes, setResourceError, user?.role]);
 
   useEffect(() => {
     const loadDrivers = async () => {
@@ -890,26 +941,31 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   ]);
 
   const retryFleetData = async () => {
+    const ownerSession = captureOwnerSession();
     const failures: string[] = [];
     if (["gerente", "logistica"].includes(user?.role ?? "")) {
       try { await refreshRouteAssignmentOptions(); } catch { failures.push("opciones de asignación"); }
+      if (!isCurrentOwnerSession(ownerSession)) return;
     }
     if (!["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
       setVehiclesLoading(true);
       try {
-        const data = await apiFetch<ApiVehicle[]>("/Vehicles");
+        const data = await apiFetchForOwner<ApiVehicle[]>("/Vehicles");
         setVehicles(data.filter((item) => item.isActive !== false).map(mapApiVehicle));
         setResourceError("vehículos", false);
       } catch { failures.push("vehículos"); }
-      finally { setVehiclesLoading(false); }
+      finally { if (isCurrentOwnerSession(ownerSession)) setVehiclesLoading(false); }
+      if (!isCurrentOwnerSession(ownerSession)) return;
       try { await refreshDrivers(); } catch { failures.push("conductores"); }
+      if (!isCurrentOwnerSession(ownerSession)) return;
     }
     if (user?.role !== "usuario") {
       setRoutesLoading(true);
       try { await refreshRoutes(); } catch { failures.push("rutas"); }
-      finally { setRoutesLoading(false); }
+      finally { if (isCurrentOwnerSession(ownerSession)) setRoutesLoading(false); }
+      if (!isCurrentOwnerSession(ownerSession)) return;
     }
-    setLoadErrors(failures);
+    if (isCurrentOwnerSession(ownerSession)) setLoadErrors(failures);
   };
 
   const userOwnsLoadedData = !!user && fleetOwnerId === user.id;
@@ -920,7 +976,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     try {
       const payload = toApiRoutePayload(route);
 
-      await apiFetch<ApiRoute>("/Routes", {
+      await apiFetchForOwner<ApiRoute>("/Routes", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -952,7 +1008,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           ["estado", "fechaInicio", "fechaFin"].includes(key),
         );
       if (statusOnlyPatch) {
-        await apiFetch(`/Routes/${id}/status`, {
+        await apiFetchForOwner(`/Routes/${id}/status`, {
           method: "PUT",
           body: JSON.stringify({
             status: stateToApiStatusNumber(routePatch.estado),
@@ -1027,7 +1083,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         isActive: true,
       };
 
-      await apiFetch<ApiRoute>(`/Routes/${id}`, {
+      await apiFetchForOwner<ApiRoute>(`/Routes/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -1051,7 +1107,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const deleteRoute = async (id: string): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Routes/${id}`, { method: "DELETE" });
+      await apiFetchForOwner(`/Routes/${id}`, { method: "DELETE" });
 
       await refreshRoutes();
       return { ok: true, message: "Ruta eliminada" };
@@ -1070,7 +1126,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     meta?: { recordedAt?: string; speedKmh?: number; heading?: number },
   ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Routes/${routeId}/positions`, {
+      await apiFetchForOwner(`/Routes/${routeId}/positions`, {
         method: "POST",
         body: JSON.stringify({
           latitude: location.lat,
@@ -1102,7 +1158,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     status: RoutePointStatus,
   ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Routes/${routeId}/points/${pointIndex}/status`, {
+      await apiFetchForOwner(`/Routes/${routeId}/points/${pointIndex}/status`, {
         method: "PUT",
         body: JSON.stringify({ status: pointStatusToApiNumber(status) }),
       });
@@ -1119,7 +1175,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     evidence: NewRouteEvidence,
   ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Routes/${routeId}/points/${pointIndex}/evidence`, {
+      await apiFetchForOwner(`/Routes/${routeId}/points/${pointIndex}/evidence`, {
         method: "POST",
         body: JSON.stringify(evidence),
       });
@@ -1148,7 +1204,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         phoneNumber: driver.phoneNumber,
         userId: driver.userId ?? null,
       };
-      const created = await apiFetch<ApiDriver>("/Drivers", {
+      const created = await apiFetchForOwner<ApiDriver>("/Drivers", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -1169,7 +1225,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     driver: Pick<Driver, "firstName" | "lastName" | "documentNumber" | "phoneNumber">,
   ): Promise<ActionResult> => {
     try {
-      const updated = await apiFetch<ApiDriver>(`/Drivers/${id}`, {
+      const updated = await apiFetchForOwner<ApiDriver>(`/Drivers/${id}`, {
         method: "PUT",
         body: JSON.stringify(driver),
       });
@@ -1183,7 +1239,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const setDriverActive = async (id: string, isActive: boolean): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Drivers/${id}/status`, {
+      await apiFetchForOwner(`/Drivers/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ isActive }),
       });
@@ -1205,7 +1261,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     vehicleId: string,
   ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Drivers/${driverId}/assign-vehicle`, {
+      await apiFetchForOwner(`/Drivers/${driverId}/assign-vehicle`, {
         method: "PUT",
         body: JSON.stringify({ vehicleId }),
       });
@@ -1226,7 +1282,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     driverId: string,
   ): Promise<ActionResult> => {
     try {
-      await apiFetch(`/Drivers/${driverId}/unassign-vehicle`, {
+      await apiFetchForOwner(`/Drivers/${driverId}/unassign-vehicle`, {
         method: "PUT",
       });
       setDrivers((prev) =>

@@ -1074,3 +1074,12 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: `FleetContext` expone `routesLoading`; la vista muestra “Cargando rutas…” y reserva el estado vacío para una respuesta exitosa sin rutas. El reintento también activa el estado de carga.
 - Nuevo Playwright retiene el GET inicial, verifica carga y ausencia de vacío, libera 503, comprueba alerta, reintenta con 200 y ve `QA-ROUTE-01`; viewport 320 px sin overflow.
 - Validación local: spec completo de carga/error **6/6**, test enfocado de rutas 1/1, lint/build, discovery **24** y diff-check pasan. Actions integrado pendiente.
+
+## 2026-11-22 — FleetContext podía exponer respuestas de otra cuenta — CORREGIDO; CI PENDIENTE
+
+- Auditoría independiente demostró una carrera entre el cambio de `user.id` y respuestas pendientes: una lista de vehículos/rutas/opciones de A podía sobrescribir el estado ya marcado como propiedad de B. `refreshDrivers` tenía secuencia local, pero reintentos viejos podían continuar después del cambio.
+- Solución: `FleetContext` rota una sesión de solicitudes en `useLayoutEffect` al cambiar la identidad, aborta llamadas en curso y valida owner+versión al resolver. Todas las peticiones de flota pasan por `apiFetchForOwner`; reintentos dejan de continuar si cambia el owner y los estados de carga/error tampoco se actualizan desde una sesión obsoleta.
+- E2E real en SPA: demora GET `/Vehicles` de A, cierra sesión, inicia B, carga `B-PRIVATE-01`, libera respuesta tardía `A-PRIVATE-01`; la unidad A no aparece. Caso enfocado **1/1** y spec load-errors **7/7**.
+- La primera corrida de regresión falló porque `getByLabel("Contraseña")` seleccionaba también el botón “Mostrar contraseña”; selector cambiado a role textbox. ESLint detectó dos dependencias del hook; corregidas. Repetición enfocada pasó; lint/build/discovery **25**/diff-check pasan.
+- Actions `45040955335` ya pasó para el código anterior de `98f7c67`: E2E **24/24**, responsive, lint/build/audit y Backend `a18a34f`. El fix de aislamiento de cuenta aún requiere una nueva Action integrada.
+- Intento inicial de subagente adicional chocó con el límite de threads abiertos. Se cerró el agente backend ya completado y se lanzó la auditoría con éxito; sin cambio de código por ese error.

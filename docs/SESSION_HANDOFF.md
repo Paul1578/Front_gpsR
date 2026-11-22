@@ -605,3 +605,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Local: test enfocado de rutas 1/1; `team-management-load-errors.spec.ts` **6/6**; lint/build, discovery Playwright **24**, diff-check pasan. Actions integrado pendiente.
 - Backend `b664b2c` pasó Actions `45040550853` (xUnit 86/86, Release, HTTP/MySQL isolation, concurrencia y cleanup). El Front Actions `45040095930` pasó contra backend previo `d73a4d6`; la próxima corrida con este cambio debe descargar `a18a34f` (docs del código backend `b664b2c`).
 - Política Admin delegado sigue pendiente de producto; no modificar sin respuesta. Móvil nativo aplazado; SMTP/infra PFX externos.
+
+## Hallazgo prioritario de seguridad Front — respuestas entre cuentas — 2026-11-22
+
+- Agente QA/security read-only confirmó que respuestas de A podían sobrescribir el state de B tras cambiar `user.id`; listado en vehículos/rutas/opciones y `retryFleetData` afectados. Sin fallo confirmado de autorización backend.
+- Fix local en `FleetContext`: generación de sesión por owner, `AbortController` por sesión, wrapper `apiFetchForOwner` para todas las llamadas de flota y validación de identidad/versión antes de aceptar respuesta. Los retries cancelan su flujo y no escriben errores/cargas de sesiones viejas.
+- E2E SPA real: solicitud de vehículos de A queda pendiente, logout/login B carga `B-PRIVATE-01`, luego se libera A y se verifica ausencia de `A-PRIVATE-01`. Test enfocado 1/1; spec 7/7; lint/build y discovery 25 pasan local.
+- Primera prueba usó selector ambiguo para contraseña; corregido a `getByRole("textbox")`. ESLint reportó dependencias hook omitida/sobrante; corregidas. Ambos quedan en ERROR_LOG.
+- Última Action Front `45040955335` pasó código previo `98f7c67` con Backend `a18a34f`: E2E 24/24, responsive/audit/lint/build. El fix de aislamiento está pendiente de commit, push y Action nuevo.
+- Intento de subagente rebotó por límite de threads; se cerró al agente Backend completado y la auditoría se lanzó correctamente.

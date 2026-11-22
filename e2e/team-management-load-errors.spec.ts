@@ -332,6 +332,144 @@ test("Gestión de Rutas muestra carga antes de error/vacío y recupera rutas al 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
+test("FleetContext descarta una respuesta pendiente de una cuenta anterior", async ({ page }) => {
+  let releaseAccountAVehicles: () => void = () => {};
+  let notifyAccountAVehiclesRequest: () => void = () => {};
+  const accountAVehiclesRequestStarted = new Promise<void>((resolve) => {
+    notifyAccountAVehiclesRequest = resolve;
+  });
+  const accountAVehiclesGate = new Promise<void>((resolve) => {
+    releaseAccountAVehicles = resolve;
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const authorization = request.headers().authorization;
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "fleet-owner-a",
+          email: "owner-a@example.test",
+          username: "owner-a@example.test",
+          firstName: "Owner",
+          lastName: "A",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/Auth/logout")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/Auth/login")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          accessToken: "account-b-access-token",
+          refreshToken: "account-b-refresh-token",
+          user: {
+            id: "fleet-owner-b",
+            email: "owner-b@example.test",
+            username: "owner-b@example.test",
+            firstName: "Owner",
+            lastName: "B",
+            roles: ["Admin"],
+            isActive: true,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
+      if (authorization === "Bearer playwright-test-access-token") {
+        notifyAccountAVehiclesRequest();
+        await accountAVehiclesGate;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "vehicle-account-a",
+            plate: "A-PRIVATE-01",
+            brand: "Fleet QA",
+            model: "Van",
+            year: 2025,
+            status: 0,
+            isActive: true,
+          }]),
+        }).catch(() => {});
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "vehicle-account-b",
+            plate: "B-PRIVATE-01",
+            brand: "Fleet QA",
+            model: "Van",
+            year: 2025,
+            status: 0,
+            isActive: true,
+          }]),
+        });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+  await accountAVehiclesRequestStarted;
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  await page.waitForURL(/\/login/);
+
+  await page.getByLabel("Correo electrónico").fill("owner-b@example.test");
+  await page.getByRole("textbox", { name: "Contraseña" }).fill("test-password");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page.getByText("Owner B", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+  await expect(page.getByText("B-PRIVATE-01", { exact: true })).toBeVisible();
+
+  releaseAccountAVehicles();
+  await expect(page.getByText("A-PRIVATE-01", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("B-PRIVATE-01", { exact: true })).toBeVisible();
+});
+
 test("Gestión de Equipo muestra y permite reintentar fallos de equipo y choferes", async ({ page }) => {
   let teamRequestFails = true;
   let driversRequestFails = true;

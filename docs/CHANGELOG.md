@@ -348,3 +348,9 @@
 - Gestión de Rutas diferencia carga pendiente, fallo de API, lista vacía confirmada y resultados; reintentar también comunica la carga.
 - Playwright prueba 503 → reintento con ruta recuperada en viewport 320 px.
 - Verificación local: test enfocado 1/1, spec de estados 6/6, lint/build y discovery 24 pasan. CI integrado pendiente.
+
+## 2026-11-22 — Aislamiento del estado frontend entre sesiones
+
+- FleetContext cancela y descarta respuestas de solicitudes iniciadas por una cuenta anterior cuando cambia `user.id`; protege vehículos, rutas, opciones de asignación y reintentos.
+- E2E inicia sesión A, mantiene su respuesta pendiente, cambia a B y la libera después de cargar B; confirma que los datos A no se renderizan.
+- Validación local: caso enfocado 1/1, load-errors 7/7, lint/build, discovery 25 y diff-check pasan. CI integrado pendiente.

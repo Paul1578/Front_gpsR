@@ -439,3 +439,8 @@ Fecha de actualización: 2026-11-22.
 
 - Añadido estado accesible para la petición inicial y los reintentos; no se muestra lista vacía hasta una respuesta exitosa del backend.
 - Playwright local 6/6 del spec de carga/error, test enfocado 1/1, lint/build y discovery 24 pasan. Actions integrado pendiente.
+
+## Seguridad de sesión del estado frontend — 2026-11-22
+
+- Cerrada carrera de solicitudes entre cuentas: al cambiar owner, FleetContext aborta la sesión anterior y rechaza cualquier respuesta tardía por identidad/versión, incluyendo reintentos y datos de asignación.
+- E2E A→logout→B con GET de A retrasado confirma que `A-PRIVATE-01` no aparece en la flota de B; Playwright load-errors 7/7, lint/build y discovery 25 pasan. Actions exacto de este fix pendiente.
