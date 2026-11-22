@@ -259,3 +259,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Actions `45028577152`: **success** para Front `da70521` + Backend `f2f18cd`.
 - `npm audit --audit-level=low`, lint, build, browser responsive y suite autenticada Playwright Chrome/API/MySQL: **20/20**, cero skips.
 - El workflow finalizó API, MySQL y cleanup sin errores.
+
+## Validación integrada posterior — `505d6c3`
+
+- Actions `45030366554` success: backend Release/xUnit **80/80**, npm audit, lint, build, responsive browser **1/1** y Playwright autenticado Chrome/API/MySQL **20/20**.
+- Runner ejecutó cleanup de la DB MySQL efímera; backend descargado `43c074d`. El backend ya había pasado su propio HTTP/MySQL smoke `45029798323` y el worker outbox está cubierto por SQLite.

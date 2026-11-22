@@ -49,6 +49,14 @@
 
 # Session handoff
 
+## Corte integrado — 2026-11-22
+
+- Branches: Front `refactor/route-builder` HEAD `505d6c3`; Backend `chore/stabilize-fleet-platform` HEAD `4b67a86` (documentación sobre código validado en `43c074d`). Ambas ramas aisladas de `main`.
+- Front Actions `45030366554` success; checkout backend `43c074d`; audit/lint/build/responsive y E2E API/MySQL **20/20** pasaron. Incluye backend Release/xUnit **80/80**.
+- Backend Actions `45030208849` validó código `43c074d`: xUnit 80/80, HTTP/MySQL, autorización Driver same-tenant, concurrencia y cleanup success. Actions `45030428079` también pasó para `4b67a86`.
+- Trabajo reciente: fix TOCTOU en cambio de estado tras lock/reload; smoke HTTP del Driver ajeno en el mismo tenant con aserción no-mutante; tests SQLite para entrega exitosa y dead-letter del outbox. Los errores iniciales y correcciones están en `ERROR_LOG.md`.
+- Pendiente: ampliar los CRUD/roles/responsive restantes; revisar política de promoción a Admin delegado antes de cambiar permisos. SMTP real necesita credenciales; app móvil nativa está aplazada. Mantener la misión activa.
+
 ## Validación de filtros/roles/responsive — 2026-11-22
 
 - Front commit `da70521` publicado en `refactor/route-builder`; Actions `45028577152` terminó success con checkout de backend `f2f18cd`.

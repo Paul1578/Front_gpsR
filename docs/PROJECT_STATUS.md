@@ -375,3 +375,10 @@ Fecha de actualización: 2026-11-22.
 - Requiere Actions nuevo tras push para confirmar commit integrado con backend 5049dea. Auditoría global sigue abierta.
 
 - Validación integrada completada: Front `da70521` + backend `f2f18cd`, Actions `45028577152` success. Audit de dependencias, lint, build, responsive y E2E autenticado Chrome/API/MySQL **20/20** pasaron; runner/servicios descartables completaron cleanup.
+
+## Estado integrado actual — 2026-11-22
+
+- Front `505d6c3`, Actions `45030366554` success con Backend `43c074d`: audit, lint, build, browser responsive, Release/xUnit backend **80/80**, E2E autenticado API/MySQL **20/20**, cleanup correcto.
+- El Backend `43c074d` pasó además Actions `45030208849`: smoke HTTP/MySQL tenant y Driver del mismo tenant, autorización, rutas/concurrencia y limpieza sin fixtures QA.
+- Outbox quedó automatizado en SQLite para entrega/descifrado y dead-letter al intento 12. SMTP real requiere credenciales externas; nativo móvil sigue pospuesto por el usuario.
+- La misión sigue abierta: completar vistas/acciones CRUD y responsive aún no cubiertas y resolver la política de promoción Admin delegado. No declarar la auditoría integral completa.

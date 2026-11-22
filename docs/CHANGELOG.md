@@ -292,3 +292,8 @@
 
 - Rutas: botón “Limpiar filtros” permanece disponible cuando los filtros aún devuelven coincidencias; cubierto con filtros combinados y restauración desde API/MySQL.
 - E2E agrega denegación de `Users/my-team` para Manager/Logistics y responsive de asignación/cancelación Logistics en 320/768 px. Actions `45028577152`: **20/20**.
+
+## 2026-11-22 — Revalidación integral y CI
+
+- Actions `45030366554` validó Front `505d6c3` con Backend `43c074d`: xUnit 80/80, audit/lint/build, responsive 1/1, E2E API/MySQL 20/20 y cleanup.
+- Las nuevas pruebas backend verifican que Driver no acceda a ruta de otro Driver del mismo tenant y que EmailOutbox descifre/entregue o pase a dead-letter correctamente.
