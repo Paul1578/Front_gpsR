@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -89,7 +90,27 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Exportar Ahora" })).toBeVisible();
+  const exportButton = page.getByRole("button", { name: "Exportar Ahora" });
+  await expect(exportButton).toBeEnabled();
+
+  const downloadPromise = page.waitForEvent("download");
+  await exportButton.click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^fletflow-empresa-\d+\.json$/);
+  const downloadPath = await download.path();
+  expect(downloadPath).toBeTruthy();
+  const exported = JSON.parse(await readFile(downloadPath!, "utf8")) as {
+    users: Array<{ usuario?: string }>;
+    routes: unknown[];
+    vehicles: unknown[];
+    exportDate: string;
+  };
+  expect(exported.users.some((member) => member.usuario === username)).toBe(true);
+  expect(Array.isArray(exported.routes)).toBe(true);
+  expect(Array.isArray(exported.vehicles)).toBe(true);
+  expect(Number.isNaN(Date.parse(exported.exportDate))).toBe(false);
+  await expect(page.getByText("Datos exportados exitosamente")).toBeVisible();
+
   await expect(page.getByText("Importar Datos", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Reiniciar Sistema", { exact: true })).toHaveCount(0);
 

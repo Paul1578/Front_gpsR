@@ -538,3 +538,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Discovery Playwright **45**. Suite focal **3/3**: Team muestra y recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
 - E2E completo API/MySQL: Action `45107030228`, **45/45**, responsive browser **1/1**, backend Release/xUnit, audit/lint/build y cleanup correctos. Incluye mapa y Admin delegado; no hubo skips.
 - API local `localhost:5048` detenida y faltan credenciales QA; el flujo real de mapa se validó en Action. Un test aislado de carga de Dashboard se retiró porque el gate de requests no manejaba los abort/replays del bootstrap; la Action completa pasó, pero falta aserción directa de esa carga inicial.
+
+## Exportación de datos de empresa — test local; CI pendiente
+
+- `company-admin.spec.ts` descarga el JSON desde la UI y lo analiza; comprueba nombre de archivo, usuario QA creado, arrays de rutas/vehículos, fecha válida y mensaje de éxito.
+- Discovery del spec, `npm run lint` y `npm run build` pasan localmente. Integración real API/MySQL en nueva Action pendiente.

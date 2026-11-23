@@ -597,6 +597,11 @@
 - El mapa señala explícitamente ausencia de posiciones reales y distingue ruta planificada de tracking GPS.
 - Gestión de Equipo muestra error/reintento si falla carga de vehículos y bloquea la asignación hasta recuperarlos. Dashboard ya diferencia carga inicial de vacío/error para métricas.
 - Lint/build correctos; E2E focal 3/3. Action `45107030228` pasó Release/xUnit, audit/lint/build, responsive 1/1 y API/MySQL **45/45**, con el escenario de mapa incluido.
+
+## 2026-11-23 — E2E de descarga de exportación de empresa
+
+- El E2E de Administración descarga y analiza el JSON real; verifica que incluya el miembro de QA, listas de rutas/vehículos, fecha y confirmación UI.
+- Lint/build y discovery pasan local; Action integrada pendiente.
 ## Seguimiento 2026-11-23 — carga inicial del Dashboard — Action pendiente
 
 - E2E retiene GET `/Routes`, exige “Cargando…” y prohíbe presentar actividad vacía antes de recibir respuesta. Con `200 []` comprueba el vacío y métrica 0.
