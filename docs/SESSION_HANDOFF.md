@@ -1138,3 +1138,13 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `5dd199d`, Action [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup exitosos.
 - UI cambió el Vehicle de una ruta real; GET de Route/Driver confirmó persistencia y el guardado móvil mantuvo la relación. Cleanup devolvió el vínculo original del fixture y eliminó Vehicles temporales.
 - Conflicto 409 de vehículo ocupado ya había pasado en `7b23ac5`/Action `45162583023`.
+
+## Siguiente verificación de baja de Vehicle — 2026-11-23
+
+- Añadido GET del Vehicle tras DELETE (`isActive=false`) y recarga completa antes de reactivarlo; la lista de bajas debe conservar el fixture después del reload.
+- CI E2E API/MySQL pendiente. En el primer parche el contexto del callback de `waitForResponse` no coincidió y se rechazó sin modificar; se releyó la sección y se aplicó en fragmentos. Ver ERROR_LOG.
+
+## HEAD anterior validado y baja Vehicle ampliada — 2026-11-23
+
+- Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) validó `e8c058f`: 51/51, responsive, backend Release/xUnit, audit/lint/build y cleanup.
+- E2E Vehicle ahora comprueba `isActive=false` por API tras baja y después de reload, antes de Reactivar. Lint/build/discovery 51 pasan; código aún no publicado, CI requerido.

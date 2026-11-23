@@ -712,3 +712,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action Front [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259), `5dd199d`: 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup success.
 - Se asignó otro Vehicle desde la UI y se verificó por GET la relación Route/Driver; segunda actualización móvil conservó el VehicleId. Cleanup restauró fixture y retiró vehículos QA.
+
+## Baja lógica Vehicle antes de Reactivar — CI pendiente
+
+- El E2E ahora consulta el Vehicle inmediatamente después del DELETE y exige `isActive=false`, recarga Dashboard, vuelve a Gestión de Vehículos y confirma que aparece en la lista de bajas con `isActive=false` antes de pulsar Reactivar.
+- Falta validar el flujo real y cleanup en Action API/MySQL.
+
+## HEAD `e8c058f` y persistencia de Vehicle desactivado
+
+- Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) pasó con 51/51 E2E, responsive, Backend Release/xUnit y cleanup.
+- Cambio local posterior agrega GET `isActive=false` justo después de DELETE y después de recarga/navegación antes de reactivación; lint/build/discovery 51 pasan, CI pendiente.

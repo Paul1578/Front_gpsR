@@ -1755,3 +1755,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Al reemplazar el mock de asignación por una colisión real, la primera expectativa reutilizó el texto corto del mock. El backend devuelve `El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.`; el test fallaría si se publicaba sin corregirlo.
 - Solución: contrastar el mensaje con `AssignDriverToVehicleCommand` y afirmar el body real y su toast exacto.
 - Prevención: al quitar mocks de error, derivar la expectativa de la respuesta del command/endpoint actual, no del JSON inventado por el test antiguo.
+
+## 2026-11-23 — Contexto de parche E2E de Vehicle no coincidió — RESUELTO
+
+- El parche agrupado esperaba un callback `waitForResponse` con contexto distinto al archivo actual; fue rechazado sin cambiar archivos. El siguiente ajuste de regex de URL también quedó con un escape duplicado al construir el literal y se detectó al releer el diff antes de ejecutar pruebas.
+- Solución: releer el fragmento exacto, aplicar el bloque junto al texto vigente y corregir el literal a `/\/dashboard$/`; `git diff --check`, lint y discovery se ejecutan antes del commit.
+- Prevención: evitar asumir fragmentos amplios; inspeccionar el código resultante, especialmente regex/escapes, antes de validar.

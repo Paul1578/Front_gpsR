@@ -771,3 +771,11 @@
 ## 2026-11-23 — Reasignación al editar ruta validada
 
 - Action Front [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): 51/51 E2E, responsive y cleanup success; Route/Driver conservan el Vehicle nuevo después de editar y guardar en móvil.
+
+## 2026-11-23 — Persistencia de baja de Vehicle
+
+- E2E verifica `isActive=false` en API y lista de bajas tras recargar, antes de reactivar. Action integrada pendiente.
+
+## 2026-11-23 — Baja de Vehicle antes de reactivación
+
+- E2E consulta `isActive=false` por API tras DELETE y después de recargar la vista de bajas, previo a Reactivar. CI integrada pendiente.

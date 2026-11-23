@@ -738,11 +738,22 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     await deleteConfirmation.getByRole("button", { name: "Sí, eliminar" }).click();
     expect((await deleted).status()).toBe(204);
     await expect(card).toHaveCount(0);
+    const deactivatedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(deactivatedVehicle.status()).toBe(200);
+    expect((await deactivatedVehicle.json()).isActive).toBe(false);
 
+    await page.getByRole("button", { name: "Mostrar bajas" }).click();
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
     await page.getByRole("button", { name: "Mostrar bajas" }).click();
     const inactiveVehicles = page.getByRole("region", { name: "Vehículos dados de baja" });
     const inactiveCard = inactiveVehicles.locator("div.rounded-lg.border").filter({ hasText: plate });
     await expect(inactiveCard).toContainText("FleetFlow QA Parcial Browser test");
+    const deactivatedVehicleAfterReload = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(deactivatedVehicleAfterReload.status()).toBe(200);
+    expect((await deactivatedVehicleAfterReload.json()).isActive).toBe(false);
     const reactivated = page.waitForResponse((response) =>
       response.url().includes(`/api/backend/Vehicles/${vehicleId}/reactivate`) &&
       response.request().method() === "POST",
