@@ -638,3 +638,8 @@
 
 - Se cerró la brecha entre prueba UI simulada y regla backend: fixture autenticable de Admin delegado, intentos directos 403, persistencia del rol miembro y menú sin opciones Admin.
 - Lint/build y Playwright discovery **51** pasan; CI integrado pendiente.
+
+## 2026-11-23 — E2E de geometría OSRM determinista
+
+- El escenario real de mapa Manager valida ahora una respuesta OSRM exitosa y que sus tres coordenadas se reflejan en la línea SVG dibujada. La prueba no accede al proveedor externo y es estable en CI.
+- Lint, build, discovery y diff-check pasan localmente; Action integrada pendiente.

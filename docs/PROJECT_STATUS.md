@@ -658,3 +658,9 @@ Fecha de actualización: 2026-11-22.
 - Front `85da39c` Action [`45103761122`](https://github.com/Paul1578/Front_gpsR/actions/runs/45103761122) pasó: backend Release/tests, audit, lint/build, responsive browser **1/1**, E2E API/MySQL **43/43** y cleanup exitoso. Verifica el constructor, disponibilidad, traslados sin paradas y confirmaciones de equipo.
 - Backend `7ea14a6` Action [`45103732510`](https://github.com/Paul1578/Back_GPS/actions/runs/45103732510) pasó Release/xUnit y smoke HTTP/MySQL tenant/concurrencia; cleanup de Front corregido por FK Driver y verificado por la Action Front.
 - Ramas limpias y separadas: Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` no se modificó. Misión integral permanece abierta por pendientes productivos y SMTP.
+
+## Geometría OSRM del mapa — ejecución integrada pendiente
+
+- El E2E Manager mapa ahora intercepta OSRM con una geometría determinista de tres coordenadas y comprueba que el SVG dibuja el punto intermedio recibido; deja de forzar el error 503 en ese flujo. La fixture externa no depende de Internet.
+- Validación local posterior al cambio: lint y build Next 16.4.6 pasan, `git diff --check` pasa y Playwright descubre 51 tests. La Action del SHA actualizado sigue pendiente.
+- También está pendiente la Action que integra el fixture HTTP/MySQL real de Admin delegado; no afirmar cierre hasta verificar ejecución y limpieza.

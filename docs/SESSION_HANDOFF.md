@@ -966,3 +966,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `85da39c`: Action `45103761122` success: backend Release/tests, audit, lint/build, responsive 1/1, Playwright API/MySQL **43/43**, cleanup success.
 - Root cause del cleanup: rutas asignadas a Driver QA no coincidían con prefijo de nombre; SQL ahora limpia RoutePositions/Routes por relación `Driver.DocumentNumber E2EQA%` antes de Drivers.
 - Las dos ramas quedaron sin cambios pendientes; no se tocó main. La misión amplia sigue abierta; consultar PROJECT_STATUS para los siguientes riesgos/producto.
+
+## Continuidad — mapa OSRM y Actions integradas
+
+- Front branch `refactor/route-builder`: `e2e/manager-map.spec.ts` reemplaza el mock de OSRM 503 por geometría exitosa determinista de tres puntos y comprueba al menos dos segmentos del SVG, verificando que el punto intermedio llegó a la ruta dibujada. Lint/build/discovery 51/diff-check pasan local. Publicar commit y validar Action.
+- Action Front `45119404897` (HEAD anterior `43d20fb`) sigue en progreso y valida el E2E real de Admin delegado; revisar conclusión.
+- Backend Action `45119396803` (HEAD `341161d`) sigue en progreso desde el repo Back_GPS; verificar antes de declarar cerrado el lote.
+- Después de publicar el cambio OSRM, verificar que Actions ejecutan el caso real de mapa, Admin delegado, backend Release/xUnit, API/MySQL y cleanup; actualizar los documentos con SHA y evidencia. La misión integral permanece abierta.

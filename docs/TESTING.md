@@ -571,3 +571,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Nuevo E2E usa el fixture Admin delegado creado por `Back_GPS/scripts/run-e2e-local.sh`, inicia sesión en el navegador y confirma `/Auth/me` root=false.
 - Verifica que el frontend no expone Admin, la API devuelve 403 al crear y promover, y una nueva lectura confirma que el miembro continúa como User.
 - Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) pasan. E2E autenticado con API/MySQL descartables pendiente de Actions.
+
+## Mapa: geometría de carretera OSRM
+
+- `manager-map.spec.ts` intercepta `router.project-osrm.org` con una respuesta determinista de tres puntos; el test espera la solicitud y comprueba que el SVG de la ruta contiene al menos dos segmentos `L`, incluido el punto intermedio de la geometría.
+- La prueba sigue autenticando un Manager y crea/consulta ruta y vehículo en API/MySQL descartables; verifica desktop, tablet y móvil web.
+- Lint/build y discovery de 51 tests pasan local. Resultado E2E integrado pendiente del nuevo commit.

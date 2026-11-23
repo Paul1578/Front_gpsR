@@ -1604,3 +1604,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La UI E2E anterior simulaba `/Auth/me` y equipo; backend sí tenía cobertura HTTP/MySQL, pero no se verificaba el flujo de navegador con sesión real.
 - Se agregó un fixture Admin delegado temporal y un test integrado que confirma opciones ocultas, `403` en crear/promover y rol del usuario intacto por API real.
 - Lint/build y discovery 51 pasan local; falta completar Action Front autenticada y actualizar el estado.
+
+## 2026-11-23 — E2E del mapa no cubría geometría OSRM exitosa — CORREGIDO LOCALMENTE
+
+- El escenario Manager mapa forzaba HTTP 503, por lo que sólo comprobaba los marcadores y el fallback; no detectaba si el frontend consumía/renderizaba una geometría válida de carretera.
+- Corrección: respuesta controlada con tres coordenadas y comprobación del SVG con dos segmentos; permanece independiente de servicios externos.
+- Prevención: cubrir éxito y fallback de proveedores geográficos en escenarios deterministas separados; no inferir renderizado a partir de la mera respuesta HTTP.
+- Lint/build/discovery/diff-check pasan localmente. La confirmación E2E integrada queda pendiente de la Action del commit nuevo.

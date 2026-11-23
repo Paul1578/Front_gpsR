@@ -108,8 +108,28 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
     await assertStatus(persistedRouteResponse, 200, "Lectura persistida de la ruta QA");
     expect(await persistedRouteResponse.json()).toMatchObject({ id: routeId, name: routeName, vehicleId });
 
+    let osrmRequests = 0;
     await page.route("https://router.project-osrm.org/**", async (route) => {
-      await route.fulfill({ status: 503, body: "OSRM no disponible para la prueba" });
+      osrmRequests += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "Ok",
+          routes: [{
+            geometry: {
+              type: "LineString",
+              // El punto intermedio permite verificar que el mapa dibujó la
+              // geometría de carretera recibida, no sólo la línea directa.
+              coordinates: [
+                [-78.467834, -0.180653],
+                [-78.473, -0.184],
+                [-78.48, -0.195],
+              ],
+            },
+          }],
+        }),
+      });
     });
     const routesRead = page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith("/api/backend/Routes") && response.request().method() === "GET",
@@ -123,6 +143,12 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
 
     const map = page.locator(".leaflet-container");
     await expect(map).toBeVisible();
+    await expect.poll(() => osrmRequests).toBeGreaterThan(0);
+    const routeLine = map.locator(".leaflet-overlay-pane path").first();
+    await expect.poll(async () => {
+      const path = await routeLine.getAttribute("d");
+      return path?.match(/L/g)?.length ?? 0;
+    }).toBeGreaterThanOrEqual(2);
     const routeList = page.locator("aside").filter({ hasText: "Rutas planificadas" });
     const routeButton = routeList.getByRole("button").filter({ hasText: routeName });
     await expect(routeButton).toBeVisible();
