@@ -4,6 +4,10 @@ import { readFile } from "node:fs/promises";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
+const delegatedAdminEmail = process.env.FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL;
+const delegatedAdminPassword = process.env.FLETFLOW_E2E_DELEGATED_ADMIN_PASSWORD;
+const delegatedAdminId = process.env.FLETFLOW_E2E_DELEGATED_ADMIN_ID;
+const memberEmail = process.env.FLETFLOW_E2E_USER_EMAIL;
 
 test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin.");
@@ -202,6 +206,85 @@ test("Admin delegado no puede crear ni promover usuarios al rol Admin en Adminis
   await expect(roleSelect).toHaveCount(1);
   await expect(roleSelect.locator('option[value="superadmin"]')).toHaveCount(0);
   await expect(roleSelect.locator('option[value="gerente"]')).toHaveCount(0);
+});
+
+test("Admin delegado real no ve ni puede crear/promover otro Admin", async ({ page }) => {
+  test.skip(
+    !delegatedAdminEmail || !delegatedAdminPassword || !delegatedAdminId || !memberEmail,
+    "Requiere fixtures de Admin delegado y miembro en MySQL descartable.",
+  );
+
+  const loginResponse = await page.request.post("/api/backend/Auth/login", {
+    data: { email: delegatedAdminEmail, password: delegatedAdminPassword },
+  });
+  expect(loginResponse.status()).toBe(200);
+  const login = await loginResponse.json() as { token?: string; accessToken?: string };
+  const token = login.token ?? login.accessToken;
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const identityResponse = await page.request.get("/api/backend/Auth/me", { headers });
+  expect(identityResponse.status()).toBe(200);
+  expect(await identityResponse.json()).toMatchObject({ id: delegatedAdminId, isRootAccount: false, roles: ["Admin"] });
+
+  const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamResponse.status()).toBe(200);
+  const team = await teamResponse.json() as Array<{ id: string; email: string; roles: string[] }>;
+  const member = team.find((user) => user.email.toLowerCase() === memberEmail!.toLowerCase());
+  expect(member).toBeTruthy();
+  expect(member?.roles).toContain("User");
+
+  const deniedAdminEmail = `fletflow.e2e.admin.denied.${Date.now()}@example.test`;
+  const newAdminResponse = await page.request.post("/api/backend/Users", {
+    headers,
+    data: {
+      username: "Denied delegated Admin",
+      email: deniedAdminEmail,
+      password: "Denied-Admin-Password-2026!",
+      roleName: "Admin",
+    },
+  });
+  expect(newAdminResponse.status()).toBe(403);
+
+  const promotionResponse = await page.request.put(`/api/backend/Users/${member!.id}/role`, {
+    headers,
+    data: { roleName: "Admin" },
+  });
+  expect(promotionResponse.status()).toBe(403);
+  const persistedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(persistedTeamResponse.status()).toBe(200);
+  const persistedUsers = await persistedTeamResponse.json() as typeof team;
+  const persistedMember = persistedUsers.find((user) => user.id === member!.id);
+  expect(persistedMember?.roles).toEqual(["User"]);
+  expect(persistedUsers.some((user) => user.email === deniedAdminEmail)).toBe(false);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(delegatedAdminEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(delegatedAdminPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const browserToken = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(browserToken).toBeTruthy();
+  const browserIdentityResponse = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${browserToken}` },
+  });
+  expect(browserIdentityResponse.status()).toBe(200);
+  expect(await browserIdentityResponse.json()).toMatchObject({ id: delegatedAdminId, isRootAccount: false });
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Administración de la empresa", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Administración de la empresa" })).toBeVisible();
+  await page.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Crear Nuevo Usuario" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gerente", exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
+  await expect(page.locator('select option[value="superadmin"]')).toHaveCount(0);
+  await expect(page.locator('select option[value="gerente"]')).toHaveCount(0);
 });
 
 test("Administración distingue fallos de carga de una empresa vacía y permite reintentar", async ({ page }) => {
