@@ -2,8 +2,9 @@
 
 - Front `refactor/route-builder`: `0bb20c8` publicado. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL descartable y cleanup.
 - `0bb20c8` corrige baseline obsoleto del caso PUT 503 y añade filtros Estado/Vehículo/Conductor accionables a 320 px.
-- Front `1470e5d` Action [`45265266802`](https://github.com/Paul1578/Front_gpsR/actions/runs/45265266802) terminó 68/69 por locator parcial que coincidía con dos campos. La causa/fix constan en `ERROR_LOG.md`; se cambió al nombre accesible exacto y la repetición integrada queda pendiente.
-- Cambio local: Perfil expone labels/autocomplete, corrige tildes y prueba el formulario a 320 px. Axe encontró nombre accesible ausente y contraste bajo; ya corregidos. Build/lint/discovery 69/`npm run test:a11y` 2/2 pasan localmente.
+- Front `4f59b19` pasó Action integrada [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856): **69/69 E2E**, responsive 1/1, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL descartable y cleanup.
+- `1470e5d` había terminado 68/69 por locator parcial coincidente con dos campos; se corrigió con nombre accesible exacto. El incidente y prevención constan en `ERROR_LOG.md`.
+- Perfil expone labels/autocomplete, corrige tildes y prueba formulario a 320 px. Axe encontró nombre accesible ausente y contraste bajo, corregidos y validados en CI.
 - Backend `chore/stabilize-fleet-platform` pasó Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285): build/xUnit 165/165, migration smoke, aislamiento HTTP/MySQL, concurrencia y rate limit. No se encontró fallo confirmado en roles/rutas/unlink; el riesgo condicional de Admin heredado con owner nulo sigue documentado en `Back_GPS/docs/SECURITY.md`.
 - Búsqueda/filtros reales de Equipo, filtros de ruta y Dashboard/mapa ya tienen interacciones a 320 px. Continúa auditoría responsive de contenido largo/formularios y cobertura CRUD. SMTP real e infraestructura productiva dependen de configuración externa; app nativa pospuesta.
 - La fase sigue abierta; errores, causa, solución y prevención se registran en `ERROR_LOG.md`.

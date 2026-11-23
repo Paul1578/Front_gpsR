@@ -1,9 +1,9 @@
-## 2026-11-23 — Action `45265266802` falló por selector Playwright parcial — CORREGIDO LOCALMENTE
+## 2026-11-23 — Action `45265266802` falló por selector Playwright parcial — CORREGIDO Y VALIDADO
 
 - La Action completó build/lint/audit/responsive/axe y 68/69 E2E. El nuevo caso móvil del Perfil consultó `getByPlaceholder("Nueva contraseña")`, que también coincide parcialmente con «Confirmar nueva contraseña» y produjo una violación strict-mode.
 - No fue un error del producto. Se sustituyó por `getByRole("textbox", { name, exact: true })`, usando los nombres accesibles que ahora proveen las etiquetas explícitas.
 - Prevención: los placeholders/nombres con prefijos solapados requieren selector exacto; cuando exista label visible, priorizar rol + nombre exacto.
-- El resto de 68 E2E pasó, incluidos checks reales de API/MySQL. Repetición CI del fix pendiente.
+- El resto de 68 E2E pasó, incluidos checks reales de API/MySQL. Action integrada [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) validó el locator exacto: **69/69 E2E**, responsive 1/1, axe 2/2, build/lint/audit, Backend xUnit 165/165, API/MySQL y cleanup.
 
 ## 2026-11-23 — axe en Mi Perfil encontró botón sin nombre/contraste bajo; rerun usó build obsoleto — CORREGIDO LOCALMENTE
 

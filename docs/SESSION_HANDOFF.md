@@ -1,10 +1,11 @@
 ## Continuación activa — cobertura UX/CRUD — 2026-11-23
 
-- Ramas actuales: Front `refactor/route-builder` (`0bb20c8` publicado) y Backend `chore/stabilize-fleet-platform` (`5c53dd0` documental); `main` intacta.
+- Ramas actuales: Front `refactor/route-builder` (`4f59b19` publicado y validado) y Backend `chore/stabilize-fleet-platform` (`5c53dd0` documental); `main` intacta.
 - Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó en `78b7974`: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
 - Action [`45261649009`](https://github.com/Paul1578/Front_gpsR/actions/runs/45261649009) encontró una aserción de perfil con baseline obsoleto (68/69); corregida capturando GET justo antes del PUT simulado 503. `0bb20c8` agrega filtros Estado/Vehículo/Conductor accionables a 320 px y verifica persistencia y bounds. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL y cleanup.
-- Front `1470e5d` Action [`45265266802`](https://github.com/Paul1578/Front_gpsR/actions/runs/45265266802) terminó 68/69: el nuevo E2E usó placeholder parcial ambiguo entre «Nueva contraseña» y «Confirmar nueva contraseña». Fix local: rol textbox + nombre exacto; causa/prevención en `ERROR_LOG.md`. Los otros 68 E2E y todos los pasos previos pasaron.
-- Diff local actual añade a axe Perfil y formulario de clave: corrigió nombre del botón «Volver» y contraste 4.36:1 en revocación de sesiones. `npm run build`, lint, discovery 69, `npm run test:a11y` 2/2 y diff-check pasan; el test anterior confirmó el escenario a 320 px hasta el locator señalado. Hay que repetir suite integrada con el locator exacto.
+- Front `1470e5d` Action [`45265266802`](https://github.com/Paul1578/Front_gpsR/actions/runs/45265266802) terminó 68/69 por locator Playwright parcial; causa/prevención en `ERROR_LOG.md`.
+- Front `4f59b19` y Action [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) validaron el fix: **69/69 E2E**, responsive 1/1, axe 2/2, Backend xUnit 165/165, audit/lint/build, API/MySQL y cleanup. Axe incluye Perfil/formulario expandido; E2E comprueba Profile a 320 px.
+- Axe había descubierto nombre ausente en el botón «Volver» y contraste 4.36:1 al revocar sesiones; ambos corregidos. Validación local `npm run test:a11y` 2/2, build/lint, discovery 69 y diff-check correctos.
 - Continuar auditoría del responsive y cobertura funcional; documentar cada hallazgo/fix y su evidencia. SMTP real e infraestructura de producción dependen de configuración externa; la app nativa queda pospuesta.
 
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23

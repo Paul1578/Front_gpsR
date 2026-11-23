@@ -1,19 +1,19 @@
 ## Seguimiento responsive y estados de gestión — 2026-11-23
 
-- Action Front del commit `78b7974`: [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638), 69/69 E2E, axe 2/2, responsive, audit/lint/build, Backend Release xUnit 165/165, API/MySQL y cleanup. El E2E integrado comprueba Dashboard/mapa a 320 px.
-- En el diff actual, `Gestión de Vehículos no confunde fallo de carga con flota vacía` ahora falla el endpoint de activos e inactivos de forma independiente; prueba el alert y reintento de la lista dada de baja, sin presentar estado vacío engañoso. E2E local pasó 1/1 en Next dev y 1/1 usando build de producción.
-- El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. La sesión local no dispone de credenciales QA; está pendiente la ejecución en CI, que provisiona credenciales/DB descartables.
+- Action Front `4f59b19`: [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856), **69/69 E2E**, axe 2/2, responsive, audit/lint/build, Backend xUnit 165/165, API/MySQL y cleanup. Incluye perfil a 320 px y axe sobre perfil/formulario expandido. La Action previa `45265266802` fue 68/69 por un locator ambiguo, corregido y validado en esta repetición.
+- `Gestión de Vehículos no confunde fallo de carga con flota vacía`: falla el endpoint de activos/inactivos de forma independiente y prueba alert/reintento sin mostrar vacío engañoso. E2E local pasó 1/1 en Next dev y 1/1 en build de producción.
+- El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. Action `45266610856` lo validó con credenciales de un solo run y DB descartable.
 - En el formulario de alta se verifica copy que no garantiza el envío antes de la respuesta; el E2E real comprueba `invitationSent=false` y aviso SMTP posterior.
 - `npm run lint`, `npm run build` con Next 16.4.6/TypeScript en worktree aislado y `git diff --check` pasan. El E2E de error/reintento de vehículos se ejecutó 1/1 en Next dev y production.
-- El E2E real de edición Driver agrega 503 en el PUT y verifica mensaje, editor conservado y `/Users/my-team` sin cambio antes de intentar el guardado exitoso. Action `45261649009` pasó 68/69 porque se comparaba con el nombre inicial pese a una edición anterior del propio caso; ahora usa un GET baseline inmediato. Nueva integración pendiente.
-- Los filtros de rutas también se prueban localmente a 320 px: tamaño/posición y cambios de Estado/Vehículo/Conductor; lint, discovery 69 y diff-check pasan. CI pendiente.
+- El E2E real de edición Driver agrega 503 en el PUT y verifica mensaje, editor conservado y `/Users/my-team` sin cambio antes de intentar el guardado exitoso. Action `45261649009` pasó 68/69 porque se comparaba con el nombre inicial pese a una edición anterior del propio caso; usa un GET baseline inmediato y lo validó `45263308491`.
+- Los filtros de rutas a 320 px comprueban límites e interacción Estado/Vehículo/Conductor sobre datos reales. Action integrada `45263308491` validó 69/69 E2E.
 
 ## QA automatizada de accesibilidad — 2026-11-23
 
-- Se añade `npm run test:a11y` con Playwright + `@axe-core/playwright` y etiqueta WCAG 2.0/2.1/2.2 A/AA. Prueba navegación Login↔Recuperación, Dashboard→Gestión de Equipo, formulario de recuperación, diálogo de alta y confirmación de logout.
+- Se añade `npm run test:a11y` con Playwright + `@axe-core/playwright` y etiqueta WCAG 2.0/2.1/2.2 A/AA. Incluye login/recuperación, Dashboard/Equipo, diálogo alta, Mi Perfil y su formulario expandido, confirmación logout.
 - CI ejecuta este comando como paso focal después de instalar Chromium; el test levanta Next de producción en `127.0.0.1:3011` para aislarlo de servidores de desarrollo existentes.
 - Evidencia local final: `npm run test:a11y` **2/2**, `npm run lint` **correcto**, `npm run build` **correcto** (Next 16.4.6, TypeScript y generación de 16 rutas) y `git diff --check` **correcto**. Action integrada posterior ejecutó la suite completa.
-- La auditoría encontró área táctil pequeña en mostrar contraseña, bajo contraste en Dashboard y nombre accesible faltante en volver de Gestión de Equipo; los tres hallazgos se corrigieron y quedaron cubiertos por la ejecución 2/2. El primer test local también chocó con el overlay del Next reutilizado; el puerto dedicado resolvió esa interferencia. Detalle en `ERROR_LOG.md`.
+- Las auditorías detectaron área táctil pequeña, bajo contraste en Dashboard/Perfil y nombres accesibles faltantes en volver de Equipo/Perfil; se corrigieron y quedaron cubiertos por axe local 2/2 y Action `45266610856`. El primer test local chocó con un bundle Next de producción obsoleto; reconstruirlo resolvió la discrepancia. Detalle en `ERROR_LOG.md`.
 
 ## Mapa, operaciones de parada, auth concurrente y accesibilidad — CI aprobado — 2026-11-23
 

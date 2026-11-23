@@ -3,8 +3,8 @@
 - Los campos para cambiar contraseña del perfil tienen etiquetas visibles, autocomplete y validación nativa; se corrigen tildes en mensajes.
 - El E2E de preferencia de tema abre el formulario de seguridad a 320 px y comprueba que encabezado y campos estén dentro del viewport.
 - Axe encontró un botón de regreso sin nombre y contraste 4.36:1 al revocar sesiones; se corrigieron y se añadieron Perfil/formulario expandido a la auditoría.
-- Lint/build, discovery de 69 pruebas, diff-check y `npm run test:a11y` (2/2) pasan localmente. CI integrado del diff queda pendiente.
-- Action `45265266802` del commit `1470e5d` terminó 68/69 por locator Playwright ambiguo (el campo de nueva clave coincidía con confirmación); se usa rol/nombre exacto y se repetirá CI.
+- Lint/build, discovery de 69 pruebas, diff-check y `npm run test:a11y` (2/2) pasan localmente. Action integrada [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) pasó 69/69 E2E, axe, responsive, audit/lint/build, Backend 165/165 y API/MySQL.
+- La Action previa `45265266802` del commit `1470e5d` terminó 68/69 por locator Playwright ambiguo (nueva clave coincidía con confirmación); se corrigió usando rol/nombre exacto.
 
 ## 2026-11-23 — Validación móvil y estados de vehículo en gestión
 
