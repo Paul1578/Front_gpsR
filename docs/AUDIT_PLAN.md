@@ -4,7 +4,7 @@ Estado: los flujos principales de flota, roles/tenant, rutas con operaciones, se
 
 ## Corte vigente — 2026-11-23
 
-- Ramas de trabajo: Front `refactor/route-builder` (`5aedb97`, docs) y Backend `chore/stabilize-fleet-platform` (`4b5a218`, docs; lock funcional `4079ae2`); `main` permanece intacta.
+- Ramas de trabajo: Front `refactor/route-builder` (constructor y suite autenticada validados) y Backend `chore/stabilize-fleet-platform` (lock funcional `4079ae2`); `main` permanece intacta.
 - Decisiones confirmadas: sólo la cuenta raíz crea/promueve Admin; se permiten rutas de traslado sin operaciones; cada parada admite recogida, entrega o ambas; unlink conserva Driver y se bloquea con rutas pendientes/en progreso; la app nativa se pospone y la web responsive permanece en alcance.
 - Action integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) probó Front `b1d5924` con Backend funcional `4079ae2`: **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) validaron el lock.
 - Backend `74d2f3c` y Front `bb9f679` implementan listas de rutas sin payload Base64 de imágenes y lectura completa bajo demanda. Backend Release/xUnit **158/158**, smokes HTTP/MySQL y Front **53/53 E2E**, responsive, audit/lint/build pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729), [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) y [`45192189779`](https://github.com/Paul1578/Front_gpsR/actions/runs/45192189779).
