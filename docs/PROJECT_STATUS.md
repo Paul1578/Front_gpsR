@@ -2,7 +2,10 @@
 
 - Política confirmada: sólo la cuenta raíz puede crear o promover a otra cuenta al rol Admin. Backend `be84496` incluye `isRootAccount` en `/Auth/me`; Action backend `45090274537` pasó build, 113/113 xUnit, smoke HTTP/MySQL y concurrencia con limpieza.
 - Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.
-- Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. Corregido el selector y agregado assert explícito de `/Auth/me` raíz; validación integrada nueva pendiente.
+- Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. El selector corregido y assert explícito de `/Auth/me` raíz quedaron validados en la Action siguiente.
+- Front `9d84562` pasó Action [`45091340306`](https://github.com/Paul1578/Front_gpsR/actions/runs/45091340306): backend Release/xUnit, audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **40/40** y cleanup. El E2E ahora verifica `/Auth/me.isRootAccount=true` y localiza el botón con su descripción accesible.
+- En progreso en el árbol local: revisión final de la ruta con todas las paradas/operaciones/coords, cancelación de búsqueda geográfica obsoleta, E2E de Nominatim (respuesta vacía/error/tardía) y reintento al guardar. Lint/build previos al último ajuste de pruebas pasan; validación final y Action del nuevo SHA pendientes.
+- Auditoría independiente encontró un caso de negocio por definir: si se permiten rutas de traslado sin recogida/entrega. Se consultó al usuario; no cambiar la regla backend hasta recibir respuesta. También queda ampliar evidencia E2E del ciclo de varias paradas hasta finalización.
 - Móvil nativo aplazado por decisión del usuario. Misión integral sigue abierta; no se declara terminada.
 
 ## Historial de estado — 2026-11-22

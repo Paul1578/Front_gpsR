@@ -2,7 +2,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useFleet, Route } from "../../Context/FleetContext";
 import {
   ArrowLeft,
@@ -58,9 +58,12 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const [cancelConfirmRoute, setCancelConfirmRoute] = useState<Route | null>(null);
   const [step, setStep] = useState(1);
   const [activeTarget, setActiveTarget] = useState<Target | null>(null);
+  const activeTargetRef = useRef<Target | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const searchControllerRef = useRef<AbortController | null>(null);
+  const searchSequenceRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [routeSearch, setRouteSearch] = useState("");
@@ -81,13 +84,6 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const availableVehicles = routeAssignmentVehicles.filter(
     (vehicle) =>
       vehicle.estado === "disponible" || vehicle.id === formData.vehicleId,
-  );
-  const points = useMemo(
-    () =>
-      [formData.origin, ...formData.stops, formData.destination].filter(
-        validPoint,
-      ) as PickerPoint[],
-    [formData.origin, formData.stops, formData.destination],
   );
   const visibleRoutes = routes.filter((route) => {
     const search = routeSearch.trim().toLocaleLowerCase();
@@ -119,7 +115,19 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     return id ? "Conductor no disponible" : "Sin conductor asignado";
   };
 
+  const cancelLocationSearch = () => {
+    searchSequenceRef.current += 1;
+    searchControllerRef.current?.abort();
+    searchControllerRef.current = null;
+    setSearching(false);
+  };
+
+  const sameTarget = (left: Target | null, right: Target | null) =>
+    left?.type === right?.type && left?.index === right?.index;
+
   const setPoint = (target: Target, point: PickerPoint) => {
+    cancelLocationSearch();
+    activeTargetRef.current = null;
     setFormData((previous) => {
       const normalized = {
         ...point,
@@ -144,40 +152,60 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   };
 
   const selectTarget = (target: Target) => {
+    cancelLocationSearch();
+    activeTargetRef.current = target;
     setActiveTarget(target);
     setSearchResults([]);
     setSearchQuery("");
   };
   const searchLocations = async () => {
-    if (searchQuery.trim().length < 3) {
+    const targetAtStart = activeTargetRef.current;
+    if (!targetAtStart) return;
+    const query = searchQuery.trim();
+    if (query.length < 3) {
       toast.error("Escribe al menos 3 caracteres para buscar");
       return;
     }
+    searchControllerRef.current?.abort();
+    const controller = new AbortController();
+    const sequence = ++searchSequenceRef.current;
+    searchControllerRef.current = controller;
     setSearching(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&q=${encodeURIComponent(searchQuery.trim())}`,
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&q=${encodeURIComponent(query)}`,
+        { signal: controller.signal },
       );
       if (!response.ok) throw new Error("No se pudo buscar la ubicación");
       const results = (await response.json()) as SearchResult[];
+      if (
+        sequence !== searchSequenceRef.current ||
+        !sameTarget(targetAtStart, activeTargetRef.current)
+      ) return;
       setSearchResults(results);
       if (!results.length)
         toast.info(
           "No encontramos esa ubicación. Prueba con una dirección más específica.",
         );
     } catch {
+      if (controller.signal.aborted || sequence !== searchSequenceRef.current) return;
       toast.error(
         "No se pudo buscar la ubicación. También puedes hacer clic directamente en el mapa.",
       );
     } finally {
-      setSearching(false);
+      if (sequence === searchSequenceRef.current) {
+        searchControllerRef.current = null;
+        setSearching(false);
+      }
     }
   };
 
   const resetForm = () => {
+    cancelLocationSearch();
     setShowForm(false);
     setEditingRoute(null);
     setStep(1);
+    activeTargetRef.current = null;
     setActiveTarget(null);
     setSearchResults([]);
     setSearchQuery("");
@@ -239,7 +267,9 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const goToStep = (nextStep: number) => {
     if (nextStep > step && !validateStep(nextStep)) return;
     if (nextStep === 2 && !editingRoute && !formData.origin && !activeTarget) {
-      setActiveTarget({ type: "origin" });
+      const originTarget = { type: "origin" } as const;
+      activeTargetRef.current = originTarget;
+      setActiveTarget(originTarget);
     }
     setStep(nextStep);
   };
@@ -322,7 +352,6 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
         searching={searching}
         searchLocations={searchLocations}
         setPoint={setPoint}
-        points={points}
         removeStop={removeStop}
         moveStop={moveStop}
         availableVehicles={availableVehicles}
@@ -550,7 +579,6 @@ function RouteBuilder({
   searching,
   searchLocations,
   setPoint,
-  points,
   removeStop,
   moveStop,
   availableVehicles,
@@ -583,6 +611,20 @@ function RouteBuilder({
           : "punto";
   const pointSummary = (point: PickerPoint | null, fallback: string) =>
     point?.nombre || fallback;
+  const reviewPoints = [
+    { label: "Origen", point: formData.origin, operation: null as string | null },
+    ...formData.stops.map((point: PickerPoint, index: number) => ({
+      label: `Parada ${index + 1}`,
+      point,
+      operation: point.operation ?? "delivery",
+    })),
+    { label: "Destino", point: formData.destination, operation: null as string | null },
+  ];
+  const operationLabel: Record<string, string> = {
+    pickup: "Recogida",
+    delivery: "Entrega",
+    pickup_and_delivery: "Recogida y entrega",
+  };
   const pointRow = (
     type: "origin" | "stop" | "destination",
     point: PickerPoint | null,
@@ -932,10 +974,26 @@ function RouteBuilder({
                 <div className="mt-8 space-y-4">
                   <ReviewRow label="Ruta" value={formData.name} />
                   <ReviewRow label="Carga" value={formData.cargoDescription} />
-                  <ReviewRow
-                    label="Recorrido"
-                    value={`${points.length} puntos · ${pointSummary(formData.origin, "Origen pendiente")} → ${pointSummary(formData.destination, "Destino pendiente")}`}
-                  />
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <h3 className="text-sm font-semibold text-slate-900">Secuencia de paradas</h3>
+                    <ol className="mt-3 space-y-2" aria-label="Orden de las paradas de la ruta">
+                      {reviewPoints.map(({ label, point, operation }, index) => (
+                        <li key={`${label}-${index}`} className="flex min-w-0 items-start gap-3 rounded-lg bg-slate-50 p-3">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-800">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">{label}</span>
+                              {operation && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700">{operationLabel[operation] ?? operation}</span>}
+                            </div>
+                            <p className="mt-1 break-words text-sm text-slate-900">{pointSummary(point, "Ubicación pendiente")}</p>
+                            <p className={`mt-1 text-xs ${validPoint(point) ? "text-emerald-700" : "text-amber-700"}`}>
+                              {validPoint(point) ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}` : "Falta fijar la ubicación"}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                   <ReviewRow
                     label="Vehículo"
                     value={vehicleName(formData.vehicleId)}

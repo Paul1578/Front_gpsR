@@ -1083,8 +1083,16 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await page.locator("select").nth(1).selectOption(driverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
-    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..", { has: page.getByText(/puntos ·/) });
-    await expect(routeSummary).toContainText("4 puntos");
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(4);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen E2E desde mapa",
+      "Entrega y recogida E2E",
+      "Recogida E2E",
+      "Destino E2E desde mapa",
+    ]);
+    await expect(routeReview).toContainText("Recogida y entrega");
+    await expect(routeReview).toContainText("Recogida");
 
     const createRoutePromise = page.waitForResponse((response) =>
       response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
@@ -1241,6 +1249,44 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   };
 
   try {
+    let releaseSlowSearch!: () => void;
+    const slowSearchGate = new Promise<void>((resolve) => {
+      releaseSlowSearch = resolve;
+    });
+    await page.route("https://nominatim.openstreetmap.org/search**", async (route) => {
+      const query = new URL(route.request().url()).searchParams.get("q");
+      if (query === "sin resultados") {
+        await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+        return;
+      }
+      if (query === "error servicio") {
+        await route.abort("failed");
+        return;
+      }
+      if (query === "búsqueda lenta") {
+        await slowSearchGate;
+        try {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([{ lat: "1", lon: "1", display_name: "Resultado tardío" }]),
+          });
+        } catch {
+          // Cambiar el punto cancela la búsqueda antes de liberar esta respuesta.
+        }
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{
+          lat: "-0.20123",
+          lon: "-78.49234",
+          display_name: `Dirección QA ${query}`,
+        }]),
+      });
+    });
+
     const vehicleResponse = await request.post("/api/backend/Vehicles", {
       headers,
       data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tablet route", year: 2025 },
@@ -1261,8 +1307,37 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
     await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
     const map = page.locator(".leaflet-container");
     await page.getByRole("button", { name: "Seleccionando" }).waitFor();
-    await clickMapAwayFromMarkers(map);
+    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("sin resultados");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await expect(page.getByText("No encontramos esa ubicación. Prueba con una dirección más específica.")).toBeVisible();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("error servicio");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await expect(page.getByText("No se pudo buscar la ubicación. También puedes hacer clic directamente en el mapa.")).toBeVisible();
+    const slowSearchRequest = page.waitForRequest((request) =>
+      request.url().includes("nominatim.openstreetmap.org/search") &&
+      new URL(request.url()).searchParams.get("q") === "búsqueda lenta",
+    );
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("búsqueda lenta");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await slowSearchRequest;
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    const destinationRowForRace = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+    await destinationRowForRace.getByRole("button", { name: "Ubicar" }).click();
+    releaseSlowSearch();
+    await page.waitForTimeout(100);
+    await expect(page.getByRole("button", { name: "Resultado tardío", exact: true })).toHaveCount(0);
+    await expect(page.getByText("Ubicando destino", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    const originRowAfterRace = page.getByPlaceholder("¿Desde dónde sale?").locator("xpath=../..");
+    await originRowAfterRace.getByRole("button", { name: "Ubicar" }).click();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("Origen de prueba");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    const originSearchResult = page.getByRole("button", { name: "Dirección QA Origen de prueba", exact: true });
+    await expect(originSearchResult).toBeVisible();
+    await originSearchResult.click();
     await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen tablet QA");
+    await expect(page.getByTestId("origin-point-0")).toContainText("-0.20123, -78.49234");
     await page.getByRole("button", { name: "Agregar parada" }).click();
     await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
     await clickMapAwayFromMarkers(map);
@@ -1282,9 +1357,38 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
     await expectNoHorizontalOverflow();
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
-    const routeSummary = page.getByText("Recorrido", { exact: true }).locator("..", { has: page.getByText(/3 puntos ·/) });
-    await expect(routeSummary).toContainText("3 puntos");
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(3);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen tablet QA",
+      "Recogida y entrega tablet QA",
+      "Destino tablet QA",
+    ]);
+    await expect(routeReview).toContainText("Recogida y entrega");
     await expectNoHorizontalOverflow();
+
+    let failFirstSave = true;
+    await page.route("**/api/backend/Routes", async (route) => {
+      if (route.request().method() === "POST" && failFirstSave) {
+        failFirstSave = false;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    const failedSavePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    expect((await failedSavePromise).status()).toBe(503);
+    await expect(page.getByText("Servicio temporalmente no disponible")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(routeReview).toContainText("Recogida y entrega tablet QA");
 
     const createResponsePromise = page.waitForResponse((response) =>
       response.url().includes("/api/backend/Routes") && response.request().method() === "POST",

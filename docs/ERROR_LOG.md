@@ -1455,3 +1455,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** el locator ahora acepta el prefijo `Gerente` y el E2E comprueba antes que `/Auth/me` responda `isRootAccount: true` y rol `Admin`.
 - **Prevención:** inspeccionar snapshot/trace y el nombre accesible real antes de atribuir un fallo de selector a lógica de autorización. No usar `exact: true` si el control expone descripción accesible.
 - **Verificación:** lint y build pasan; Playwright descubre 40 pruebas y `team-management-load-errors.spec.ts` pasa 10/10. Suite integrada en Action pendiente para el nuevo SHA.
+
+# 2026-11-23 — Revisión de ruta ocultaba paradas y búsqueda podía cambiar de destino — CORREGIDO LOCALMENTE
+
+- **Síntomas:** el paso final resumía el recorrido con sólo el conteo, origen y destino; no mostraba el orden, nombres ni si cada parada era recogida, entrega o ambas. Una búsqueda Nominatim pendiente podía publicar resultados después de seleccionar otro punto, y el click usaría el nuevo destino.
+- **Causas:** el resumen no representaba el arreglo de paradas y el fetch de búsqueda no estaba ligado a una identidad de destino ni cancelado en cambios de selección.
+- **Solución:** la revisión lista origen, paradas en orden y destino con operación por parada y coordenadas; cada búsqueda captura el destino, usa AbortController/secuencia y descarta resultados tras cambiar de objetivo. El E2E tablet cubre resultado real simulado, vacío, fallo, respuesta tardía y primer POST 503 con retry/persistencia posterior.
+- **Prevención:** revisión final debe exponer la secuencia logística completa antes de confirmar; las búsquedas asincrónicas deben cancelarse o invalidarse al cambiar su entidad destino; cubrir estados de error y reintento además del éxito.
+- **Verificación:** lint/build y discovery previos a la última ampliación pasaron; discovery continúa en 40 pruebas. Ejecutar lint/build, validar el E2E autenticado nuevo en CI API/MySQL y corregir cualquier fallo antes de cerrar.

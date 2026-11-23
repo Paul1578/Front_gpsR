@@ -6,8 +6,11 @@ Estado: en curso; funcionalidades principales implementadas y verificadas con ta
 
 - El usuario confirmó que sólo la cuenta raíz puede crear/promover al rol Admin. Backend `be84496` expone `isRootAccount` en `/Auth/me`; Action `45090274537` pasó pruebas Release 113/113 y smoke HTTP/MySQL.
 - Front `e262180` aplica la visibilidad de “Gerente” con ese campo. Action `45090273209` falló **39/40** sólo por locator E2E exacto: la traza muestra la opción visible con nombre accesible compuesto. Selector corregido para aceptar descripción y assert de identidad raíz añadido; nueva suite integrada pendiente.
+- Front `9d84562` pasó Action `45091340306` con **40/40 E2E**, checks responsive, audit, lint/build y backend Release/xUnit. El selector root-only y `/Auth/me` se validaron en navegador real.
 - La aplicación móvil nativa queda para después; esta fase requiere web responsive. SMTP real depende de credenciales externas actualizadas.
 - La auditoría y los criterios funcionales siguen abiertos. Este corte reemplaza las notas antiguas que indicaban que la política Admin delegado esperaba decisión.
+- Auditoría adicional de rutas: final review omitía orden/detalle/tipo operativo por parada y el buscador permitía que una respuesta antigua alcanzara otro punto. Fixes locales en revisión añaden secuencia visible, coordenadas, cancelación/invalidación por destino, cobertura de búsqueda vacía/error/tardía y retry tras error al crear. CI aún pendiente.
+- Decisión de negocio pendiente del usuario: si rutas sin operaciones (sólo traslado) son válidas. No endurecer el backend hasta definirlo. Ampliar también el ciclo integrado de varias paradas hasta cierre.
 
 ## Alcance
 

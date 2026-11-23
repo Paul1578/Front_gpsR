@@ -463,6 +463,12 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 ## Revisión del selector de rol raíz — 2026-11-23
 
 - Action `45090273209`: responsive browser 1/1, audit, lint y build correctos; suite integrada **39/40**. El fallo fue locator con nombre exacto, no autorización: la traza mostraba el botón “Gerente” con su descripción accesible.
-- El trace/error-context se descargó y revisó. Fix local afirma primero `/Auth/me.isRootAccount === true` y usa locator por prefijo del nombre accesible.
+- El trace/error-context se descargó y revisó. Fix afirma primero `/Auth/me.isRootAccount === true` y usa locator por prefijo del nombre accesible.
 - Backend Action `45090274537`: Release build correcto, xUnit **113/113**, smoke HTTP/MySQL y concurrencia con limpieza.
-- Local: `npm run lint`, `npm run build`, discovery **40** y `npx playwright test e2e/team-management-load-errors.spec.ts` **10/10**. Nueva Action Front integrada del fix actual pendiente; no reportar la regla E2E positiva integrada como aprobada hasta obtener esa evidencia.
+- Front Action `45091340306` aprobó el fix integrado: backend Release/xUnit, audit, lint/build, responsive **1/1**, E2E **40/40** y cleanup.
+- Local antes del ajuste al constructor: `npm run lint`, `npm run build`, discovery **40** y `npx playwright test e2e/team-management-load-errors.spec.ts` **10/10**.
+
+## Constructor de rutas — revisión/search retry — en curso
+
+- E2E existente de creación mapa mantiene puntos reales y operaciones. Se amplía el test tablet para probar búsqueda de dirección, estado sin resultados, fallo de servicio, respuesta tardía al cambiar objetivo, orden/operación en revisión y primer POST 503 seguido de retry.
+- Validación final del cambio de `RoutesManagement.tsx` y specs pendiente: correr lint/build, luego suite integrada con API/MySQL; no contar los cambios locales como aprobados hasta CI.

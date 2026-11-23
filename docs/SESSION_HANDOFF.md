@@ -853,3 +853,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend Action `45090274537`: Release build, xUnit 113/113, smoke HTTP/MySQL tenant/roles y concurrencia pasaron con cleanup.
 - Documentación Front/Backend actualizada para decisión raíz; `ERROR_LOG.md` registra hipótesis incorrecta inicial y causa confirmada por trace.
 - Validación local tras el fix: lint y build pasaron; Playwright discovery **40 pruebas**; `team-management-load-errors.spec.ts` **10/10**; `git diff --check` limpio. Suite E2E integrada del nuevo SHA pendiente; registrar su Action en `PROJECT_STATUS.md`, `TESTING.md` y este handoff. Luego continuar criterios funcionales; misión sigue abierta.
+
+## Continuación — revisión completa de ruta y búsquedas geográficas — 2026-11-23
+
+- Action Front `45091340306` terminó **success** para `9d84562`: backend Release/xUnit, audit, lint/build, responsive browser **1/1**, E2E integrado **40/40**, cleanup correcto. Confirma `isRootAccount` root y UI de rol Gerente con nombre accesible descriptivo.
+- Auditoría Front read-only detectó que el paso final omitía la secuencia completa de paradas y que búsquedas Nominatim antiguas podían quedar asociadas a otro punto. Cambios locales en `RoutesManagement.tsx`: lista ordenada de origen/paradas/destino con nombre, tipo de operación y coordenadas; AbortController, contador de secuencia y ref de objetivo para cancelar/descartar respuestas obsoletas.
+- Cambios locales del E2E tablet de ruta: selección desde búsqueda Nominatim, estados vacío/error, respuesta retrasada tras cambiar objetivo, lista de revisión en orden, primera creación forzada a HTTP 503 y segundo intento real exitoso. Debe validar que el formulario conserva datos y persistencia genera sólo la ruta reintentada.
+- Pendiente: último lint/build, revisar selector y aserciones Playwright, ejecutar prueba con API/MySQL (CI al publicar), corregir errores y repetir Action. Actualizar error/status/testing con resultado.
+- Auditoría Backend read-only: Admin raíz y aislamiento tenant están cubiertos (Action `45090274537`, 113/113 xUnit + smoke). Decisión de producto pendiente para permitir o prohibir rutas sin operación logística; usuario ya consultado, no modificar backend hasta respuesta. Añadir cobertura de ciclo con múltiples paradas hasta cierre y verificar continuidad de Data Protection para despliegue.
+- No declarar misión completa; continuar con seguridad/CRUD/responsive restantes y mantener `main` intacta.
