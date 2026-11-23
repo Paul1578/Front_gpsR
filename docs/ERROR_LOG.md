@@ -1653,3 +1653,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Action `45122569784`: **50/51**. El mapa muestra correctamente el estado OSRM de éxito, pero también el aviso de tracking “Sin posiciones registradas”; `getByRole("status")` resolvía ambos elementos y causaba strict-mode violation.
 - Corrección: el E2E localiza el copy exacto “Trayecto por carretera calculado.”. Prevención: usar nombre/copy específico cuando una pantalla contiene múltiples regiones live. Action del SHA corregido pendiente.
+
+## Cierre de brechas E2E de mapa, Admin y Driver — VALIDADO
+
+- Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413), SHA `f0acce7`: **51/51 E2E** y responsive **1/1**, backend Release/xUnit, audit/lint/build y teardown exitosos.
+- Confirmó los fixes registrados en las entradas anteriores: viewport separado por escenario; rol Gerente del Admin delegado presente pero deshabilitado; estado OSRM localizado por copy exacto; Driver GET posterior al POST 201; fixtures únicos en retries. Cleanup terminó correctamente.

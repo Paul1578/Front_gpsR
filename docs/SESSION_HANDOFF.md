@@ -992,3 +992,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45121718866` encontró 3 problemas: Admin delegado tiene `gerente` visible pero deshabilitado (assertar disabled), status OSRM es hermano de `.leaflet-container` (locator de página), E2E Driver consultaba API antes de completar POST (esperar 201). Detalle en `ERROR_LOG.md`; correcciones locales publicadas próximamente. La nueva Action debe verificar el suite entero y cleanup.
 
 - Action `45122569784` pasó backend tests, audit/lint/build, responsive y **50/51 E2E**; cleanup incluido. El único fallo fue selector `getByRole("status")` ambiguo entre indicador de OSRM y tracking sin posiciones. Corregido a texto exacto del estado carretera. Publicar y validar Action completa.
+
+## Cierre de lote Front — 2026-11-23
+
+- Front branch `refactor/route-builder`, último commit de código validado `f0acce7`; Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413) success.
+- Ejecutó backend Release/xUnit, dependency audit, lint/build, responsive browser **1/1**, Playwright E2E real API/MySQL **51/51** en 3.6 min y teardown/cleanup de contenedores; no hubo skips de los escenarios Playwright y trace step fue skip al no haber fallos.
+- Cambios clave: flujo real root-only Admin verificado UI/API, viewport correcto en dos E2E distintos, roles y opción deshabilitada conforme al contrato, sincronización Driver POST/GET, estado visible de geometría vial OSRM frente al fallback estimado, identidad de fixtures para retries. Errores y prevención están en `ERROR_LOG.md`.
+- HEAD actual tras documentación debe cotejarse con `git rev-parse`; rama Backend `chore/stabilize-fleet-platform` sin cambios en este lote, commit `341161d`, Action `45119396803` verde. `main` no se modificó.
+- Continuar la misión desde los pendientes de `PROJECT_STATUS.md`; no declarar terminado el producto global.

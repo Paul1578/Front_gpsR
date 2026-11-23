@@ -691,3 +691,10 @@ Fecha de actualización: 2026-11-22.
 
 - **50/51 E2E**, incluyendo API/MySQL real y limpieza; lint/build, responsive y backend Release/xUnit pasaron. Admin delegado y ciclo Driver ya pasaron tras las correcciones anteriores.
 - Único fallo: selector genérico `role=status` ambiguo por estado OSRM y banner de tracking simultáneos. Reemplazado por copy exacto del estado OSRM; repetir Action completa.
+
+## E2E integral de flota y mapa — VALIDADO EN CI
+
+- Front branch `refactor/route-builder`, código probado `f0acce7` (HEAD de código antes del commit documental): Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413) **success**.
+- Evidencia: backend Release/xUnit, auditoría de dependencias, lint, build Next.js, responsive browser **1/1**, Playwright autenticado contra API y MySQL descartables **51/51**, cierre de API/containers correcto. Sin traces de fallo; el step de guardar traces quedó skip por éxito.
+- Incluye fixture real de Admin delegado con 403 y rol protegido, Driver CRUD con lectura posterior al POST, ruta OSRM con respuesta determinista y comprobación del estado “Trayecto por carretera calculado”, responsive desktop/tablet/móvil web, y cleanup de datos temporales.
+- Backend branch `chore/stabilize-fleet-platform` continúa en `341161d`; Action Backend `45119396803` success. La misión integral sigue abierta por criterios restantes documentados en este archivo y por la limitación SMTP.

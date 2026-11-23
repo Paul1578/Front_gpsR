@@ -661,3 +661,8 @@
 - Ajustadas expectativas según contrato real: el rol Admin propio se muestra deshabilitado a delegados, el estado OSRM está fuera del contenedor Leaflet, y la lectura de Driver espera HTTP 201 antes de GET. Revalidación integrada pendiente.
 
 - El E2E OSRM identifica el estado exitoso por su texto exacto para desambiguarlo del banner de tracking simultáneo. Action `45122569784`: 50/51; nueva Action requerida.
+
+## 2026-11-23 — Mapa OSRM y permisos root-only validados
+
+- Indicador de cálculo vial exitoso y fallback estimado claros en el mapa. E2E reales de mapa Manager y Admin delegado quedaron estables; retries únicos, locators por contrato y sincronización de escritura corregidos.
+- Action Front [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413), código `f0acce7`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit, lint/build y teardown correctos.

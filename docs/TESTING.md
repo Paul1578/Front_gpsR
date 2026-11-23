@@ -577,3 +577,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `manager-map.spec.ts` intercepta `router.project-osrm.org` con una respuesta determinista de tres puntos; el test espera la solicitud y comprueba que el SVG de la ruta contiene al menos dos segmentos `L`, incluido el punto intermedio de la geometría.
 - La prueba sigue autenticando un Manager y crea/consulta ruta y vehículo en API/MySQL descartables; verifica desktop, tablet y móvil web.
 - Lint/build y discovery de 51 tests pasan local. Resultado E2E integrado pendiente del nuevo commit.
+
+## Resultado integral Front `f0acce7` — 2026-11-23
+
+- Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413): success.
+- Backend Release build/xUnit: success; audit de dependencias: success; `npm run lint`: success; `npm run build`: success.
+- Responsive browser: **1/1**. Playwright autenticado contra API y MySQL descartables: **51/51** en 3.6 minutos; se ejecutó con un worker y sin skips. La API y los contenedores se detuvieron correctamente tras el suite.
+- El manager map E2E valida OSRM exitoso con respuesta controlada de tres coordenadas y estado vial visible; Admin delegado conserva prohibición de crear/promover Admin (403) y UI deshabilita su rol propio; pruebas CRUD y cleanup incluidos.
