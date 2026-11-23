@@ -1,3 +1,10 @@
+## Handoff vigente — E2E de desvinculación User/Driver
+
+- Front `a75b1da` incluye botón de desvincular con confirmación; conserva cuenta, perfil y rol Driver. Action `45172574266` reportó 50/51: el único fallo pulsó el toggle “Gestionar choferes” cuando la sección ya estaba abierta.
+- Fix local en `e2e/fleet-admin.spec.ts`: usar la tarjeta `team-driver-{id}` visible sin alternar el panel. `ERROR_LOG.md` ya explica causa y prevención. Deben sincronizarse los documentos de estado, testing y changelog; ejecutar lint/build/discovery/diff-check; commit/push y esperar Action.
+- Backend `fd6ad1e` pasó Action `45173035947` (Release, xUnit 144/144 y smokes actuales). Nuevo smoke para Pending-route HTTP 409 está en trabajo Backend; coordinar posterior Front CI con SHA backend que lo incluya.
+- Luego continuar brecha de paginación usuarios/conductores; la misión permanece abierta.
+
 # Handoff vigente — 2026-11-23
 
 ## Tres brechas E2E adicionales — en validación integrada

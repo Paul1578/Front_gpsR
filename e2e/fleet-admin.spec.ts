@@ -4277,8 +4277,8 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
     lastName,
   });
 
-  await page.getByRole("button", { name: "Gestionar choferes" }).click();
   const linkedDriverCard = page.getByTestId(`team-driver-${driverId}`);
+  await expect(linkedDriverCard).toBeVisible();
   await expect(linkedDriverCard).toContainText(`@e2e${suffix}`);
   await page.setViewportSize({ width: 320, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

@@ -1,3 +1,8 @@
+## Desvinculación User–Driver — fix E2E esperando Action
+
+- Feature frontend/backend: el diálogo confirma el desvínculo, conserva User, perfil y rol Driver, y comunica errores API. El smoke backend `45173035947` pasó sobre `fd6ad1e`; el E2E integrado `45172574266` pasó 50/51 y encontró un locator de toggle incorrecto (panel ya abierto).
+- Fix `a75b1da` validado localmente: lint, build, discovery **51/51** y diff-check pasan; el test verifica directamente la tarjeta existente `team-driver-{id}`. Action integrada del commit corregido pendiente.
+
 ## Auditoría adicional de usuarios, Admin raíz y baja de rutas — CI aprobado — 2026-11-23
 
 - E2E de dos tenants ahora intenta cambiar estado, perfil y rol de un usuario ajeno. Se esperan tres 404, ausencia en `/Users/my-team` del atacante e invariancia de perfil/rol/estado para el propietario.

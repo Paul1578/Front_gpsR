@@ -1,3 +1,8 @@
+## Unlink User–Driver — E2E corregido, CI pendiente
+
+- Action Front `45172574266`: **50/51**; feature pasó flujos, falló un locator Playwright porque la sección de Drivers ya estaba abierta y el toggle se llamaba “Ocultar choferes”.
+- Fix local usa la tarjeta ya visible `team-driver-{id}` y espera su render. `npm run lint`, `npm run build`, discovery Playwright **51/51** y diff-check pasan; la nueva Action con API/MySQL descartable queda pendiente.
+
 # Estado vigente — 2026-11-23
 
 Las secciones históricas que siguen pueden describir pendientes ya cerrados al corte de aquella fecha; el estado actual está en esta cabecera y `docs/PROJECT_STATUS.md`.

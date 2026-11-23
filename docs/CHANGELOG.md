@@ -1,3 +1,8 @@
+# 2026-11-23 — Fix del E2E de desvinculación
+
+- El test ya no intenta abrir por segunda vez la sección Drivers después de una operación que la mantiene abierta; comprueba la tarjeta enlazada existente.
+- Action anterior `45172574266` fue 50/51 por locator incorrecto. Lint/build, discovery 51 y diff-check pasan con el fix; Action integrada pendiente.
+
 # 2026-11-23 — Correo duplicado en Gestión de Equipo
 
 - El E2E integrado intenta crear un segundo miembro con el mismo email por la UI; espera 409 real, mensaje de API, diálogo visible y una única cuenta persistida.
