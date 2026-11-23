@@ -916,3 +916,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45100344654` ejecutó **42/43 E2E**; quedó una confirmación de desactivar User vinculado a Driver en `fleet-admin.spec.ts` (línea cerca de 3820), añadida localmente. Cleanup del runner indicó error SQL al salir del test fallido; el script suprime stderr, se debe verificar en la Action posterior y hacer visible el diagnóstico si persiste.
 
 - Action `45101175529`: 42/43; encontró la segunda omisión de confirmación en desactivación del User regular del test de ciclo Driver. Confirmación añadida. Limpieza SQL falla cuando el test aborta; comprobar con suite completa verde y diagnosticar si persiste.
+
+- Action `45101809749` 42/43: detectó última mutación no confirmada, reactivación del User regular en el E2E de ciclo. Añadido click `Sí, activar cuenta`; nuevo run pendiente.

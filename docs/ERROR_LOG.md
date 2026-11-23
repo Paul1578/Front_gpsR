@@ -1520,3 +1520,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - **Tercer intento Action 45101175529:** persistió el mismo test (42/43); avanzó tras desactivar al usuario asociado al Driver y se detuvo en la desactivación del User regular. Se agregó la segunda confirmación explícita. El cleanup SQL vuelve a emitir error sólo porque el test falla antes del cleanup de pantalla; revisar si se repite con los 43 tests verdes.
 - **Consulta auxiliar con ruta incorrecta:** se buscó `scripts/` desde el repo Front, donde ese directorio no existe; la búsqueda equivalente se hizo en `/home/leonardo/Back_GPS`. Sin cambio de código. Prevención: localizar el repo dueño del script antes de `rg`.
+
+- **Cuarto intento Action 45101809749:** el mismo escenario ya pasó ambas bajas; quedó sólo la reactivación del User regular, también pendiente de confirmar. Añadido `Sí, activar cuenta`. El patrón muestra que todos los cambios de estado de cuenta (activar y desactivar) deben confirmar antes de esperar la mutación; el test cubre ambos. Cleanup falló tras la interrupción prematura.

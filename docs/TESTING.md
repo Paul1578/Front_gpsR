@@ -510,3 +510,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Repetición `45100344654`: **42/43**; únicamente faltaba confirmar desactivación del usuario en ciclo Driver. Fix local aplicado; la repetición final debe confirmar también cleanup MySQL, que informó error después del fallo.
 
 - Action `45101175529`: 42/43; añadió cobertura del segundo diálogo faltante (baja del User regular en el E2E Driver). Repetición completa y cleanup aún pendientes.
+
+- Action `45101809749`: 42/43; la última omisión era confirmar la reactivación, añadida. Repetir suite y revisar cleanup.
