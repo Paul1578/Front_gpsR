@@ -1,4 +1,4 @@
-## 2026-11-23 — Mapa, accesibilidad y coordinación de sesiones — CI pendiente
+## 2026-11-23 — Mapa, accesibilidad y coordinación de sesiones — CI aprobado
 
 - El estado de visibilidad del mapa móvil ahora se sincroniza con Leaflet; la selección acompaña eliminaciones y reordenamientos. Fijar un punto conserva operación/estado: el primer E2E encontró que se mostraba “Entrega” pero la API guardaba `None`.
 - Login/refresh aplican respuesta y perfil mientras mantienen el Web Lock; nuevas identidades recibidas desde otra pestaña se sincronizan sin interferir con un login local en curso.
@@ -6,6 +6,7 @@
 - La primera Action tuvo 65/67 E2E; el otro fallo fue el test rotando en paralelo el refresh-cookie de un solo uso. Se corrigió y quedó documentado en `ERROR_LOG.md`; falta nueva Action integrada.
 - La Action siguiente llegó a 68/69: test asumía access token en localStorage aunque producto lo mantiene sólo en memoria. El test ahora valida la restauración en ambos tabs y usa un solo refresh para verificar `/Auth/me`.
 - Lint/build/test:a11y (2/2) correctos; Playwright descubre 69 tests.
+- Action [`45254654316`](https://github.com/Paul1578/Front_gpsR/actions/runs/45254654316) pasó **69/69 E2E**, responsive 1/1, axe 2/2, audit/lint/build, Backend xUnit 165/165, API/MySQL y teardown.
 
 ## 2026-11-23 — Serialización de runners E2E — CI aprobado
 

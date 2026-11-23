@@ -1,13 +1,13 @@
-## 2026-11-23 — Action `45252999270` falló en 1/69 E2E — AJUSTE DE TEST PENDIENTE
+## 2026-11-23 — Action `45252999270` falló en 1/69 E2E — CORREGIDO Y VALIDADO
 
 - Después de corregir metadata de parada y el refresh paralelo, el Action pasó **68/69**. El test de dos logins volvió a fallar porque asumía que el access token se guarda en `localStorage`; el producto lo mantiene sólo en memoria y borra `auth_tokens` deliberadamente.
-- Solución del test: eliminar esa lectura directa. Comprobar convergencia de identidad compartida después de ambos logins, recargar ambas pestañas mediante el flujo real de cookie HttpOnly/Web Lock, y validar la identidad restaurada con un refresh + `/Auth/me` de una sola pestaña; los dos tabs deben presentar usuario y `currentUser` idénticos.
-- Es un supuesto incorrecto del test, no una exposición/ausencia del token en el producto. Lint/build y la nueva Action integrada con este ajuste siguen pendientes.
+- Solución del test: eliminar esa lectura directa. Comprobar identidad tras ambos logins, recargar ambas pestañas mediante cookie HttpOnly/Web Lock, y validar la sesión actual con un refresh + `/Auth/me` de una sola pestaña; los dos tabs deben presentar usuario y `currentUser` idénticos.
+- Es un supuesto incorrecto del test, no una exposición/ausencia del token en el producto. Action integrada [`45254654316`](https://github.com/Paul1578/Front_gpsR/actions/runs/45254654316) pasó **69/69 E2E**, responsive 1/1, axe 2/2, audit/lint/build, Backend xUnit 165/165, API/MySQL y teardown.
 
 ## 2026-11-23 — Action `45249048978` falló en 2/67 E2E — CORREGIDO LOCALMENTE
 
 - **Bug funcional de rutas:** al fijar coordenadas de una parada con mapa, `setPoint` reemplazaba el objeto completo y eliminaba `operation`/`status`. El selector mostraba “Entrega” por fallback visual, pero el payload persistido omitía el tipo y Backend guardaba `None`. Solución: preservar la operación/estado existentes y aplicar `delivery`/`pending` sólo si faltaban. El E2E ahora comprueba la operación luego de eliminar/reordenar y guardar.
-- **Falso fallo de autenticación E2E:** tras converger los logins en dos pestañas, ambas llamaban `readAccessToken`, que rotaba el refresh-cookie de un solo uso concurrentemente; una obtenía HTTP 401. No era un fallo de login. Solución: leer el access token que cada tab ya confirmó en `localStorage`, comprobar ambos con `Auth/me` y no rotar refresh en la aserción.
+- **Falso fallo de autenticación E2E:** tras converger los logins en dos pestañas, ambas llamaban `readAccessToken`, que rotaba el refresh-cookie de un solo uso concurrentemente; una obtenía HTTP 401. No era un fallo de login. Un primer arreglo intentó leer el token de localStorage, pero el producto lo elimina y sólo lo conserva en memoria; esa segunda suposición se corrigió en el test de `45252999270` descrito arriba.
 - Action `45249048978`: **65/67 E2E**; fallaron solamente estos dos casos. Backend Release/xUnit, audit, lint, build y responsive pasaron. Los fixes locales pasan `npm run lint`, `npm run build`, `npm run test:a11y` (2/2), `npx playwright test --list` (69 casos) y `git diff --check`; la Action integrada con los fixes aún debe ejecutarse.
 - Prevención: tests de sesiones simultáneas deben validar la sesión ya aplicada sin ejecutar rotaciones refresh paralelas; al fijar una coordenada se conserva metadata de dominio asociada al punto.
 
