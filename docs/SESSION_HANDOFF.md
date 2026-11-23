@@ -1,6 +1,6 @@
 ## Continuación activa — cobertura UX/CRUD — 2026-11-23
 
-- Ramas actuales: Front `refactor/route-builder` (código `4f59b19`, documentado luego) y Backend `chore/stabilize-fleet-platform` (docs `7906ef2`); `main` intacta.
+- Ramas actuales: Front `refactor/route-builder` (código `4f59b19`, docs `a6757b1`) y Backend `chore/stabilize-fleet-platform` (docs `9fa14a8`); `main` intacta.
 - Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó en `78b7974`: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
 - Action [`45261649009`](https://github.com/Paul1578/Front_gpsR/actions/runs/45261649009) encontró una aserción de perfil con baseline obsoleto (68/69); corregida capturando GET justo antes del PUT simulado 503. `0bb20c8` agrega filtros Estado/Vehículo/Conductor accionables a 320 px y verifica persistencia y bounds. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL y cleanup.
 - Front `1470e5d` Action [`45265266802`](https://github.com/Paul1578/Front_gpsR/actions/runs/45265266802) terminó 68/69 por locator Playwright parcial; causa/prevención en `ERROR_LOG.md`.
@@ -8,6 +8,9 @@
 - Axe había descubierto nombre ausente en el botón «Volver» y contraste 4.36:1 al revocar sesiones; ambos corregidos. Validación local `npm run test:a11y` 2/2, build/lint, discovery 69 y diff-check correctos.
 - `docs/SECURITY.md` quedó reconciliado con la Action más reciente; ya no presenta el E2E de forwarded headers como pendiente.
 - Action Front [`45268671219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45268671219) de HEAD documental `79020a8` pasó; código de producto validado en `4f59b19` por `45266610856`.
+- HEAD documental Front `a6757b1` pasó Action [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519): 69/69 E2E, responsive 1/1, axe 2/2, Backend 165/165, audit/lint/build, API/MySQL y cleanup.
+- Backend docs `9fa14a8` pasó Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674) con xUnit y smokes integrados de DB.
+- La matriz técnicamente alcanzable de la misión no tiene pendientes conocidos: CRUD/roles/tenant/rutas/seguimiento/estados/responsive/a11y cuentan con pruebas locales o integradas citadas en `TESTING.md`/`PROJECT_STATUS.md`. Pendientes externos: SMTP vigente y configuración/servicios de producción; móvil nativo queda fuera por decisión del usuario.
 - MySQL Backend local, solo lectura: 5 usuarios, 2 raíces Admin con `OwnerUserId=NULL`, 0 Admins tenant. Coincide con las dos raíces confirmadas; no se inspeccionaron otros ambientes. Evidencia en ambos status reports y Backend `docs/SECURITY.md`.
 - Continuar auditoría del responsive y cobertura funcional; documentar cada hallazgo/fix y su evidencia. SMTP real e infraestructura de producción dependen de configuración externa; la app nativa queda pospuesta.
 

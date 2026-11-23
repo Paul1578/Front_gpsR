@@ -1,6 +1,7 @@
 ## Seguimiento responsive y estados de gestión — 2026-11-23
 
-- Action Front `4f59b19`: [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856), **69/69 E2E**, axe 2/2, responsive, audit/lint/build, Backend xUnit 165/165, API/MySQL y cleanup. Incluye perfil a 320 px y axe sobre perfil/formulario expandido. La Action previa `45265266802` fue 68/69 por un locator ambiguo, corregido y validado en esta repetición.
+- Action Front `4f59b19`: [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856), **69/69 E2E**, axe 2/2, responsive, audit/lint/build, Backend xUnit 165/165, API/MySQL y cleanup. Incluye perfil a 320 px y axe sobre perfil/formulario expandido. La Action previa `45265266802` fue 68/69 por un locator ambiguo, corregido y validado aquí.
+- HEAD documental `a6757b1` volvió a pasar en [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519): 69/69 E2E, responsive, axe, audit/lint/build y API/MySQL.
 - `Gestión de Vehículos no confunde fallo de carga con flota vacía`: falla el endpoint de activos/inactivos de forma independiente y prueba alert/reintento sin mostrar vacío engañoso. E2E local pasó 1/1 en Next dev y 1/1 en build de producción.
 - El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. Action `45266610856` lo validó con credenciales de un solo run y DB descartable.
 - En el formulario de alta se verifica copy que no garantiza el envío antes de la respuesta; el E2E real comprueba `invitationSent=false` y aviso SMTP posterior.

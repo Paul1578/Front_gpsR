@@ -1,3 +1,8 @@
+## 2026-11-23 — Corte de auditoría técnica y límites externos
+
+- Los recorridos técnicamente verificables de CRUD, roles/aislamiento, rutas, estados de error, responsive y accesibilidad tienen cobertura E2E/API/MySQL; últimos resultados Front `a6757b1` y Backend `9fa14a8` están en Actions `45270273519`, `45270259692` y `45270276674`.
+- Pendientes fuera del entorno: credenciales SMTP vigentes y parámetros/servicios de producción (dominio/TLS, ingress, persistencia/cifrado de Data Protection y rate limit distribuido para varias réplicas). App nativa pospuesta.
+
 ## 2026-11-23 — Preflight read-only de cuentas Admin raíz
 
 - Se contrastó con la DB local la regla heredada `OwnerUserId IS NULL`: 5 usuarios; ambos owners nulos tienen rol Admin; 0 Admins tienen propietario asignado. No se exponen identidades y no se hicieron mutaciones.
@@ -8,6 +13,7 @@
 - `SECURITY.md` ahora apunta a la validación integrada más reciente de autenticación/transporte y elimina la afirmación histórica de que faltaba E2E.
 - Action `45266610856` validó 69/69 E2E, controles de sesión, axe, responsive, API/MySQL y Backend xUnit 165/165.
 - La revisión documental `79020a8` pasó también la Action integrada [`45268671219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45268671219), con el mismo código funcional.
+- El HEAD documental `a6757b1` volvió a pasar la Action integrada [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519): 69/69 E2E y los pasos completos de responsive, axe, backend/API/MySQL y cleanup.
 
 ## 2026-11-23 — Perfil accesible y pruebas móviles extendidas
 
