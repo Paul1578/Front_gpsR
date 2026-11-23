@@ -844,3 +844,8 @@ Fecha de actualización: 2026-11-22.
 
 - Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) success: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 - El test adicional de fallo HTTP al cambiar rol pasa local 1/1; se incluirá en la siguiente Action.
+
+## Error de cambio de rol — VALIDADO EN CI — 2026-11-23
+
+- Front `a3a4790`, Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987): **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- Gestión de Equipo probó HTTP 500 al confirmar el cambio, mostró el error y mantuvo el rol User; después cambió a Logistics con éxito y comprobó persistencia.

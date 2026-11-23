@@ -789,3 +789,7 @@
 - E2E cubre fallo HTTP 500 en `updateUserRole`, mensaje visible y rol intacto antes de probar la confirmación exitosa. Playwright focal 1/1, lint/build/discovery pasan localmente; CI pendiente.
 
 - HEAD Front `7ce8aef` validado por Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665): 51/51 E2E, responsive, backend Release/xUnit y cleanup.
+
+## 2026-11-23 — Error visible al cambiar rol validado
+
+- Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987) pasó con 51/51 E2E y cleanup; UI conservó el rol ante HTTP 500 y persistió el reintento exitoso.

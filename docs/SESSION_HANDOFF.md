@@ -1164,3 +1164,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) pasó `7ce8aef`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup.
 - Focal de TeamManagement que prueba 500, mensaje visible/rol sin mutación y luego cambio exitoso pasó local 1/1; código aún pendiente de commit/Action.
+
+## Error de cambio de rol — validado — 2026-11-23
+
+- Front `a3a4790`, Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987): 51/51, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup exitosos.
+- Confirmación de cambio User→Logistics recibió 500 simulado; el UI mostró copy y conservó rol User; el reintento respondió correctamente y persistió Logistics.
+- ESLint había tropezado con `ENOENT test-results` al correr paralelo a Playwright; repetido en secuencia, pasó. Ver `ERROR_LOG.md`.

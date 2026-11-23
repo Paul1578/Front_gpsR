@@ -737,3 +737,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) pasó 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 - El caso focal nuevo de error en cambio de rol pasó 1/1 local; el lint repetido secuencialmente también pasó.
+
+## Rechazo al cambiar rol desde Equipo — CI aprobado
+
+- Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987), Front `a3a4790`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup success.
+- El 500 dejó el rol original intacto y su mensaje visible; el reintento permitió y persistió Logistics. Playwright focal local 1/1.
