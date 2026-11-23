@@ -1,25 +1,25 @@
 # Handoff vigente — 2026-11-23
 
-- Front `refactor/route-builder` HEAD `cd7925a` pasó Action [`45111678324`](https://github.com/Paul1578/Front_gpsR/actions/runs/45111678324): backend Release/xUnit, audit/lint/build, responsive **1/1**, API/MySQL **47/47**, cleanup y teardown; incluye exportación JSON y responsive de auth secundaria.
+- Front `refactor/route-builder` HEAD `07c930b` pasó Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472): backend Release/xUnit, audit/lint/build, responsive **1/1**, API/MySQL **49/49**, cleanup y teardown; confirma reset/activación reales con token de un solo uso.
 - Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.
-- `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; se corrigió la colisión con Next anterior en `:3000` ejecutando en servidor limpio `:3010`. La Action `45111678324` pasó 47 casos previos a los dos tests actuales de ciclo auth.
+- `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; se corrigió la colisión con Next anterior en `:3000` ejecutando en servidor limpio `:3010`. Action `45112755472` ejecutó los 49 casos sin fallos.
 - Backend rama `chore/stabilize-fleet-platform` HEAD `96b50cc`; Action [`45112158616`](https://github.com/Paul1578/Back_GPS/actions/runs/45112158616) pasó build, xUnit, smoke HTTP/MySQL, concurrencia, cleanup y fixtures de reset/activación. `main` sigue intacta. SMTP real, proxies/rate limit distribuido y persistencia Data Protection dependen del entorno productivo.
 - Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.
 - Decisiones de usuario: raíz solamente otorga Admin; móvil nativo pospuesto; las cuentas pueden ser rutas de traslado.
-- Front: `npm run lint` y `npm run build` pasan; Playwright descubre **49 tests**. `auth-recovery-lifecycle.spec.ts` prueba reset y activación desde UI contra fixtures efímeros; publicar y esperar Action API/MySQL antes de contabilizarlo como probado. Persistencia de tema sigue pendiente.
+- Front `07c930b`: 49/49 E2E confirma reset/activación UI, rechazo de clave anterior, replay 401 y cleanup efímero. El test local `theme-preference.spec.ts` verifica persistencia tras recarga; su Action sigue pendiente. Discovery actual **50 tests**, lint/build pasan.
 - Pendiente global: continuar criterios alcanzables en `PROJECT_STATUS.md`; la DB local no se pudo consultar por credencial MySQL desincronizada, por lo que el preflight de migraciones históricas requiere copia válida. SMTP, Data Protection persistente, proxy/IP confiable y rate limiter distribuido requieren configuración de despliegue. No afirmar misión integral completa.
 - Las notas anteriores que siguen son historial de trabajo y pueden describir estados/decisiones ya superados; usar este bloque y el inicio de `PROJECT_STATUS.md` como fuente actual.
 
-## Próximos E2E de autenticación y administración — 2026-11-23
+## E2E de autenticación y administración — 2026-11-23
 
 - Revisión independiente read-only sobre los **46** escenarios detectó brechas de evidencia: `/recovery/password`, `/reset-password`, `/activate-account`; verificar descarga de exportación de la empresa; persistencia del modo oscuro; y responsive de recuperación/reset/activación en 320×844 y 768×1024.
 - Root-only ya tiene comprobación de backend HTTP/MySQL en `scripts/smoke-tenant-http.sh`; la prueba Front de opciones de Admin delegado usa API simulada. Si se amplía, usar DB descartable y confirmar persistencia/403 por API.
 - Recuperación de usuario permanece deshabilitada intencionalmente porque no existe endpoint backend. SMTP real está excluido; no declarar envío exitoso al probar recuperación/activación.
-- No se confirmó un bug en estos hallazgos estáticos. Priorizar una cobertura E2E real de recuperación y activación que lea tokens del outbox de la DB efímera; después descarga, responsive y tema.
+- No se confirmó un bug en los hallazgos estáticos. El ciclo reset/activación, descarga y responsive ya están cubiertos; queda el tema persistente.
 - Exportación real ya validada por Front Action `45110885218`: la prueba descarga JSON, verifica usuario de empresa recién creado, listas y fecha.
 - Hallazgo de UX local: reset y activación describían incorrectamente el token como “12 caracteres” (mínimo que pertenece a la contraseña); recuperación prometía contraseña temporal/OTP. Texto corregido a enlace seguro de un solo uso, sin afirmar un SMTP exitoso.
 - Nuevo `auth-recovery-responsive.spec.ts` verifica Recovery/Reset/Activate en 320×844 y 768×1024 sin overflow, contenido con token cargado, y copy lateral en 1280×900. La primera aserción esperaba visible en móvil un panel `hidden lg:block`; corregida para verificarlo en escritorio. El selector de heading de activación también se alineó al H1 real. Playwright focal pasa 1/1 local; falta lint/build final y Action integrada.
-- Pendientes siguientes: E2E real de restablecer contraseña/activar cuenta con fixture de token en DB desechable; luego persistencia del tema. SMTP real sigue excluido por credenciales; opción de recuperar usuario no tiene endpoint.
+- E2E reset/activación completado en Action `45112755472`. Pendiente validar en CI el tema persistente. SMTP real está excluido por credenciales; recuperar usuario no tiene endpoint.
 
 ## Cierre de validación Front — 2026-11-23
 

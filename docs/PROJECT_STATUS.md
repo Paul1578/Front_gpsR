@@ -1,7 +1,7 @@
 ## Estado actual — 2026-11-23
 
-- Front `refactor/route-builder` HEAD `cd7925a` pasó Action [`45111678324`](https://github.com/Paul1578/Front_gpsR/actions/runs/45111678324): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **47/47**, cleanup y teardown exitosos. Incluye exportación JSON y responsive de auth secundaria.
-- La tanda arregla Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones mientras Vehicles tiene error y distingue carga inicial de vacío en dashboard. El test confirma que el Dashboard no presenta cifras cero/actividad vacía antes de completar la lectura. Último lint/build locales correctos y discovery actual **49**; la Action `45111678324` corrió 47 casos antes de añadir reset/activación.
+- Front `refactor/route-builder` HEAD `07c930b` pasó Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **49/49**, cleanup y teardown. Incluye reset y activación reales desde UI con tokens de un solo uso.
+- La tanda corrige Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones cuando Vehicles falla y distingue carga inicial de vacío en Dashboard. Lint/build locales correctos; la Action ejecutó los 49 E2E en 3.2 minutos sin fallos.
 - `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 47 escenarios pasaron.
 - El primer intento reutilizó un proceso Next anterior en `:3000`; al usar `:3010`, el webServer seguía arrancando fijo en `:3000`. Configuración corregida y E2E repetido con servidor de producción limpio.
 - Backend activo `chore/stabilize-fleet-platform` HEAD `96b50cc`, Action [`45112158616`](https://github.com/Paul1578/Back_GPS/actions/runs/45112158616) success; main intacta. Decisiones confirmadas: rutas de traslado permitidas; paradas pickup/delivery/both; sólo raíz otorga Admin; móvil nativo pospuesto.
@@ -11,8 +11,8 @@
 - Backend limita recuperación a 5 solicitudes/10 min/IP; tokens 256 bits, TTL 60 min por defecto (1–1440), URLs Production HTTPS. Login: 10 solicitudes/min/IP. Sin bloqueo por cuenta.
 - Pendientes externos/de producción: SMTP con credenciales vigentes; límites distribuidos e IP confiable detrás de proxy; persistencia del key ring Data Protection.
 - Misión global sigue abierta para completar y reevaluar cobertura funcional/roles/responsive más allá de la matriz E2E existente; no presentar esta fase como cierre de toda la plataforma.
-- Auditoría independiente: la descarga de exportación ya pasó API/MySQL E2E. Root-only está cubierto por smoke HTTP/MySQL backend; el test Front de opciones Admin delegado es simulado. Sigue pendiente persistencia del tema.
-- Lote Front local pendiente de Action: E2E nuevo de reset y activación consume tokens aleatorios de MySQL descartable desde formularios reales; valida clave inicial/nueva, rechazo de la anterior y replay de token (401). Lint, build y discovery **49 tests** pasan localmente. La Action integrada debe confirmar ambos flujos y cleanup.
+- Auditoría independiente: exportación y ciclo reset/activación pasan API/MySQL E2E. Root-only está cubierto por smoke HTTP/MySQL backend; el test Front de opciones Admin delegado es simulado. Sigue pendiente persistencia del tema.
+- Cambio local posterior a `07c930b`: switch de modo oscuro recibe nombre accesible y un E2E verifica almacenamiento en `localStorage` tras recarga. Lint/build y discovery **50 tests** pasan localmente; requiere Action integrada.
 
 ## Historial de estado — 2026-11-22
 

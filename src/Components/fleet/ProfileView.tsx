@@ -180,6 +180,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                 </div>
               </div>
               <Switch
+                ariaLabel="Modo oscuro"
                 checked={isDark}
                 onCheckedChange={(checked) =>
                   setPreference(checked ? "dark" : "light")

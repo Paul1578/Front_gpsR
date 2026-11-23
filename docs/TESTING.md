@@ -1,11 +1,16 @@
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
-## 2026-11-23 — Ciclo UI de reset y activación — pendiente de Action
+## 2026-11-23 — Ciclo UI real de reset y activación — validado
 
 - El runner backend crea usuarios y tokens aleatorios de 256 bits en MySQL desechable; sólo persiste hashes SHA-256 y limpia los registros al terminar.
 - Los E2E usan formularios reales: login inicial, cambio de clave, rechazo de la clave anterior y replay del token (401), tanto para reset como para activación.
 - Validación local: lint, build y discovery Playwright **49 tests** correctos. El ciclo no se reporta como ejecutado localmente: sus fixtures reales los prepara el runner API/MySQL de CI.
-- Backend Action `45112158616` pasó con runner actualizado. Front Action `45111678324` pasó **47/47**, antes de incluir estos dos escenarios; siguiente push debe validar ejecución y cleanup integrado.
+- Backend Action `45112158616` pasó con runner actualizado. Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49** en 3.2 min; responsive **1/1**, audit/lint/build, Release/xUnit backend, cleanup y teardown correctos. Ambos flujos usaron API/MySQL efímeros sin SMTP.
+
+## 2026-11-23 — Persistencia del tema — Action pendiente
+
+- `theme-preference.spec.ts` inicia sesión con Admin descartable, cambia el switch en Mi Perfil, recarga y verifica clase del documento y `localStorage`; luego cambia a claro y comprueba lo mismo.
+- El switch ahora tiene el nombre accesible “Modo oscuro”. Lint/build locales correctos y discovery **50 tests**; falta E2E integrado.
 
 ## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
 

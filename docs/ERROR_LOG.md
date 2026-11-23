@@ -1580,3 +1580,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se corrigió a enlace seguro/temporal de un solo uso y copy de recuperación que describe instrucciones de nueva contraseña sin prometer envío exitoso.
 - El primer E2E responsive falló por una expectativa de test incorrecta: panel lateral usa `hidden lg:block`, por lo que no debe ser visible en 320/768 px. Luego un selector asumió un H1 distinto al texto real de activación. Se validan overflow y contenido principal en móvil/tablet, y panel/copys en escritorio.
 - Playwright focal `auth-recovery-responsive.spec.ts`: **1/1** tras las correcciones. Lint/build final y Action integrada todavía pendientes.
+
+## 2026-11-23 — Preferencia de tema sin nombre accesible y fixture de reload — CORREGIDO; CI PENDIENTE
+
+- El switch “Modo oscuro” no exponía nombre accesible, así que no se podía identificar por su propósito con lector de pantalla ni selector accesible. Se añadió `aria-label` y un E2E lo localiza por ese nombre.
+- La primera versión del setup del test reescribía `light` en cada navegación; al recargar habría borrado la preferencia que se quería comprobar. El setup ahora crea el valor inicial sólo si no existe.
+- Prevención: fixtures de estado inicial deben ser idempotentes y no sobrescribir el estado persistido entre navegaciones. Falta que Action API/MySQL confirme el escenario completo.

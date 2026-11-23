@@ -616,4 +616,9 @@
 
 - Se añadieron recorridos reales desde formularios de reset y activación con tokens aleatorios preparados como hashes en MySQL efímero por el runner backend.
 - Cada flujo verifica clave inicial, nueva clave, rechazo de la anterior y rechazo de reutilizar el token. No se envía ni se simula correo SMTP.
-- Lint, build y discovery **49** pasan localmente. Backend runner `96b50cc` pasó Action `45112158616`; Action Front `45111678324` pasó 47/47 antes de incluir estos escenarios. Pendiente Action cross-repo del SHA actual.
+- Lint/build/discovery **49** pasan localmente. Backend runner `96b50cc` pasó Action `45112158616`; Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup.
+
+## 2026-11-23 — Accesibilidad y persistencia del tema — validación local
+
+- El switch de tema de Perfil ahora expone el nombre accesible “Modo oscuro”. Nuevo E2E comprueba persistencia en `localStorage` y apariencia tras recarga al activar oscuro y volver a claro.
+- Lint/build y discovery **50** pasan localmente; falta Action API/MySQL para este escenario.
