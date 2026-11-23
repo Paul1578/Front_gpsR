@@ -633,3 +633,8 @@
 
 - Se sincronizaron HEAD y Actions en `PROJECT_STATUS.md` y `SESSION_HANDOFF.md`; la referencia de CI obsoleta queda registrada en `ERROR_LOG.md`.
 - Front HEAD documental `d0a9342` pasó Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569): audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL E2E **50/50**, cleanup y teardown.
+
+## 2026-11-23 — Permisos de Admin delegado con API real
+
+- Se cerró la brecha entre prueba UI simulada y regla backend: fixture autenticable de Admin delegado, intentos directos 403, persistencia del rol miembro y menú sin opciones Admin.
+- Lint/build y Playwright discovery **51** pasan; CI integrado pendiente.

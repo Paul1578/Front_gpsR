@@ -566,3 +566,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - `auth-recovery-responsive.spec.ts` comprueba Recovery/Reset/Activate en 320×844 y 768×1024 sin overflow; con token fixture revisa estado listo y copy corregido. En 1280×900 valida los paneles laterales.
 - Playwright focal pasa **1/1** local sobre build de producción en `127.0.0.1:3010`. Falta lint/build final tras los últimos ajustes y Action integrada.
+## Admin delegado con sesión real — en integración
+
+- Nuevo E2E usa el fixture Admin delegado creado por `Back_GPS/scripts/run-e2e-local.sh`, inicia sesión en el navegador y confirma `/Auth/me` root=false.
+- Verifica que el frontend no expone Admin, la API devuelve 403 al crear y promover, y una nueva lectura confirma que el miembro continúa como User.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) pasan. E2E autenticado con API/MySQL descartables pendiente de Actions.

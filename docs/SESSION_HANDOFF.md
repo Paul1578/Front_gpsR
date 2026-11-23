@@ -1,5 +1,6 @@
 # Handoff vigente — 2026-11-23
 
+- Front `a510021` añade E2E integrado de Admin delegado con API/MySQL: login real, `/Auth/me` root=false, 403 para crear/promover Admin, GET confirma que el miembro sigue User, y la UI oculta opciones Admin. Backend `c32febe` prepara el fixture temporal. Lint/build y discovery 51 pasan; Actions integrado aún pendiente de push.
 - Front `refactor/route-builder` HEAD `d0a9342`; Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569) pasó audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL **50/50**, cleanup y teardown. El cambio funcional del horario fue validado previamente en `23e964e` por Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930).
 - Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.
 - `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; se corrigió la colisión con Next anterior en `:3000` ejecutando en servidor limpio `:3010`. Action `45114492930` ejecutó 50 casos en 3.4 min sin fallos.

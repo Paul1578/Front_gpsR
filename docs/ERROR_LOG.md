@@ -1598,3 +1598,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - `PROJECT_STATUS.md` y `SESSION_HANDOFF.md` conservaban HEAD y estado “en curso” después de completar el workflow. Se cotejaron SHA y conclusión en GitHub y se actualizaron ambos archivos.
 - Front HEAD documental `d0a9342` pasó Action `45115772569`, con audit/lint/build, responsive **1/1**, API/MySQL E2E **50/50** y cleanup.
 - Prevención: comprobar SHA y conclusión de cada Action enlazada al actualizar la fuente vigente de handoff.
+
+## 2026-11-23 — Restricción root-only del Admin delegado sólo tenía prueba UI simulada — CERRANDO BRECHA
+
+- La UI E2E anterior simulaba `/Auth/me` y equipo; backend sí tenía cobertura HTTP/MySQL, pero no se verificaba el flujo de navegador con sesión real.
+- Se agregó un fixture Admin delegado temporal y un test integrado que confirma opciones ocultas, `403` en crear/promover y rol del usuario intacto por API real.
+- Lint/build y discovery 51 pasan local; falta completar Action Front autenticada y actualizar el estado.

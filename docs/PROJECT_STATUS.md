@@ -1,5 +1,6 @@
 ## Estado actual — 2026-11-23
 
+- Front `a510021` agrega el E2E real de Admin delegado contra API/MySQL descartables, asistido por fixture de Backend `c32febe`: bloquea opciones Admin, recibe 403 en creación/promoción y comprueba la persistencia sin cambios. Lint/build y discovery **51** pasan; Action integrada pendiente.
 - Front `refactor/route-builder` HEAD `d0a9342` pasó Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **50/50**, cleanup y teardown. Incluye reset/activación, tema persistente y preservación del horario de ruta.
 - La tanda corrige Admin delegado en la vista heredada, tracking GPS vacío, errores de asignación y estados iniciales de Dashboard. La Action ejecutó los 50 E2E en 3.4 minutos sin fallos; lint/build locales correctos.
 - `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 50 escenarios pasaron.
