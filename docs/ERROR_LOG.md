@@ -1470,3 +1470,17 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** resumen ordenado con origen, operaciones y destino; cancelación/invalidez por destino y secuencia.
 - **Verificación:** Action `45092540906`, 40/40 E2E, responsive 1/1, lint/build/audit y cleanup. El E2E cubre respuesta, vacío, error, carrera y retry HTTP 503 con persistencia.
 - **Prevención:** incluir estado, orden y operación en confirmación de logística; invalidar solicitudes asíncronas cuando cambia el objeto al que pertenecen.
+
+# 2026-11-23 — Historial ocultaba operaciones y permitía respuestas de polling fuera de orden — CORREGIDO LOCALMENTE
+
+- **Síntomas:** detalle decía “Puntos de Entrega” y no mostraba tipo/estado; primera carga podía combinar spinner con mensaje vacío; respuestas superpuestas de polling/focus podían sobrescribir datos nuevos con antiguos.
+- **Solución:** incluir etiquetas y estado de cada parada operativa; renderizar loading/error/empty/list como estados excluyentes; ignorar nuevas consultas mientras hay una activa. Se tiparon `operation/status` camelCase/PascalCase en los puntos.
+- **Verificación:** lint/build y E2E Historial 2/2; la suite integrada nueva queda pendiente.
+- **Errores de implementación y prueba:** primer build falló porque `includes` se llamaba sobre una unión `string | number`; se separó valor numérico/textual. Primera prueba de carga dejó pasar la respuesta 503 antes de renderizar Historial porque sólo detuvo una solicitud global de rutas; ahora espera el heading del panel y mantiene detenidas todas las respuestas de rutas durante la aserción. Prueba de foco asumía una sola solicitud dashboard y hamburger desktop; usa baseline real de solicitudes y viewport móvil. Repetición 2/2.
+- **Prevención:** reducir tipo explícitamente antes de operaciones string; sincronizar E2E con el panel visible y modelar todas las consultas de la ruta interceptada; no fijar conteos globales si Dashboard y Historial comparten endpoint.
+
+# 2026-11-23 — Exploración con paths equivocados — CORREGIDO
+
+- `rg app` falló porque el App Router real está en `src/app`; `rg e2e` se lanzó desde Backend, donde no existe esa carpeta; `/home/leonardo/Back_gps` usó casing incorrecto; se intentaron `BackEnd_Gps/Api` y `BackEnd_Gps/Application` aunque las carpetas reales son `fletflow/Api` y `fletflow/Aplication`.
+- Se corrigió cada consulta ubicando primero repo/estructura real con `rg --files`/`find`; no se modificaron datos o código por esos errores.
+- Prevención: confirmar cwd y `rg --files` antes de buscar rutas inferidas; el backend preserva la carpeta `Aplication` con esa grafía.

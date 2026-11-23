@@ -606,3 +606,10 @@ Fecha de actualización: 2026-11-22.
 - La revisión muestra origen, paradas en orden y destino con operación y coordenadas. La búsqueda descarta resultados obsoletos al cambiar el objetivo. E2E cubre Nominatim vacío/error/tardío y retry tras HTTP 503.
 - Backend amplía el smoke para recoger, entregar y completar una parada combinada, cada una con evidencia y persistencia. Smoke local API + MySQL efímero pasó y limpió fixtures; publicar el cambio y confirmar Action.
 - Política de ruta sin operaciones sigue consultada al usuario. Misión integral abierta.
+
+## Historial operativo y consistencia de refresco — corrección local 2026-11-23
+
+- Historial detalla cada parada operativa con su nombre, operación (recogida/entrega/ambas) y estado; oculta la lista vacía durante la primera carga.
+- El polling y el refresco al volver al foco comparten una sola solicitud en vuelo; una respuesta lenta ya no puede reemplazar una más nueva.
+- E2E enfocado pasa 2/2: carga demorada sin falso estado vacío, error/reintento, estados/operaciones multi-parada y guard de solicitudes concurrentes. Lint/build pasan. CI integrada nueva pendiente.
+- Auditoría de seguridad identificó contraseñas nuevas con mínimo de seis caracteres y rate limit de login general por IP (60/min). Requiere decisión/plan de endurecimiento; aún no se cambió el contrato de contraseña ni el límite.

@@ -87,3 +87,9 @@ El texto completo quedó disponible el 2026-11-21. Incluye arquitectura, segurid
 - El constructor de rutas y búsqueda geográfica está validado en Action `45092540906` (Front, 40/40 E2E).
 - Se amplió el smoke HTTP/MySQL del backend para completar recogida, entrega y operación combinada con evidencia por parada; ejecución local en entorno desechable pasó. Falta Action para el nuevo SHA.
 - La decisión de permitir rutas sin recogidas/entregas sigue pendiente de respuesta. Mantener la validación actual sin cambios hasta recibirla.
+
+## Hallazgos corregidos / controles pendientes — 2026-11-23
+
+- Front: corregidos detalle incompleto de operaciones del Historial, vacío mostrado durante carga y respuesta antigua de polling/foco; E2E local 2/2 y build/lint correctos. Nueva Action integrada pendiente.
+- Seguridad backend: las validaciones permiten contraseña nueva de 6 caracteres y el limitador genérico da 60 requests/min por IP, sin control específico de login/cuenta. Revisar endurecimiento sin introducir bloqueo de cuentas explotable para denegación de servicio.
+- Infraestructura Data Protection y despliegue productivo siguen pendientes de verificación.

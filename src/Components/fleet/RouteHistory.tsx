@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "../../Context/AuthContext";
 import {
@@ -60,6 +60,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const hasLoadedRoutes = useRef(false);
 
   const users = getAllUsers();
 
@@ -68,15 +69,19 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
     if (!apiFetch) return;
 
     let cancelled = false;
+    let requestInFlight = false;
 
     const load = async () => {
+      if (requestInFlight) return;
+      requestInFlight = true;
       try {
-        setIsLoading(true);
+        if (!hasLoadedRoutes.current) setIsLoading(true);
         setError(null);
 
         const routesRes = await fetchRoutes(apiFetch);
 
         if (cancelled) return;
+        hasLoadedRoutes.current = true;
         setRoutes(routesRes.map((route) => ({
           ...route,
           evidencias: (route.points ?? []).flatMap((point, pointIndex) =>
@@ -93,6 +98,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
         console.error("Error cargando historial de rutas", err);
         if (!cancelled) setError("No se pudieron cargar las rutas");
       } finally {
+        requestInFlight = false;
         if (!cancelled) setIsLoading(false);
       }
     };
@@ -188,6 +194,26 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
     );
   };
 
+  const getPointOperationLabel = (operation?: number | string) => {
+    const numeric = typeof operation === "number" ? operation : undefined;
+    const key = typeof operation === "string" ? operation.toLowerCase() : "";
+    if (numeric === 1 || key === "pickup" || key.includes("recog")) return "Recogida";
+    if (numeric === 2 || key === "delivery" || key.includes("entreg")) return "Entrega";
+    if (numeric === 3 || key === "pickupanddelivery" || key.includes("pickupanddelivery")) return "Recogida y entrega";
+    return null;
+  };
+
+  const getPointStatusLabel = (status?: number | string) => {
+    const numeric = typeof status === "number" ? status : undefined;
+    const key = typeof status === "string" ? status.toLowerCase() : "";
+    if (numeric === 0 || key === "pending" || key.includes("pend")) return "Pendiente";
+    if (numeric === 1 || key === "inprogress" || key.includes("progress")) return "En curso";
+    if (numeric === 2 || key === "completed" || key.includes("complet")) return "Completada";
+    if (numeric === 3 || key === "failed" || key.includes("fall")) return "Fallida";
+    if (numeric === 4 || key === "skipped" || key.includes("omit")) return "Omitida";
+    return "Estado desconocido";
+  };
+
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "N/D";
     const date = new Date(dateString);
@@ -247,13 +273,11 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
         </div>
 
         <div className="flex-1 overflow-auto p-4 md:p-6">
-          {isLoading && (
+          {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-sm text-gray-500">
               Cargando rutas...
             </div>
-          )}
-
-          {!isLoading && error && (
+          ) : error ? (
             <div role="alert" className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-red-600">
               <p>{error}</p>
               <button
@@ -264,9 +288,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                 Reintentar
               </button>
             </div>
-          )}
-
-          {!isLoading && !error && filteredRoutes.length === 0 ? (
+          ) : filteredRoutes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Calendar size={48} className="text-gray-300 mb-3" />
               <p className="text-gray-500 text-sm">No hay rutas para mostrar</p>
@@ -466,18 +488,32 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                 )}
               </div>
 
-              {selectedRoute.points && selectedRoute.points.length > 0 && (
+              {selectedRoute.points && selectedRoute.points.some((point) =>
+                getPointOperationLabel(point.operation ?? point.Operation),
+              ) && (
                 <div>
                   <label className="block text-xs text-gray-500 mb-2">
-                    Puntos de Entrega
+                    Paradas operativas
                   </label>
                   <div className="space-y-2">
-                    {selectedRoute.points.map((punto, index) => (
+                    {selectedRoute.points
+                      .filter((point) => getPointOperationLabel(point.operation ?? point.Operation))
+                      .map((punto, index) => (
                       <div
-                        key={index}
-                        className="p-2 bg-gray-50 rounded text-sm"
+                        key={`${selectedRoute.id}-${index}-${punto.name ?? "parada"}`}
+                        className="flex flex-wrap items-center justify-between gap-2 p-3 bg-gray-50 rounded text-sm"
                       >
-                        {index + 1}. {punto.name ?? "Punto"}
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900">
+                            {index + 1}. {punto.name ?? "Parada"}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {getPointOperationLabel(punto.operation ?? punto.Operation)}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-2 py-1 text-xs text-gray-700">
+                          {getPointStatusLabel(punto.status ?? punto.Status)}
+                        </span>
                       </div>
                     ))}
                   </div>

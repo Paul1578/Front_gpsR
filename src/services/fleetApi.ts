@@ -181,6 +181,10 @@ interface RawRoutePoint {
   Longitude?: number;
   name?: string;
   Name?: string;
+  operation?: number | string;
+  Operation?: number | string;
+  status?: number | string;
+  Status?: number | string;
   evidence?: Array<{
     type?: string;
     content?: string;

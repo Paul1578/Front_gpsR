@@ -478,3 +478,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action Front `45092540906` para `992053d`: E2E autenticado API/MySQL **40/40**, responsive **1/1**, build/audit/lint y cleanup exitosos. Casos: Nominatim con resultado, vacío, error y respuesta tardía tras cambio de destino; orden/tipos en revisión; creación que responde 503 seguida de retry persistido.
 - Backend smoke local actualizado: ruta con origen, pickup, delivery, parada pickup+delivery y destino; evidencia individual, cambios de estado en secuencia, GPS y finalización con vehículo disponible. API + MySQL descartables, resultado exit 0 y cleanup completo. La Action backend debe ejecutarse tras publicar este cambio.
+
+## Historial — cobertura adicional 2026-11-23
+
+- `npx playwright test e2e/team-management-load-errors.spec.ts --grep "Historial"`: **2/2**. Se valida que carga inicial no muestre vacío, error/reintento, etiquetas y estados de recogida/entrega/ambas, y que focus durante una consulta activa no dispare otra solicitud.
+- `npm run lint`, `npm run build` y `git diff --check` pasan para los cambios locales del Historial. Action integrada pendiente.

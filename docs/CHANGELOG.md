@@ -558,3 +558,9 @@
 - La confirmación de ruta expone origen, todas las paradas ordenadas con recogida/entrega/ambas, coordenadas y destino.
 - Búsquedas Nominatim cancelan o descartan resultados al cambiar el punto objetivo.
 - Front Action `45092540906`: 40/40 E2E y responsive 1/1. Smoke backend local actualizado para el ciclo multi-parada con evidencia; Action pendiente.
+
+## 2026-11-23 — Historial de operaciones de ruta
+
+- El detalle muestra recogida, entrega, operación combinada y estado por parada.
+- El estado vacío espera la respuesta inicial. Polling y foco no ejecutan solicitudes simultáneas que puedan aplicar datos fuera de orden.
+- E2E enfocado 2/2; lint/build pasan localmente. Action pendiente.

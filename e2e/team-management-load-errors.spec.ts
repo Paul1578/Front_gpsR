@@ -892,6 +892,16 @@ test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ 
 
 test("Historial distingue error de lista vacía y permite reintentar", async ({ page }) => {
   let failRouteHistory = false;
+  let holdRouteResponses = false;
+  let releaseRouteResponse: () => void = () => {};
+  let notifyRouteRequest: () => void = () => {};
+  const routeRequestStarted = new Promise<void>((resolve) => {
+    notifyRouteRequest = resolve;
+  });
+  const routeResponseGate = new Promise<void>((resolve) => {
+    releaseRouteResponse = resolve;
+  });
+  let routeHistoryData: unknown[] = [];
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.route("**/*", async (route) => {
@@ -916,6 +926,10 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
     }
 
     if (request.method() === "GET" && url.pathname.endsWith("/Routes") && failRouteHistory) {
+      if (holdRouteResponses) {
+        notifyRouteRequest();
+        await routeResponseGate;
+      }
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -924,9 +938,14 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
       return;
     }
 
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(routeHistoryData) });
+      return;
+    }
+
     if (
       request.method() === "GET" &&
-      ["/Users/my-team", "/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
+      ["/Users/my-team", "/Drivers", "/Vehicles"].some((path) => url.pathname.endsWith(path))
     ) {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
@@ -959,6 +978,7 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
   await initialRoutesResponse;
   await page.waitForLoadState("networkidle");
   failRouteHistory = true;
+  holdRouteResponses = true;
   await page.getByRole("button", { name: "Abrir menú" }).click();
   const failedHistoryResponse = page.waitForResponse((response) =>
     response.request().method() === "GET" &&
@@ -966,12 +986,38 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
     response.status() === 503,
   );
   await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Historial de Rutas", level: 2 })).toBeVisible();
+  await routeRequestStarted;
+  await expect(page.getByText("Cargando rutas...", { exact: true })).toBeVisible();
+  await expect(page.getByText("No hay rutas para mostrar", { exact: true })).toHaveCount(0);
+  holdRouteResponses = false;
+  releaseRouteResponse();
   await failedHistoryResponse;
 
   const historyAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" });
   await expect(historyAlert).toBeVisible();
   await expect(page.getByText("No hay rutas para mostrar")).toHaveCount(0);
   failRouteHistory = false;
+  routeHistoryData = [{
+    id: "route-history-multi-stop",
+    vehicleId: "history-vehicle",
+    vehiclePlate: "HST-123",
+    driverId: "history-driver",
+    name: "Ruta con operaciones mixtas",
+    origin: { latitude: -0.18, longitude: -78.46, name: "Origen" },
+    destination: { latitude: -0.2, longitude: -78.48, name: "Destino" },
+    points: [
+      { latitude: -0.18, longitude: -78.46, name: "Origen", operation: 0, status: 0 },
+      { latitude: -0.19, longitude: -78.47, name: "Recoger paquete", operation: 1, status: 2 },
+      { latitude: -0.195, longitude: -78.475, name: "Entregar paquete", operation: 2, status: 0 },
+      { latitude: -0.197, longitude: -78.477, name: "Cambio y entrega", operation: 3, status: 4 },
+      { latitude: -0.2, longitude: -78.48, name: "Destino", operation: 0, status: 0 },
+    ],
+    cargoDescription: "Paquetes QA",
+    plannedStart: "2038-07-21T10:00:00Z",
+    status: 2,
+    isActive: true,
+  }];
 
   const recoveredHistoryResponse = page.waitForResponse((response) =>
     response.request().method() === "GET" &&
@@ -981,12 +1027,110 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
   await historyAlert.getByRole("button", { name: "Reintentar" }).click();
   await recoveredHistoryResponse;
   await expect(historyAlert).toHaveCount(0);
-  await expect(page.getByText("No hay rutas para mostrar")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ruta con operaciones mixtas" })).toBeVisible();
+  await page.getByRole("button", { name: "Ver Detalles" }).click();
+  const details = page.getByRole("dialog");
+  await expect(details.getByText("Paradas operativas")).toBeVisible();
+  await expect(details.getByText("Recoger paquete")).toBeVisible();
+  await expect(details.getByText("Recogida", { exact: true })).toBeVisible();
+  await expect(details.getByText("Completada", { exact: true })).toHaveCount(2);
+  await expect(details.getByText("Entregar paquete")).toBeVisible();
+  await expect(details.getByText("Entrega", { exact: true })).toBeVisible();
+  await expect(details.getByText("Cambio y entrega")).toBeVisible();
+  await expect(details.getByText("Recogida y entrega", { exact: true })).toBeVisible();
+  await expect(details.getByText("Omitida", { exact: true })).toBeVisible();
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("Historial evita consultas duplicadas si vuelve el foco durante una carga", async ({ page }) => {
+  let routeRequests = 0;
+  let holdRouteResponses = false;
+  let releaseRouteResponse: () => void = () => {};
+  let notifyRouteRequest: () => void = () => {};
+  const routeRequestStarted = new Promise<void>((resolve) => {
+    notifyRouteRequest = resolve;
+  });
+  const routeResponseGate = new Promise<void>((resolve) => {
+    releaseRouteResponse = resolve;
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "history-focus-admin", email: "admin@example.test", roles: ["Admin"], isActive: true }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
+      routeRequests += 1;
+      if (holdRouteResponses) {
+        notifyRouteRequest();
+        await routeResponseGate;
+      }
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (["/Users/my-team", "/Drivers", "/Vehicles"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-test-access-token",
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  const dashboardRoutes = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname.endsWith("/Routes"),
+  );
+  await page.goto("/dashboard");
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await dashboardRoutes;
+  expect(routeRequests).toBeGreaterThan(0);
+
+  holdRouteResponses = true;
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  const historyResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname.endsWith("/Routes"),
+  );
+  await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Historial de Rutas", level: 2 })).toBeVisible();
+  await routeRequestStarted;
+  await expect(page.getByText("Cargando rutas...", { exact: true })).toBeVisible();
+  const requestsWhileLoading = routeRequests;
+
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForTimeout(100);
+  expect(routeRequests).toBe(requestsWhileLoading);
+
+  holdRouteResponses = false;
+  releaseRouteResponse();
+  await historyResponse;
+  await expect(page.getByText("No hay rutas para mostrar", { exact: true })).toBeVisible();
+
+  const focusRefresh = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname.endsWith("/Routes"),
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await focusRefresh;
+  expect(routeRequests).toBe(requestsWhileLoading + 1);
 });
 
 test("Gestión de Conductores informa y permite recuperar errores de Drivers y Vehicles", async ({ page }) => {

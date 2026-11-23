@@ -871,3 +871,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Incidencias de ejecución: el `dotnet` del PATH falla porque `/usr/lib64/dotnet/host/fxr` no contiene SDK; usar `/home/leonardo/.dotnet/dotnet`. Iniciar API como sesión foreground persistente: `nohup` dentro de un shell efímero murió antes del smoke. Documentado en `ERROR_LOG.md`.
 - Luego revisar/pushear Front docs y Backend smoke/docs, consultar Actions nuevos y reparar fallos. Política de ruta sin operación logística sigue pendiente de respuesta; no alterar backend hasta entonces.
 - Decisión confirmada: sólo la cuenta raíz crea/promueve Admin. La app nativa queda aplazada; web responsive sigue en alcance. SMTP real y Data Protection/infra productiva siguen limitaciones externas. Misión global abierta.
+
+## Continuación 2026-11-23 — Historial multi-operación y refresco protegido
+
+- Front tiene cambios locales en `RouteHistory.tsx`, `fleetApi.ts` y `e2e/team-management-load-errors.spec.ts`: detalle por parada con tipo/estado, carga/vacío mutuamente excluyentes e in-flight guard para polling/focus.
+- Local: lint/build correctos y E2E enfocado **2/2**. El primer intento falló por tipos `string | number` y por E2E que mantenía sólo una solicitud (dashboard) detenida; el segundo mostró navegación móvil como desktop en el test de foco. Causa/solución/previsión están en `ERROR_LOG.md`.
+- Front Action `45093518006` pasó antes de este cambio: 40/40 E2E y responsive 1/1 para `2abbf9e`. La nueva Action se ejecutará al publicar el arreglo del Historial.
+- Backend `e678e6c` tiene Action `45093565790` success: Release, 113/113, tenant HTTP/MySQL, concurrencia y cleanup. Smoke multi-parada detallado pasó localmente; el workflow publicado no ejercita esa ruta Logistics extendida, revisar si se requiere incluirla en Action.
+- Auditoría read-only añadió hallazgos de seguridad: contraseña mínima 6 caracteres y límite global de 60/min por IP sin política específica de login. Endurecer de forma coherente y añadir pruebas; no afirmar resuelto.
+- Decisión pendiente del usuario: permitir rutas de traslado sin operaciones. Admin sólo por cuenta raíz está confirmado. Web responsive sí, nativo móvil después. No cerrar misión global.
