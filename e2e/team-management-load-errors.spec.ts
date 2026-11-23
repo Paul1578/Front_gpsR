@@ -201,6 +201,7 @@ test("Dashboard de Logistics muestra error de opciones de flota y recupera al re
 
 test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permite reintentar", async ({ page }) => {
   let vehiclesRequestFails = true;
+  let inactiveVehiclesRequestFails = true;
   let releaseInitialVehicleFailure: () => void = () => {};
   let notifyInitialVehicleRequest: () => void = () => {};
   const initialVehicleRequestStarted = new Promise<void>((resolve) => {
@@ -232,7 +233,28 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
     }
 
     if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
-      if (vehiclesRequestFails) {
+      const inactiveRequest = url.searchParams.get("onlyActive") === "false";
+      if (inactiveRequest && inactiveVehiclesRequestFails) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+        });
+      } else if (inactiveRequest) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([{
+            id: "inactive-vehicle-load-error-fixture",
+            plate: "QA-VEH-INACTIVE-01",
+            brand: "Fleet QA",
+            model: "Van",
+            year: 2024,
+            status: 0,
+            isActive: false,
+          }]),
+        });
+      } else if (vehiclesRequestFails) {
         notifyInitialVehicleRequest();
         await initialVehicleFailureGate;
         await route.fulfill({
@@ -309,6 +331,24 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
   await recoveredVehicles;
   await expect(vehiclesAlert).toHaveCount(0);
   await expect(page.getByText("QA-VEH-01", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Mostrar bajas" }).click();
+  const inactiveVehiclesAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los vehículos dados de baja." });
+  await expect(inactiveVehiclesAlert).toBeVisible();
+  await expect(page.getByText("No hay vehículos dados de baja.", { exact: true })).toHaveCount(0);
+
+  inactiveVehiclesRequestFails = false;
+  const recoveredInactiveVehicles = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.request().method() === "GET" &&
+      url.pathname.endsWith("/Vehicles") &&
+      url.searchParams.get("onlyActive") === "false" &&
+      response.status() === 200;
+  });
+  await inactiveVehiclesAlert.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredInactiveVehicles;
+  await expect(inactiveVehiclesAlert).toHaveCount(0);
+  await expect(page.getByText("QA-VEH-INACTIVE-01", { exact: true })).toBeVisible();
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

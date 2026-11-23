@@ -555,7 +555,7 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
 test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin.");
 
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(email!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
@@ -570,6 +570,27 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   expect(meResponse.status()).toBe(200);
   expect(await meResponse.json()).toMatchObject({ isRootAccount: true, roles: ["Admin"] });
 
+  const dashboardBounds = async (locator: Locator) => {
+    await expect(locator).toBeVisible();
+    const bounds = await locator.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+    expect(bounds!.width).toBeGreaterThan(0);
+  };
+  await dashboardBounds(page.getByRole("heading", { name: /Bienvenido,/ }));
+  await dashboardBounds(page.getByText("Vehículos Disponibles", { exact: true }));
+  await dashboardBounds(page.getByText("Rutas Pendientes", { exact: true }));
+  await dashboardBounds(page.getByRole("heading", { name: "Accesos Rápidos" }));
+  const quickMapAction = page.getByRole("button", { name: /Mapa en Tiempo Real/ }).last();
+  await dashboardBounds(quickMapAction);
+  await quickMapAction.click();
+  await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+  const mobileMapBounds = await page.locator(".leaflet-container").boundingBox();
+  expect(mobileMapBounds).not.toBeNull();
+  expect(mobileMapBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(mobileMapBounds!.x + mobileMapBounds!.width).toBeLessThanOrEqual(320);
+
   const assertNoHorizontalOverflow = async () => {
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -578,6 +599,7 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   };
 
+  await page.getByRole("button", { name: "Volver" }).click();
   await assertNoHorizontalOverflow();
 
   await page.getByRole("button", { name: "Abrir menú" }).click();
@@ -4053,6 +4075,7 @@ test("Admin crea cuentas, cambia roles y promueve a Admin desde Equipo", async (
     const accountEmail = `fletflow.e2e.user.${account.emailPrefix}.${suffix}@example.test`;
     await page.getByRole("button", { name: "Crear Usuario" }).click();
     const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Después de crear la cuenta, indicaremos aquí si se pudo enviar el correo de activación.");
     const dialogWidth = await dialog.evaluate((element) => element.getBoundingClientRect().width);
     expect(dialogWidth).toBeLessThanOrEqual(account.viewport);
     await dialog.getByPlaceholder("Juan").fill(`E2E ${account.roleName}`);

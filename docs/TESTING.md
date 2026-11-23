@@ -1,3 +1,11 @@
+## Seguimiento responsive y estados de gestión — 2026-11-23
+
+- Action del HEAD Front anterior `363a47f`: [`45256408542`](https://github.com/Paul1578/Front_gpsR/actions/runs/45256408542), 69/69 E2E, axe 2/2, responsive check, audit/lint/build, Backend Release xUnit 165/165, API/MySQL y cleanup.
+- En el diff actual, `Gestión de Vehículos no confunde fallo de carga con flota vacía` ahora falla el endpoint de activos e inactivos de forma independiente; prueba el alert y reintento de la lista dada de baja, sin presentar estado vacío engañoso. E2E local pasó 1/1 en Next dev y 1/1 usando build de producción.
+- El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. La sesión local no dispone de credenciales QA; está pendiente la ejecución en CI, que provisiona credenciales/DB descartables.
+- En el formulario de alta se verifica copy que no garantiza el envío antes de la respuesta; el E2E real comprueba `invitationSent=false` y aviso SMTP posterior.
+- `npm run lint`, `npm run build` con Next 16.4.6/TypeScript en worktree aislado y `git diff --check` pasan. La nueva Action integrada de estos cambios queda pendiente de publicar.
+
 ## QA automatizada de accesibilidad — 2026-11-23
 
 - Se añade `npm run test:a11y` con Playwright + `@axe-core/playwright` y etiqueta WCAG 2.0/2.1/2.2 A/AA. Prueba navegación Login↔Recuperación, Dashboard→Gestión de Equipo, formulario de recuperación, diálogo de alta y confirmación de logout.

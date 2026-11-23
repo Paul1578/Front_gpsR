@@ -1,3 +1,13 @@
+## 2026-11-23 — Verificación aislada usó worktree/dispositivo incompatibles — RESUELTO
+
+- El primer `apply_patch` agrupado no encontró el contexto literal del E2E de alta; la aplicación fue atómica y no modificó archivos. Se releeyó el bloque real y se aplicaron cambios pequeños.
+- El primer Playwright con `CI=true` quiso iniciar servidor en `127.0.0.1:3000`, ya ocupado por el Next dev local. HTTP 200 y `ps` confirmaron un servidor vivo; sin CI, Playwright reutilizó ese servidor y el E2E mock de bajas pasó 1/1.
+- El primer build aislado en `/tmp` no resolvió Next porque Next 16 rechaza `node_modules` enlazado fuera de la raíz; `cp -al` entre `/tmp` y `/home` también falló por estar en dispositivos distintos. Se eliminó el worktree fallido y se recreó junto al repositorio, en el mismo filesystem; hardlinks funcionaron y el build production pasó.
+- Validación posterior contra el servidor production aislado: E2E de gestión/error de vehículos 1/1. No se detuvo ni modificó el proceso del usuario en el puerto 3000.
+- El primer inventario también consultó directorios inexistentes (`tests`, `src/components`) y usó `find` con sintaxis `-type` inválida; fueron lecturas fallidas sin cambios. Se localizaron los specs desde `e2e/` y se respetó `src/Components/`.
+- El shell bloqueó `rm -f` para limpiar un parche temporal; se resolvió con `unlink` del archivo puntual. No se borraron archivos del repositorio.
+- Prevención: obtener y comprobar puerto libre/servidor reutilizable antes de CI local; ubicar worktrees de build en el mismo filesystem que dependencias, o instalar dependencias dentro de la raíz aislada.
+
 ## 2026-11-23 — Action `45252999270` falló en 1/69 E2E — CORREGIDO Y VALIDADO
 
 - Después de corregir metadata de parada y el refresh paralelo, el Action pasó **68/69**. El test de dos logins volvió a fallar porque asumía que el access token se guarda en `localStorage`; el producto lo mantiene sólo en memoria y borra `auth_tokens` deliberadamente.

@@ -1,5 +1,13 @@
 # Auditoría integral de FletFlow
 
+## Corte adicional — 2026-11-23
+
+- Front docs/code HEAD publicado `363a47f`; Action [`45256408542`](https://github.com/Paul1578/Front_gpsR/actions/runs/45256408542) pasó 69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL. Hay un lote posterior local con lint, build y E2E mock 1/1; su Action queda pendiente.
+- Se ampliaron las aserciones Dashboard/Mapa a viewport 320 px, se probó el error de carga de vehículos inactivos y se eliminó una promesa anticipada de correo de invitación.
+- Próximas brechas verificables: UI real de Admin delegado ante 403 sin mutación; fallo de guardado del perfil de miembro; interacción de filtros de rutas en 320 px; estados/controles completos de Equipo y Perfil con contenido extremo.
+- Auditoría backend read-only revisó controladores y regla unlink. El owner nulo se interpreta como cuenta raíz; un Admin delegado heredado con owner nulo es una precondición condicional ya documentada en backend `docs/SECURITY.md`, no un caso confirmado en los datos actuales.
+- Mantener abierta la misión; después de probar este lote en CI continuar con los casos anteriores y actualizar el corte, changelog, handoff y registro de errores.
+
 Estado: los flujos principales de flota, roles/tenant, rutas con operaciones, seguimiento, evidencia y responsive web están implementados y comprobados en CI. Front `52aa90b` pasó **69/69 E2E**, axe **2/2**, responsive, audit/lint/build y Backend Release/xUnit **165/165** en Action [`45254654316`](https://github.com/Paul1578/Front_gpsR/actions/runs/45254654316). Backend `a1c78df` pasó migration smoke, tenant SQL-like/API/MySQL, concurrencia, rate limit y Release/xUnit en [`45253546602`](https://github.com/Paul1578/Back_GPS/actions/runs/45253546602) y [`45253557375`](https://github.com/Paul1578/Back_GPS/actions/runs/45253557375); HEAD documental posterior `4993e3c` también se validó en sus Actions.
 
 ## Corte vigente — 2026-11-23

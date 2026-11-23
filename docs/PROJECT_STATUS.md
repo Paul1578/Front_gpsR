@@ -1,3 +1,12 @@
+## Continuación de auditoría UX/responsive — 2026-11-23 — CI pendiente para este lote
+
+- Front sigue en `refactor/route-builder`; último commit publicado antes de este lote `363a47f`. La Action de ese HEAD [`45256408542`](https://github.com/Paul1578/Front_gpsR/actions/runs/45256408542) pasó íntegra: 69/69 E2E, responsive, axe 2/2, audit/lint/build, Backend xUnit 165/165 y API/MySQL descartable.
+- En trabajo local: alta de usuarios ya no promete un correo antes de conocer el resultado SMTP; se amplía el E2E de vehículos para fallar y recuperar la consulta de bajas; la cobertura autenticada de Dashboard y mapa ahora prueba contenido/interacción y límites a 320 px además de overflow.
+- Validación local de este diff: `npm run lint`, build de producción en worktree aislado, E2E de estados de vehículo 1/1 en Next dev y 1/1 contra Next production, `git diff --check` pasan. El E2E autenticado Dashboard/mapa no se pudo ejecutar localmente porque no hay credenciales QA; el workflow las provisiona en MySQL efímero. CI integrada del diff pendiente.
+- Brechas confirmadas para iteraciones siguientes: (1) intento de crear/promover Admin delegado desde UI con 403 y persistencia sin cambios, en una sesión real integrada; (2) fallo de guardado del perfil de miembro; (3) lista de filtros de rutas a 320 px con controles accionables; (4) auditoría visual adicional de equipo/perfil con contenido largo. Otras operaciones CRUD principales ya tienen E2E API/MySQL.
+- Auditoría estática Backend confirma que `OwnerUserId=NULL` define cuenta raíz en el modelo actual. El posible Admin delegado heredado con owner nulo ya figura como precondición en `Back_GPS/docs/SECURITY.md`; no se comprobó presencia en los datos actuales ni se cambió código por una hipótesis.
+- Errores nuevos de validación local y sus causas/soluciones están en `ERROR_LOG.md`. Esta fase sigue abierta.
+
 ## Estado vigente — Front `52aa90b`, Backend `4993e3c` — 2026-11-23
 
 - Código Front: mapa recalcula al abrirse en móvil; selección acompaña reordenar/eliminar y fijar ubicación conserva operación/estado de cada parada. Auth mantiene Web Lock hasta aplicar login/refresh y sincroniza identidad entre pestañas.

@@ -1,3 +1,10 @@
+## 2026-11-23 — Validación móvil y estados de vehículo en gestión
+
+- El formulario de altas aclara que el resultado del correo de activación se informará después de guardar; no afirma que SMTP lo envió antes de tener respuesta.
+- El E2E autenticado verifica en 320 px el Dashboard, las estadísticas y el acceso funcional al mapa; comprueba que el mapa quepa en el viewport.
+- El E2E de estados de carga verifica además error/reintento para la lista de vehículos dados de baja.
+- Lint, build aislado, E2E local de error/reintento 1/1 y diff-check pasan. Action integrada pendiente.
+
 ## 2026-11-23 — Mapa, accesibilidad y coordinación de sesiones — CI aprobado
 
 - El estado de visibilidad del mapa móvil ahora se sincroniza con Leaflet; la selección acompaña eliminaciones y reordenamientos. Fijar un punto conserva operación/estado: el primer E2E encontró que se mostraba “Entrega” pero la API guardaba `None`.
