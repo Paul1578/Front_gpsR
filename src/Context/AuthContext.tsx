@@ -319,6 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const restoreTokenInFlightRef = useRef<Promise<string | null> | null>(null);
   const authTerminationInFlightRef = useRef<Promise<unknown> | null>(null);
   const authSessionVersionRef = useRef(0);
+  const loginInFlightRef = useRef(false);
   const teamUsersRequestVersionRef = useRef(0);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
@@ -349,8 +350,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleSessionStorageChange = (event: StorageEvent) => {
       if (event.key !== CURRENT_USER_STORAGE_KEY) return;
       const currentUser = userRef.current;
-      if (!currentUser) return;
       if (!event.newValue) {
+        if (!currentUser) return;
         authSessionVersionRef.current += 1;
         setTokens(null);
         persistUser(null);
@@ -359,7 +360,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const nextUser = JSON.parse(event.newValue) as User;
-        if (nextUser.id && nextUser.id !== currentUser.id) window.location.reload();
+        if (
+          nextUser.id &&
+          (!currentUser || nextUser.id !== currentUser.id) &&
+          !loginInFlightRef.current
+        )
+          window.location.reload();
       } catch {
         // Ignore malformed presentation cache; backend session remains authoritative.
       }
@@ -529,32 +535,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 12000);
       try {
-        const response = await withAuthCookieMutationLock(() => fetch("/api/auth/refresh", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-          signal: controller.signal,
-          cache: "no-store",
-        }));
+        const { response, applied } = await withAuthCookieMutationLock(async () => {
+          const response = await fetch("/api/auth/refresh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+            signal: controller.signal,
+            cache: "no-store",
+          });
+          if (
+            expectedSessionVersion !== authSessionVersionRef.current ||
+            tokensRef.current?.accessToken !== expectedAccessToken
+          ) return { response, applied: false };
+          if (!response.ok) {
+            if (response.status === 401) {
+              if (user) toast.error("La sesión expiró o fue revocada. Inicia sesión nuevamente.");
+              clearAuthState(expectedSessionVersion);
+            }
+            return { response, applied: false };
+          }
+          const data = (await response.json()) as AuthResponseDto;
+          if (
+            expectedSessionVersion !== authSessionVersionRef.current ||
+            tokensRef.current?.accessToken !== expectedAccessToken
+          ) return { response, applied: false };
+          return {
+            response,
+            applied: await applyAuthResponse(data, expectedSessionVersion),
+          };
+        });
         if (
           expectedSessionVersion !== authSessionVersionRef.current ||
           tokensRef.current?.accessToken !== expectedAccessToken
         ) return false;
         if (!response.ok) {
-          if (response.status === 401) {
-            if (user) toast.error("La sesión expiró o fue revocada. Inicia sesión nuevamente.");
-            clearAuthState(expectedSessionVersion);
-          } else if (user) {
+          if (response.status !== 401 && user) {
             toast.error("No se pudo renovar la sesión por un problema temporal. Intenta de nuevo.");
           }
           return false;
         }
-        const data = (await response.json()) as AuthResponseDto;
-        if (
-          expectedSessionVersion !== authSessionVersionRef.current ||
-          tokensRef.current?.accessToken !== expectedAccessToken
-        ) return false;
-        return applyAuthResponse(data, expectedSessionVersion);
+        return applied;
       } catch (error) {
         if (
           expectedSessionVersion !== authSessionVersionRef.current ||
@@ -774,13 +794,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const fetchMeUser = async (): Promise<User | null> => {
-    if (!tokensRef.current?.accessToken) return null;
+  const fetchMeUser = async (accessToken = tokensRef.current?.accessToken): Promise<User | null> => {
+    if (!accessToken) return null;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     try {
-      const me = await apiFetch<ApiUser>("/Auth/me", { signal: controller.signal });
-      return mapApiUser(me, tokensRef.current?.accessToken);
+      const me = await apiFetch<ApiUser>("/Auth/me", {
+        signal: controller.signal,
+        tokensOverride: { accessToken },
+        retry: false,
+      });
+      return mapApiUser(me, accessToken);
     } catch (error) {
       if (!isAbortedRequest(error)) console.error("Error obteniendo usuario actual:", error);
       return null;
@@ -815,7 +839,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    const fetched = await fetchMeUser();
+    const fetched = await fetchMeUser(accessToken);
     if (expectedSessionVersion !== authSessionVersionRef.current) return false;
     if (fetched) {
       persistUser(fetched);
@@ -861,28 +885,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const pendingRefresh = refreshInFlightRef.current?.promise;
     if (pendingRefresh) await pendingRefresh;
     const sessionVersion = ++authSessionVersionRef.current;
+    loginInFlightRef.current = true;
     try {
-      const response = await withAuthCookieMutationLock(() => fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        cache: "no-store",
-      }));
+      const { response, applied } = await withAuthCookieMutationLock(async () => {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+          cache: "no-store",
+        });
+        if (!response.ok || sessionVersion !== authSessionVersionRef.current)
+          return { response, applied: false };
+        const data = (await response.json()) as AuthResponseDto;
+        return {
+          response,
+          applied: await applyAuthResponse(data, sessionVersion),
+        };
+      });
       if (!response.ok) throw await buildApiError(response);
-      const data = (await response.json()) as AuthResponseDto;
-      if (sessionVersion !== authSessionVersionRef.current) {
+      if (sessionVersion !== authSessionVersionRef.current || !applied) {
         return { ok: false, message: "La solicitud de inicio de sesión quedó obsoleta." };
       }
-      const applied = await applyAuthResponse(data, sessionVersion);
-      return applied
-        ? { ok: true }
-        : { ok: false, message: "La solicitud de inicio de sesión quedó obsoleta." };
+      return { ok: true };
     } catch (error) {
       console.error("Error en login:", error);
       const message =
         (error as Error)?.message ??
         "No pudimos iniciar sesión. Verifica tus credenciales.";
       return { ok: false, message };
+    } finally {
+      loginInFlightRef.current = false;
     }
   };
 

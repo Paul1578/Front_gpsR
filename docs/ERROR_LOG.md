@@ -1,3 +1,15 @@
+## 2026-11-23 — Mapa móvil y selección de paradas podían desincronizarse — CORREGIDO, CI PENDIENTE
+
+- Revisión UX encontró que el mapa recibía `isOpen=true` constante: Leaflet podía medirlo cuando el panel estaba oculto y no recalcular tamaño al abrirlo en móvil. El cambio deriva `isOpen` del paso, breakpoint desktop y control móvil; al mostrarse el mapa vuelve a ejecutar `invalidateSize`.
+- `activeTarget` guardaba el índice de parada; eliminar o reordenar paradas anteriores podía enviar un clic del mapa a otra. `removeStop` y `moveStop` ahora trasladan la selección junto con la parada o la limpian al borrar la seleccionada.
+- Regresión E2E amplía el flujo tablet: selecciona la cuarta parada, borra una anterior, la mueve, coloca su ubicación y verifica operación/orden persistidos. Lint/build pasan; validación integrada pendiente.
+
+## 2026-11-23 — Refresh/login en pestañas distintas podían aplicar una identidad obsoleta — CORREGIDO, CI PENDIENTE
+
+- Revisión independiente del HEAD actual: el Web Lock se liberaba al terminar `fetch`, antes de procesar 401/200 y aplicar la identidad; además el evento `storage` ignoraba una nueva identidad cuando la pestaña no tenía usuario. Eso permitía limpiar la sesión nueva o conservar temporalmente identidades distintas.
+- La transición de login y refresh, incluida la aplicación del perfil, ahora ocurre dentro del lock. `fetchMeUser` usa el access token recibido y `retry:false` para no intentar tomar el mismo lock recursivamente. Las pestañas vuelven a cargar al recibir una nueva identidad cuando no hay un login local en curso.
+- E2E de login simultáneo ahora compara usuarios vía `Auth/me` en ambas pestañas antes de recargar. Lint/build pasan; validación integrada pendiente.
+
 ## 2026-11-23 — Runners E2E concurrentes podían limpiarse mutuamente — CORREGIDO
 
 - Revisión independiente detectó que cleanup por prefijos podía borrar fixtures de otra ejecución local que compartiera el mismo esquema.

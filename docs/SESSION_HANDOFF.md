@@ -1,4 +1,11 @@
-## Handoff vigente — runner E2E serializado — 2026-11-23
+## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
+
+- En `refactor/route-builder` se corrigió la visibilidad/invalidateSize del mapa Leaflet móvil y el índice del punto seleccionado al borrar/mover paradas. E2E tablet amplía el recorrido real para verificar coordenada, orden y operación persistidos.
+- También se corrigió carrera de login/refresh entre pestañas: Web Lock cubre procesamiento y aplicación del perfil; `/Auth/me` usa token explícito sin refresh recursivo; el evento de nueva identidad sincroniza pestañas aun si no tenían usuario, excepto durante su propio login. E2E valida `Auth/me` en ambos tabs antes del reload.
+- `npm run lint`, `npm run build` pasan; discovery 67. Cambios aún sin commit; debe ejecutarse Action Front completa (workflow_dispatch sobre `refactor/route-builder`) contra Backend `chore/stabilize-fleet-platform` y MySQL descartable, corregir fallos, documentar y publicar. No usar el esquema persistente local para E2E mutante.
+- Revisiones multiagente: Backend tenant/lifecycle sin hallazgo nuevo; Front detectó los dos bugs de mapa; auth review detectó la carrera descrita; QA señala automatizar upgrade histórico, inyección SQL y matriz responsive/a11y (brechas de cobertura, no defectos confirmados).
+
+## Handoff histórico — runner E2E serializado — 2026-11-23
 
 - Front rama `refactor/route-builder`, HEAD documental `b1d5924`; Backend `chore/stabilize-fleet-platform`, HEAD `4079ae2`; `main` intacta.
 - Backend obtiene advisory lock MySQL por host/puerto/esquema antes de ejecutar cleanup. Local: titular=1, competidor=0; el runner completo devuelve exit 2 mientras otro posee el lock, sin limpiar filas. MariaDB requirió `--unbuffered` y parseo de línea numérica; causa en `ERROR_LOG.md`.

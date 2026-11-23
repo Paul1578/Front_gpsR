@@ -2,7 +2,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFleet, Route } from "../../Context/FleetContext";
 import {
   ArrowLeft,
@@ -54,6 +54,10 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const [step, setStep] = useState(1);
   const [activeTarget, setActiveTarget] = useState<Target | null>(null);
   const activeTargetRef = useRef<Target | null>(null);
+  const updateActiveTarget = (target: Target | null) => {
+    activeTargetRef.current = target;
+    setActiveTarget(target);
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -128,7 +132,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
 
   const setPoint = (target: Target, point: PickerPoint) => {
     cancelLocationSearch();
-    activeTargetRef.current = null;
+    updateActiveTarget(null);
     setFormData((previous) => {
       const normalized = {
         ...point,
@@ -147,15 +151,13 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       stops[target.index ?? stops.length] = normalized;
       return { ...previous, stops };
     });
-    setActiveTarget(null);
     setSearchResults([]);
     setSearchQuery("");
   };
 
   const selectTarget = (target: Target) => {
     cancelLocationSearch();
-    activeTargetRef.current = target;
-    setActiveTarget(target);
+    updateActiveTarget(target);
     setSearchResults([]);
     setSearchQuery("");
   };
@@ -206,8 +208,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     setShowForm(false);
     setEditingRoute(null);
     setStep(1);
-    activeTargetRef.current = null;
-    setActiveTarget(null);
+    updateActiveTarget(null);
     setSearchResults([]);
     setSearchQuery("");
     setFormData({
@@ -269,8 +270,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     if (nextStep > step && !validateStep(nextStep)) return;
     if (nextStep === 2 && !editingRoute && !formData.origin && !activeTarget) {
       const originTarget = { type: "origin" } as const;
-      activeTargetRef.current = originTarget;
-      setActiveTarget(originTarget);
+      updateActiveTarget(originTarget);
     }
     setStep(nextStep);
   };
@@ -315,19 +315,35 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     }
   };
 
-  const removeStop = (index: number) =>
+  const removeStop = (index: number) => {
+    const selected = activeTargetRef.current;
+    if (selected?.type === "stop") {
+      if (selected.index === index) updateActiveTarget(null);
+      else if (selected.index !== undefined && selected.index > index)
+        updateActiveTarget({ ...selected, index: selected.index - 1 });
+    }
     setFormData((previous) => ({
       ...previous,
       stops: previous.stops.filter((_, itemIndex) => itemIndex !== index),
     }));
-  const moveStop = (index: number, direction: -1 | 1) =>
+  };
+  const moveStop = (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= formData.stops.length) return;
+    const selected = activeTargetRef.current;
+    if (selected?.type === "stop" && selected.index !== undefined) {
+      if (selected.index === index)
+        updateActiveTarget({ ...selected, index: targetIndex });
+      else if (selected.index === targetIndex)
+        updateActiveTarget({ ...selected, index });
+    }
     setFormData((previous) => {
       const stops = [...previous.stops];
-      const target = index + direction;
-      if (target < 0 || target >= stops.length) return previous;
-      [stops[index], stops[target]] = [stops[target], stops[index]];
+      if (targetIndex < 0 || targetIndex >= stops.length) return previous;
+      [stops[index], stops[targetIndex]] = [stops[targetIndex], stops[index]];
       return { ...previous, stops };
     });
+  };
   const formatDate = (date?: string | null) => date
     ? new Date(date).toLocaleDateString("es-EC", {
       day: "numeric",
@@ -596,6 +612,14 @@ function RouteBuilder({
   saving,
 }: RouteBuilderProps) {
   const [mobileMapOpen, setMobileMapOpen] = useState(false);
+  const [desktopMapVisible, setDesktopMapVisible] = useState(false);
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const updateDesktopVisibility = () => setDesktopMapVisible(desktopQuery.matches);
+    updateDesktopVisibility();
+    desktopQuery.addEventListener("change", updateDesktopVisibility);
+    return () => desktopQuery.removeEventListener("change", updateDesktopVisibility);
+  }, []);
   const activateTarget = (target: Target) => {
     selectTarget(target);
     setMobileMapOpen(true);
@@ -1115,7 +1139,7 @@ function RouteBuilder({
               onMapClick={(point: PickerPoint) =>
                 activeTarget && setPointAndReturnToEditor(activeTarget, point)
               }
-              isOpen
+              isOpen={step !== 2 || mobileMapOpen || desktopMapVisible}
             />
           </section>
         </div>

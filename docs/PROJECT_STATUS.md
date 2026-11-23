@@ -1,4 +1,10 @@
-## Estado vigente — Front `b1d5924`, Backend `4079ae2` — 2026-11-23
+## Estado en trabajo — mapa móvil y coordinación de sesión — 2026-11-23
+
+- Código Front: mapa recalcula al abrirse en móvil; selección acompaña reordenar/eliminar paradas. Auth mantiene el lock hasta aplicar respuesta de login/refresh y sincroniza login a pestañas sin sesión local.
+- `npm run lint`, `npm run build` pasan y Playwright descubre 67 tests. Los E2E de regresión fueron ampliados; integración CI aún pendiente.
+- Última combinación funcional validada antes de estos cambios: Front `b1d5924`, Backend runner `4079ae2`; Action [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó 67/67, responsive, audit/lint/build y backend 165/165.
+
+## Evidencia anterior — Front `b1d5924`, Backend `4079ae2` — 2026-11-23
 
 - Runner E2E Backend serializado mediante `GET_LOCK` por host/puerto/esquema; segunda ejecución termina antes de cleanup. Prueba local: propietario `1`, competidor `0`; runner completo devuelve exit 2 sin alterar filas.
 - Front Action integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) validó Front `b1d5924` y Backend `4079ae2`: **67/67 E2E**, responsive **1/1**, audit/lint/build, Release/xUnit **165/165**, API/MySQL y cleanup. Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron.

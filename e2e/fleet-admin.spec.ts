@@ -213,6 +213,34 @@ test("login simultáneo de cuentas distintas converge a la sesión vigente", asy
     await Promise.all([expect(page).toHaveURL(/\/dashboard$/), expect(secondPage).toHaveURL(/\/dashboard$/)]);
     expect(loginStatuses).toEqual([200, 200]);
 
+    await expect.poll(async () => {
+      const identities = await Promise.all([
+        page.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+        secondPage.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+      ]);
+      return identities[0] === identities[1] &&
+        [adminId, qaUser!.id].includes(identities[0] ?? "")
+        ? identities[0]
+        : null;
+    }).not.toBeNull();
+    const [firstAccessToken, secondAccessToken] = await Promise.all([
+      readAccessToken(page),
+      readAccessToken(secondPage),
+    ]);
+    const concurrentIdentities = await Promise.all([
+      page.request.get("/api/backend/Auth/me", {
+        headers: { Authorization: `Bearer ${firstAccessToken}` },
+      }),
+      secondPage.request.get("/api/backend/Auth/me", {
+        headers: { Authorization: `Bearer ${secondAccessToken}` },
+      }),
+    ]);
+    expect(concurrentIdentities.map((response) => response.status())).toEqual([200, 200]);
+    const concurrentIds = await Promise.all(
+      concurrentIdentities.map(async (response) => (await response.json() as { id: string }).id),
+    );
+    expect(concurrentIds[0]).toBe(concurrentIds[1]);
+
     await Promise.all([page.reload(), secondPage.reload()]);
     await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
     await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();
@@ -1425,12 +1453,17 @@ test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirma
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
     await page.getByRole("button", { name: "Agregar parada" }).click();
     await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
-    const temporaryStop = page.getByTestId("stop-point-2");
-    await temporaryStop.getByRole("button", { name: "Eliminar parada" }).click();
-    await expect(page.getByTestId("stop-point-2")).toHaveCount(0);
-    await page.getByTestId("stop-point-1").getByRole("button", { name: "Subir parada" }).click();
-    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("Entrega y recogida E2E");
-    await expect(page.getByPlaceholder("Parada 2")).toHaveValue("Recogida E2E");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    await page.getByTestId("stop-point-2").getByRole("button", { name: "Eliminar parada" }).click();
+    await expect(page.getByTestId("stop-point-2")).toContainText("Seleccionando");
+    await page.getByTestId("stop-point-2").getByRole("button", { name: "Subir parada" }).click();
+    await expect(page.getByTestId("stop-point-1")).toContainText("Seleccionando");
+    await clickMapAwayFromMarkers(map);
+    await expect(page.getByTestId("stop-point-1")).toContainText("Ubicación fijada");
+    await page.getByPlaceholder("Parada 2").fill("Parada seleccionada tras reordenar");
+    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("Recogida E2E");
+    await expect(page.getByPlaceholder("Parada 3")).toHaveValue("Entrega y recogida E2E");
     const destination = page.getByPlaceholder("¿A dónde llega?");
     await destination.fill("Destino E2E desde mapa");
     await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
@@ -1455,11 +1488,12 @@ test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirma
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
     const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
-    await expect(routeReview.getByRole("listitem")).toHaveCount(4);
+    await expect(routeReview.getByRole("listitem")).toHaveCount(5);
     await expect(routeReview.getByRole("listitem")).toContainText([
       "Origen E2E desde mapa",
-      "Entrega y recogida E2E",
       "Recogida E2E",
+      "Parada seleccionada tras reordenar",
+      "Entrega y recogida E2E",
       "Destino E2E desde mapa",
     ]);
     await expect(routeReview).toContainText("Recogida y entrega");
@@ -1482,7 +1516,7 @@ test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirma
     expect(Date.parse(persistedRoute.createdAtUtc)).toBeGreaterThanOrEqual(createStartedAt - 5_000);
     expect(Date.parse(persistedRoute.createdAtUtc)).toBeLessThanOrEqual(Date.now() + 5_000);
     const persistedPoints = persistedRoute.points as Array<{ name?: string; operation: number | string }>;
-    expect(persistedPoints).toHaveLength(4);
+    expect(persistedPoints).toHaveLength(5);
     const operationNames: Record<number, string> = {
       0: "None",
       1: "Pickup",
@@ -1496,8 +1530,9 @@ test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirma
         : point.operation,
     }))).toEqual([
       { name: "Origen E2E desde mapa", operation: "None" },
-      { name: "Entrega y recogida E2E", operation: "PickupAndDelivery" },
       { name: "Recogida E2E", operation: "Pickup" },
+      { name: "Parada seleccionada tras reordenar", operation: "Delivery" },
+      { name: "Entrega y recogida E2E", operation: "PickupAndDelivery" },
       { name: "Destino E2E desde mapa", operation: "None" },
     ]);
 

@@ -1,3 +1,9 @@
+## 2026-11-23 — Correcciones de selección de mapa y coordinación de sesiones — CI pendiente
+
+- El estado de visibilidad del mapa móvil ahora se sincroniza con Leaflet; la selección de paradas acompaña eliminaciones y reordenamientos. E2E verifica coordenada y orden final.
+- Login/refresh aplican respuesta y perfil mientras mantienen el Web Lock; nuevas identidades recibidas desde otra pestaña se sincronizan sin interferir con un login local en curso.
+- Lint/build correctos; E2E integrado actualizado pendiente.
+
 ## 2026-11-23 — Serialización de runners E2E — CI aprobado
 
 - Backend añade lock MySQL por esquema para impedir interferencias durante cleanup concurrente. Prueba local de conflicto y suite integrada confirmadas.

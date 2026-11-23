@@ -1,3 +1,9 @@
+## Correcciones mapa/paradas y carrera de autenticación — validación integrada pendiente — 2026-11-23
+
+- `npm run lint` y `npm run build`: pasan. `npx playwright test --list`: 67 tests detectados.
+- El E2E tablet ahora cubre target activo al eliminar/reordenar paradas y confirma estado/orden/operación persistidos; el E2E de logins simultáneos comprueba identidad igual en ambas pestañas antes de recargar.
+- Suite E2E/MySQL aún pendiente de correr en Action con fixtures de base descartable.
+
 ## Runner E2E serializado — Backend `4079ae2` — 2026-11-23
 
 - La integración [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) ejecutó el runner Backend con advisory lock MySQL: **67/67 E2E**, responsive 1/1, audit/lint/build, Release/xUnit Backend **165/165**, API/MySQL y cleanup.
