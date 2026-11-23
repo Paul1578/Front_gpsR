@@ -1,8 +1,8 @@
 # Handoff vigente — 2026-11-23
 
 - Front `refactor/route-builder` HEAD `a90e212` está publicado y pasó Action [`45107030228`](https://github.com/Paul1578/Front_gpsR/actions/runs/45107030228): Release/xUnit, audit/lint/build, responsive 1/1, API/MySQL **45/45**, no skips y cleanup.
-- Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; KPI/contexto distinguen carga inicial de datos vacíos. Focal local 3/3 y lint/build limpios.
-- Pendiente de cobertura: no hay un E2E dedicado al estado “carga inicial” de los KPI Dashboard; el test aislado se retiró porque el gate común no discriminaba requests abortadas/repetidas. Añadir una aserción integrada determinista en una fase siguiente.
+- Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; KPI/contexto distinguen carga inicial de datos vacíos. E2E de carga Dashboard nuevo pasa con servidor limpio; focal **4/4**, discovery 46, lint/build limpios.
+- `playwright.config.ts` ahora obtiene el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; antes reutilizó Next viejo en `:3000` y al pasar a `:3010` inició por error en puerto fijo. Código/test de esta corrección local pendiente de commit/push y Action integrada.
 - Backend rama `chore/stabilize-fleet-platform` HEAD `3db7f03`; `main` sigue intacta. SMTP real, proxies/rate limit distribuido y persistencia Data Protection dependen del entorno productivo.
 - Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.
 - Decisiones de usuario: raíz solamente otorga Admin; móvil nativo pospuesto; las cuentas pueden ser rutas de traslado.

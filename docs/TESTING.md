@@ -1,5 +1,11 @@
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
+## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
+
+- Discovery Playwright **46**. Suite focal **4/4** con servidor limpio `127.0.0.1:3010`: Dashboard no muestra cero/vacío mientras Routes sigue pendiente; Team recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
+- `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`. Esto evita conectar a un Next anterior reutilizado en otro puerto.
+- Action `45107030228` (45/45, responsive 1/1) precede al nuevo test Dashboard y al ajuste de puerto; Action integrada nueva pendiente.
+
 - Action `45076629351` en SHA `2147be7`: **37/37 E2E** autenticados con API/MySQL efímeros, responsive **1/1**, audit/lint/build y cleanup correctos. Incluye 503 separados para Users y Routes/Vehicles, reintentos recuperables, exportación parcial bloqueada, formulario Driver a 320/768 px y regresión de persistencia parcial Vehicle.
 - Action `45077576665` en docs HEAD `8887649` repitió esos checks sin cambios funcionales: **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup success.
 
