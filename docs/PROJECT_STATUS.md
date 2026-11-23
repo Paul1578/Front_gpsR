@@ -1,11 +1,10 @@
-## Estado vigente — Front `36a453b`, Backend `ac14373` — 2026-11-23
+## Estado vigente — Front `b58ef4c`, Backend `cd2a512` — 2026-11-23
 
-- Ramas `refactor/route-builder` y `chore/stabilize-fleet-platform`; `main` intacta. Front actual: BFF de autenticación endurecido, pines accesibles y feedback/confirmación de Driver.
-- Action Front [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): audit/lint/build/responsive pasan; E2E **66/67**. Action [`45229598514`](https://github.com/Paul1578/Front_gpsR/actions/runs/45229598514) repitió checks previos y expiró el PUT de cambio de rol del fixture Driver a 240 s en ambos intentos.
-- Fix actual: matriz con identidades separadas por rol; Driver no se muta, Logistics se crea temporalmente y Manager usa fixture preprovisionado. El E2E de constructor responsive también reutiliza Manager y deja de alterar el rol Driver. Cleanup SQL cubre Logistics. Lint/build/discovery pasan local; Action integrada pendiente.
-- Backend `ac14373`: Release/xUnit **165/165**, smokes HTTP/MySQL, rate limit y cleanup aprobados en Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042).
+- Ramas de trabajo separadas y `main` intacta. Front `b58ef4c` y Backend `cd2a512` incluyen fixtures QA de roles independientes y autenticación Logistics correctamente activada en la DB desechable.
+- Las Actions previas [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) y [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) revelaron, respectivamente, login de Logistics aún pendiente de activar y confirmaciones faltantes en el flujo de baja Driver.
+- Fix Front `b58ef4c` + Backend `cd2a512` validado por Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792): **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, smoke API/MySQL y teardown correcto. En local: lint/build, discovery **67** y diff-check correctos.
 - Decisiones vigentes: ruta con paradas múltiples, cada una recogida/entrega/ambas; traslados permitidos; sólo raíz promueve Admin; unlink conserva cuenta/perfil/rol Driver y se bloquea con ruta Pending/InProgress; web responsive, app nativa pospuesta.
-- No declarar misión terminada: siguen por revisar los pendientes verificables del plan y configuración de producción/SMTP depende del entorno externo. La corrida E2E confirmó cleanup del API y contenedor; los detalles/prevención están en `ERROR_LOG.md`.
+- La matriz integrada de permisos/CRUD y responsive queda validada; continúa la auditoría global de criterios verificables. SMTP y la configuración de infraestructura productiva requieren servicios/datos externos. Los incidentes y correcciones quedan en `ERROR_LOG.md`.
 
 ## Carga diferida de fotos de rutas — CI aprobado
 

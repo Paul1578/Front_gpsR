@@ -1,10 +1,13 @@
-## Handoff vigente — cambio de rol del fixture E2E — 2026-11-23
+## Handoff vigente — matriz E2E integrada aprobada — 2026-11-23
 
-- Front branch `refactor/route-builder`, code HEAD `36a453b`; Backend `ac14373`; `main` intacta.
+- Front branch `refactor/route-builder`, code HEAD `b58ef4c`; Backend `cd2a512`; `main` intacta.
 - Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): E2E 66/67. El timeout primario fue al restaurar rol; retry heredó Manager y obtuvo 201 en una comprobación como Driver. La descarga de trace devolvió HTTP 503.
 - Primer arreglo `3fd12c5`, Action [`45229598514`](https://github.com/Paul1578/Front_gpsR/actions/runs/45229598514): el PUT de cambio de rol del Driver no respondió durante 240 s, al inicio y en retry. Teardown general pasó.
-- Fix local: roles Driver/Logistics/Manager con cuentas separadas; Driver no se muta en la matriz ni en el E2E del constructor responsive. Logistics se crea con email limpiable; Manager usa fixture preprovisionado por el runner. `cleanup-e2e.sql` ahora incluye Logistics. Lint/build/discovery y diff-check local pasan; Action integrada pendiente.
-- Backend JWT unificado validado por Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042), 165/165, smokes y cleanup; doc commit `45c7288` tiene workflows en curso.
+- Actions integradas [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) y [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) encontraron dos errores de fixture E2E, documentados con causas y prevención en `docs/ERROR_LOG.md`.
+- Front `b58ef4c` consume Logistics preactivado en MySQL descartable y confirma las bajas Driver en ambos viewports. Backend `cd2a512` verifica SQL `IsActive:MustChangePassword=1:0` y emite diagnóstico explícito si falla.
+- Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792) terminó success: **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Actions Backend [`45238865888`](https://github.com/Paul1578/Back_GPS/actions/runs/45238865888) y [`45238853928`](https://github.com/Paul1578/Back_GPS/actions/runs/45238853928) también pasaron.
+- Lint/build y discovery de 67 pruebas pasan local; `bash -n`/diff-check del Backend pasan. Continuar revisando criterios pendientes de `docs/AUDIT_PLAN.md`; no declarar completada la misión global por el cierre de esta fase.
+- Backend JWT unificado validado por Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042), 165/165, smokes y cleanup.
 - Backend docs `45c7288` pasó Actions [`45228879085`](https://github.com/Paul1578/Back_GPS/actions/runs/45228879085) y [`45228866833`](https://github.com/Paul1578/Back_GPS/actions/runs/45228866833), con 165/165 xUnit, smokes y cleanup.
 
 ## Handoff vigente — evidencia fotográfica bajo demanda

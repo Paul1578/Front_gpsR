@@ -1,16 +1,18 @@
 # Auditoría integral de FletFlow
 
-Estado: principales flujos de flota, autorización tenant, rutas con paradas, seguimiento y evidencia están implementados y comprobados localmente y en CI. Continúa la auditoría de cobertura y la preparación para el entorno de despliegue.
+Estado: flujos principales de flota, roles/tenant, rutas con operaciones, seguimiento, evidencia y responsive web están implementados y comprobados en CI. La suite integrada vigente pasó **67/67 E2E**; el cierre de producción depende de credenciales y configuración del entorno.
 
 ## Corte vigente — 2026-11-23
 
-- Ramas de trabajo: Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` permanece intacta.
-- Decisiones confirmadas: sólo la cuenta raíz crea/promueve Admin; se permiten rutas de traslado sin operaciones; cada parada admite recogida, entrega o ambas; la app nativa se pospone y la web responsive permanece en alcance.
+- Ramas de trabajo: Front `refactor/route-builder` (`b58ef4c`) y Backend `chore/stabilize-fleet-platform` (`cd2a512`); `main` permanece intacta.
+- Decisiones confirmadas: sólo la cuenta raíz crea/promueve Admin; se permiten rutas de traslado sin operaciones; cada parada admite recogida, entrega o ambas; unlink conserva Driver y se bloquea con rutas pendientes/en progreso; la app nativa se pospone y la web responsive permanece en alcance.
+- Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792): **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Actions Backend [`45238865888`](https://github.com/Paul1578/Back_GPS/actions/runs/45238865888) y [`45238853928`](https://github.com/Paul1578/Back_GPS/actions/runs/45238853928) pasaron también.
 - Backend `74d2f3c` y Front `bb9f679` implementan listas de rutas sin payload Base64 de imágenes y lectura completa bajo demanda. Backend Release/xUnit **158/158**, smokes HTTP/MySQL y Front **53/53 E2E**, responsive, audit/lint/build pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729), [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) y [`45192189779`](https://github.com/Paul1578/Front_gpsR/actions/runs/45192189779).
 - Front `13669f3` refleja en sus tipos que las fotos de los DTO de lista tienen `content=null`. Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó: **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **158/158**, smokes API/MySQL y cleanup.
 - El flujo prueba que la lista omite Base64 y el detalle conserva la foto; Historial y Mi Ruta cargan el detalle bajo demanda. Suite local: 19 passed y 34 omitidos por requerir credenciales/fixtures, cubiertos en CI.
 - Pendientes externos de despliegue: credenciales SMTP vigentes; configurar IPs reales del ingress y volumen/certificado de Data Protection; distribución del contador rate limit si se despliegan varias réplicas; validar despliegue productivo. Móvil nativo está fuera de esta fase por decisión del usuario.
-- Próximo trabajo técnico: auditar y completar los flujos CRUD/roles y vistas responsive que aún no tengan ejecución real; registrar hallazgos y cerrar los que puedan verificarse localmente/CI.
+- Los errores recientes del fixture Logistics y confirmación de baja Manager se resolvieron y documentaron en `docs/ERROR_LOG.md`; la repetición integrada completa pasó.
+- Próximo trabajo: revisar cualquier brecha restante de los criterios de aceptación; SMTP real y el despliegue requieren los recursos externos indicados abajo.
 - Hallazgo de configuración local: el fallback del proxy Next estaba en `:5048` pese a que el perfil ASP.NET usa `:5046`; ahora está alineado y existe `.env.example` sin secretos. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó audit/lint/build, responsive 1/1, 53/53 E2E, backend 158/158, API/MySQL y cleanup.
 
 ## Alcance
@@ -79,18 +81,18 @@ El texto completo quedó disponible el 2026-11-21. Incluye arquitectura, segurid
 
 ## Pendiente
 
-- Completar casos visuales menos frecuentes de rutas, historial y permisos; los CRUD Vehicle/Driver y roles User/Logistics ya tienen E2E representativo.
-- SMTP real, credenciales y configuración HTTPS de producción; antes de escalar, cookies HttpOnly, rate limiting distribuido y object storage.
+- Configurar y validar el despliegue real: dominio/TLS, IPs confiables del ingress, volumen persistente y protegido de Data Protection, y rate limiting distribuido antes de escalar a varias réplicas.
+- Envío real de correo requiere credenciales SMTP válidas; recuperación y activación conservan el flujo y registran fallos sin afirmar envío.
 - App nativa pospuesta por solicitud del usuario; responsive web permanece en alcance.
 
-## Validación siguiente — 2026-11-23
+## Validación integrada — 2026-11-23
 
 - El constructor de rutas y búsqueda geográfica está validado en Action `45092540906` (Front, 40/40 E2E).
-- Se amplió el smoke HTTP/MySQL del backend para completar recogida, entrega y operación combinada con evidencia por parada; ejecución local en entorno desechable pasó. Falta Action para el nuevo SHA.
-- La decisión de permitir rutas sin recogidas/entregas sigue pendiente de respuesta. Mantener la validación actual sin cambios hasta recibirla.
+- El smoke HTTP/MySQL cubre recogida, entrega y operación combinada con evidencia por parada. CI integrado vigente valida el conjunto con backend Release/xUnit 165/165 y frontend 67/67.
+- El usuario confirmó permitir traslados sin recogida/entrega; la regla está documentada en `BUSINESS_RULES.md`.
 
-## Hallazgos corregidos / controles pendientes — 2026-11-23
+## Hallazgos corregidos y controles de despliegue — 2026-11-23
 
-- Front: corregidos detalle incompleto de operaciones del Historial, vacío mostrado durante carga y respuesta antigua de polling/foco; E2E local 2/2 y build/lint correctos. Nueva Action integrada pendiente.
-- Seguridad backend: las validaciones permiten contraseña nueva de 6 caracteres y el limitador genérico da 60 requests/min por IP, sin control específico de login/cuenta. Revisar endurecimiento sin introducir bloqueo de cuentas explotable para denegación de servicio.
+- Front: corregidos detalle incompleto de operaciones del Historial, vacío mostrado durante carga y respuesta antigua de polling/foco; casos focales locales y Actions integradas vigentes pasan.
+- Seguridad backend: contraseñas nuevas requieren mínimo 12 caracteres y el login tiene límite específico por IP sin bloqueo de cuenta; verificar evidencia vigente en `SECURITY.md`/`TESTING.md`.
 - Infraestructura Data Protection y despliegue productivo siguen pendientes de verificación.

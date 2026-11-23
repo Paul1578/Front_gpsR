@@ -1,3 +1,10 @@
+## Estado vigente — Front `b58ef4c`, Backend `cd2a512` — 2026-11-23
+
+- Lint/build locales pasan; Playwright detecta **67** pruebas; `git diff --check` limpio.
+- Action Front integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209): build/audit/lint/responsive pasaron y E2E **66/67**; faltaba confirmar las bajas Driver en móvil/tablet.
+- Fix `b58ef4c` + Backend `cd2a512`: fixture Logistics con estado activado verificado, dos AlertDialog confirmados y límite de 360 s. Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792) pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**67 tests**) y diff-check pasan. Backend Actions [`45238865888`](https://github.com/Paul1578/Back_GPS/actions/runs/45238865888) y [`45238853928`](https://github.com/Paul1578/Back_GPS/actions/runs/45238853928) pasaron **165/165 xUnit**, smokes HTTP/MySQL y cleanup.
+
 ## 2026-11-23 — Lista de rutas liviana y detalle con fotos
 
 - npm run lint: correcto.
