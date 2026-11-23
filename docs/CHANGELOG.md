@@ -843,3 +843,8 @@
 - El mapa permite reintentar la carga de rutas, conserva datos previos si falla la actualización y muestra placa/nombre de conductor en vez de IDs truncados.
 - En el paso 3 del constructor se distinguen carga, fallo y lista sin opciones; los selectores quedan deshabilitados mientras carga o falló el endpoint.
 - Corregida la aserción E2E del Driver inactivo tras cambio de rol. Playwright focal equipo/mapa **14/14**; lint y build pasan. La Action integrada de la revisión queda pendiente.
+## 2026-11-23 — Contrato nullable de evidencias validado en CI
+
+- Front `13669f3` refleja que los DTO de lista devuelven `content=null` para fotos; detalle mantiene Base64.
+- Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó: 53/53 E2E autenticados, responsive 1/1, audit/lint/build, Backend Release/xUnit 158/158, API/MySQL y cleanup.
+- Estado, handoff y plan marcan el flujo validado; sigue abierta la auditoría integral.

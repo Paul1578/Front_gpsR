@@ -10,6 +10,10 @@
 - Prevención: comprobar ruta de instalación y host de herramientas antes de concluir que no están instaladas; validar comandos compuestos.
 - El DTO TypeScript declaraba contenido siempre string, aunque el resumen de Backend devuelve null para fotos. Solución: permitir `string | null` en ambos alias de evidencia y mantener el normalizador explícito; lint/build pasan. Prevención: reflejar nulabilidad del contrato JSON en tipos crudos.
 - Consulta de Action equivocada: se solicitó `45192161720` (Back_GPS) usando gh desde Front y respondió 404; repetida desde el repo Backend confirmó success. Prevención: ejecutar consultas de Actions en el checkout propietario.
+- Se editaron componentes client-side de Next sin leer primero la guía local exigida por AGENTS.md. Solución: se consultaron las guías Server/Client Components y use-client en node_modules/next/dist/docs; los componentes ya tenían la frontera client requerida y no se pasaron funciones/secretos desde Server Components. Build Next/TypeScript pasó. Prevención: leer la guía relevante antes de cada cambio Next.
+- El primer intento de preparar texto documental con un template literal de JavaScript no escapó un backtick Markdown y produjo SyntaxError antes de ejecutar el comando. No cambió archivos; se reintentó con texto sin delimitadores Markdown.
+- Un parche documental combinado asumió un encabezado de handoff que no coincidía con el archivo real y fue rechazado sin cambios; se inspeccionó la cabecera y se reintentó con ancla correcta. El primer diff-check del Backend detectó líneas vacías extra al final de dos documentos; se recortaron y el chequeo pasó. Prevención: verificar encabezados y diff-check antes del commit.
+- El diff-check Front encontró una línea vacía extra al EOF en `CHANGELOG.md` tras registrar CI. Se recortó el EOF a un único salto de línea; repetir `git diff --check` antes de commit.
 
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 

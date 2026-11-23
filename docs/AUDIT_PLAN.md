@@ -1,16 +1,16 @@
 # Auditoría integral de FletFlow
 
-Estado: en curso; funcionalidades principales implementadas y verificadas con tareas de aceptación enumeradas al final.
+Estado: principales flujos de flota, autorización tenant, rutas con paradas, seguimiento y evidencia están implementados y comprobados localmente y en CI. Continúa la auditoría de cobertura y la preparación para el entorno de despliegue.
 
 ## Corte vigente — 2026-11-23
 
-- El usuario confirmó que sólo la cuenta raíz puede crear/promover al rol Admin. Backend `be84496` expone `isRootAccount` en `/Auth/me`; Action `45090274537` pasó pruebas Release 113/113 y smoke HTTP/MySQL.
-- Front `e262180` aplica la visibilidad de “Gerente” con ese campo. Action `45090273209` falló **39/40** sólo por locator E2E exacto: la traza muestra la opción visible con nombre accesible compuesto. Selector corregido para aceptar descripción y assert de identidad raíz añadido; integración aprobada en `45091340306` (40/40).
-- Front `9d84562` pasó Action `45091340306` con **40/40 E2E**, checks responsive, audit, lint/build y backend Release/xUnit. El selector root-only y `/Auth/me` se validaron en navegador real.
-- La aplicación móvil nativa queda para después; esta fase requiere web responsive. SMTP real depende de credenciales externas actualizadas.
-- La auditoría y los criterios funcionales siguen abiertos. Este corte reemplaza las notas antiguas que indicaban que la política Admin delegado esperaba decisión.
-- Auditoría adicional de rutas: final review omitía orden/detalle/tipo operativo por parada y el buscador permitía que una respuesta antigua alcanzara otro punto. Fixes locales en revisión añaden secuencia visible, coordenadas, cancelación/invalidación por destino, cobertura de búsqueda vacía/error/tardía y retry tras error al crear. CI aún pendiente.
-- Decisión de negocio pendiente del usuario: si rutas sin operaciones (sólo traslado) son válidas. No endurecer el backend hasta definirlo. Ampliar también el ciclo integrado de varias paradas hasta cierre.
+- Ramas de trabajo: Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; `main` permanece intacta.
+- Decisiones confirmadas: sólo la cuenta raíz crea/promueve Admin; se permiten rutas de traslado sin operaciones; cada parada admite recogida, entrega o ambas; la app nativa se pospone y la web responsive permanece en alcance.
+- Backend `74d2f3c` y Front `bb9f679` implementan listas de rutas sin payload Base64 de imágenes y lectura completa bajo demanda. Backend Release/xUnit **158/158**, smokes HTTP/MySQL y Front **53/53 E2E**, responsive, audit/lint/build pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729), [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) y [`45192189779`](https://github.com/Paul1578/Front_gpsR/actions/runs/45192189779).
+- Front `13669f3` refleja en sus tipos que las fotos de los DTO de lista tienen `content=null`. Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó: **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **158/158**, smokes API/MySQL y cleanup.
+- El flujo prueba que la lista omite Base64 y el detalle conserva la foto; Historial y Mi Ruta cargan el detalle bajo demanda. Suite local: 19 passed y 34 omitidos por requerir credenciales/fixtures, cubiertos en CI.
+- Pendientes externos de despliegue: credenciales SMTP vigentes; configurar IPs reales del ingress y volumen/certificado de Data Protection; distribución del contador rate limit si se despliegan varias réplicas; validar despliegue productivo. Móvil nativo está fuera de esta fase por decisión del usuario.
+- Próximo trabajo técnico: auditar y completar los flujos CRUD/roles y vistas responsive que aún no tengan ejecución real; registrar hallazgos y cerrar los que puedan verificarse localmente/CI.
 
 ## Alcance
 

@@ -4,7 +4,9 @@
 - E2E autenticado extendido para afirmar contenido nulo en lista y Base64 en GET de detalle, además de verificar la foto en Driver e Historial.
 - Lint, build, discovery 53 y Playwright focal 13/13 pasan localmente. La suite local completa pasó 19 y omitió 34 por falta de credenciales/fixtures QA. Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) pasó **53/53 E2E**, responsive 1/1 y backend Release/xUnit 158/158 con smokes HTTP/MySQL.
 - Fallo de herramienta resuelto: /usr/bin/dotnet apuntaba a /usr/lib64/dotnet, cuyo host no tiene runtimes; ejecutar Backend con DOTNET_ROOT=/home/leonardo/.dotnet y ese binario.
-- Trabajo local siguiente: `fleetApi.ts` y `FleetContext.tsx` permiten `content: null` en evidencia, reflejando el DTO resumido del Backend. Lint/build pasan; falta commit y Action. La consulta de estado Backend `45192161720` desde el repo Front devolvió 404; se repitió desde Back_GPS y confirmó success.
+- Front `13669f3` actualiza los tipos JSON para aceptar `content=null`. Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **158/158**, API/MySQL y cleanup.
+- La consulta de Action backend `45192161720` desde Front devolvió 404 por checkout incorrecto; repetir desde Back_GPS confirmó success. El error queda en `ERROR_LOG.md`.
+- La misión global continúa: auditar la cobertura CRUD/roles/responsive que aún no tenga ejecución real, corregir hallazgos verificables y actualizar este handoff. SMTP y despliegue requieren configuración externa; móvil nativo está pospuesto.
 
 ## Handoff vigente — componentes obsoletos
 
