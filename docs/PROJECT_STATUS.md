@@ -1,7 +1,7 @@
 ## Estado actual — 2026-11-23
 
 - Decisiones vigentes: rutas de traslado sin paradas operativas permitidas; contraseñas nuevas requieren 12 caracteres. Backend aplica 10 inicios de sesión por minuto/IP sin bloquear cuentas.
-- Front alinea registro, cambio, activación y restablecimiento de contraseña; E2E nuevo comprueba minlength en registro. Cambios de esta fase y Action integrada pendientes de publicación.
+- Front alinea registro, cambio, activación y restablecimiento de contraseña; E2E nuevo comprueba minlength en registro. Action [`45096403768`](https://github.com/Paul1578/Front_gpsR/actions/runs/45096403768) aprobó `a15dffb`: 41/41 E2E, responsive 1/1 y audit/lint/build/backend correctos.
 
 - Política confirmada: sólo la cuenta raíz puede crear o promover a otra cuenta al rol Admin. Backend `be84496` incluye `isRootAccount` en `/Auth/me`; Action backend `45090274537` pasó build, 113/113 xUnit, smoke HTTP/MySQL y concurrencia con limpieza.
 - Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.

@@ -491,4 +491,4 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - `npm run lint` y `npm run build` correctos con Next.js 16.4.6; la interfaz exige 12 caracteres en registro, cambio, activación y recuperación.
 - E2E Historial enfocado **2/2**; Playwright descubre **41 tests**; `git diff --check` correcto.
-- Falta publicar cambios Front/Backend y verificar CI integrado contra API/MySQL.
+- Action Front [`45096403768`](https://github.com/Paul1578/Front_gpsR/actions/runs/45096403768) pasó con **41/41 E2E**, responsive **1/1**, audit/lint/build y Backend Release/xUnit; limpieza correcta. El workflow confirmó el backend de la rama.

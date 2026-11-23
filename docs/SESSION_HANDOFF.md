@@ -892,3 +892,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front refleja 12 caracteres en registro, cambio de perfil, activación y restablecimiento. E2E comprueba `minlength` en registro.
 - Validación local actual: `npm run lint`, `npm run build`, Historial enfocado **2/2**, Playwright discovery **41 tests**, `git diff --check` correcto.
 - Front Action `45094647703` quedó 40/41 por no simular `/Routes/assignment-options`; mock corregido y Historial 2/2 pasó. Publicar Front y Backend y verificar Actions integradas.
+
+## Resultados integrados — cierre de fase
+
+- Front `a15dffb` Action `45096403768`: **41/41 E2E**, responsive **1/1**, audit/lint/build y backend Release/xUnit correctos; API/MySQL desechables y cleanup.
+- Backend `33e2499` Action `45096399172`: build Release, **120/120 xUnit**, aislamiento tenant y concurrencia HTTP/MySQL correctos; cleanup. `1e4a8e1` documentó la evidencia.
+- Decisiones aplicadas: traslado sin paradas permitido; claves nuevas de 12 caracteres; login 10/minuto por IP sin bloqueo por cuenta.
+- La misión general continúa abierta para criterios de CRUD/responsive restantes e infraestructura externa.
