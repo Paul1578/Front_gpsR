@@ -779,3 +779,7 @@
 ## 2026-11-23 — Baja de Vehicle antes de reactivación
 
 - E2E consulta `isActive=false` por API tras DELETE y después de recargar la vista de bajas, previo a Reactivar. CI integrada pendiente.
+
+## 2026-11-23 — Baja lógica de Vehicle validada antes de reactivación
+
+- Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095) pasó con 51/51 E2E y cleanup; API confirmó `isActive=false` tras baja/reload y `true` después de reactivar.

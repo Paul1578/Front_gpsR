@@ -1148,3 +1148,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) validó `e8c058f`: 51/51, responsive, backend Release/xUnit, audit/lint/build y cleanup.
 - E2E Vehicle ahora comprueba `isActive=false` por API tras baja y después de reload, antes de Reactivar. Lint/build/discovery 51 pasan; código aún no publicado, CI requerido.
+
+## Baja de Vehicle antes de Reactivar — validada — 2026-11-23
+
+- Front `6d85ddd`, Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095): 51/51 E2E, responsive, Backend Release/xUnit, audit/lint/build y cleanup success.
+- GET confirmó `isActive=false` tras DELETE y tras recargar la vista de bajas; reactivación posterior devolvió `true`.

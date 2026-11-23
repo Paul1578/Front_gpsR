@@ -722,3 +722,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) pasó con 51/51 E2E, responsive, Backend Release/xUnit y cleanup.
 - Cambio local posterior agrega GET `isActive=false` justo después de DELETE y después de recarga/navegación antes de reactivación; lint/build/discovery 51 pasan, CI pendiente.
+
+## Baja Vehicle persistida antes de reactivar — CI aprobado
+
+- Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095), Front `6d85ddd`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup.
+- GET `isActive=false` confirmado tras DELETE y recarga; luego POST Reactivate y GET `isActive=true`.

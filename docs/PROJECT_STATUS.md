@@ -818,7 +818,7 @@ Fecha de actualización: 2026-11-22.
 - Front `5dd199d`, Action [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - El E2E edita la ruta y asigna vehículo distinto; GET confirma Route VehicleId/DriverId y Driver VehicleId, también tras guardar desde móvil. `finally` restablece el vehículo previo y limpia ambos Vehicles QA.
 
-## Baja de vehículo persistida antes de reactivación — E2E agregado, CI pendiente
+## Baja de vehículo persistida antes de reactivación — VALIDADO EN CI
 
 - Auditoría Front detectó que el test reactivaba el vehículo y sólo entonces consultaba `isActive=true`, sin afirmar `false` después del DELETE.
 - Ahora consulta el recurso tras DELETE (`isActive=false`), recarga la app, reabre la lista de bajas y vuelve a comprobarlo antes de Reactivar.
@@ -828,3 +828,8 @@ Fecha de actualización: 2026-11-22.
 
 - Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) success: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 - Validó la reasignación de vehículo de ruta; el cambio siguiente cubre baja de Vehicle antes de Reactivar.
+
+## Baja de vehículo persistida antes de Reactivar — VALIDADA EN CI — 2026-11-23
+
+- Front `6d85ddd`, Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095): **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
+- El caso obtuvo `isActive=false` por GET inmediatamente tras DELETE y nuevamente tras recargar/reabrir la lista de bajas; luego reactivó y confirmó `isActive=true`.
