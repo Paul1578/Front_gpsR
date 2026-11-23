@@ -222,7 +222,7 @@ type ApiPointEvidence = {
   CreatedAtUtc?: string;
 };
 
-type ApiRoute = {
+export type ApiRoute = {
   id: string;
   vehicleId: string;
   vehiclePlate?: string;
@@ -384,7 +384,7 @@ const mapApiVehicle = (apiVehicle: ApiVehicle): Vehicle => ({
   isActive: apiVehicle.isActive,
 });
 
-const mapApiRoute = (apiRoute: ApiRoute): Route => {
+export const mapApiRoute = (apiRoute: ApiRoute): Route => {
   const normalizeOperation = (
     operation?: string | number,
   ): RoutePointOperation => {

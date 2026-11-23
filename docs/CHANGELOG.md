@@ -1,3 +1,8 @@
+## 2026-11-23 — Carga bajo demanda de fotos de ruta
+
+- Front solicita bytes de evidencia al abrir el detalle y resincroniza fotos activas tras nueva evidencia; listas periódicas mantienen metadata de imágenes.
+- Añadida aserción E2E para diferenciar payload de lista y detalle. Lint/build y focales 13/13 pasan; Action integrada pendiente.
+
 ## 2026-11-23 — Eliminación de controles de cuenta ficticios
 
 - Se retiraron componentes sin uso que afirmaban eliminar la cuenta pero sólo cerraban sesión, ofrecían cambio de contraseña simulado y mostraban notificaciones vacías.

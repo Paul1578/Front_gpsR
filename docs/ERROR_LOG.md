@@ -1,3 +1,14 @@
+## 2026-11-23 — Listado y polling repetían payloads Base64 — CORREGIDO LOCALMENTE
+
+- GET /Routes incluía fotos completas; Historial vuelve a consultar cada 15 segundos, multiplicando transferencia y memoria por todas las rutas.
+- Solución: lista conserva metadata y notas; detalle conserva bytes de imágenes. Historial consulta bajo demanda y Driver sincroniza al aumentar evidencias. Se agregó cobertura E2E.
+- Verificación local: lint/build, discovery 53 y focales 13/13. Action autenticada pendiente.
+- Error de ejecución: dotnet del PATH resolvía a un host global sin runtime (/usr/lib64/dotnet/host/fxr vacío), aunque .NET 8 estaba instalado en ~/.dotnet. Solución: invocar /home/leonardo/.dotnet/dotnet con DOTNET_ROOT=/home/leonardo/.dotnet; después Release pasó.
+- Error de comando: una lectura exploratoria terminó con && sin comando siguiente y Bash devolvió error de sintaxis; se repitió correctamente, sin tocar archivos.
+- La primera suite Playwright completa ejecutó 18 tests y omitió 34 por falta de credenciales/fixtures; falló la aserción de login porque el texto del toast también aparecía en el overlay de Next. Se cambió el locator a texto exacto. Repetición completa: 19 passed, 34 skipped; login focal pasó 1/1.
+- Un script documental duplicó el segmento docs en la ruta base y falló antes de editar archivos. El segundo reemplazo ya había actualizado status/handoff, pero paró al no encontrar una línea exacta en TESTING; se leyó el texto actual y se corrigió con el path real.
+- Prevención: comprobar ruta de instalación y host de herramientas antes de concluir que no están instaladas; validar comandos compuestos.
+
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 
 - `SettingsModal.tsx` no estaba importado y ofrecía “Eliminar cuenta” implementado como logout, además de “Cambiar contraseña” que sólo mostraba un toast de próximamente. `NotificationsPanel.tsx` tampoco tenía referencias y siempre mostraba una lista vacía.

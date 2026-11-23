@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useFleet } from "../../Context/FleetContext";
+import { mapApiRoute, type ApiRoute, useFleet } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
 import {
   MapPin,
@@ -42,7 +42,7 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
     registerRoutePosition,
     retryFleetData,
   } = useFleet();
-  const { user } = useAuth();
+  const { user, apiFetch } = useAuth();
   const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
   const [evidenceType, setEvidenceType] = useState<"image" | "note">("image");
   const [evidenceNote, setEvidenceNote] = useState("");
@@ -70,12 +70,63 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
   const activeRoute =
     myRoutes.find((r) => r.estado === "en_progreso") ??
     myRoutes.find((r) => r.estado === "pendiente");
+  const activeEvidenceCount = activeRoute
+    ? [activeRoute.origen, ...activeRoute.puntos, activeRoute.destino]
+        .filter((point): point is NonNullable<typeof point> => !!point)
+        .reduce((count, point) => count + (point.evidence?.length ?? 0), 0)
+    : 0;
+  const [routeDetails, setRouteDetails] = useState<{
+    id: string;
+    evidenceCount: number;
+    route: ReturnType<typeof mapApiRoute>;
+  } | null>(null);
+  const [routeDetailsErrorKey, setRouteDetailsErrorKey] = useState<string | null>(null);
+  const [routeDetailsRetry, setRouteDetailsRetry] = useState(0);
+  const activeRouteId = activeRoute?.id;
+  const routeDetailsKey = activeRouteId ? `${activeRouteId}:${activeEvidenceCount}` : null;
+  const loadedRouteDetailsKey = routeDetails ? `${routeDetails.id}:${routeDetails.evidenceCount}` : null;
+  const isLoadingRouteDetails = !!routeDetailsKey && loadedRouteDetailsKey !== routeDetailsKey && routeDetailsErrorKey !== routeDetailsKey;
+  const routeDetailsError = !!routeDetailsKey && routeDetailsErrorKey === routeDetailsKey;
+
+  useEffect(() => {
+    if (!activeRouteId || !apiFetch) return;
+
+    let cancelled = false;
+    void apiFetch<ApiRoute>(`/Routes/${activeRouteId}`)
+      .then((route) => {
+        if (!cancelled) setRouteDetails({ id: route.id, evidenceCount: activeEvidenceCount, route: mapApiRoute(route) });
+      })
+      .catch(() => {
+        if (!cancelled) setRouteDetailsErrorKey(routeDetailsKey);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiFetch, activeEvidenceCount, activeRouteId, routeDetailsKey, routeDetailsRetry]);
+
+  const detailedRoute = loadedRouteDetailsKey === routeDetailsKey ? routeDetails?.route : null;
   const operationalStops = activeRoute
     ? [
-        ...(activeRoute.origen ? [{ pointIndex: 0, point: activeRoute.origen }] : []),
-        ...activeRoute.puntos.map((point, index) => ({ pointIndex: index + 1, point })),
+        ...(activeRoute.origen ? [{
+          pointIndex: 0,
+          point: detailedRoute?.origen
+            ? { ...activeRoute.origen, evidence: detailedRoute.origen.evidence }
+            : activeRoute.origen,
+        }] : []),
+        ...activeRoute.puntos.map((point, index) => ({
+          pointIndex: index + 1,
+          point: detailedRoute?.puntos[index]
+            ? { ...point, evidence: detailedRoute.puntos[index].evidence }
+            : point,
+        })),
         ...(activeRoute.destino
-          ? [{ pointIndex: activeRoute.puntos.length + 1, point: activeRoute.destino }]
+          ? [{
+              pointIndex: activeRoute.puntos.length + 1,
+              point: detailedRoute?.destino
+                ? { ...activeRoute.destino, evidence: detailedRoute.destino.evidence }
+                : activeRoute.destino,
+            }]
           : []),
       ].filter(({ point }) => point.operation && point.operation !== "none")
     : [];
@@ -485,6 +536,17 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
 
         <div className="p-4 md:p-6">
           <h3 className="text-base text-gray-900 mb-4">Paradas operativas</h3>
+          {routeDetailsError && (
+            <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <span>No se pudieron cargar las fotos de esta ruta.</span>
+              <button type="button" className="font-medium underline" onClick={() => {
+                setRouteDetailsErrorKey(null);
+                setRouteDetailsRetry((attempt) => attempt + 1);
+              }}>
+                Reintentar
+              </button>
+            </div>
+          )}
           {operationalStops.length === 0 ? (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
               Esta ruta no tiene recogidas ni entregas registradas.
@@ -573,7 +635,11 @@ export function DriverView({ onBack }: DriverViewProps = {}) {
                             {evidence.type === "image" ? (
                               <>
                                 <div className="mb-2 flex items-center gap-2 text-xs text-gray-600"><Camera size={14} /> Foto</div>
-                                <Image src={evidence.content} alt="Evidencia de la parada" width={960} height={640} unoptimized className="w-full rounded" />
+                                {evidence.content ? (
+                                  <Image src={evidence.content} alt="Evidencia de la parada" width={960} height={640} unoptimized className="w-full rounded" />
+                                ) : (
+                                  <p className="text-xs text-gray-500">{isLoadingRouteDetails ? "Cargando foto…" : "Foto registrada"}</p>
+                                )}
                                 {evidence.description && <p className="mt-1 text-xs text-gray-600">{evidence.description}</p>}
                               </>
                             ) : (

@@ -1,3 +1,12 @@
+## 2026-11-23 — Lista de rutas liviana y detalle con fotos
+
+- npm run lint: correcto.
+- npm run build: correcto (Next.js 16.4.6; TypeScript y generación estática completados).
+- npx playwright test --list: 53 tests detectados.
+- npx playwright test e2e/team-management-load-errors.spec.ts: 13/13 passed, incluidos errores y reintentos de Historial.
+- Suite Playwright completa: 19 passed, 34 skipped por falta de credenciales o fixtures autenticados. El test local de login detectó un locator ambiguo entre toast y overlay de Next; se ajustó a texto exacto y la suite pasó.
+- E2E autenticado Driver/Historial actualizado para comprobar el contrato JSON (lista sin Base64, detalle con imagen); falta Action integrada.
+
 ## Historial de Action `45183402334` — aserciones corregidas y revalidadas
 
 - Front/backend build, lint, auditoría de dependencias y responsive pasaron. La suite autenticada ejecutó **51/53**.

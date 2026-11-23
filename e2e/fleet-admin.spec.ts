@@ -84,7 +84,7 @@ test("login con credenciales inválidas muestra un error comprensible", async ({
   await page.getByLabel("Correo electrónico").fill("invalid.qa@example.test");
   await page.getByRole("textbox", { name: "Contraseña" }).fill("invalid-password");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page.getByText("Correo o contraseña incorrectos")).toBeVisible();
+  await expect(page.getByText("Correo o contraseña incorrectos", { exact: true })).toBeVisible();
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
@@ -3320,6 +3320,12 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
     expect.objectContaining({ type: "image", description: photoDescription }),
   ]));
   expect(photoPoint.evidence.find((item) => item.description === photoDescription)?.content).toMatch(/^data:image\/png;base64,/);
+  const routeListResponse = await page.request.get("/api/backend/Routes", { headers: adminHeaders });
+  expect(routeListResponse.status()).toBe(200);
+  const listedRoute = (await routeListResponse.json()).find((route: { id: string }) => route.id === routeId);
+  expect(listedRoute).toBeTruthy();
+  const listedPhoto = listedRoute.points[1].evidence.find((item: { description: string }) => item.description === photoDescription);
+  expect(listedPhoto).toMatchObject({ type: "image", description: photoDescription, content: null });
 
   const completeStopPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&

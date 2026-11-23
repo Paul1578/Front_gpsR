@@ -1,3 +1,10 @@
+## Carga diferida de fotos de rutas — validación local; Action pendiente
+
+- Las listas de rutas ya no transfieren el Base64 de imágenes: conservan tipo, descripción y fecha, y las notas mantienen su contenido. El detalle de ruta sigue incluyendo fotos completas.
+- Historial solicita el detalle al abrir una ruta; Mi Ruta consulta el detalle activo y vuelve a pedirlo si aumenta el número de evidencias. Se muestran carga, error y reintento.
+- E2E Driver comprueba por API que la lista trae contenido nulo y que el detalle conserva la imagen; su flujo visual consulta Historial y abre la evidencia.
+- npm run lint, npm run build, discovery de 53 tests, diff-check y Playwright focal de carga/historial 13/13 y suite local completa 19 passed / 34 skipped pasaron. Los 34 requieren credenciales o fixtures QA; E2E autenticado de CI para este cambio pendiente.
+
 ## Mapa, asignaciones y limpieza de componentes obsoletos — CI aprobado
 
 - Eliminados `SettingsModal` y `NotificationsPanel`: no tenían referencias en la aplicación; el primero afirmaba eliminar cuentas mientras sólo cerraba la sesión y ofrecía un cambio de contraseña ficticio; el segundo mostraba un panel vacío permanente.

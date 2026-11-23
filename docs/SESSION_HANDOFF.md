@@ -1,3 +1,10 @@
+## Handoff vigente — evidencia fotográfica bajo demanda
+
+- Front refactor/route-builder: listas de rutas omiten el payload Base64. RouteHistory lo trae al abrir el modal; DriverView trae el detalle activo y vuelve a sincronizar cuando aumenta el conteo de evidencia.
+- E2E autenticado extendido para afirmar contenido nulo en lista y Base64 en GET de detalle, además de verificar la foto en Driver e Historial.
+- Lint, build, discovery 53 y Playwright focal 13/13 pasan localmente. La suite local completa pasó 19 y omitió 34 por falta de credenciales/fixtures QA; Action integrada posterior al commit pendiente.
+- Fallo de herramienta resuelto: /usr/bin/dotnet apuntaba a /usr/lib64/dotnet, cuyo host no tiene runtimes; ejecutar Backend con DOTNET_ROOT=/home/leonardo/.dotnet y ese binario.
+
 ## Handoff vigente — componentes obsoletos
 
 - Retirados `SettingsModal.tsx` y `NotificationsPanel.tsx`, ambos sin referencias. El modal presentaba eliminación que sólo cerraba sesión y cambio de contraseña simulado; el panel de notificaciones era un placeholder vacío.

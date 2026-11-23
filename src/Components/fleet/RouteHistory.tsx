@@ -30,6 +30,19 @@ type RouteHistoryItem = RouteApiDto & {
   notas?: string;
 };
 
+const mapRouteHistoryItem = (route: RouteApiDto): RouteHistoryItem => ({
+  ...route,
+  evidencias: (route.points ?? []).flatMap((point, pointIndex) =>
+    (point.evidence ?? point.Evidence ?? []).map((evidence, evidenceIndex) => ({
+      id: `${route.id}-${pointIndex}-${evidenceIndex}-${evidence.createdAtUtc ?? ""}`,
+      type: evidence.type === "image" ? "image" as const : "note" as const,
+      content: evidence.content ?? "",
+      description: evidence.description,
+      timestamp: evidence.createdAtUtc ?? "",
+    })),
+  ),
+});
+
 const mapStatus = (status?: number | string) => {
   if (typeof status === "number") {
     if (status === 1) return "en_progreso";
@@ -60,7 +73,10 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [selectedDetailsLoading, setSelectedDetailsLoading] = useState(false);
+  const [selectedDetailsError, setSelectedDetailsError] = useState(false);
   const hasLoadedRoutes = useRef(false);
+  const selectedRouteRequestId = useRef<string | null>(null);
 
   const users = getAllUsers();
 
@@ -82,18 +98,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
 
         if (cancelled) return;
         hasLoadedRoutes.current = true;
-        setRoutes(routesRes.map((route) => ({
-          ...route,
-          evidencias: (route.points ?? []).flatMap((point, pointIndex) =>
-            (point.evidence ?? point.Evidence ?? []).map((evidence, evidenceIndex) => ({
-              id: `${route.id}-${pointIndex}-${evidenceIndex}-${evidence.createdAtUtc ?? ""}`,
-              type: evidence.type === "image" ? "image" as const : "note" as const,
-              content: evidence.content ?? "",
-              description: evidence.description,
-              timestamp: evidence.createdAtUtc ?? "",
-            })),
-          ),
-        })));
+        setRoutes(routesRes.map(mapRouteHistoryItem));
       } catch (err) {
         console.error("Error cargando historial de rutas", err);
         if (!cancelled) setError("No se pudieron cargar las rutas");
@@ -127,6 +132,29 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [apiFetch, retryCount]);
+
+  const openRouteDetails = async (route: RouteHistoryItem) => {
+    selectedRouteRequestId.current = route.id;
+    setSelectedRoute(route);
+    setSelectedDetailsLoading(true);
+    setSelectedDetailsError(false);
+    try {
+      const details = await apiFetch<RouteApiDto>(`/Routes/${route.id}`);
+      if (selectedRouteRequestId.current === route.id)
+        setSelectedRoute(mapRouteHistoryItem(details));
+    } catch {
+      if (selectedRouteRequestId.current === route.id) setSelectedDetailsError(true);
+    } finally {
+      if (selectedRouteRequestId.current === route.id) setSelectedDetailsLoading(false);
+    }
+  };
+
+  const closeRouteDetails = () => {
+    selectedRouteRequestId.current = null;
+    setSelectedRoute(null);
+    setSelectedDetailsLoading(false);
+    setSelectedDetailsError(false);
+  };
 
   const filteredRoutes = useMemo(() => {
     return routes
@@ -372,7 +400,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                     )}
 
                     <button
-                      onClick={() => setSelectedRoute(route)}
+                      onClick={() => void openRouteDetails(route)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
                     >
                       <Eye size={14} />
@@ -388,7 +416,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
 
       <Dialog
         open={!!selectedRoute}
-        onOpenChange={() => setSelectedRoute(null)}
+        onOpenChange={closeRouteDetails}
       >
         <DialogContent
           className="sm:max-w-2xl max-w-[95%] max-h-[90vh] overflow-y-auto"
@@ -402,6 +430,17 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
 
           {selectedRoute && (
             <div className="space-y-4 mt-4">
+              {selectedDetailsLoading && (
+                <p role="status" className="text-sm text-gray-500">Cargando detalles y evidencias…</p>
+              )}
+              {selectedDetailsError && (
+                <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                  <span>No se pudieron cargar las evidencias de esta ruta.</span>
+                  <button type="button" className="font-medium underline" onClick={() => void openRouteDetails(selectedRoute)}>
+                    Reintentar
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <h3 className="text-base">{selectedRoute.name}</h3>
                 {getStatusBadge(selectedRoute.status)}
@@ -531,7 +570,7 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
                 </div>
               )}
 
-              {selectedRoute.evidencias &&
+              {!selectedDetailsLoading && !selectedDetailsError && selectedRoute.evidencias &&
                 selectedRoute.evidencias.length > 0 && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-2">
