@@ -16,6 +16,8 @@ npm run dev
 
 Abre `http://localhost:3000/dashboard`. El proxy `/api/backend/*` reenvía al backend. Puedes cambiar el destino con `FLETFLOW_API_URL`; el valor por defecto es `http://localhost:5046`. No pongas secretos en esta variable.
 
+El backend ASP.NET usa `http://localhost:5046` en su perfil de desarrollo. Si necesitas otro origen, copia `.env.example` a `.env.local` y cambia `FLETFLOW_API_URL` (debe ser sólo el origen, sin `/api`).
+
 ## Verificación
 
 ```bash
@@ -30,4 +32,4 @@ npm audit
 - La API es la fuente de verdad para operaciones y permisos. No usar datos ficticios como si fueran persistidos.
 - Antes de trabajar, consulta `AGENTS.md`, `docs/PROJECT_STATUS.md` y `docs/SESSION_HANDOFF.md`.
 
-La evidencia del conductor y el aislamiento multiempresa tienen trabajo pendiente; revisa `docs/PROJECT_STATUS.md` antes de despliegues.
+La cobertura de evidencia, aislamiento multiempresa, roles y responsive está registrada en `docs/PROJECT_STATUS.md` y `docs/TESTING.md`. Revisa esos documentos para conocer los límites actuales de SMTP y la preparación de producción.

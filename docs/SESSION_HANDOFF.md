@@ -7,6 +7,7 @@
 - Front `13669f3` actualiza los tipos JSON para aceptar `content=null`. Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **158/158**, API/MySQL y cleanup.
 - La consulta de Action backend `45192161720` desde Front devolvió 404 por checkout incorrecto; repetir desde Back_GPS confirmó success. El error queda en `ERROR_LOG.md`.
 - La misión global continúa: auditar la cobertura CRUD/roles/responsive que aún no tenga ejecución real, corregir hallazgos verificables y actualizar este handoff. SMTP y despliegue requieren configuración externa; móvil nativo está pospuesto.
+- Nuevo hallazgo en progreso: el README/perfil Backend apuntaban a `:5046` pero el fallback del proxy Next usaba `:5048`. Código local cambia el default a `:5046`, agrega `.env.example` y actualiza README. Lint/build/diff-check pasan; push/Action aún pendientes al corte.
 
 ## Handoff vigente — componentes obsoletos
 

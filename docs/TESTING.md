@@ -784,3 +784,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - El caso CRUD de Driver cancela la confirmación y consulta por API que `userId` siga vinculado; luego confirma en UI y verifica HTTP 204, perfil Driver conservado/activo con `userId=null`, cuenta presente, `driverId=null` y rol Driver persistido.
 - Comprueba el flujo a 320 y 768 px. `npm run lint`, `npm run build`, discovery **51** y diff-check pasan. Action Front integrada con API/MySQL/cleanup aún pendiente.
+## Default de API del frontend — comprobación local
+
+- `npm run lint`: pasó.
+- `npm run build`: pasó en Next.js 16.4.6, TypeScript y generación de 11 páginas.
+- `git diff --check`: pasó.
+- Se alineó el fallback Next a `http://localhost:5046` (perfil ASP.NET); se agregó `.env.example` ignorado correctamente para otros orígenes. Action integrada pendiente.

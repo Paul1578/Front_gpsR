@@ -14,6 +14,9 @@
 - El primer intento de preparar texto documental con un template literal de JavaScript no escapó un backtick Markdown y produjo SyntaxError antes de ejecutar el comando. No cambió archivos; se reintentó con texto sin delimitadores Markdown.
 - Un parche documental combinado asumió un encabezado de handoff que no coincidía con el archivo real y fue rechazado sin cambios; se inspeccionó la cabecera y se reintentó con ancla correcta. El primer diff-check del Backend detectó líneas vacías extra al final de dos documentos; se recortaron y el chequeo pasó. Prevención: verificar encabezados y diff-check antes del commit.
 - El diff-check Front encontró una línea vacía extra al EOF en `CHANGELOG.md` tras registrar CI. Se recortó el EOF a un único salto de línea; repetir `git diff --check` antes de commit.
+- El primer `rg` de configuración Backend se ejecutó desde Front usando un subdirectorio inexistente; después se localizaron los archivos con `rg --files` en la raíz correcta. También se detectó que el proxy Next caía en `:5048`, distinto del perfil Backend/README `:5046`, y que `.env.example` no podía incluirse por `.gitignore`. Solución: alinear el default a `:5046`, permitir y añadir un ejemplo sin secretos, y corregir el README. Prevención: comprobar raíz, ignore rules y perfil de ejecución antes de afirmar el endpoint local predeterminado.
+- No fue posible abrir un nuevo subagente de seguridad porque se alcanzó el límite de hilos del entorno. Se continúa la revisión desde este agente y no se atribuyen hallazgos a un agente que no se inició.
+- El primer diff-check del bloque de configuración encontró líneas vacías al final de `CHANGELOG.md` y `TESTING.md`; se normalizó el EOF y se repetirá el chequeo. La consulta de Action Front `45195109149` desde el checkout Backend devolvió 404; consultarla desde Front.
 
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 

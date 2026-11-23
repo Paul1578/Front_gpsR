@@ -848,3 +848,8 @@
 - Front `13669f3` refleja que los DTO de lista devuelven `content=null` para fotos; detalle mantiene Base64.
 - Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó: 53/53 E2E autenticados, responsive 1/1, audit/lint/build, Backend Release/xUnit 158/158, API/MySQL y cleanup.
 - Estado, handoff y plan marcan el flujo validado; sigue abierta la auditoría integral.
+## 2026-11-23 — Origen de API local reproducible
+
+- Se alineó el fallback de Next con el puerto `5046` de ASP.NET y se añadió `.env.example` sin secretos, incluido por la regla de excepción de `.gitignore`.
+- El README ya no afirma que la cobertura de fotos/tenant esté pendiente y explica cómo cambiar el origen del proxy.
+- Lint/build/diff-check locales pasan; CI integrado pendiente.

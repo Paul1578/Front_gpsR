@@ -11,6 +11,7 @@ Estado: principales flujos de flota, autorización tenant, rutas con paradas, se
 - El flujo prueba que la lista omite Base64 y el detalle conserva la foto; Historial y Mi Ruta cargan el detalle bajo demanda. Suite local: 19 passed y 34 omitidos por requerir credenciales/fixtures, cubiertos en CI.
 - Pendientes externos de despliegue: credenciales SMTP vigentes; configurar IPs reales del ingress y volumen/certificado de Data Protection; distribución del contador rate limit si se despliegan varias réplicas; validar despliegue productivo. Móvil nativo está fuera de esta fase por decisión del usuario.
 - Próximo trabajo técnico: auditar y completar los flujos CRUD/roles y vistas responsive que aún no tengan ejecución real; registrar hallazgos y cerrar los que puedan verificarse localmente/CI.
+- Hallazgo de configuración local: el fallback del proxy Next estaba en `:5048` pese a que el perfil ASP.NET usa `:5046`; ahora está alineado y existe `.env.example` sin secretos. Lint/build pasan localmente; CI del cambio pendiente.
 
 ## Alcance
 
