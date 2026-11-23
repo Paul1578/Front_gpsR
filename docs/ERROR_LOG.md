@@ -1673,3 +1673,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Action `45129570384` ejecutó el ciclo Driver de traslado y comprobó API/ruta `Completed`, timestamps y vehículo `Available`, pero falló al esperar “Ruta completada exitosamente”. `FleetContext.updateRoute` devuelve el mensaje de éxito real “Estado de ruta actualizado”, que `DriverView` muestra; el texto esperado era el fallback, no el contrato actual.
 - Solución: la aserción ahora usa el mensaje retornado por `updateRoute`. Prevención: derivar expectativas de feedback del flujo de datos real (contexto/API) antes de asumir el texto fallback de un handler.
+
+## 2026-11-23 — El E2E de traslado seleccionó dos toasts iguales — CORREGIDO LOCALMENTE
+
+- Action `45130498572` confirmó el mensaje real “Estado de ruta actualizado”, pero el mismo toast aparece para inicio y finalización y `getByText` falló por strict mode al resolver dos elementos.
+- Solución: el E2E ahora selecciona el último toast, correspondiente a la finalización. Prevención: en transiciones consecutivas con copy compartido, seleccionar el evento más reciente o capturar su orden, no exigir unicidad global.
