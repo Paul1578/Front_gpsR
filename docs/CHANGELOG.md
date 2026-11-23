@@ -4,7 +4,7 @@
 - NuGet `dotnet list ... --vulnerable --include-transitive`: sin hallazgos en Backend ni tests.
 - Front `6555858`: lint y build local pasaron; TypeScript y prerender de 11 páginas correctos.
 - Revisión de seguridad multiagente read-only no encontró bypass nuevo tenant/rol ni XSS explotable. `dangerouslySetInnerHTML` existe en chart genérico sin consumidores ni datos de usuario conectados; el riesgo de impacto por token `localStorage` queda explícito, sin confirmar una vulnerabilidad XSS.
-- E2E existente de traslado extendido para recorrer con sesión Driver desde “Mi Ruta”; lint/build/discovery 51 pasan localmente, integración real API/MySQL pendiente de Action.
+- E2E de traslado extendido para recorrer con sesión Driver desde “Mi Ruta”. Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815) pasó 51/51, responsive 1/1 y cleanup con API/MySQL descartables.
 - Documentación sincronizada con Front Actions `45123444413`/`45124271067` y Backend Action `45127502896`; misión global abierta.
 
 # 2026-11-22 — Correcciones de QA para administración de empresa

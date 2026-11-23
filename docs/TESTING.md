@@ -8,10 +8,10 @@
 - La última validación backend integrada es Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): Release build, xUnit **136/136**, smokes HTTP/MySQL y cleanup. Ver Backend `docs/TESTING.md` para forwarded headers.
 - Auditoría independiente de seguridad fue estática/read-only, no una prueba dinámica: no encontró un vector XSS ni bypass nuevo. La búsqueda encontró `dangerouslySetInnerHTML` en el chart genérico; no tiene consumidores en `src` ni datos de usuario conectados al contenido CSS. La verificación dinámica de aislamiento sigue respaldada por Actions/smokes HTTP/MySQL citados; el agente no los volvió a ejecutar.
 
-## Traslado iniciado y completado por Driver desde “Mi Ruta” — CI pendiente
+## Traslado iniciado y completado por Driver desde “Mi Ruta” — VALIDADO
 
 - El caso E2E existente ahora combina creación de traslado en el constructor Admin a 768 px con login real del Driver QA, acciones UI de iniciar/completar y lecturas API posteriores. Debe terminar `Completed` con timestamps, ambos puntos `operation=None/status=Pending`, evidencia vacía y vehículo `Available`.
-- Lint/build y descubrimiento Playwright (51 tests) pasaron localmente. La ejecución mutante requiere fixtures temporales; no se apuntó al MySQL local. Esperar la Action Front contra API/MySQL descartables y confirmar teardown.
+- Lint/build y descubrimiento Playwright (51 tests) pasaron localmente. Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51**, responsive 1/1, API/MySQL descartables y cleanup correctos.
 
 ## 2026-11-23 — Ciclo UI real de reset y activación — validado
 
