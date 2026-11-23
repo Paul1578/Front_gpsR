@@ -297,6 +297,9 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Crear Usuario" })).toBeVisible();
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Gerente", exact: true })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
   await assertNoHorizontalOverflow();
 
   await page.getByRole("button", { name: "Abrir menú" }).click();

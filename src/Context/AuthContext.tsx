@@ -128,6 +128,8 @@ interface User {
   teamName?: string;
   isActive?: boolean;
   driverId?: string;
+  /** Derivado de claims firmados para ajustar UX; el servidor autoriza cada acción. */
+  isRootAccount?: boolean;
 }
 
 interface AuthContextType {
@@ -524,10 +526,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return text ? (JSON.parse(text) as T) : (undefined as T);
   };
 
-  const mapApiUser = (apiUser: ApiUser): User => {
+  const mapApiUser = (apiUser: ApiUser, accessToken?: string): User => {
     const mappedRole = determineRole(apiUser.roles as ApiRole[]);
     const username = apiUser.username || apiUser.email;
     const displayName = apiUser.firstName || username || apiUser.id;
+    const tokenPayload = accessToken ? decodeJwtPayload(accessToken) : null;
+    const ownerId = tokenPayload ? getClaimValue(tokenPayload, ["owner_id"]) : undefined;
     return {
       id: apiUser.id,
       nombres: displayName,
@@ -539,6 +543,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions: defaultPermissions[mappedRole],
       isActive: apiUser.isActive,
       driverId: apiUser.driverId,
+      isRootAccount: Boolean(ownerId && ownerId.toLowerCase() === apiUser.id.toLowerCase()),
     };
   };
 
@@ -647,6 +652,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       role: mappedRole,
       permissions: defaultPermissions[mappedRole],
+      isRootAccount: getClaimValue(payload, ["owner_id"])?.toLowerCase() === id.toLowerCase(),
     };
   };
 
@@ -656,7 +662,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     try {
       const me = await apiFetch<ApiUser>("/Auth/me", { signal: controller.signal });
-      return mapApiUser(me);
+      return mapApiUser(me, tokensRef.current?.accessToken);
     } catch (error) {
       if (!isAbortedRequest(error)) console.error("Error obteniendo usuario actual:", error);
       return null;
@@ -690,7 +696,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data.user) {
       if (expectedSessionVersion !== authSessionVersionRef.current) return false;
-      persistUser(mapApiUser(data.user));
+      persistUser(mapApiUser(data.user, accessToken));
       setIsLoadingUser(false);
       return true;
     }
@@ -859,7 +865,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await apiFetch<ApiUser[]>("/Users/my-team");
       if (requestVersion === teamUsersRequestVersionRef.current) {
-        setTeamUsers(data.map(mapApiUser));
+        setTeamUsers(data.map((apiUser) => mapApiUser(apiUser)));
       }
     } catch (error) {
       if (requestVersion === teamUsersRequestVersionRef.current) {

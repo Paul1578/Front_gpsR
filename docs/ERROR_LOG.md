@@ -1424,3 +1424,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Action `45081992619` consultó MySQL y confirmó `VehicleId=NULL` tras el PUT 204, por lo que la fila no tenía asignación al comprobarla. El retry vuelve a pasar. Para probar interferencia entre fixtures E2E concurrentes, CI se configura temporalmente con un worker; mantener asserts SQL/API.
 - No se relajó la comprobación ni se declaró el CRUD validado. Si un worker elimina la falla, localizar el fixture concurrente; si persiste, revisar el estado transaccional/SQL del comando backend.
 - Prevención: para acciones que responden 204, verificar siempre el recurso persistido; el estado optimista del frontend por sí solo no demuestra éxito durable.
+# 2026-11-23 — Tipos al derivar la opción de cuenta raíz
+
+- **Síntoma:** primer `next build` no completó TypeScript: el `.filter()` de roles se infería como `string[]`; además, al cambiar `mapApiUser(apiUser, accessToken?)`, pasar la función directamente a `.map()` hacía que TypeScript interpretara el índice como `accessToken`.
+- **Causa:** filtro sin guard de tipo y callback de mapeo con parámetro opcional que colisiona con la firma `(value, index, array)`.
+- **Solución:** usar guard explícito `role is UserRole` y una lambda `.map((apiUser) => mapApiUser(apiUser))` en el catálogo de usuarios.
+- **Prevención:** tras ampliar la firma de callbacks de colecciones, reemplazar referencias directas a la función por lambdas cuando los argumentos opcionales puedan coincidir con `index`/`array` y mantener el tipo del catálogo explícito.
+- **Verificación:** repetir `npm run lint`, `npm run build` y `npm run test:e2e -- --list`; documentar salida final al terminar.

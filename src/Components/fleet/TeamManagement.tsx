@@ -11,6 +11,7 @@ interface TeamManagementProps {
 
 export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const {
+    user,
     getTeamUsers,
     refreshTeamUsers,
     updateUserRole,
@@ -51,6 +52,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   });
 
   const users = getTeamUsers();
+  const assignableRoles: UserRole[] = ["gerente", "manager", "logistica", "chofer", "usuario"]
+    .filter((role): role is UserRole => role !== "gerente" || user?.isRootAccount === true);
   const hasDriverLoadError = driversLoadError || loadErrors.includes("conductores");
   const normalizedDriverSearch = driverSearch.trim().toLocaleLowerCase();
   const visibleDrivers = drivers
@@ -710,7 +713,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <div className="mb-4">
                     <label className="block text-xs text-gray-500 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["gerente", "manager", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => (
+                      {assignableRoles.map((role) => (
                         <button
                           key={role}
                           onClick={() => handleRoleChange(user.id, role)}
@@ -852,7 +855,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <span className="text-xs text-gray-500">Selecciona el rol para el nuevo usuario</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(["gerente", "manager", "logistica", "chofer", "usuario"] as UserRole[]).map((role) => {
+                {assignableRoles.map((role) => {
                   const active = createUserForm.role === role;
                   const roleLabel =
                     role === "superadmin" ? "Super Admin" : role === "manager" ? "Gestor de flota" : role.charAt(0).toUpperCase() + role.slice(1);

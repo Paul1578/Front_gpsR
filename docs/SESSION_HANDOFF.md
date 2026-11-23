@@ -833,3 +833,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Registro público es neutral: `register` no persiste tokens; el formulario muestra el mensaje común y navega a Login. El E2E compara las respuestas de alta nueva/duplicada y autentica el usuario creado. Falta Action integrada con cambio frontend/backend actual.
 - La Action Front `45065014129` aprobó 33/33 y responsive check con backend `30bcb2f`, pero precede al cambio de registro neutral; ejecutar nuevo Action tras publicar ambos repos.
 - Action Front `45065745273` pasó **33/33** con registro neutral del backend `825bbed` y valida registro/email duplicado/login. No contiene el piso temporal añadido luego en `52d7e46`; nueva integración pendiente.
+# Continuación — UX de asignación Admin — 2026-11-23
+
+- Branch Front `refactor/route-builder`; branch Backend `chore/stabilize-fleet-platform`; mantener `main` intacta.
+- El backend reservó crear/promover Admin a la cuenta raíz (decisión del usuario), validado por HTTP/MySQL y Action backend `45088129188`.
+- Detectado que la UI de Gestión de Equipo aún mostraba “Gerente” (rol API Admin) para cualquier administrador. `AuthContext` ahora compara el ID autenticado con `owner_id` del JWT para derivar `isRootAccount`; la lista de asignación oculta Gerente a cuentas no raíz. La API sigue siendo autoridad.
+- E2E autenticado del root comprueba que “Gerente” sí aparece. Local `npm run lint` y `npm run build` pasan; Playwright descubre 39 tests. Falta ejecutar la suite integrada tras publicar.
+- Un primer `next build` detectó dos errores TypeScript (tipo ampliado en `.filter`, callback `.map` trataba índice como token). Corregidos con guard de tipo y callback explícito; nueva ejecución build/lint terminó bien; `ERROR_LOG.md` lo documenta.
+- Continuar auditoría de roles/CRUD y responsive. Misión abierta; móvil nativo aplazado.

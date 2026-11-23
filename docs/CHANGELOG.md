@@ -547,3 +547,8 @@
 - Gestión de Equipo ahora permite buscar miembros y conductores por nombre/usuario/documento/teléfono; E2E nuevos prueban resultados reales y estado sin coincidencias.
 - Ruta E2E ahora modifica a 320 y 768 px, verifica persistencia y overflow, y cancela en ambos tamaños.
 - Backend amplía smoke de vehículo (editar, mantenimiento, baja/reactivación con API y SQL). MySQL efímero local y cleanup pasan; nueva integración CI pendiente.
+# 2026-11-23 — Mostrar rol Admin sólo a la cuenta raíz
+
+- Gestión de Equipo oculta “Gerente” en los controles de alta y cambio de rol cuando `owner_id` firmado no coincide con el ID autenticado.
+- El endpoint backend continúa aplicando autorización; la lógica cliente sólo reduce opciones inválidas.
+- Añadida aserción E2E para comprobar que la cuenta raíz conserva la opción.

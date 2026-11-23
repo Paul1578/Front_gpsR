@@ -449,3 +449,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Registro neutral: UI redirige a Login; E2E compara status/payload para email nuevo/duplicado y valida login posterior. Discovery sigue en 33 pruebas; lint/build pasan localmente. Action integrada pendiente.
 - Action `45065014129` pasó **33/33 E2E** con backend `30bcb2f`; no incluye aún el commit de registro neutral, que requiere nueva integración.
 - Action `45065745273` pasó **33/33** e incluye alta neutral, email duplicado y login posterior sobre backend `825bbed`. Sólo falta integrar en Front el piso temporal de backend `52d7e46`.
+# Validación UX Admin raíz — 2026-11-23
+
+- E2E ampliado: cuenta Admin raíz autenticada abre el formulario de creación en Gestión de Equipo y ve la opción “Gerente”.
+- `isRootAccount` se deriva de la comparación entre identificador autenticado de `/Auth/me` y claim `owner_id` del JWT, que alimenta la UX de creación y cambio de rol.
+- Local: `npm run lint` y `npm run build` pasaron; Playwright enumeró 39 pruebas. El escenario autenticado completo queda pendiente de CI integrado.
+- Backend Action `45088129188` validó la regla real mediante HTTP y MySQL efímero: root permitido, Admin delegado denegado, 113/113 pruebas y cleanup.

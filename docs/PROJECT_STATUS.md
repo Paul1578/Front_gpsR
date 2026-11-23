@@ -580,3 +580,9 @@ Fecha de actualización: 2026-11-22.
 
 - Front presenta respuesta neutral al registro y redirige a login. E2E compara alta/email duplicado con status y payload iguales y valida login posterior. Lint/build/discovery 33 pasan localmente; la Action nueva integrará la última rama backend.
 - Action `45065745273` pasó **33/33 E2E** con backend `825bbed`, incluida respuesta neutra del registro, comparación email nuevo/duplicado y login posterior. El piso temporal backend llegó después en `52d7e46`; integración de ese último SHA pendiente.
+# Actualización 2026-11-23 — UX de permisos para rol Admin
+
+- La vista de Gestión de Equipo ahora muestra la opción “Gerente” (rol backend Admin) sólo cuando el usuario autenticado es la cuenta raíz del tenant. La condición compara `owner_id` firmado del JWT con el identificador de `/Auth/me`; no sustituye la autorización backend.
+- Se agregó una aserción E2E en el flujo autenticado de Admin raíz para confirmar que puede seleccionar el rol.
+- Backend ya aplica la regla y quedó validada por Action `45088129188`: 113/113 xUnit y smoke HTTP/MySQL de permisos/persistencia.
+- Validación local: `npm run lint` y `npm run build` pasan; Playwright descubre 39 tests (`npm run test:e2e -- --list`). Aserción E2E autenticada aún debe ejecutarse integrada con API/MySQL.
