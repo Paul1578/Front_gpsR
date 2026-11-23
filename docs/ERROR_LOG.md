@@ -1,3 +1,9 @@
+## 2026-11-23 — Runners E2E concurrentes podían limpiarse mutuamente — CORREGIDO
+
+- Revisión independiente detectó que cleanup por prefijos podía borrar fixtures de otra ejecución local que compartiera el mismo esquema.
+- Backend `4079ae2` usa advisory lock por host/puerto/esquema; el runner concurrente aborta antes de cleanup. Validación local: `GET_LOCK=1` y competidor `0`; invocación del runner devuelve 2 sin alterar filas.
+- El cliente MariaDB imprimió un warning antes del resultado y bufferizó SELECT antes de SLEEP; corregido con `--unbuffered` y parser estricto de `0`/`1`. Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó 67/67, responsive y teardown.
+
 ## 2026-11-23 — Fixture Logistics y confirmaciones Manager E2E — CORREGIDO Y VALIDADO
 
 - Action Front [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) pasó audit, lint, build y responsive, pero E2E terminó **66/67**. La cuenta temporal se creó por `POST /Users`, cuya invitación deja `MustChangePassword=true`; marcarla activa con `PUT /Users/{id}/status` no completa la activación y el login respondió **401** en ambos intentos.

@@ -1,3 +1,8 @@
+## 2026-11-23 — Serialización de runners E2E — CI aprobado
+
+- Backend añade lock MySQL por esquema para impedir interferencias durante cleanup concurrente. Prueba local de conflicto y suite integrada confirmadas.
+- Action [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166): **67/67 E2E**, responsive 1/1, audit/lint/build, Backend 165/165 y MySQL teardown.
+
 ## 2026-11-23 — Matriz E2E aislada por rol y confirmación de bajas Manager — CI aprobado
 
 - La revisión E2E encontró dos errores consecutivos: Logistics invitado no podía iniciar sesión con `MustChangePassword=true`; tras corregir el fixture, el flujo Manager agotó 180 s porque no confirmaba el AlertDialog al dar de baja Driver.

@@ -1,4 +1,9 @@
-## Estado vigente — Front `b58ef4c`, Backend `cd2a512` — 2026-11-23
+## Runner E2E serializado — Backend `4079ae2` — 2026-11-23
+
+- La integración [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) ejecutó el runner Backend con advisory lock MySQL: **67/67 E2E**, responsive 1/1, audit/lint/build, Release/xUnit Backend **165/165**, API/MySQL y cleanup.
+- En local, lock titular=1 y competidor=0; con otro propietario, el runner completo salió con código 2 antes de cleanup. No se alteraron filas.
+
+## Evidencia previa — Front `b58ef4c`, Backend `cd2a512`
 
 - Lint/build locales pasan; Playwright detecta **67** pruebas; `git diff --check` limpio.
 - Action Front integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209): build/audit/lint/responsive pasaron y E2E **66/67**; faltaba confirmar las bajas Driver en móvil/tablet.

@@ -1,4 +1,11 @@
-## Handoff vigente — matriz E2E integrada aprobada — 2026-11-23
+## Handoff vigente — runner E2E serializado — 2026-11-23
+
+- Front rama `refactor/route-builder`, HEAD documental `b1d5924`; Backend `chore/stabilize-fleet-platform`, HEAD `4079ae2`; `main` intacta.
+- Backend obtiene advisory lock MySQL por host/puerto/esquema antes de ejecutar cleanup. Local: titular=1, competidor=0; el runner completo devuelve exit 2 mientras otro posee el lock, sin limpiar filas. MariaDB requirió `--unbuffered` y parseo de línea numérica; causa en `ERROR_LOG.md`.
+- Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó 67/67 E2E, responsive 1/1, audit/lint/build, backend xUnit 165/165, API/MySQL y teardown. Backend [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957), [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasó.
+- Próximo: seguir criterios pendientes de `AUDIT_PLAN.md`; SMTP real e infraestructura productiva dependen de configuración externa.
+
+## Handoff histórico — matriz E2E integrada aprobada — 2026-11-23
 
 - Front branch `refactor/route-builder`, código funcional `b58ef4c`, documentación HEAD `2e8d043`; Backend funcional `cd2a512`, documentación HEAD `0547e1c`; `main` intacta.
 - Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): E2E 66/67. El timeout primario fue al restaurar rol; retry heredó Manager y obtuvo 201 en una comprobación como Driver. La descarga de trace devolvió HTTP 503.

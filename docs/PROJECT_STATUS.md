@@ -1,4 +1,10 @@
-## Estado vigente — Front `b58ef4c`, Backend `cd2a512` — 2026-11-23
+## Estado vigente — Front `b1d5924`, Backend `4079ae2` — 2026-11-23
+
+- Runner E2E Backend serializado mediante `GET_LOCK` por host/puerto/esquema; segunda ejecución termina antes de cleanup. Prueba local: propietario `1`, competidor `0`; runner completo devuelve exit 2 sin alterar filas.
+- Front Action integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) validó Front `b1d5924` y Backend `4079ae2`: **67/67 E2E**, responsive **1/1**, audit/lint/build, Release/xUnit **165/165**, API/MySQL y cleanup. Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron.
+- Ramas aisladas de `main`. La auditoría global continúa; SMTP real e infraestructura de producción requieren configuración externa.
+
+## Snapshot histórico — Front `b58ef4c`, Backend `cd2a512` — 2026-11-23
 
 - Ramas de trabajo separadas y `main` intacta. Front `b58ef4c` y Backend `cd2a512` incluyen fixtures QA de roles independientes y autenticación Logistics correctamente activada en la DB desechable.
 - Las Actions previas [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) y [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) revelaron, respectivamente, login de Logistics aún pendiente de activar y confirmaciones faltantes en el flujo de baja Driver.
