@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, readAccessToken, test } from "./fixtures";
 
 const managerEmail = process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL;
 const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
@@ -6,7 +6,6 @@ const routeDriverId = process.env.FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID;
 const fixtureSuffix = process.env.FLETFLOW_E2E_MAP_FIXTURE_SUFFIX?.toUpperCase();
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
 
-type AuthTokens = { accessToken: string };
 type RouteRecord = { id: string; name: string; vehicleId: string; vehiclePlate?: string; vehicleBrand?: string; vehicleModel?: string; isActive: boolean };
 type VehicleRecord = { id: string; plate: string };
 type DriverRecord = { id: string; vehicleId: string | null };
@@ -31,10 +30,7 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const accessToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? (JSON.parse(serialized) as AuthTokens).accessToken : null;
-  });
+  const accessToken = await readAccessToken(page);
   expect(accessToken).toBeTruthy();
   const headers = { Authorization: `Bearer ${accessToken}` };
   let vehicleId: string | undefined;

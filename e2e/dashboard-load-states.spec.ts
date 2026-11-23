@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("Dashboard no muestra cero ni actividad vacía antes de cargar rutas", async ({ page }) => {
   let releaseRoutes: () => void = () => {};
@@ -41,7 +41,7 @@ test("Dashboard no muestra cero ni actividad vacía antes de cargar rutas", asyn
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {

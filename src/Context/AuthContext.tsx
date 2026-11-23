@@ -57,13 +57,12 @@ interface AuthResponseDto {
   token?: string;
   expiration?: string;
 
-  refreshToken: string;
-  refreshTokenExpiration: string;
+  refreshToken?: string;
+  refreshTokenExpiration?: string;
 }
 
 interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
 }
 
 const staleAuthRequestError = () => {
@@ -299,6 +298,13 @@ export type ApiRequestOptions = RequestInit & {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const tokensRef = useRef<AuthTokens | null>(null);
+  const refreshInFlightRef = useRef<{
+    sessionVersion: number;
+    accessToken: string;
+    promise: Promise<boolean>;
+  } | null>(null);
+  const restoreTokenInFlightRef = useRef<Promise<string | null> | null>(null);
+  const authTerminationInFlightRef = useRef<Promise<unknown> | null>(null);
   const authSessionVersionRef = useRef(0);
   const teamUsersRequestVersionRef = useRef(0);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
@@ -310,11 +316,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setTokens = (tokens: AuthTokens | null) => {
     tokensRef.current = tokens;
     if (typeof window === "undefined") return;
-    if (tokens) {
-      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
-    } else {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-    }
+    // El access token sólo vive en memoria. El refresh token persistente lo guarda
+    // la ruta BFF en una cookie HttpOnly que JavaScript no puede leer.
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
   };
 
   const persistUser = (value: User | null) => {
@@ -332,20 +336,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const restoreSession = async () => {
       const sessionVersion = ++authSessionVersionRef.current;
       try {
-        const storedTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
-        if (!storedTokens) {
-          if (sessionVersion === authSessionVersionRef.current) {
-            persistUser(null);
-            setIsLoadingUser(false);
+        const legacyStoredTokens = localStorage.getItem(TOKEN_STORAGE_KEY);
+        let legacyRefreshToken: string | undefined;
+        if (legacyStoredTokens) {
+          try {
+            const parsed: unknown = JSON.parse(legacyStoredTokens);
+            if (isRecord(parsed) && typeof parsed.refreshToken === "string") {
+              legacyRefreshToken = parsed.refreshToken;
+            }
+          } catch {
+            // El almacenamiento legado dañado se descarta; la sesión puede restaurarse desde cookie.
           }
-          return;
         }
-        const parsed: unknown = JSON.parse(storedTokens);
-        if (!isRecord(parsed) || typeof parsed.accessToken !== "string" || typeof parsed.refreshToken !== "string") {
+        let restoreRequest = restoreTokenInFlightRef.current;
+        if (!restoreRequest) {
+          restoreRequest = requestAccessToken(
+            legacyRefreshToken ? "/api/auth/migrate" : "/api/auth/refresh",
+            legacyRefreshToken ? { refreshToken: legacyRefreshToken } : undefined,
+          );
+          restoreTokenInFlightRef.current = restoreRequest;
+        }
+        let restored: string | null;
+        try {
+          restored = await restoreRequest;
+        } finally {
+          if (restoreTokenInFlightRef.current === restoreRequest) {
+            restoreTokenInFlightRef.current = null;
+          }
+        }
+        if (sessionVersion !== authSessionVersionRef.current) return;
+        if (!restored) {
           clearAuthState(sessionVersion);
           return;
         }
-        setTokens({ accessToken: parsed.accessToken, refreshToken: parsed.refreshToken });
+        setTokens({ accessToken: restored });
         // El perfil cacheado es sólo presentación: rol y permisos siempre vienen del backend.
         const verifiedUser = await fetchMeUser();
         if (sessionVersion !== authSessionVersionRef.current) return;
@@ -420,55 +444,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return enrichedError;
   };
 
+  const requestAccessToken = async (path: string, body?: Record<string, string>) => {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : JSON.stringify({}),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as AuthResponseDto;
+    return data.accessToken ?? data.token ?? null;
+  };
+
   const refreshAccessToken = async (
     expectedSessionVersion = authSessionVersionRef.current,
-    expectedRefreshToken = tokensRef.current?.refreshToken,
+    expectedAccessToken = tokensRef.current?.accessToken,
   ) => {
-    const refreshToken = tokensRef.current?.refreshToken;
     if (
-      !refreshToken ||
-      refreshToken !== expectedRefreshToken ||
+      !expectedAccessToken ||
+      tokensRef.current?.accessToken !== expectedAccessToken ||
       expectedSessionVersion !== authSessionVersionRef.current
     ) return false;
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
-    try {
-      const response = await fetch(`${API_BASE_URL}/Auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-        signal: controller.signal,
-      });
-      if (
-        expectedSessionVersion !== authSessionVersionRef.current ||
-        tokensRef.current?.refreshToken !== refreshToken
-      ) return false;
-      if (!response.ok) {
+    const inFlight = refreshInFlightRef.current;
+    if (
+      inFlight?.sessionVersion === expectedSessionVersion &&
+      inFlight.accessToken === expectedAccessToken
+    ) return inFlight.promise;
+
+    const refreshPromise = (async () => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+      try {
+        const response = await fetch("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (
+          expectedSessionVersion !== authSessionVersionRef.current ||
+          tokensRef.current?.accessToken !== expectedAccessToken
+        ) return false;
+        if (!response.ok) {
+          if (user) {
+            toast?.error?.("Sesión cerrada en otro dispositivo.");
+          }
+          clearAuthState(expectedSessionVersion);
+          return false;
+        }
+        const data = (await response.json()) as AuthResponseDto;
+        if (
+          expectedSessionVersion !== authSessionVersionRef.current ||
+          tokensRef.current?.accessToken !== expectedAccessToken
+        ) return false;
+        return applyAuthResponse(data, expectedSessionVersion);
+      } catch (error) {
+        if (
+          expectedSessionVersion !== authSessionVersionRef.current ||
+          tokensRef.current?.accessToken !== expectedAccessToken
+        ) return false;
+        console.error("Error al refrescar token:", error);
         if (user) {
-          toast?.error?.("Sesión cerrada en otro dispositivo.");
+          toast?.error?.("Sesión expirada. Inicia sesión nuevamente.");
         }
         clearAuthState(expectedSessionVersion);
         return false;
+      } finally {
+        window.clearTimeout(timeoutId);
       }
-      const data = (await response.json()) as AuthResponseDto;
-      if (
-        expectedSessionVersion !== authSessionVersionRef.current ||
-        tokensRef.current?.refreshToken !== refreshToken
-      ) return false;
-      return applyAuthResponse(data, expectedSessionVersion);
-    } catch (error) {
-      if (
-        expectedSessionVersion !== authSessionVersionRef.current ||
-        tokensRef.current?.refreshToken !== refreshToken
-      ) return false;
-      console.error("Error al refrescar token:", error);
-      if (user) {
-        toast?.error?.("Sesión expirada. Inicia sesión nuevamente.");
-      }
-      clearAuthState(expectedSessionVersion);
-      return false;
+    })();
+    refreshInFlightRef.current = {
+      sessionVersion: expectedSessionVersion,
+      accessToken: expectedAccessToken,
+      promise: refreshPromise,
+    };
+    try {
+      return await refreshPromise;
     } finally {
-      window.clearTimeout(timeoutId);
+      if (refreshInFlightRef.current?.promise === refreshPromise) {
+        refreshInFlightRef.current = null;
+      }
     }
   };
 
@@ -479,22 +535,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { skipAuth = false, retry = true, tokensOverride, ...fetchOptions } =
       options;
     const requestSessionVersion = authSessionVersionRef.current;
-    let requestTokenSource = tokensOverride ?? tokensRef.current;
+    const requestTokenSource = tokensOverride ?? tokensRef.current;
     const headers = new Headers(fetchOptions.headers || {});
     if (!headers.has("Content-Type") && fetchOptions.body) {
       headers.set("Content-Type", "application/json");
     }
     if (!skipAuth) {
-      let tokenSource = requestTokenSource;
-      // fallback: si el ref no está poblado aún, intenta leer del storage
-      if (!tokenSource && typeof window !== "undefined") {
-        const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-        if (stored) {
-          tokenSource = JSON.parse(stored) as AuthTokens;
-          tokensRef.current = tokenSource;
-          requestTokenSource = tokenSource;
-        }
-      }
+      const tokenSource = requestTokenSource;
       if (tokenSource?.accessToken) {
         headers.set("Authorization", `Bearer ${tokenSource.accessToken}`);
       }
@@ -513,9 +560,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       response.status === 401 &&
       !skipAuth &&
       retry &&
-      requestTokenSource?.refreshToken
+      requestTokenSource?.accessToken
     ) {
-      const refreshed = await refreshAccessToken(requestSessionVersion, requestTokenSource.refreshToken);
+      const refreshed = await refreshAccessToken(requestSessionVersion, requestTokenSource.accessToken);
       if (refreshed) {
         if (requestSessionVersion !== authSessionVersionRef.current) throw staleAuthRequestError();
         return apiFetch<T>(path, { ...options, retry: false });
@@ -706,11 +753,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const newTokens: AuthTokens = {
-      accessToken,
-      refreshToken: data.refreshToken,
-    };
-    setTokens(newTokens);
+    setTokens({ accessToken });
 
     if (data.user) {
       if (expectedSessionVersion !== authSessionVersionRef.current) return false;
@@ -752,13 +795,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<{ ok: boolean; message?: string }> => {
+    const pendingTermination = authTerminationInFlightRef.current;
+    if (pendingTermination) await pendingTermination;
+    const pendingRestore = restoreTokenInFlightRef.current;
+    if (pendingRestore) {
+      try {
+        await pendingRestore;
+      } catch {
+        // A failed prior restore must not prevent a fresh sign-in.
+      }
+    }
+    const pendingRefresh = refreshInFlightRef.current?.promise;
+    if (pendingRefresh) await pendingRefresh;
     const sessionVersion = ++authSessionVersionRef.current;
     try {
-      const data = await apiFetch<AuthResponseDto>("/Auth/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        skipAuth: true,
+        cache: "no-store",
       });
+      if (!response.ok) throw await buildApiError(response);
+      const data = (await response.json()) as AuthResponseDto;
       if (sessionVersion !== authSessionVersionRef.current) {
         return { ok: false, message: "La solicitud de inicio de sesión quedó obsoleta." };
       }
@@ -808,21 +866,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const refreshToken = tokensRef.current?.refreshToken;
-    authSessionVersionRef.current += 1;
-    clearAuthState(authSessionVersionRef.current);
-    try {
-      if (refreshToken) {
-        await apiFetch("/Auth/logout", {
+    const ongoing = authTerminationInFlightRef.current;
+    if (ongoing) {
+      await ongoing;
+      return;
+    }
+    const operation = (async () => {
+      const pendingRestore = restoreTokenInFlightRef.current;
+      if (pendingRestore) {
+        try {
+          await pendingRestore;
+        } catch {
+          // Logout still clears the cookie when session restoration fails.
+        }
+      }
+      const accessToken = tokensRef.current?.accessToken;
+      const pendingRefresh = refreshInFlightRef.current;
+      if (accessToken && pendingRefresh?.accessToken === accessToken) {
+        await pendingRefresh.promise;
+      }
+      authSessionVersionRef.current += 1;
+      clearAuthState(authSessionVersionRef.current);
+      try {
+        await fetch("/api/auth/logout", {
           method: "POST",
-          body: JSON.stringify({ refreshToken }),
-          skipAuth: true,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          body: JSON.stringify({}),
+          cache: "no-store",
         });
+      } catch (error) {
+        if (getApiRequestError(error)?.status !== 401) {
+          console.error("Error al cerrar sesión:", error);
+        }
       }
-    } catch (error) {
-      if (getApiRequestError(error)?.status !== 401) {
-        console.error("Error al cerrar sesión:", error);
-      }
+    })();
+    authTerminationInFlightRef.current = operation;
+    try {
+      await operation;
+    } finally {
+      if (authTerminationInFlightRef.current === operation) authTerminationInFlightRef.current = null;
     }
   };
 
@@ -1005,22 +1087,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logoutAll = async () => {
-    const sessionVersion = authSessionVersionRef.current;
-    try {
-      await apiFetch("/Auth/logout-all", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-      if (sessionVersion !== authSessionVersionRef.current) {
-        return { ok: false, message: "La sesión cambió antes de completar el cierre." };
+    const ongoing = authTerminationInFlightRef.current;
+    if (ongoing) {
+      await ongoing;
+      return { ok: false, message: "El cierre de sesión ya está en curso." };
+    }
+    const operation = (async (): Promise<{ ok: boolean; message?: string }> => {
+      const sessionVersion = authSessionVersionRef.current;
+      const accessToken = tokensRef.current?.accessToken;
+      try {
+        const pendingRefresh = refreshInFlightRef.current;
+        if (accessToken && pendingRefresh?.accessToken === accessToken) {
+          await pendingRefresh.promise;
+        }
+        const response = await fetch("/api/auth/logout-all", {
+          method: "POST",
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+          body: JSON.stringify({}),
+          cache: "no-store",
+        });
+        if (!response.ok) throw await buildApiError(response);
+        if (sessionVersion !== authSessionVersionRef.current) {
+          return { ok: false, message: "La sesión cambió antes de completar el cierre." };
+        }
+        authSessionVersionRef.current += 1;
+        clearAuthState(authSessionVersionRef.current);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          message: getApiRequestError(error)?.message ?? "No se pudo cerrar sesión en los demás dispositivos",
+        };
       }
-      await logout();
-      return { ok: true };
-    } catch (error) {
-      return {
-        ok: false,
-        message: getApiRequestError(error)?.message ?? "No se pudo cerrar sesión en los demás dispositivos",
-      };
+    })();
+    authTerminationInFlightRef.current = operation;
+    try {
+      return await operation;
+    } finally {
+      if (authTerminationInFlightRef.current === operation) authTerminationInFlightRef.current = null;
     }
   };
 

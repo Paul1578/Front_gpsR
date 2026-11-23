@@ -1224,3 +1224,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `TeamManagement` confirma la acción, llama por `FleetContext`, actualiza Driver/Equipo y enseña errores de conflicto. E2E amplía CRUD de chofer a cancelación + persistencia de desvinculación y responsive 320/768.
 - Local Front: lint/build, Playwright discovery **51 tests** y diff-check pasan. El commit/Action integrada aún debe ejecutarse; comprobar cleanup y respuestas API/MySQL.
 - La prueba de FE sobre recuento HTTP usa GET de persistencia después de cancelar; el backend smoke prueba unlink real, rol conservado y tokens invalidados.
+# Handoff vigente — sesión BFF HttpOnly — 2026-11-23
+
+- Ramas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; `main` intacta. No se cambió backend en esta fase.
+- BFF implementado en `src/app/api/auth/`: login, refresh, migrate, logout y logout-all. Cookie `fletflow_refresh` HttpOnly, SameSite Strict, Path `/api/auth`, Secure fuera de Development. AuthContext sólo guarda access en memoria y migra `auth_tokens` legado. Logout espera refresh en vuelo; refresh concurrentes se deduplican.
+- Las rutas leen guías locales Next 16 para Route Handlers y `cookies()` antes de implementarse. Backend sigue recibiendo Bearer para el resto de endpoints.
+- Errores y fixes están en `ERROR_LOG.md`: Origin local 127 vs canonicalización de `localhost`; `route.continue` saltaba fixtures compartidos; registro temporal local respondió 429. No quedaron fixtures QA en MySQL (`fletflow`: 0 prefijos E2E).
+- Verificación actual: lint/build OK; discovery 54; focales 4/4; curl same-origin no-cookie 401 y origen atacante 403. Primera suite local no válida (48 fallos por bugs de integración ahora corregidos); la reejecución completa fue detenida antes de pruebas por el límite de registro local. Se requiere Action completa Front con API/MySQL descartables.
+- Continuar: revisar diff final, añadir resultado/errores de Actions, corregir y repetir hasta verde; actualizar `PROJECT_STATUS.md`, `TESTING.md`, `SECURITY.md`, `ARCHITECTURE.md`, `CHANGELOG.md` y este handoff. No declarar terminada la misión integral.

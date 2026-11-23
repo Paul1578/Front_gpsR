@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("Mapa reintenta la carga y muestra nombres legibles de vehículo y conductor", async ({ page }) => {
   let failRoutes = true;
@@ -64,7 +64,7 @@ test("Mapa reintenta la carga y muestra nombres legibles de vehículo y conducto
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {

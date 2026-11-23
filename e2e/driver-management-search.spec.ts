@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, readAccessToken, test } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 
@@ -52,10 +52,7 @@ test("Admin busca conductores en la pantalla operativa a 320 y 768 px", async ({
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  accessToken = (await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  })) ?? undefined;
+  accessToken = await readAccessToken(page);
   expect(accessToken).toBeTruthy();
   const headers = { Authorization: `Bearer ${accessToken}` };
   const documentNumber = `E2E${randomUUID().replaceAll("-", "").slice(0, 17)}`;
@@ -104,10 +101,7 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  accessToken = (await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  })) ?? undefined;
+  accessToken = await readAccessToken(page);
   expect(accessToken).toBeTruthy();
   const headers = { Authorization: `Bearer ${accessToken}` };
 

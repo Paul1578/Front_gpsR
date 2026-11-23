@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("pantallas de recuperación, restablecimiento y activación son claras y responsive", async ({ page }) => {
   for (const viewport of [{ width: 320, height: 844 }, { width: 768, height: 1024 }]) {

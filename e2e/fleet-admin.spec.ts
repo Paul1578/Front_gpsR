@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Request } from "@playwright/test";
+import { expect, readAccessToken, test, type Locator, type Request } from "./fixtures";
 import { randomUUID } from "node:crypto";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
@@ -16,6 +16,55 @@ const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
+
+test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const initialStorage = await page.evaluate(() => localStorage.getItem("auth_tokens"));
+  const clientCookie = await page.evaluate(() => document.cookie);
+  expect(initialStorage).toBeNull();
+  expect(clientCookie).not.toContain("fletflow_refresh");
+
+  const origin = new URL(page.url()).origin;
+  const initialCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(initialCookie).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/api/auth" });
+  if (process.env.CI === "true") expect(initialCookie?.secure).toBe(true);
+  expect(initialCookie?.expires).toBeGreaterThan(Date.now() / 1000);
+
+  const rejectedCrossOrigin = await page.request.post(`${origin}/api/auth/refresh`, {
+    headers: { Origin: "https://attacker.invalid" },
+    data: {},
+  });
+  expect(rejectedCrossOrigin.status()).toBe(403);
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(initialCookie?.value);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  const rotatedAccess = await readAccessToken(page);
+  expect(rotatedAccess).toBeTruthy();
+  const rotatedCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(rotatedCookie?.value).toBeTruthy();
+  expect(rotatedCookie?.value).not.toBe(initialCookie?.value);
+  expect(await page.evaluate(() => localStorage.getItem("auth_tokens"))).toBeNull();
+  expect(await page.evaluate(() => document.cookie)).not.toContain("fletflow_refresh");
+
+  const reusedRefresh = await page.request.post("/api/backend/Auth/refresh", {
+    data: { refreshToken: initialCookie!.value },
+  });
+  expect(reusedRefresh.status()).toBe(401);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
+});
 
 async function clickMapAwayFromMarkers(map: Locator) {
   const page = map.page();
@@ -161,10 +210,7 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const meResponse = await request.get("/api/backend/Auth/me", { headers });
@@ -196,10 +242,7 @@ test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByText("Rutas Activas", { exact: true })).toBeVisible();
 
-  const dashboardToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const dashboardToken = await readAccessToken(page);
   expect(dashboardToken).toBeTruthy();
   const dashboardHeaders = { Authorization: `Bearer ${dashboardToken}` };
   const [routesResponse, vehiclesResponse] = await Promise.all([
@@ -285,10 +328,7 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const meResponse = await page.request.get("/api/backend/Auth/me", {
     headers: { Authorization: `Bearer ${token}` },
@@ -364,10 +404,7 @@ test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -673,7 +710,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     await expect(card).toContainText("Disponible");
     await page.unroute(`**/api/backend/Vehicles/${vehicleId}/status`);
     const authHeaders = {
-      Authorization: `Bearer ${await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}`,
+      Authorization: `Bearer ${await readAccessToken(page)}`,
     };
     const partialVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
     expect(partialVehicle.status()).toBe(200);
@@ -794,10 +831,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -1095,10 +1129,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -1339,10 +1370,7 @@ test("Admin crea un traslado que el Driver inicia y completa desde Mi Ruta", asy
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -1430,10 +1458,7 @@ test("Admin crea un traslado que el Driver inicia y completa desde Mi Ruta", asy
     await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
     await expect(page.getByText(routeName, { exact: true })).toBeVisible();
-    const driverToken = await page.evaluate(() => {
-      const serialized = localStorage.getItem("auth_tokens");
-      return serialized ? JSON.parse(serialized).accessToken as string : null;
-    });
+    const driverToken = await readAccessToken(page);
     expect(driverToken).toBeTruthy();
     const driverHeaders = { Authorization: `Bearer ${driverToken}` };
     const driverRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: driverHeaders });
@@ -1530,10 +1555,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -1685,7 +1707,7 @@ test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", as
         });
         return;
       }
-      await route.continue();
+      await route.fallback();
     });
 
     const failedSavePromise = page.waitForResponse((response) =>
@@ -1757,7 +1779,7 @@ test("Admin combina filtros de rutas y restablece la lista", async ({ page }) =>
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const token = await page.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string);
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = randomUUID().replaceAll("-", "").slice(0, 9);
@@ -1894,10 +1916,7 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
   await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const [vehiclesResponse, routesResponse] = await Promise.all([
@@ -2221,7 +2240,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       );
       await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
       expect((await setManagerMaintenance).status()).toBe(204);
-      const managerAuthHeaders = { Authorization: `Bearer ${await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` };
+      const managerAuthHeaders = { Authorization: `Bearer ${await readAccessToken(managerPage)}` };
       const persistedManagerUiVehicle = await managerPage.request.get(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerAuthHeaders });
       expect(persistedManagerUiVehicle.status()).toBe(200);
       expect(await persistedManagerUiVehicle.json()).toMatchObject({ plate: uiPlate, brand: "Manager editado", status: 2 });
@@ -2259,7 +2278,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await expectManagerNoOverflow();
       const driverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
       expect(driverCardDimensions.scroll).toBeLessThanOrEqual(driverCardDimensions.client);
-      const managerDriverAuthHeaders = { Authorization: `Bearer ${await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken)}` };
+      const managerDriverAuthHeaders = { Authorization: `Bearer ${await readAccessToken(managerPage)}` };
       const managerDriverRead = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
       expect(managerDriverRead.status()).toBe(200);
       expect(await managerDriverRead.json()).toMatchObject({ documentNumber: managerDriverDocument, userId: null, vehicleId: null });
@@ -2429,7 +2448,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await expectManagerNoOverflow();
     } finally {
       if (managerBlockerDriverId) {
-        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        const token = await readAccessToken(managerPage).catch(() => null);
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
           const currentBlocker = await managerPage.request.get(`/api/backend/Drivers/${managerBlockerDriverId}`, { headers }).catch(() => null);
@@ -2445,7 +2464,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
         }
       }
       if (managerUiDriverId) {
-        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        const token = await readAccessToken(managerPage).catch(() => null);
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
           const currentDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers }).catch(() => null);
@@ -2461,7 +2480,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
         }
       }
       if (managerVehicleId) {
-        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        const token = await readAccessToken(managerPage).catch(() => null);
         if (token) {
           await managerPage.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -2533,10 +2552,7 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
     await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    const managerToken = await page.evaluate(() => {
-      const serialized = localStorage.getItem("auth_tokens");
-      return serialized ? JSON.parse(serialized).accessToken as string : null;
-    });
+    const managerToken = await readAccessToken(page);
     expect(managerToken).toBeTruthy();
     headers = { Authorization: `Bearer ${managerToken}` };
     const assignmentOptionsResponse = await page.request.get("/api/backend/Routes/assignment-options", { headers });
@@ -2688,10 +2704,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const adminToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const adminToken = await readAccessToken(page);
   expect(adminToken).toBeTruthy();
   const headers = { Authorization: `Bearer ${adminToken}` };
   const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
@@ -2748,10 +2761,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     await logisticsPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
     await logisticsPage.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(logisticsPage).toHaveURL(/\/dashboard$/);
-    const logisticsToken = await logisticsPage.evaluate(() => {
-      const serialized = localStorage.getItem("auth_tokens");
-      return serialized ? JSON.parse(serialized).accessToken as string : null;
-    });
+    const logisticsToken = await readAccessToken(logisticsPage);
     expect(logisticsToken).toBeTruthy();
     const logisticsHeaders = { Authorization: `Bearer ${logisticsToken}` };
     const assignmentOptionsResponse = await logisticsPage.request.get(
@@ -3085,7 +3095,7 @@ test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite rei
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(driverEmail!);
@@ -3169,10 +3179,7 @@ test("Driver sólo ve su operación, persiste evidencia fotográfica y la API pr
   await expect(page.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
 
-  const driverToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const driverToken = await readAccessToken(page);
   expect(driverToken).toBeTruthy();
   const headers = { Authorization: `Bearer ${driverToken}` };
   const vehiclesResponse = await page.request.get("/api/backend/Vehicles", { headers });
@@ -3565,10 +3572,7 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const ownerToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const ownerToken = await readAccessToken(page);
   expect(ownerToken).toBeTruthy();
   const ownerHeaders = { Authorization: `Bearer ${ownerToken}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -3831,10 +3835,7 @@ test("Admin crea cuentas, cambia roles y promueve a Admin desde Equipo", async (
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -3996,10 +3997,7 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -4066,7 +4064,7 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
           body: JSON.stringify({ message: "El correo ya está registrado" }),
         });
       } else {
-        await route.continue();
+        await route.fallback();
       }
     });
     await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
@@ -4445,11 +4443,11 @@ test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", 
       await expect(targetPage).toHaveURL(/\/dashboard$/);
     }
 
-    const secondRefreshToken = await secondPage.evaluate(() => {
-      const serialized = localStorage.getItem("auth_tokens");
-      return serialized ? JSON.parse(serialized).refreshToken as string : null;
-    });
-    expect(secondRefreshToken).toBeTruthy();
+    const secondAccessToken = await readAccessToken(secondPage);
+    const secondOrigin = new URL(secondPage.url()).origin;
+    const secondRefreshCookie = (await secondContext.cookies(secondOrigin)).find((cookie) => cookie.name === "fletflow_refresh");
+    expect(secondRefreshCookie?.httpOnly).toBe(true);
+    expect(secondRefreshCookie?.sameSite).toBe("Strict");
 
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
@@ -4457,16 +4455,13 @@ test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", 
     await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
     await expect(page).toHaveURL(/\/login$/);
 
-    const revokedRefresh = await page.request.post("/api/backend/Auth/refresh", {
-      data: { refreshToken: secondRefreshToken },
+    const secondRefresh = await secondPage.evaluate(async () => {
+      const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+      return response.status;
     });
-    expect(revokedRefresh.status()).toBe(401);
-    await expect.poll(() => secondPage.evaluate(() => localStorage.getItem("auth_tokens"))).toBeTruthy();
+    expect(secondRefresh).toBe(401);
     const secondSessionCheck = await secondPage.request.get("/api/backend/Auth/me", {
-      headers: { Authorization: `Bearer ${await secondPage.evaluate(() => {
-        const serialized = localStorage.getItem("auth_tokens");
-        return serialized ? JSON.parse(serialized).accessToken as string : "";
-      })}` },
+      headers: { Authorization: `Bearer ${secondAccessToken}` },
     });
     expect(secondSessionCheck.status()).toBe(401);
   } finally {
@@ -4485,11 +4480,7 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const previousRefreshToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).refreshToken as string : null;
-  });
-  expect(previousRefreshToken).toBeTruthy();
+  const previousAccessToken = await readAccessToken(page);
 
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
@@ -4518,10 +4509,15 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await expect(page).toHaveURL(/\/login$/);
   await page.setViewportSize({ width: 320, height: 844 });
 
-  const refreshAfterPasswordChange = await page.request.post("/api/backend/Auth/refresh", {
-    data: { refreshToken: previousRefreshToken },
+  const refreshAfterPasswordChange = await page.evaluate(async () => {
+    const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+    return response.status;
   });
-  expect(refreshAfterPasswordChange.status()).toBe(401);
+  expect(refreshAfterPasswordChange).toBe(401);
+  const revokedAccess = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${previousAccessToken}` },
+  });
+  expect(revokedAccess.status()).toBe(401);
   const oldPasswordLogin = await page.request.post("/api/backend/Auth/login", {
     data: { email: userEmail, password: userPassword },
   });
@@ -4531,10 +4527,7 @@ test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", as
   await page.getByRole("textbox", { name: "Contraseña" }).fill(newPassword);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const newSessionToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const newSessionToken = await readAccessToken(page);
   expect(newSessionToken).toBeTruthy();
 });
 
@@ -4550,11 +4543,7 @@ test("desactivar un usuario desde Equipo revoca su sesión y refresh token", asy
     await userPage.getByRole("textbox", { name: "Contraseña" }).fill(deactivationUserPassword!);
     await userPage.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(userPage).toHaveURL(/\/dashboard$/);
-    const userTokens = await userPage.evaluate(() => {
-      const serialized = localStorage.getItem("auth_tokens");
-      return serialized ? JSON.parse(serialized) as { accessToken: string; refreshToken: string } : null;
-    });
-    expect(userTokens?.refreshToken).toBeTruthy();
+    const userAccessToken = await readAccessToken(userPage);
 
     await page.goto("/login");
     await page.getByLabel("Correo electrónico").fill(email!);
@@ -4581,12 +4570,13 @@ test("desactivar un usuario desde Equipo revoca su sesión y refresh token", asy
     await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
     expect((await deactivateResponse).status()).toBe(200);
 
-    const rejectedRefresh = await page.request.post("/api/backend/Auth/refresh", {
-      data: { refreshToken: userTokens!.refreshToken },
+    const rejectedRefresh = await userPage.evaluate(async () => {
+      const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+      return response.status;
     });
-    expect(rejectedRefresh.status()).toBe(401);
+    expect(rejectedRefresh).toBe(401);
     const rejectedAccess = await page.request.get("/api/backend/Auth/me", {
-      headers: { Authorization: `Bearer ${userTokens!.accessToken}` },
+      headers: { Authorization: `Bearer ${userAccessToken}` },
     });
     expect(rejectedAccess.status()).toBe(401);
   } finally {

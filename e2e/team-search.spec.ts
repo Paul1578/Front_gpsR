@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, readAccessToken, test } from "./fixtures";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -13,10 +13,7 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const pagedResult = (items: unknown[], page = 1) => ({
   items,
@@ -65,7 +65,7 @@ test("Gestión de Equipo explica el fallo de vehículos y bloquea la asignación
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -158,7 +158,7 @@ test("Dashboard de Logistics muestra error de opciones de flota y recupera al re
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -275,7 +275,7 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -384,7 +384,7 @@ test("Gestión de Rutas muestra carga antes de error/vacío y recupera rutas al 
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -471,7 +471,7 @@ test("Gestión de Rutas distingue asignaciones no cargadas y permite recuperar e
       await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -537,18 +537,17 @@ test("FleetContext descarta una respuesta pendiente de una cuenta anterior", asy
       return;
     }
 
-    if (request.method() === "POST" && url.pathname.endsWith("/Auth/logout")) {
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/logout")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
       return;
     }
 
-    if (request.method() === "POST" && url.pathname.endsWith("/Auth/login")) {
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/login")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           accessToken: "account-b-access-token",
-          refreshToken: "account-b-refresh-token",
           user: {
             id: "fleet-owner-b",
             email: "owner-b@example.test",
@@ -608,7 +607,7 @@ test("FleetContext descarta una respuesta pendiente de una cuenta anterior", asy
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -696,17 +695,32 @@ test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión
       return;
     }
 
-    if (request.method() === "POST" && url.pathname.endsWith("/Auth/refresh")) {
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/migrate")) {
       const body = request.postDataJSON() as { refreshToken?: string };
       if (body.refreshToken === "auth-account-a-refresh") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "Set-Cookie": "fletflow_e2e_mock_access=auth-account-a-token; Path=/api/auth; HttpOnly; SameSite=Strict" },
+          body: JSON.stringify({ accessToken: "auth-account-a-token" }),
+        });
+      } else {
+        await route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+      }
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/refresh")) {
+      const cookie = request.headers().cookie ?? "";
+      if (cookie.includes("fletflow_e2e_mock_access=auth-account-a-token")) {
         notifyAccountARefresh();
         await accountARefreshGate;
         await route.fulfill({
           status: 200,
           contentType: "application/json",
+          headers: { "Set-Cookie": "fletflow_e2e_mock_access=auth-account-a-refreshed-token; Path=/api/auth; HttpOnly; SameSite=Strict" },
           body: JSON.stringify({
             accessToken: "auth-account-a-refreshed-token",
-            refreshToken: "auth-account-a-refreshed-refresh",
             user: {
               id: "auth-owner-a",
               email: "auth-a@example.test",
@@ -718,24 +732,31 @@ test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión
             },
           }),
         }).catch(() => {});
+      } else if (cookie.includes("fletflow_e2e_mock_access=auth-account-b-token")) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ accessToken: "auth-account-b-token" }) });
       } else {
         await route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
       }
       return;
     }
 
-    if (request.method() === "POST" && url.pathname.endsWith("/Auth/logout")) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
-      return;
-    }
-
-    if (request.method() === "POST" && url.pathname.endsWith("/Auth/login")) {
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/logout")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
+        headers: { "Set-Cookie": "fletflow_e2e_mock_access=; Path=/api/auth; HttpOnly; SameSite=Strict; Max-Age=0" },
+        body: "{}",
+      });
+      return;
+    }
+
+    if (request.method() === "POST" && url.pathname.endsWith("/api/auth/login")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "Set-Cookie": "fletflow_e2e_mock_access=auth-account-b-token; Path=/api/auth; HttpOnly; SameSite=Strict" },
         body: JSON.stringify({
           accessToken: "auth-account-b-token",
-          refreshToken: "auth-account-b-refresh",
           user: {
             id: "auth-owner-b",
             email: "auth-b@example.test",
@@ -760,7 +781,7 @@ test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -781,14 +802,16 @@ test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión
   await page.getByLabel("Correo electrónico").fill("auth-b@example.test");
   await page.getByRole("textbox", { name: "Contraseña" }).fill("test-password");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page.getByText("Auth B", { exact: false })).toBeVisible();
-
   releaseAccountARefresh();
   await expect(page.getByText("Auth B", { exact: false })).toBeVisible();
+  await expect.poll(async () => {
+    const cookies = await page.context().cookies();
+    return cookies.find((cookie) => cookie.name === "fletflow_e2e_mock_access")?.value;
+  }).toBe("auth-account-b-token");
+  await expect(page.getByText("Auth B", { exact: false })).toBeVisible();
   await expect.poll(() => page.evaluate(() => {
-    const tokens = localStorage.getItem("auth_tokens");
-    return tokens ? JSON.parse(tokens).accessToken : null;
-  })).toBe("auth-account-b-token");
+    return localStorage.getItem("auth_tokens");
+  })).toBeNull();
   await expect(page.getByText("Auth A", { exact: false })).toHaveCount(0);
 });
 
@@ -868,7 +891,7 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -969,7 +992,7 @@ test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ 
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -1078,7 +1101,7 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -1258,7 +1281,7 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -1394,7 +1417,7 @@ test("Historial evita consultas duplicadas si vuelve el foco durante una carga",
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -1513,7 +1536,7 @@ test("Gestión de Conductores informa y permite recuperar errores de Drivers y V
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {

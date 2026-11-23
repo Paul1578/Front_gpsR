@@ -902,3 +902,8 @@ Fecha de actualización: 2026-11-22.
 - Backend `chore/stabilize-fleet-platform` `c7c198d`: añadió `PUT /Drivers/{id}/unlink-user`, conserva User/Driver/rol, bloquea rutas activas e invalida access/refresh tokens. xUnit Release **144/144** pasa localmente; Action backend y smoke HTTP/MySQL en curso.
 - Front añade confirmación explícita, estado inmediato y sincronización de Equipo/Conductores. E2E existente ahora cancela y confirma el unlink a 320/768 px, verifica API que el perfil sigue activo sin `userId` y que la cuenta continúa con rol Driver.
 - `npm run lint`, `npm run build`, descubrimiento **51 E2E** y `git diff --check` pasan localmente. Falta Action Front con API/MySQL y cleanup.
+# Corte actualizado — 2026-11-23 — Sesiones
+
+- Nueva protección BFF: refresh en cookie HttpOnly, access en memoria, Origin same-origin, no-store y migración legacy. Cinco Route Handlers compilan.
+- Validación local: lint/build OK; cuatro E2E focales pasan; el suite completo autenticado queda pendiente por el rate limit de registro del API local tras una corrida fallida de origen ya corregida. Ver `ERROR_LOG.md` y `SESSION_HANDOFF.md`.
+- Pendiente inmediato: publicar Front feature branch y completar Action limpia con MySQL/API temporales antes de dar esta iteración por terminada.

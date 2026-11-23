@@ -1,4 +1,4 @@
-import { expect, test, type Request } from "@playwright/test";
+import { expect, readAccessToken, test, type Request } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -18,10 +18,7 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const token = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const token = await readAccessToken(page);
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
   const meResponse = await page.request.get("/api/backend/Auth/me", { headers });
@@ -233,7 +230,7 @@ test("Admin delegado no puede crear ni promover usuarios al rol Admin en Adminis
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await page.addInitScript(() => {
@@ -321,10 +318,7 @@ test("Admin delegado real no ve ni puede crear/promover otro Admin", async ({ pa
   await page.getByRole("textbox", { name: "Contraseña" }).fill(delegatedAdminPassword!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const browserToken = await page.evaluate(() => {
-    const serialized = localStorage.getItem("auth_tokens");
-    return serialized ? JSON.parse(serialized).accessToken as string : null;
-  });
+  const browserToken = await readAccessToken(page);
   expect(browserToken).toBeTruthy();
   const browserIdentityResponse = await page.request.get("/api/backend/Auth/me", {
     headers: { Authorization: `Bearer ${browserToken}` },
@@ -363,7 +357,7 @@ test("Administración distingue fallos de carga de una empresa vacía y permite 
       });
       return;
     }
-    await route.continue();
+    await route.fallback();
   });
 
   await page.setViewportSize({ width: 390, height: 844 });

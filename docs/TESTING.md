@@ -791,3 +791,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `git diff --check`: pasó.
 - Se alineó el fallback Next a `http://localhost:5046` (perfil ASP.NET); se agregó `.env.example` ignorado correctamente para otros orígenes. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó audit/lint/build, responsive 1/1, E2E autenticado 53/53, Backend Release/xUnit 158/158, API/MySQL y cleanup.
 - Smoke local con el `.env.local` existente (override de desarrollo): `/dashboard` en `:3000` respondió 200, `/api/backend/Auth/me` respondió 401 sin sesión y Swagger respondió 200 en la API `:5048`. El perfil default `:5046` coincide con `Properties/launchSettings.json`; no se modificó el `.env.local` existente.
+# Sesión BFF HttpOnly — 2026-11-23
+
+- Añadido E2E autenticado para comprobar que el refresh token no está en localStorage ni es visible a JavaScript, cookie HttpOnly/SameSite/path/expiración, rechazo de Origin externo, rotación (reuso anterior recibe 401), restauración tras reload y limpieza al logout.
+- `npm run lint`, `npm run build` (Next 16.4.6/TypeScript) y `git diff --check` pasan. Playwright descubre **54 tests**.
+- Playwright focal de mocks y concurrencia: **4/4** (dashboard, reintento de mapa, error Equipo, refresh tardío al cambiar de cuenta). HTTP local de CSRF: mismo origen sin cookie **401**, origen externo **403**.
+- Suite autenticada inicial local no es válida para aceptación: 48 fallos por Origin incorrecto en Next Development y handlers E2E apilados que omitían fixture; ambos están corregidos y los focales pasan. El segundo intento fue detenido antes de Playwright por 429 de registro del API local. Suite/API/MySQL completa pendiente de Actions con proceso y DB descartables.

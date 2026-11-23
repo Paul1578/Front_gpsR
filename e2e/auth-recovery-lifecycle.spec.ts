@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const resetEmail = process.env.FLETFLOW_E2E_RESET_EMAIL;
 const resetPassword = process.env.FLETFLOW_E2E_RESET_PASSWORD;

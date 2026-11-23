@@ -20,6 +20,7 @@
 - Dos expresiones `jq` para resumir el estado de Actions tuvieron errores de forma (`Cannot index array with string jobs` y `Cannot index string with status`); se simplificaron las expresiones y la lectura de estado quedó operativa. No afectaron las ejecuciones de CI.
 - Se consultó por error la Action Backend `45196512845` desde el checkout Front y GitHub respondió 404; repetir siempre la consulta desde `/home/leonardo/Back_GPS`. La acción Front se consultó desde el checkout correcto.
 - En una lectura Backend se usaron rutas `Api/` y `Application/` desde la raíz, aunque las carpetas reales están bajo `fletflow/` y `Aplication/`; `rg` informó ruta inexistente. `rg --files` dio las ubicaciones correctas antes de inspeccionar código.
+- Una auditoría de agente con HEAD Front antiguo reportó como ausentes los E2E de promoción Admin desde Gestión de Equipo y de edición de paradas. La conclusión se corrigió al revisar `fleet-admin.spec.ts` en HEAD actual: ambos flujos ya están cubiertos y pasaron en `45195812271` (53/53). Prevención: contrastar siempre hallazgos de auditoría con la rama/HEAD presente antes de llamarlos brechas vigentes.
 
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 
@@ -1852,3 +1853,19 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Primer intento: el mock de mapa omitía `/Vehicles`, `/Drivers` y `/Users/my-team`; solicitudes de inicialización quedaron sin mock, se invalidó la sesión temporal y el test acabó en Login. Tras añadir respuestas de colección vacía, la sesión quedó estable.
 - Segundo intento: se buscó el botón móvil `Abrir menú` con el viewport por defecto de escritorio. El test ahora fija 390×844 px antes de navegar.
 - Prevención: los E2E con Auth mock deben cubrir también las cargas globales de FleetContext, y fijar el viewport antes de usar controles adaptativos.
+
+## 2026-11-23 — Migración a cookie HttpOnly: errores de integración y correcciones
+
+- La primera validación `npm run lint` falló porque ESLint confundió el callback `use` del fixture Playwright con un Hook; también encontró una variable reasignable y un tipo de test no reexportado. Se corrigió el nombre local del callback con excepción acotada, se usó `const` y el fixture exporta `Locator`/`Request`. Lint y build pasan.
+- El primer E2E integrado local reportó 48 fallos. Las trazas confirmaron que el origen `127.0.0.1` era rechazado porque Next Development normalizaba `request.url` a `localhost`; además, handlers E2E amplios usaban `route.continue()` y saltaban los mocks compartidos de migración/refresh. El login real y los tests mock quedaban en Login.
+- Solución: validar Origin contra el host/protocolo de la solicitud (incluidos `x-forwarded-host`/`x-forwarded-proto` del proxy) y usar `route.fallback()` en los interceptores apilados. Verificación HTTP local: mismo origen `127.0.0.1` sin cookie responde 401; origen externo responde 403. Los E2E focales Dashboard, mapa, Equipo y refresh tardío pasan **4/4**.
+- Al reintentar el suite completo local, el registro de una nueva cuenta QA respondió 429 antes de iniciar Playwright por el límite de registro de 5 solicitudes/10 minutos/IP. El runner y el trap confirmaron cero usuarios, vehículos y rutas E2E residuales; el suite no se ejecutó en ese intento. CI usa una base/proceso nuevos.
+- Prevención: contrastar Origin con el host externo real en Next Development y respetar el encadenamiento de routes de Playwright. No reintentar registros repetidamente en una instancia local con rate limit; usar el runner CI con MySQL temporal para la suite completa.
+
+## 2026-11-23 — Preflight local apuntó a rutas/credenciales equivocados — RESUELTO
+
+- Una búsqueda de controller se ejecutó desde Front con una raíz Backend inexistente y una consulta MySQL inicial usó `root` sin `MYSQL_PWD`; ambas fallaron antes de leer/modificar datos. También se consultó `auth-recovery-lifecycle.spec.ts` desde Backend en vez de Front.
+- Solución: usar el repositorio correcto (`fletflow/Api/Controllers`, `/home/leonardo/Front_gpsR/e2e`) y autenticar la lectura MySQL con el usuario/contraseña local de `.env`. El preflight confirmó base `fletflow`, cinco usuarios, dos cuentas raíz, cero fixtures E2E preexistentes. La limpieza confirmó cero usuarios, vehículos ni rutas de fixtures después del runner.
+- Prevención: revisar `workdir`, resolver archivos con `rg --files` y establecer explícitamente `MYSQL_PWD` desde configuración local sin imprimir su valor.
+
+- Un E2E consultó `context.cookies(origin)` para una cookie con `Path=/api/auth`; Playwright filtra las cookies por la ruta `/dashboard` y devolvió `undefined`. Se cambió la inspección de atributos de seguridad a `context.cookies()` sin URL; el test de carrera de refresh/login pasó 1/1. `git diff --check` también encontró un salto vacío al final de `PROJECT_STATUS.md`; se normalizó a una sola nueva línea.

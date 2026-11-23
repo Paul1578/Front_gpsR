@@ -854,3 +854,8 @@
 - El README ya no afirma que la cobertura de fotos/tenant esté pendiente y explica cómo cambiar el origen del proxy.
 - Lint/build/diff-check locales pasan; CI integrado pendiente.
 - Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó: audit/lint/build, responsive 1/1, E2E 53/53, Backend Release/xUnit 158/158, API/MySQL y cleanup.
+# 2026-11-23 — Protección de sesión frontend
+
+- Se añadió BFF same-origin para login, refresh, migración, logout y logout global. Refresh token ahora usa cookie HttpOnly/SameSite Strict con alcance `/api/auth`; access token queda en memoria.
+- Se conserva el contrato backend Bearer para otras llamadas y clientes móviles futuros. Se añade migración de sesiones legacy, deduplicación de refresh y espera de refresh pendiente antes de logout.
+- Se adaptan E2E para no leer tokens de localStorage y se agrega cobertura de atributos de cookie, CSRF y rotación. Full CI autenticada pendiente.
