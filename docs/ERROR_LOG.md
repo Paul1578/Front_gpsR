@@ -1648,3 +1648,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El E2E responsive de Driver leyó `GET /Drivers` inmediatamente tras el click, antes de esperar el POST de creación; en un retry observó la carrera y no encontró el registro.
 - Correcciones: exigir que `gerente` exista y esté disabled; buscar el estado OSRM en `page`; esperar el POST de Driver y su HTTP 201 antes del GET persistido.
 - Prevención: verificar el contrato real de roles y contención DOM; sincronizar aserciones de persistencia con la respuesta que confirma escritura antes de releer. Nueva Action pendiente.
+
+## 2026-11-23 — Dos regiones `role=status` hicieron ambiguo el E2E OSRM — CORREGIDO LOCALMENTE
+
+- Action `45122569784`: **50/51**. El mapa muestra correctamente el estado OSRM de éxito, pero también el aviso de tracking “Sin posiciones registradas”; `getByRole("status")` resolvía ambos elementos y causaba strict-mode violation.
+- Corrección: el E2E localiza el copy exacto “Trayecto por carretera calculado.”. Prevención: usar nombre/copy específico cuando una pantalla contiene múltiples regiones live. Action del SHA corregido pendiente.

@@ -659,3 +659,5 @@
 - El mapa informa “Trayecto por carretera calculado” ante geometría OSRM válida y conserva el mensaje de trayecto estimado cuando se usa fallback. El E2E prueba ese resultado observable en vez de contar segmentos SVG simplificados por Leaflet. Validación integrada pendiente.
 
 - Ajustadas expectativas según contrato real: el rol Admin propio se muestra deshabilitado a delegados, el estado OSRM está fuera del contenedor Leaflet, y la lectura de Driver espera HTTP 201 antes de GET. Revalidación integrada pendiente.
+
+- El E2E OSRM identifica el estado exitoso por su texto exacto para desambiguarlo del banner de tracking simultáneo. Action `45122569784`: 50/51; nueva Action requerida.

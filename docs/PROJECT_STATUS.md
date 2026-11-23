@@ -686,3 +686,8 @@ Fecha de actualización: 2026-11-22.
 
 - **48/51 E2E**. El mapa recibió mock OSRM pero el locator buscaba el estado dentro del elemento Leaflet; se movió al nivel de página. Admin delegado conserva visible su opción de rol propio, deshabilitada; E2E ahora valida `disabled`. El CRUD Driver espera HTTP 201 antes de leer persistencia y corrige una carrera observada en retry.
 - Fixes en branch; lint/build y siguiente Action API/MySQL pendientes.
+
+## Resultado Front Action 45122569784
+
+- **50/51 E2E**, incluyendo API/MySQL real y limpieza; lint/build, responsive y backend Release/xUnit pasaron. Admin delegado y ciclo Driver ya pasaron tras las correcciones anteriores.
+- Único fallo: selector genérico `role=status` ambiguo por estado OSRM y banner de tracking simultáneos. Reemplazado por copy exacto del estado OSRM; repetir Action completa.

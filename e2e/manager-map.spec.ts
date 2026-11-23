@@ -151,7 +151,7 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
     const routeButton = routeList.getByRole("button").filter({ hasText: routeName });
     await expect(routeButton).toBeVisible();
     await routeButton.click();
-    await expect(page.getByRole("status")).toHaveText("Trayecto por carretera calculado.");
+    await expect(page.getByText("Trayecto por carretera calculado.", { exact: true })).toBeVisible();
     const selectedSummary = page.getByText("Ruta seleccionada", { exact: true }).locator("..");
     await expect(selectedSummary).toContainText(routeName);
     await expect(selectedSummary).toContainText(`Vehículo: ${vehicleId!.slice(0, 8)}…`);
