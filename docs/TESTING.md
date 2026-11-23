@@ -12,11 +12,11 @@
 - `theme-preference.spec.ts` inicia sesión con Admin descartable, cambia el switch en Mi Perfil, recarga y verifica clase del documento y `localStorage`; luego cambia a claro y comprueba lo mismo.
 - El switch ahora tiene el nombre accesible “Modo oscuro”. Action [`45113527889`](https://github.com/Paul1578/Front_gpsR/actions/runs/45113527889) pasó **50/50**, responsive **1/1**, audit/lint/build y cleanup. Verificó persistencia oscuro/claro en navegador real con API/MySQL desechables.
 
-## 2026-11-23 — Horario planificado al editar rutas — Action pendiente
+## 2026-11-23 — Horario planificado al editar rutas — validado en CI
 
 - La auditoría encontró que edición enviaba `fechaInicio/fechaFin: undefined`; el adaptador los transformaba en `plannedStart/plannedEnd: null`, y backend persistía la pérdida.
 - Se quitaron esas claves del payload de edición. El E2E de edición existente ahora verifica vía GET que las fechas originales permanecen tanto tras editar en tablet como en móvil.
-- Lint/build y discovery **50 tests** pasan localmente; falta validar la regresión contra API/MySQL en Action.
+- Front Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930) pasó **50/50**, responsive **1/1**, audit/lint/build, backend Release/xUnit, API/MySQL y cleanup. El E2E verificó `plannedStart/plannedEnd` preservados por GET tras editar en tablet y móvil.
 
 ## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
 

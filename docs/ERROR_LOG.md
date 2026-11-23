@@ -1587,8 +1587,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La primera versión del setup del test reescribía `light` en cada navegación; al recargar habría borrado la preferencia que se quería comprobar. El setup ahora crea el valor inicial sólo si no existe.
 - Prevención: fixtures de estado inicial deben ser idempotentes y no sobrescribir el estado persistido entre navegaciones. Front Action `45113527889` pasó **50/50**, incluyendo el ciclo tema oscuro/claro después de recarga.
 
-## 2026-11-23 — Edición de ruta borraba fechas planificadas — CORREGIDO; E2E PENDIENTE
+## 2026-11-23 — Edición de ruta borraba fechas planificadas — CORREGIDO Y VALIDADO
 
 - `RoutesManagement` enviaba `fechaInicio` y `fechaFin` como `undefined`; `updateRoute` combinaba ese patch sobre la ruta y `FleetContext` serializaba `plannedStart/plannedEnd` como `null`. El backend aceptaba y persistía la pérdida.
 - La edición ahora omite esos campos para preservar fechas cargadas. El E2E de edición consulta de nuevo la ruta tras los cambios tablet/móvil y compara ambas fechas con el horario original.
-- Prevención: no incluir claves opcionales con valor `undefined` en updates parciales; comprobar persistencia de todos los campos fuera del formulario. Lint/build locales pasan; Action API/MySQL pendiente.
+- Prevención: no incluir claves opcionales con valor `undefined` en updates parciales; comprobar persistencia de todos los campos fuera del formulario. Action `45114492930` pasó **50/50** y confirmó el horario conservado tras editar desde tablet y móvil.

@@ -623,8 +623,8 @@
 - El switch de tema de Perfil ahora expone el nombre accesible “Modo oscuro”. Nuevo E2E comprueba persistencia en `localStorage` y apariencia tras recarga al activar oscuro y volver a claro.
 - Lint/build y discovery **50** pasan localmente. Action [`45113527889`](https://github.com/Paul1578/Front_gpsR/actions/runs/45113527889) confirmó el flujo dentro de **50/50 E2E**, responsive **1/1** y cleanup API/MySQL.
 
-## 2026-11-23 — Preservación del horario de ruta durante edición — Action pendiente
+## 2026-11-23 — Preservación del horario de ruta durante edición — VALIDADO EN CI
 
 - La edición enviaba las fechas planificadas como `undefined`; el adaptador producía `null` y backend las guardaba, borrando el horario.
 - La UI ahora omite esos campos al editar y hereda los valores existentes. El E2E de rutas verifica vía GET que inicio y fin se mantienen en ediciones tablet y móvil.
-- Lint/build y discovery **50** pasan localmente; falta Action integrada API/MySQL.
+- Lint/build y discovery **50** pasan localmente. Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930) pasó **50/50**, responsive **1/1**, API/MySQL y cleanup, comprobando inicio/fin tras cada edición.
