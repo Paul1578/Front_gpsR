@@ -5,7 +5,7 @@
 - Prevención: los tests de autenticación deben seguir el flujo real de invitación/activación o usar fixtures QA habilitados explícitamente por el runner descartable. `IsActive=true` por sí solo no limpia `MustChangePassword`.
 - Una revisión independiente recomendó comprobar explícitamente el efecto del UPDATE temporal. El runner ahora verifica `IsActive:MustChangePassword=1:0` y muestra el estado si el fixture no quedó habilitado.
 - La Action integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) permitió el login y ejecutó **66/67**, pero el único test agotó 180 s al intentar dar de baja un Driver: la UI pide confirmación y el E2E no la aceptaba. También faltaba confirmar la baja en el caso tablet. Solución: aceptar `Sí, dar de baja` en ambos puntos y ampliar a 360 s el flujo CRUD completo.
-- Validación final: Action [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792) pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Localmente lint/build, discovery de 67 y diff-check pasan.
+- Validación final: Action [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) sobre los HEADs documentales pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Localmente lint/build, discovery de 67 y diff-check pasan.
 
 ## 2026-11-23 — Listado y polling repetían payloads Base64 — CORREGIDO LOCALMENTE
 

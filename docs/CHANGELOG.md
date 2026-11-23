@@ -2,7 +2,7 @@
 
 - La revisión E2E encontró dos errores consecutivos: Logistics invitado no podía iniciar sesión con `MustChangePassword=true`; tras corregir el fixture, el flujo Manager agotó 180 s porque no confirmaba el AlertDialog al dar de baja Driver.
 - Backend runner crea Logistics y verifica `IsActive:MustChangePassword=1:0` en MySQL desechable; Front usa el fixture, confirma ambas bajas en mobile/tablet y da 360 s al CRUD completo.
-- `npm run lint`, `npm run build`, discovery **67** y diff-check pasan localmente. Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792) terminó success con **67/67 E2E**, responsive 1/1, audit/lint/build, Backend Release/xUnit 165/165 y teardown API/MySQL.
+- `npm run lint`, `npm run build`, discovery **67** y diff-check pasan localmente. Action [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) probó los HEADs documentales y pasó **67/67 E2E**, responsive 1/1, audit/lint/build, Backend Release/xUnit 165/165 y teardown API/MySQL.
 
 ## 2026-11-23 — DTO frontend refleja contenido opcional de imagen
 
