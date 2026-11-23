@@ -4488,6 +4488,33 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
 
   await teamMemberCard.getByRole("button", { name: `Editar usuario e2e${suffix}` }).click();
   const editDriverUserDialog = page.getByRole("dialog");
+  await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} no guardado`);
+  await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
+  await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);
+  const profileUpdatePattern = "**/api/backend/Users/*/profile";
+  await page.route(profileUpdatePattern, async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "No se pudo guardar el perfil por mantenimiento" }),
+    });
+  });
+  const failedProfileSave = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/Users/${createdUser.id}/profile`) &&
+    response.request().method() === "PUT" && response.status() === 503,
+  );
+  await editDriverUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  await failedProfileSave;
+  await expect(page.getByText("No se pudo guardar el perfil por mantenimiento")).toBeVisible();
+  await expect(editDriverUserDialog).toBeVisible();
+  await expect(editDriverUserDialog.getByLabel("Nombres")).toHaveValue(`${firstName} no guardado`);
+  const profileAfterFailedSave = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(profileAfterFailedSave.status()).toBe(200);
+  const unchangedMember = (await profileAfterFailedSave.json() as Array<{ id: string; firstName: string; lastName: string; username: string }>)
+    .find((member) => member.id === createdUser.id);
+  expect(unchangedMember).toMatchObject({ id: createdUser.id, firstName, lastName, username: `e2e${suffix}` });
+  await page.unroute(profileUpdatePattern);
+
   await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} desde usuario`);
   await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
   await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);

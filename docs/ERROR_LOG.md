@@ -5,6 +5,7 @@
 - El primer build aislado en `/tmp` no resolvió Next porque Next 16 rechaza `node_modules` enlazado fuera de la raíz; `cp -al` entre `/tmp` y `/home` también falló por estar en dispositivos distintos. Se eliminó el worktree fallido y se recreó junto al repositorio, en el mismo filesystem; hardlinks funcionaron y el build production pasó.
 - Validación posterior contra el servidor production aislado: E2E de gestión/error de vehículos 1/1. No se detuvo ni modificó el proceso del usuario en el puerto 3000.
 - El primer inventario también consultó directorios inexistentes (`tests`, `src/components`) y usó `find` con sintaxis `-type` inválida; fueron lecturas fallidas sin cambios. Se localizaron los specs desde `e2e/` y se respetó `src/Components/`.
+- Una consulta read-only buscó `scripts/run-e2e-local.sh` en el checkout Front y después un spec E2E bajo Backend; no hubo edición. Se corrigió separando por raíz: el runner pertenece a `Back_GPS/scripts/` y los specs al Front `e2e/`.
 - El shell bloqueó `rm -f` para limpiar un parche temporal; se resolvió con `unlink` del archivo puntual. No se borraron archivos del repositorio.
 - Prevención: obtener y comprobar puerto libre/servidor reutilizable antes de CI local; ubicar worktrees de build en el mismo filesystem que dependencias, o instalar dependencias dentro de la raíz aislada.
 

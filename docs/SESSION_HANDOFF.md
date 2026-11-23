@@ -1,3 +1,10 @@
+## Continuación activa — cobertura UX/CRUD — 2026-11-23
+
+- Ramas actuales: Front `refactor/route-builder` con commit publicado `78b7974`; Backend `chore/stabilize-fleet-platform` con docs `5c53dd0`. `main` intacta.
+- Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
+- Diff local posterior amplía E2E de edición Driver: induce 503 en PUT, comprueba alerta, formulario conservado y GET sin mutación, luego completa el guardado real. Lint y discovery 69 pasan; su Action está pendiente.
+- Siguiente: `git diff --check`, publicar y probar el diff de perfil. Después cubrir filtros de rutas a 320 px y contenido largo/controles de Equipo y Perfil. No cerrar auditoría integral aún.
+
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
 
 - En `refactor/route-builder` se corrigió la visibilidad/invalidateSize del mapa Leaflet móvil y el índice del punto seleccionado al borrar/mover paradas. Al hacer clic en mapa se preserva `operation`/`status`; Action `45249048978` detectó que UI enseñaba Delivery pero el payload guardaba `None`.
@@ -1305,11 +1312,3 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - `.env.example`, README, SECURITY, ARCHITECTURE, CHANGELOG, TESTING, PROJECT_STATUS y ERROR_LOG actualizados. Falla inicial de build por asignar NODE_ENV readonly quedó corregida con Reflect y documentada.
 - Verificación local del diff actual: lint/build, handlers BFF **5/5**, discovery **67**, diff-check. Auth E2E integrado no se puede ejecutar localmente porque no hay credenciales descartables; CI Front debe probar los nuevos flujos y usar Backend `chore/stabilize-fleet-platform` más reciente.
 - Backend ya publicó `18fd6be` con JWT máximo de 15 minutos y contenedor non-root; Action de ese SHA está en curso. El smoke de DocumentNumber de `9d201e8` pasó Action backend `45220748028` (162/162 y 201/409 MySQL).
-## Continuación activa — verificación UX/responsive — 2026-11-23
-
-- Ramas: Front `refactor/route-builder` (`363a47f` como último HEAD publicado antes del lote local); Backend `chore/stabilize-fleet-platform` (`4993e3c`). `main` sigue intacta.
-- El Action Front [`45256408542`](https://github.com/Paul1578/Front_gpsR/actions/runs/45256408542) pasó en el HEAD publicado previo: 69 E2E, responsive, axe, audit/lint/build, Backend 165 xUnit, API/MySQL y teardown.
-- Diff local añade copy veraz en invitación, error/reintento de vehículos inactivos y verificaciones de visibilidad/navegación del Dashboard/mapa a 320 px. `npm run lint`, build production aislado y el E2E de carga de bajas (Next dev y production) pasan; Action para el diff actual aún no ejecutada.
-- No hay credenciales locales QA Admin; por eso el E2E autenticado de Dashboard/mapa queda para CI, donde el workflow genera su tenant/usuario descartable. No afirmar ese flujo como validado en local.
-- Siguiente: revisar diff, correr `git diff --check`, publicar commits en la rama existente, esperar Action integrada y corregir/documentar cada fallo. Después cubrir desde UI real el 403 de Admin delegado, fallo de edición de perfil y filtros de rutas a 320 px; continuar responsive de equipo/perfil con textos largos.
-- Agentes read-only revisaron Front CRUD/responsive y Backend autorización/tenant. Backend no reportó incumplimiento confirmado; el caso de Admin legado con owner nulo ya está señalado como riesgo de datos en su `docs/SECURITY.md` y requiere validar datos, no suponer una vulnerabilidad presente.
