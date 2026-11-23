@@ -2,6 +2,8 @@
 
 - `npm audit`: 0 vulnerabilidades.
 - NuGet `dotnet list ... --vulnerable --include-transitive`: sin hallazgos en Backend ni tests.
+- Front `6555858`: lint y build local pasaron; TypeScript y prerender de 11 páginas correctos.
+- Revisión de seguridad multiagente read-only no encontró bypass nuevo tenant/rol ni XSS explotable. `dangerouslySetInnerHTML` existe en chart genérico sin consumidores ni datos de usuario conectados; el riesgo de impacto por token `localStorage` queda explícito, sin confirmar una vulnerabilidad XSS.
 - Documentación sincronizada con Front Actions `45123444413`/`45124271067` y Backend Action `45127502896`; misión global abierta.
 
 # 2026-11-22 — Correcciones de QA para administración de empresa

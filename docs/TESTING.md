@@ -4,7 +4,9 @@
 
 - Frontend: `npm audit` — **0 vulnerabilidades**.
 - Backend: `PATH=/home/leonardo/.dotnet:$PATH dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` — sin paquetes vulnerables en `BackEnd_Gps` ni `BackEnd_Gps.Tests`.
+- Front HEAD documental `6555858`: `npm run lint` y `npm run build` pasaron; TypeScript correcto y 11 páginas estáticas generadas.
 - La última validación backend integrada es Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): Release build, xUnit **136/136**, smokes HTTP/MySQL y cleanup. Ver Backend `docs/TESTING.md` para forwarded headers.
+- Auditoría independiente de seguridad fue estática/read-only, no una prueba dinámica: no encontró un vector XSS ni bypass nuevo. La búsqueda encontró `dangerouslySetInnerHTML` en el chart genérico; no tiene consumidores en `src` ni datos de usuario conectados al contenido CSS. La verificación dinámica de aislamiento sigue respaldada por Actions/smokes HTTP/MySQL citados; el agente no los volvió a ejecutar.
 
 ## 2026-11-23 — Ciclo UI real de reset y activación — validado
 
