@@ -666,3 +666,5 @@
 
 - Indicador de cálculo vial exitoso y fallback estimado claros en el mapa. E2E reales de mapa Manager y Admin delegado quedaron estables; retries únicos, locators por contrato y sincronización de escritura corregidos.
 - Action Front [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413), código `f0acce7`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit, lint/build y teardown correctos.
+
+- Revalidación del HEAD documental `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) pasó todos los checks y 51/51 E2E.

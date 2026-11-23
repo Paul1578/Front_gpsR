@@ -584,3 +584,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Backend Release build/xUnit: success; audit de dependencias: success; `npm run lint`: success; `npm run build`: success.
 - Responsive browser: **1/1**. Playwright autenticado contra API y MySQL descartables: **51/51** en 3.6 minutos; se ejecutó con un worker y sin skips. La API y los contenedores se detuvieron correctamente tras el suite.
 - El manager map E2E valida OSRM exitoso con respuesta controlada de tres coordenadas y estado vial visible; Admin delegado conserva prohibición de crear/promover Admin (403) y UI deshabilita su rol propio; pruebas CRUD y cleanup incluidos.
+
+- Repetición en SHA documental final `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) success, con los mismos 51/51 E2E, responsive 1/1 y teardown.
