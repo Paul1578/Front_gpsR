@@ -719,3 +719,9 @@
 
 - La lista de usuarios en `SuperAdminView` pide confirmación accesible antes de persistir un rol; cancelar no modifica estado. Se añade nombre accesible al selector.
 - E2E raíz cubre cancelar/confirmar Admin, lectura persistida y restauración a Driver; viewport 320/768. Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) pasó **51/51 E2E**, responsive 1/1, Backend Release/xUnit y cleanup.
+
+## 2026-11-23 — CI integrado de seguridad y operación
+
+- Action Front [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262): success con 51/51 E2E, responsive 1/1, backend Release/xUnit 139/139, audit, lint/build y cleanup.
+- Validó aislamiento cross-tenant, promoción root-only con confirmación y persistencia, baja lógica de ruta y flujo de mapa.
+- Backend docs `fa4a3a3`: Actions push/PR 45154037990 y 45154028662 success.

@@ -652,3 +652,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - La vista Administración raíz requiere confirmar los cambios de rol. Su E2E selecciona Admin, cancela y comprueba cero PUT y rol Driver intacto; luego confirma, verifica persistencia, restaura Driver y verifica la respuesta.
 - El mismo listado/selector se valida sin overflow ni ocultamiento a 320×844 y 768×1024.
 - Lint/build/discovery 51 pasan localmente. Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) confirmó **51/51 E2E**, responsive 1/1, backend Release/xUnit y cleanup.
+
+## Admin root, aislamiento tenant y rutas — CI integrado 2026-11-23
+
+- Front Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262), SHA `d002a93`: success; backend Release/xUnit **139/139**, dependency audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **51/51**, API y contenedores cerrados.
+- E2E verificó cambios cross-tenant rechazados sin alterar los datos; la cuenta raíz promovió y luego restauró el rol de un fixture con confirmación y lectura persistida; la baja de ruta se confirmó mediante lectura API.
+- Backend `fa4a3a3` validado en Actions push `45154037990` y pull request `45154028662`, ambos success.

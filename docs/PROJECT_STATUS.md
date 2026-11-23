@@ -749,3 +749,10 @@ Fecha de actualización: 2026-11-22.
 - Backend branch `chore/stabilize-fleet-platform` continúa en `341161d`; Action Backend `45119396803` success. La misión integral sigue abierta por criterios restantes documentados en este archivo y por la limitación SMTP.
 
 - Confirmación del SHA final documental `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) también success; ejecutó 51/51 E2E, responsive 1/1, backend Release/xUnit y cleanup.
+
+## Verificación de Admin root, tenant y baja de ruta — CI 2026-11-23
+
+- Front SHA documental `d002a93`, Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262): success; backend Release/xUnit **139/139**, audit, lint/build, responsive browser **1/1**, E2E API/MySQL **51/51** y teardown.
+- Se confirmaron denegaciones cross-tenant de perfil/estado/rol sin mutación, promoción de rol desde cuenta raíz con confirmación UI/persistencia, restauración del fixture y baja lógica persistida de ruta.
+- Backend SHA documental `fa4a3a3`, Actions [45154037990](https://github.com/Paul1578/Back_GPS/actions/runs/45154037990) y [45154028662](https://github.com/Paul1578/Back_GPS/actions/runs/45154028662): push y PR success.
+- Misión integral abierta: continuar los criterios CRUD, permisos, responsive y pruebas aún marcados pendientes; SMTP y configuración productiva externa siguen delimitados.

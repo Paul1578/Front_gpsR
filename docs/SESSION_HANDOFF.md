@@ -1069,3 +1069,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Continuar la misión desde los pendientes de `PROJECT_STATUS.md`; no declarar terminado el producto global.
 
 - El HEAD documental final `1d7b922` fue validado de nuevo por Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067): success, 51/51, responsive 1/1, backend Release/xUnit y cleanup correcto.
+
+## Continuación — validación integrada de permisos y rutas — 2026-11-23
+
+- Front Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262) terminó success en `d002a93`: backend Release/xUnit 139/139, audit, lint/build, responsive 1/1, E2E API/MySQL 51/51 y teardown.
+- Comprobó aislamiento por tenant en cambios de User, promoción root-only con confirmación/cancelación y persistencia, baja lógica de rutas, geometría OSRM y responsive 320/768/desktop.
+- Backend docs HEAD `fa4a3a3` pasó los Actions push/PR `45154037990` y `45154028662`. Se actualizará esta sincronización en el próximo commit Front; continuar misión global abierta desde los pendientes actuales.
