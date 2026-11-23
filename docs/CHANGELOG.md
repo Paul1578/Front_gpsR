@@ -591,9 +591,9 @@
 ## 2026-11-23 — Cleanup de fixtures verificado en CI
 
 - La FK `Routes.DriverId` ya no deja Drivers QA huérfanos al limpiar. Action Front `45103761122` confirma 43/43 E2E, responsive y cleanup en MySQL descartable.
-## 2026-11-23 — Control Admin raíz, tracking vacío y estados de carga — CI pendiente
+## 2026-11-23 — Control Admin raíz, tracking vacío y estados de carga — VALIDADO EN CI
 
 - Admin delegado no puede crear/promover el rol Admin en Administración heredada; la opción aparece sólo para la cuenta raíz.
 - El mapa señala explícitamente ausencia de posiciones reales y distingue ruta planificada de tracking GPS.
 - Gestión de Equipo muestra error/reintento si falla carga de vehículos y bloquea la asignación hasta recuperarlos. Dashboard ya diferencia carga inicial de vacío/error para métricas.
-- Lint/build correctos; E2E focal 3/3. Requiere publicar y ejecutar Action API/MySQL; la prueba E2E del mapa requiere fixture de backend.
+- Lint/build correctos; E2E focal 3/3. Action `45107030228` pasó Release/xUnit, audit/lint/build, responsive 1/1 y API/MySQL **45/45**, con el escenario de mapa incluido.
