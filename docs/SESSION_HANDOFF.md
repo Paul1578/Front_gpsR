@@ -3,11 +3,18 @@
 - Front `refactor/route-builder` HEAD `f71ae7d` pasó Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423): Release/xUnit, audit/lint/build, responsive 1/1, API/MySQL **46/46**, limpieza y teardown exitosos.
 - Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.
 - `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; se corrigió la colisión con Next anterior en `:3000` ejecutando en servidor limpio `:3010`. La Action confirmó el test nuevo dentro de los 46 escenarios.
-- Backend rama `chore/stabilize-fleet-platform` HEAD `3db7f03`; `main` sigue intacta. SMTP real, proxies/rate limit distribuido y persistencia Data Protection dependen del entorno productivo.
+- Backend rama `chore/stabilize-fleet-platform` HEAD `06078cd`; Action documental `45109126972` pasó. `main` sigue intacta. SMTP real, proxies/rate limit distribuido y persistencia Data Protection dependen del entorno productivo.
 - Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.
 - Decisiones de usuario: raíz solamente otorga Admin; móvil nativo pospuesto; las cuentas pueden ser rutas de traslado.
 - Pendiente global: revisar criterios de cobertura restantes en `PROJECT_STATUS.md`; configuración SMTP, Data Protection persistente, proxy/IP confiable y rate limiter distribuido requieren entorno/secretos de despliegue. No afirmar misión integral completa.
 - Las notas anteriores que siguen son historial de trabajo y pueden describir estados/decisiones ya superados; usar este bloque y el inicio de `PROJECT_STATUS.md` como fuente actual.
+
+## Próximos E2E de autenticación y administración — 2026-11-23
+
+- Revisión independiente read-only sobre los **46** escenarios detectó brechas de evidencia: `/recovery/password`, `/reset-password`, `/activate-account`; verificar descarga de exportación de la empresa; persistencia del modo oscuro; y responsive de recuperación/reset/activación en 320×844 y 768×1024.
+- Root-only ya tiene comprobación de backend HTTP/MySQL en `scripts/smoke-tenant-http.sh`; la prueba Front de opciones de Admin delegado usa API simulada. Si se amplía, usar DB descartable y confirmar persistencia/403 por API.
+- Recuperación de usuario permanece deshabilitada intencionalmente porque no existe endpoint backend. SMTP real está excluido; no declarar envío exitoso al probar recuperación/activación.
+- No se confirmó un bug en estos hallazgos estáticos. Priorizar una cobertura E2E real de recuperación y activación que lea tokens del outbox de la DB efímera; después descarga, responsive y tema.
 
 ## Cierre de validación Front — 2026-11-23
 

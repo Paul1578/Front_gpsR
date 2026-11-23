@@ -4,13 +4,14 @@
 - La tanda arregla Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones mientras Vehicles tiene error y distingue carga inicial de vacío en dashboard. El nuevo test confirma que el Dashboard no presenta cifras cero/actividad vacía antes de completar la lectura. Lint sin warnings, build, discovery 46 y focal **4/4** también pasan localmente.
 - `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 46 escenarios pasaron.
 - El primer intento reutilizó un proceso Next anterior en `:3000`; al usar `:3010`, el webServer seguía arrancando fijo en `:3000`. Configuración corregida y E2E repetido con servidor de producción limpio.
-- Backend activo `chore/stabilize-fleet-platform` HEAD `3db7f03`; main intacta. Decisiones confirmadas: rutas de traslado permitidas; paradas pickup/delivery/both; sólo raíz otorga Admin; móvil nativo pospuesto.
+- Backend activo `chore/stabilize-fleet-platform` HEAD `06078cd`; su Action documental [`45109126972`](https://github.com/Paul1578/Back_GPS/actions/runs/45109126972) pasó Release/xUnit 133/133 y smokes HTTP/MySQL. El último Front documental `862f64a` pasó Action [`45109125961`](https://github.com/Paul1578/Front_gpsR/actions/runs/45109125961), 46/46 E2E y responsive 1/1.
 - Decisiones confirmadas por el usuario: rutas pueden ser traslados sin operaciones; paradas admiten recogida, entrega o ambas; sólo la cuenta raíz puede otorgar/promover Admin; móvil nativo queda para una fase posterior.
 - Front Action [`45104448741`](https://github.com/Paul1578/Front_gpsR/actions/runs/45104448741) pasó: audit/lint/build, responsive **1/1**, E2E API/MySQL **43/43** y cleanup. Incluye traslado, mapa, disponibilidad de conductores y confirmaciones de cambios de equipo.
 - Backend Action [`45104450114`](https://github.com/Paul1578/Back_GPS/actions/runs/45104450114) pasó; Backend `45103732510` también pasó la corrección de cleanup. Release xUnit **133/133**; smoke tenant HTTP/MySQL y concurrencia.
 - Backend limita recuperación a 5 solicitudes/10 min/IP; tokens 256 bits, TTL 60 min por defecto (1–1440), URLs Production HTTPS. Login: 10 solicitudes/min/IP. Sin bloqueo por cuenta.
 - Pendientes externos/de producción: SMTP con credenciales vigentes; límites distribuidos e IP confiable detrás de proxy; persistencia del key ring Data Protection.
 - Misión global sigue abierta para completar y reevaluar cobertura funcional/roles/responsive más allá de la matriz E2E existente; no presentar esta fase como cierre de toda la plataforma.
+- Auditoría independiente: la UI no tiene aún pruebas end-to-end para recuperación/restablecimiento/activación, descarga real de exportación ni persistencia del tema; tampoco responsive de esas vistas. Son escenarios sin evidencia, no bugs confirmados. La política root-only sí está verificada por el smoke HTTP/MySQL del backend; el test Front de UI delegado es simulado.
 
 ## Historial de estado — 2026-11-22
 
