@@ -47,11 +47,6 @@ const validPoint = (point: PickerPoint | null) =>
 
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
   const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, routesLoading, retryFleetData } = useFleet();
-  const drivers = routeAssignmentDrivers.map((driver) => ({
-    driverKey: driver.id,
-    nombres: driver.firstName,
-    apellidos: driver.lastName,
-  }));
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -80,6 +75,14 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     destination: null as PickerPoint | null,
     status: "pendiente" as RouteStatus,
   });
+  const drivers = routeAssignmentDrivers
+    .filter((driver) => driver.isAvailable !== false || driver.id === formData.driverId)
+    .map((driver) => ({
+      driverKey: driver.id,
+      nombres: driver.firstName,
+      apellidos: driver.lastName,
+      isAvailable: driver.isAvailable !== false,
+    }));
 
   const availableVehicles = routeAssignmentVehicles.filter(
     (vehicle) =>
@@ -959,7 +962,8 @@ function RouteBuilder({
                   options={drivers.map((d: any) => ({
                     value: d.driverKey,
                     label: `${d.nombres} ${d.apellidos}`,
-                  detail: "Conductor activo",
+                    detail: d.isAvailable ? "Disponible" : "En una ruta en curso",
+                    disabled: !d.isAvailable && d.driverKey !== formData.driverId,
                   }))}
                 />
               </div>
@@ -1144,7 +1148,7 @@ function ResourceSelect({ icon, label, value, onChange, options }: any) {
       >
         <option value="">Seleccionar {label.toLowerCase()}</option>
         {options.map((option: any) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} disabled={option.disabled}>
             {option.label} · {option.detail}
           </option>
         ))}

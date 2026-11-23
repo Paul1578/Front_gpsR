@@ -564,3 +564,10 @@
 - El detalle muestra recogida, entrega, operación combinada y estado por parada.
 - El estado vacío espera la respuesta inicial. Polling y foco no ejecutan solicitudes simultáneas que puedan aplicar datos fuera de orden.
 - E2E enfocado 2/2; lint/build pasan localmente. Action pendiente.
+
+## 2026-11-23 — Disponibilidad de conductores y confirmaciones operativas
+
+- Las opciones de asignación indican conductores ocupados en una ruta `InProgress` y bloquean su selección en el constructor; servicio backend devuelve `isAvailable`.
+- Se permite y prueba un traslado de origen a destino con puntos `None` y sin paradas operativas.
+- Gestión de Equipo confirma cambio de rol y activación/desactivación; diálogos se desplazan en viewports de poca altura.
+- Límite de recuperación 5/10 min/IP, tokens reset de 256 bits/TTL 60 min y URLs seguras por ambiente en backend.

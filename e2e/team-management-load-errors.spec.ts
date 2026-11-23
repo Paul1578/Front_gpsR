@@ -890,6 +890,170 @@ test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ 
   await expect(memberCard.getByRole("button", { name: "Gerente", exact: true })).toHaveCount(0);
 });
 
+test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sólo al confirmar", async ({ page }) => {
+  test.setTimeout(60_000);
+  let persistedMember = {
+    id: "member-confirmation-1",
+    email: "maria@example.test",
+    username: "maria",
+    firstName: "María Fernanda del Valle de los Ángeles",
+    lastName: "Pérez Alcántara y Rodríguez",
+    roles: ["User"],
+    isActive: true,
+  };
+  let roleRequests = 0;
+  let statusRequests = 0;
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "confirmation-admin-id",
+          email: "admin@example.test",
+          username: "admin",
+          firstName: "Admin",
+          roles: ["Admin"],
+          isRootAccount: true,
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([persistedMember]) });
+      return;
+    }
+
+    if (request.method() === "PUT" && url.pathname.endsWith(`/Users/${persistedMember.id}/role`)) {
+      roleRequests += 1;
+      const payload = request.postDataJSON() as { roleName: string };
+      persistedMember = { ...persistedMember, roles: [payload.roleName] };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedMember) });
+      return;
+    }
+
+    if (request.method() === "PUT" && url.pathname.endsWith(`/Users/${persistedMember.id}/status`)) {
+      statusRequests += 1;
+      persistedMember = { ...persistedMember, isActive: url.searchParams.get("isActive") === "true" };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedMember) });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: "playwright-confirmation-access-token",
+      refreshToken: "playwright-confirmation-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  const memberCard = page.getByTestId(`team-user-${persistedMember.id}`);
+  await expect(memberCard).toBeVisible();
+
+  await page.setViewportSize({ width: 320, height: 360 });
+  await memberCard.getByRole("button", { name: "Activo", exact: true }).click();
+  const deactivateDialog = page.getByRole("alertdialog");
+  await expect(deactivateDialog).toContainText(persistedMember.firstName);
+  await expect(deactivateDialog).toContainText("perderá acceso a FleetFlow");
+  const deactivateBounds = await deactivateDialog.boundingBox();
+  expect(deactivateBounds).not.toBeNull();
+  expect(deactivateBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(deactivateBounds!.x + deactivateBounds!.width).toBeLessThanOrEqual(320);
+  expect(deactivateBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(deactivateBounds!.y + deactivateBounds!.height).toBeLessThanOrEqual(360);
+  const cancelButton = deactivateDialog.getByRole("button", { name: "Cancelar", exact: true });
+  const cancelBounds = await cancelButton.boundingBox();
+  if (cancelBounds && cancelBounds.y + cancelBounds.height > 360) {
+    await deactivateDialog.evaluate((dialog) => { dialog.scrollTop = dialog.scrollHeight; });
+  }
+  await expect(cancelButton).toBeInViewport();
+  await cancelButton.click();
+  await expect(deactivateDialog).toHaveCount(0);
+  expect(statusRequests).toBe(0);
+  expect(persistedMember.isActive).toBe(true);
+  await expect(memberCard.getByRole("button", { name: "Activo", exact: true })).toBeVisible();
+
+  await memberCard.getByRole("button", { name: "Activo", exact: true }).click();
+  const lowHeightDialog = page.getByRole("alertdialog");
+  const lowHeightBounds = await lowHeightDialog.boundingBox();
+  expect(lowHeightBounds).not.toBeNull();
+  expect(lowHeightBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(lowHeightBounds!.x + lowHeightBounds!.width).toBeLessThanOrEqual(320);
+  expect(lowHeightBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(lowHeightBounds!.y + lowHeightBounds!.height).toBeLessThanOrEqual(360);
+  const confirmDeactivation = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/Users/${persistedMember.id}/status`) && response.request().method() === "PUT",
+  );
+  const confirmDeactivationButton = lowHeightDialog.getByRole("button", { name: "Sí, desactivar cuenta" });
+  const confirmBounds = await confirmDeactivationButton.boundingBox();
+  if (confirmBounds && confirmBounds.y + confirmBounds.height > 360) {
+    await lowHeightDialog.evaluate((dialog) => { dialog.scrollTop = dialog.scrollHeight; });
+  }
+  await expect(confirmDeactivationButton).toBeInViewport();
+  await confirmDeactivationButton.click();
+  expect((await confirmDeactivation).status()).toBe(200);
+  await expect(memberCard.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
+  expect(persistedMember.isActive).toBe(false);
+
+  await memberCard.getByRole("button", { name: "Inactivo", exact: true }).click();
+  const activateDialog = page.getByRole("alertdialog");
+  await expect(activateDialog).toContainText(persistedMember.firstName);
+  await expect(activateDialog).toContainText("podrá volver a iniciar sesión");
+  await activateDialog.getByRole("button", { name: "Sí, activar cuenta" }).click();
+  await expect(memberCard.getByRole("button", { name: "Activo", exact: true })).toBeVisible();
+  expect(statusRequests).toBe(2);
+  expect(persistedMember.isActive).toBe(true);
+
+  const logisticsRole = memberCard.getByRole("button", { name: "Logistica", exact: true });
+  await logisticsRole.click();
+  const roleDialog = page.getByRole("alertdialog");
+  await expect(roleDialog).toContainText(`${persistedMember.firstName} ${persistedMember.lastName} cambiará de Usuario a Logística`);
+  await expect(roleDialog).toContainText("podrá consultar el mapa y gestionar rutas");
+  await roleDialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+  expect(roleRequests).toBe(0);
+  expect(persistedMember.roles).toEqual(["User"]);
+  await expect(memberCard.getByRole("button", { name: "Usuario", exact: true })).toBeVisible();
+
+  await logisticsRole.click();
+  const confirmRoleChange = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/Users/${persistedMember.id}/role`) && response.request().method() === "PUT",
+  );
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+  expect((await confirmRoleChange).status()).toBe(200);
+  await expect(memberCard.getByRole("button", { name: "Logistica", exact: true })).toBeVisible();
+  expect(persistedMember.roles).toEqual(["Logistics"]);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.reload();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  const persistedCard = page.getByTestId(`team-user-${persistedMember.id}`);
+  await expect(persistedCard.getByRole("button", { name: "Logistica", exact: true })).toBeVisible();
+  await expect(persistedCard.getByRole("button", { name: "Activo", exact: true })).toBeVisible();
+  expect(roleRequests).toBe(1);
+  expect(statusRequests).toBe(2);
+});
+
 test("Historial distingue error de lista vacía y permite reintentar", async ({ page }) => {
   let failRouteHistory = false;
   let holdRouteResponses = false;

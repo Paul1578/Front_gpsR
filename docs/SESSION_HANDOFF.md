@@ -899,3 +899,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend `33e2499` Action `45096399172`: build Release, **120/120 xUnit**, aislamiento tenant y concurrencia HTTP/MySQL correctos; cleanup. `1e4a8e1` documentó la evidencia.
 - Decisiones aplicadas: traslado sin paradas permitido; claves nuevas de 12 caracteres; login 10/minuto por IP sin bloqueo por cuenta.
 - La misión general continúa abierta para criterios de CRUD/responsive restantes e infraestructura externa.
+
+## Lote actual — disponibilidad y operaciones seguras
+
+- Front `refactor/route-builder`: disponibilidad de conductor en constructor, confirmación de cambios de rol/estado, altura/scroll de diálogos, E2E de traslado sin paradas y pruebas de confirmación; local lint/build y discovery 43 pasan. No publicar como terminado hasta Actions.
+- Backend `chore/stabilize-fleet-platform`: rate limit recuperación 5/10 min/IP; token 256 bits; TTL 60 min por defecto (1–1440 validado); HTTPS obligatorio en URLs de email productivas. xUnit Release completo 133/133, build 0 warnings/errores, shell check y diff check pasan. Smoke HTTP/MySQL real pendiente de Actions.
+- Errores registrados: fixture con aridad incorrecta en `RouteE.Create` (corregido, test pasó); E2E de diálogo falló inicialmente al usar menú móvil a baja altura (flujo ajustado y 1/1 pasó).
+- Siguiente: revisar estado/diffs, commit y push de ambas ramas, observar Actions completas; corregir fallos y documentar IDs/resultados. No tocar `main`. SMTP, rate limiter distribuido, proxy confiable y Data Protection persistente quedan como limitaciones externas/productivas; misión global continúa abierta.

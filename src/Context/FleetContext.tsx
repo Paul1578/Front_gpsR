@@ -118,6 +118,7 @@ export interface RouteAssignmentDriver {
   firstName: string;
   lastName: string;
   userId: string | null;
+  isAvailable?: boolean;
 }
 
 interface FleetContextType {
@@ -277,6 +278,7 @@ type ApiRouteAssignmentOptions = {
     firstName: string;
     lastName: string;
     userId: string | null;
+    isAvailable?: boolean;
   }>;
 };
 

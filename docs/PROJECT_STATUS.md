@@ -619,3 +619,11 @@ Fecha de actualización: 2026-11-22.
 
 - Se implementa mínimo de 12 caracteres en claves nuevas de registro, cambio, activación y recuperación; los formularios indican la política. Las claves existentes no se invalidan.
 - La nueva Action `45094647703` falló sólo en el E2E nuevo de foco: el fixture no simulaba `/Routes/assignment-options`, se llamó al API real con token ficticio y AuthContext volvió al Login. Añadí el mock; targeted Historial pasa 2/2 local. Ver ERROR_LOG; nueva Action pendiente.
+
+## Constructor de rutas y confirmaciones — validación local pendiente de CI
+
+- El selector de asignación ahora identifica y deshabilita conductores ocupados por rutas en curso; el conductor ya seleccionado se conserva al editar. La API backend entrega `isAvailable` derivado de rutas `InProgress`.
+- El flujo permite traslados sin paradas operativas. E2E nuevo recorre origen/destino en tablet, confirma que los dos puntos usan operación `None` y consulta la ruta persistida por API.
+- Cambios de rol y activación/desactivación de cuentas requieren confirmación con impacto explicado. ConfirmDialog limita su altura y permite scroll en pantallas de 320×360.
+- Verificación local integrada: lint y build Next 16.4.6 pasan; Playwright descubre 43 E2E; test enfocado de Equipo 1/1 pasó (incluye persistencia interceptada, no backend real); `git diff --check` pasa. Suites API/MySQL reales pendientes de Actions tras publicar.
+- Primer intento del E2E de confirmación expiró porque el menú móvil ocultó Equipo; se ajustó para abrir el flujo en escritorio y probar diálogo en viewport bajo. Ver `ERROR_LOG.md`.

@@ -3,11 +3,34 @@ import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { toast } from "sonner";
 
 interface TeamManagementProps {
   onBack?: () => void;
 }
+
+type MemberConfirmation =
+  | { kind: "role"; userId: string; memberName: string; currentRole: UserRole; nextRole: UserRole }
+  | { kind: "status"; userId: string; memberName: string; nextActive: boolean };
+
+const roleLabels: Record<UserRole, string> = {
+  superadmin: "Super Admin",
+  gerente: "Gerente",
+  manager: "Gestor de flota",
+  logistica: "Logística",
+  chofer: "Chofer",
+  usuario: "Usuario",
+};
+
+const roleImpact: Record<UserRole, string> = {
+  superadmin: "tendrá acceso a las operaciones de la flota de la empresa.",
+  gerente: "podrá administrar el equipo, los vehículos, los conductores y las rutas.",
+  manager: "podrá gestionar vehículos, conductores y rutas, pero no administrar el equipo.",
+  logistica: "podrá consultar el mapa y gestionar rutas, sin administrar vehículos ni conductores.",
+  chofer: "podrá consultar y operar las rutas que tenga asignadas.",
+  usuario: "no tendrá permisos para operar la flota.",
+};
 
 export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const {
@@ -33,6 +56,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [editingUser, setEditingUser] = useState<{ id: string; username: string; firstName: string; lastName: string } | null>(null);
+  const [memberConfirmation, setMemberConfirmation] = useState<MemberConfirmation | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
@@ -148,6 +172,23 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       }
     } else {
       toast.error(result?.message ?? "No se pudo actualizar el rol");
+    }
+  };
+
+  const handleUserStatusChange = async (userId: string, isActive: boolean) => {
+    const result = await updateUserStatus(userId, isActive);
+    if (result.ok) toast.success(`Usuario ${isActive ? "activado" : "desactivado"}`);
+    else toast.error(result.message ?? "No se pudo actualizar el usuario");
+  };
+
+  const confirmMemberChange = () => {
+    const confirmation = memberConfirmation;
+    if (!confirmation) return;
+    setMemberConfirmation(null);
+    if (confirmation.kind === "role") {
+      void handleRoleChange(confirmation.userId, confirmation.nextRole);
+    } else {
+      void handleUserStatusChange(confirmation.userId, confirmation.nextActive);
     }
   };
 
@@ -689,13 +730,13 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                         <Pencil size={13} /> Editar
                       </button>
                       <button
-                        onClick={() => {
-                          const next = !user.isActive;
-                          void updateUserStatus(user.id, next).then((result) => {
-                            if (result.ok) toast.success(`Usuario ${next ? "activado" : "desactivado"}`);
-                            else toast.error(result.message ?? "No se pudo actualizar el usuario");
-                          });
-                        }}
+                        type="button"
+                        onClick={() => setMemberConfirmation({
+                          kind: "status",
+                          userId: user.id,
+                          memberName: `${user.nombres} ${user.apellidos}`.trim() || user.usuario,
+                          nextActive: !user.isActive,
+                        })}
                         className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900"
                       >
                         {user.isActive ? (
@@ -716,7 +757,15 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                       {assignableRoles.map((role) => (
                         <button
                           key={role}
-                          onClick={() => handleRoleChange(user.id, role)}
+                          type="button"
+                          disabled={user.role === role}
+                          onClick={() => setMemberConfirmation({
+                            kind: "role",
+                            userId: user.id,
+                            memberName: `${user.nombres} ${user.apellidos}`.trim() || user.usuario,
+                            currentRole: user.role,
+                            nextRole: role,
+                          })}
                           className={`px-3 py-2 rounded-lg border-2 transition-all text-xs ${
                             user.role === role
                               ? role === "superadmin"
@@ -940,6 +989,31 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={memberConfirmation !== null}
+        onClose={() => setMemberConfirmation(null)}
+        onConfirm={confirmMemberChange}
+        title={memberConfirmation?.kind === "role"
+          ? "Confirmar cambio de rol"
+          : memberConfirmation?.nextActive
+            ? "Confirmar activación"
+            : "Confirmar desactivación"}
+        description={memberConfirmation?.kind === "role"
+          ? `${memberConfirmation.memberName} cambiará de ${roleLabels[memberConfirmation.currentRole]} a ${roleLabels[memberConfirmation.nextRole]}. Con este rol ${roleImpact[memberConfirmation.nextRole]}`
+          : memberConfirmation?.nextActive
+            ? `Se activará la cuenta de ${memberConfirmation?.memberName}. La persona podrá volver a iniciar sesión y usar FleetFlow según los permisos de su rol.`
+            : `Se desactivará la cuenta de ${memberConfirmation?.memberName}. La persona perderá acceso a FleetFlow y sus sesiones activas dejarán de funcionar.`}
+        confirmText={memberConfirmation?.kind === "role"
+          ? "Confirmar cambio"
+          : memberConfirmation?.nextActive
+            ? "Sí, activar cuenta"
+            : "Sí, desactivar cuenta"}
+        cancelText="Cancelar"
+        variant={memberConfirmation?.kind === "status" && !memberConfirmation.nextActive
+          ? "destructive"
+          : "default"}
+      />
     </>
   );
 }

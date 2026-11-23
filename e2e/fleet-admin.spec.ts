@@ -1025,6 +1025,19 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     expect(vehicleResponse.status()).toBe(201);
     vehicleId = (await vehicleResponse.json()).id as string;
 
+    await page.route("**/Routes/assignment-options", async (route) => {
+      const response = await route.fetch();
+      const options = await response.json();
+      options.drivers.push({
+        id: "e2e-busy-driver",
+        firstName: "Conductor",
+        lastName: "Ocupado",
+        userId: null,
+        isAvailable: false,
+      });
+      await route.fulfill({ response, json: options });
+    });
+
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole("button", { name: "Abrir menú" }).click();
@@ -1082,6 +1095,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
     await page.locator("select").nth(0).selectOption(vehicleId!);
+    await expect(page.getByRole("option", { name: /Conductor Ocupado · En una ruta en curso/ })).toBeDisabled();
     await page.locator("select").nth(1).selectOption(driverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
@@ -1210,6 +1224,127 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
       }
     }
     expect(cleanupIssues, "El cleanup debe retirar ruta/vehículo y restaurar el Driver sin ocultar fallos").toEqual([]);
+  }
+});
+
+test("Admin crea una ruta de traslado sin paradas operativas en tablet", async ({ page }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA traslado ${suffix}`;
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Transfer test", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Traslado directo entre ubicaciones");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+
+    const map = page.locator(".leaflet-container");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen del traslado");
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.locator("xpath=../..").getByRole("button", { name: "Ubicar" }).click();
+    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino del traslado");
+    await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByRole("button", { name: "Agregar parada" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId!);
+    await page.locator("select").nth(1).selectOption(driverIdFixture!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(2);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen del traslado",
+      "Destino del traslado",
+    ]);
+
+    const createRoutePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createResponse = await createRoutePromise;
+    expect(createResponse.status()).toBe(201);
+    routeId = (await createResponse.json()).id as string;
+
+    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.points).toHaveLength(2);
+    const operationNames: Record<number, string> = { 0: "none", 1: "pickup", 2: "delivery", 3: "pickupanddelivery" };
+    expect(persistedRoute.points.map((point: { operation: number | string }) =>
+      typeof point.operation === "number" ? operationNames[point.operation] : point.operation.toLowerCase(),
+    )).toEqual(["none", "none"]);
+    await expect(page.getByRole("heading", { name: routeName, exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  } finally {
+    const cleanupIssues: string[] = [];
+    if (routeId) {
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
+        cleanupIssues.push(`No se pudo retirar la ruta temporal de traslado: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
+      }
+    }
+    if (vehicleId) {
+      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      if (currentDriverResponse?.status() !== 200) {
+        cleanupIssues.push(`No se pudo leer la asignación del Driver QA: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
+      } else if ((await currentDriverResponse.json()).vehicleId === vehicleId) {
+        const restoreAssignment = originalDriverVehicleId
+          ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+              headers,
+              data: { vehicleId: originalDriverVehicleId },
+            }).catch(() => null)
+          : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers }).catch(() => null);
+        if (restoreAssignment?.status() !== 204) {
+          cleanupIssues.push(`No se pudo restaurar la asignación previa del Driver: HTTP ${restoreAssignment?.status() ?? "sin respuesta"}`);
+        }
+      }
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (!cleanupVehicle || ![200, 204, 404].includes(cleanupVehicle.status())) {
+        cleanupIssues.push(`No se pudo retirar el vehículo temporal: HTTP ${cleanupVehicle?.status() ?? "sin respuesta"}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup debe retirar los recursos y restaurar la asignación del Driver").toEqual([]);
   }
 });
 

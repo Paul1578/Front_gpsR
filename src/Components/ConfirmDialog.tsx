@@ -34,7 +34,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
-      <AlertDialogContent className="max-w-[90%] sm:max-w-md">
+      <AlertDialogContent className="max-h-[calc(100dvh-2rem)] max-w-[90%] overflow-y-auto overscroll-contain sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-lg md:text-xl">{title}</AlertDialogTitle>
           <AlertDialogDescription className="text-sm md:text-base">{description}</AlertDialogDescription>

@@ -492,3 +492,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `npm run lint` y `npm run build` correctos con Next.js 16.4.6; la interfaz exige 12 caracteres en registro, cambio, activación y recuperación.
 - E2E Historial enfocado **2/2**; Playwright descubre **41 tests**; `git diff --check` correcto.
 - Action Front [`45096403768`](https://github.com/Paul1578/Front_gpsR/actions/runs/45096403768) pasó con **41/41 E2E**, responsive **1/1**, audit/lint/build y Backend Release/xUnit; limpieza correcta. El workflow confirmó el backend de la rama.
+
+## Constructor, seguridad de cuentas y disponibilidad
+
+- Playwright discovery local: 43 casos en seis archivos. Lint, build Next.js y `git diff --check` correctos.
+- E2E enfocado de confirmación de rol/estado: 1/1; verifica cancelación sin PUT, confirmación y el diálogo accesible en 320×360. API interceptada en el test, no backend real.
+- Caso de traslado sin paradas operativas y opción de conductor ocupado añadidos a `fleet-admin.spec.ts`; pendientes de ejecución integrada contra API/MySQL en Actions.
+- Backend Release xUnit: 133/133; build Release 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos. Incluye límites de recuperación, tokens y validación de URL.
+- Limitación local: API/backend no estaban escuchando; las pruebas funcionales API/MySQL se ejecutarán con el runner integrado.

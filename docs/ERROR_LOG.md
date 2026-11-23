@@ -1498,3 +1498,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Síntoma:** un comando `node -e` para extraer un resumen de estado terminó con error de sintaxis antes de leer los resultados.
 - **Causa:** comillas anidadas en el código inline chocaron con el quoting del shell.
 - **Solución/previsión:** para procesar JSON de CI, usar un script temporal o un heredoc con delimitadores claros; validar primero el comando con una entrada pequeña. No afecta archivos del repositorio ni resultados de pruebas.
+
+# 2026-11-23 — E2E de confirmación no accedía al botón en viewport bajo — CORREGIDO
+
+- **Síntoma:** primer intento del caso de Gestión de Equipo excedió el timeout al buscar el botón del equipo con viewport móvil.
+- **Causa:** la navegación colapsada dejaba el botón fuera de pantalla; no era un fallo del diálogo.
+- **Solución:** entrar a Gestión de Equipo en viewport de escritorio y reducir el viewport ya con el diálogo abierto; el test revisa ancho/alto y uso de botones a 320×360.
+- **Verificación:** E2E enfocado pasó 1/1; lint y build pasan.
+- **Prevención:** separar prueba de navegación móvil de prueba de accesibilidad vertical; abrir el componente antes de cambiar viewport cuando se mide el diálogo.
