@@ -36,8 +36,8 @@
 
 ## HEAD y verificación integrados más recientes
 
-- Front `refactor/route-builder`: docs `73435a2`, código probado `e37cfeb`; Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup. Incluye alta de Manager/Logistics y rechazo real de email duplicado.
-- Backend `chore/stabilize-fleet-platform`: docs `4b7bc13`, código probado `7eab085`; Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó **138/138 xUnit**, Release build, smokes tenant/concurrencia/mantenimiento/login y cleanup.
+- Front `refactor/route-builder`: HEAD documental `2b3b523`, código funcional `e37cfeb`; Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup. Incluye alta de Manager/Logistics y rechazo real de email duplicado.
+- Backend `chore/stabilize-fleet-platform`: docs `d52165d`, código probado `7eab085`; Action [`45143585970`](https://github.com/Paul1578/Back_GPS/actions/runs/45143585970) pasó **138/138 xUnit**, Release build, smokes tenant/concurrencia/mantenimiento/login y cleanup.
 - Ambas ramas están limpias y separadas de `main`. Los HEAD funcionales apuntan a sus branches; los commits posteriores sólo actualizan evidencia/documentación.
 - Dependencias: `npm audit` reportó 0 vulnerabilidades y NuGet no encontró paquetes vulnerables en Backend/tests. Revisión de seguridad independiente fue estática y no encontró bypass tenant/roles/JWT ni XSS explotable en lo inspeccionado.
 - Decisiones confirmadas: traslados permitidos; paradas pickup/delivery/both; sólo raíz otorga Admin; app nativa móvil pospuesta. SMTP, rate limiter distribuido, IP confiable del ingress, key ring persistente y despliegue productivo requieren configuración externa.
