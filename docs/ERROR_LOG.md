@@ -1881,3 +1881,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La suite pasó 53 E2E y CI reportó 1 flaky: tras confirmar logout, la UI llegaba a `/login` antes de completarse la respuesta POST `/api/auth/logout`; la comprobación inmediata encontró todavía la cookie. El retry pasó, lo que confirma una carrera de sincronización del test, no evidencia de fallo permanente del BFF.
 - Solución: el E2E espera explícitamente la respuesta HTTP 200 del BFF logout antes de comprobar navegación y eliminación de cookie. La Action anterior no se considera estable hasta repetir sin flaky.
 - Prevención: sincronizar assertions de efectos de servidor con la respuesta del endpoint, no sólo con el cambio de vista local. El primer `git diff --check` también detectó saltos extra al final de los cinco documentos; se normalizaron a un newline final antes de validar.
+
+## 2026-11-23 — Cobertura de paginación dependía del contenido previo del tenant — CORREGIDO EN CÓDIGO, CI PENDIENTE
+
+- QA observó que el E2E de API real sólo navegaba si el tenant casualmente tenía más de 25 usuarios; el otro test de página 2 interceptaba API y usaba 26 objetos simulados. La comprobación responsive integrada buscaba overflow pero no usaba controles paginados a 320/768 px.
+- Solución: escenario integrado crea 26 registros User identificables, comprueba respuestas y tarjetas de ambas páginas y navega en dos anchos. Exige `FLETFLOW_E2E_DISPOSABLE_DATABASE=true`; workflow lo exporta únicamente al usar MySQL de un job desechable.
+- Prevención: no dejar que la cobertura de paginación real dependa de datos preexistentes ni permitir escrituras de fixtures masivos fuera de DB explícitamente temporal. Lint pasó; build/Action pendientes.
+- Incidente operativo: el despacho manual produjo dos Actions idénticas (`45209292147`/`45209279762`); se canceló la duplicada temprano y una siguió completa. En adelante comprobar `gh run list` tras dispatch y conservar sólo una ejecución idéntica.
+
+## Verificación posterior al flaky de logout — RESUELTO EN CI — 2026-11-23
+
+- Front `057c1cc` esperó el HTTP 200 de logout antes de revisar redirect/cookie. Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147) pasó 54/54 E2E **sin flaky**, responsive 1/1, Backend Release/xUnit 158/158, audit/lint/build y cleanup.

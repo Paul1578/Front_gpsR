@@ -809,3 +809,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Backend Release/xUnit **158/158**, audit, lint/build, responsive browser check **1/1**, suite E2E **53 passed**; CI marcó **1 flaky** en logout. El test esperaba cookie borrada al llegar a Login, antes de observar la respuesta BFF.
 - El retry pasó; se sincronizó la comprobación con HTTP 200 de `POST /api/auth/logout`. No se considera cerrado hasta ejecutar nuevamente toda la Action sin flaky.
+
+## Cobertura real de paginación de Equipo — Action pendiente
+
+- Se añadió un E2E integrado que crea 26 cuentas User por endpoint real y exige respuestas paginadas API/MySQL con datos persistidos; contrasta los IDs de página 1/2 con tarjetas reales y opera siguiente/anterior en 320×844 y 768×1024, comprobando overflow.
+- Este test sólo se ejecuta con `CI=true`, `FLETFLOW_E2E_ALLOW_MUTATIONS=true` y `FLETFLOW_E2E_DISPOSABLE_DATABASE=true`; CI asigna el último valor únicamente al MySQL/servicio de un solo uso. Usa usernames/email `e2e-pagination-{UUID}` y la DB se descarta al finalizar el job.
+- Local: lint pasa; build/discovery 55/diff-check pasan antes del ajuste final del guard; volver a correr local y validar la Action integrada antes de considerar el criterio cerrado.
+
+## Logout HttpOnly y suite integrada — estable
+
+- Front `057c1cc`, Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): **54/54 E2E sin flaky**, responsive 1/1, Backend Release/xUnit **158/158**, audit, lint/build y cleanup API/MySQL. El E2E esperó HTTP 200 de `/api/auth/logout` antes de comprobar que la cookie HttpOnly desapareció.

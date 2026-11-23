@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, readAccessToken, test } from "./fixtures";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
@@ -156,4 +157,89 @@ test("Gestión de Equipo navega a la siguiente página paginada", async ({ page 
   await page.getByRole("button", { name: "Página anterior" }).click();
   await expect(page.getByTestId("team-user-pagination-fixture-1")).toBeVisible();
   await expect(page.getByText("Página 1 de 2")).toBeVisible();
+});
+
+
+test("paginación real de Equipo funciona en móvil y tablet", async ({ page }) => {
+  test.skip(
+    process.env.CI !== "true" || process.env.FLETFLOW_E2E_DISPOSABLE_DATABASE !== "true" ||
+      !email || !password || process.env.FLETFLOW_E2E_ALLOW_MUTATIONS !== "true",
+    "Crea fixtures sólo en la base MySQL desechable de CI.",
+  );
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = randomUUID().replaceAll("-", "");
+  for (let index = 1; index <= 26; index += 1) {
+    const username = `e2e-pagination-${suffix}-${index}`;
+    const response = await page.request.post("/api/backend/Users", {
+      headers,
+      data: {
+        username,
+        email: `${username}@example.test`,
+        password: "",
+        roleName: "User",
+        firstName: "QA Pagination",
+        lastName: `Fixture ${index}`,
+      },
+    });
+    expect(response.status(), `crear fixture de paginación ${index}`).toBe(200);
+  }
+
+  const pageOneResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.includes("/Users/my-team/page") && url.searchParams.get("page") === "1" && response.status() === 200;
+  });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  const pageOne = await pageOneResponsePromise.then((response) => response.json()) as {
+    items: Array<{ id: string; username: string }>;
+    page: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  expect(pageOne.page).toBe(1);
+  expect(pageOne.totalCount).toBeGreaterThan(25);
+  expect(pageOne.totalPages).toBeGreaterThan(1);
+  expect(pageOne.items.length).toBeGreaterThan(0);
+  await expect(page.getByTestId(`team-user-${pageOne.items[0].id}`)).toBeVisible();
+
+  const assertNoHorizontalOverflow = async () => {
+    const dimensions = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  };
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertNoHorizontalOverflow();
+  const pageTwoResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.includes("/Users/my-team/page") && url.searchParams.get("page") === "2" && response.status() === 200;
+  });
+  await page.getByRole("button", { name: "Página siguiente" }).click();
+  const pageTwo = await pageTwoResponsePromise.then((response) => response.json()) as {
+    items: Array<{ id: string }>;
+    page: number;
+  };
+  expect(pageTwo.page).toBe(2);
+  expect(pageTwo.items.length).toBeGreaterThan(0);
+  await expect(page.getByText(`Página 2 de ${pageOne.totalPages}`)).toBeVisible();
+  await expect(page.getByTestId(`team-user-${pageTwo.items[0].id}`)).toBeVisible();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoHorizontalOverflow();
+  const pageOneAgainPromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.includes("/Users/my-team/page") && url.searchParams.get("page") === "1" && response.status() === 200;
+  });
+  await page.getByRole("button", { name: "Página anterior" }).click();
+  const pageOneAgain = await pageOneAgainPromise.then((response) => response.json()) as { items: Array<{ id: string }> };
+  expect(pageOneAgain.items[0].id).toBe(pageOne.items[0].id);
+  await expect(page.getByTestId(`team-user-${pageOne.items[0].id}`)).toBeVisible();
 });

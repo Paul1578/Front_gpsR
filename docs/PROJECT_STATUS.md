@@ -918,3 +918,14 @@ Fecha de actualización: 2026-11-22.
 
 - Action `45207209347` completó backend xUnit 158/158, audit/lint/build y responsive; Playwright **53 passed**, pero reportó **1 flaky** por assertion de cookie antes de respuesta del logout BFF.
 - El test ahora espera HTTP 200 del endpoint logout antes de comprobar redirect/cookie. Nueva Action integral sin flaky pendiente; no marcar BFF como validado en CI hasta ese resultado.
+
+## Paginación real de Equipo — en validación
+
+- La auditoría QA detectó que navegación real sólo se ejercitaba cuando datos preexistentes superaban 25 y el test determinista usaba API simulada.
+- Añadido test integrado que crea 26 cuentas con prefijo UUID en DB desechable explícita, compara API y UI, y navega páginas en 320/768 px. `.github/workflows/ci.yml` fija `FLETFLOW_E2E_DISPOSABLE_DATABASE=true`; el test mutante exige ese guard además de CI y autorización de mutaciones.
+- Lint pasó; build/discovery/diff-check y Action con el nuevo test pendientes.
+
+## BFF de autenticación — CI estable — 2026-11-23
+
+- Front `057c1cc` está validado por Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): 54/54 E2E sin flaky, responsive 1/1, backend 158/158, audit/lint/build y cleanup. La assertion de logout espera el HTTP 200 BFF.
+- La ampliación E2E de paginación real queda en el árbol de trabajo y requiere Action con 55 pruebas.

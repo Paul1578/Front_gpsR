@@ -870,3 +870,12 @@
 ## 2026-11-23 — Sincronización E2E del cierre de sesión
 
 - El test de sesión ahora espera la respuesta HTTP 200 de `/api/auth/logout` antes de afirmar eliminación de cookie y navegación. Corrige la carrera que CI reportó como flaky; Action de repetición pendiente.
+
+## 2026-11-23 — E2E de paginación real de Equipo
+
+- Añadido escenario API/MySQL integrado con 26 cuentas User únicas y comprobación de navegación, respuesta persistida, tarjetas y overflow a 320/768 px. Se restringe a DB desechable explícitamente marcada en CI.
+- Validación local de lint pasó; build, discovery actualizado y Action completa pendientes.
+
+## 2026-11-23 — Verificación estable del BFF de autenticación
+
+- Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147) pasó **54/54 E2E sin flaky**, responsive, Release/xUnit 158/158, audit/lint/build y cleanup; queda validada la sincronización del logout con el BFF.

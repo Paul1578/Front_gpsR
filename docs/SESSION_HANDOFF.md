@@ -1244,3 +1244,15 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action [`45207209347`](https://github.com/Paul1578/Front_gpsR/actions/runs/45207209347) completó audit, lint/build, responsive y backend Release/xUnit **158/158**; Playwright reportó **53 passed y 1 flaky**. El caso security/logout verificó cookie antes de terminar el POST BFF; retry pasó.
 - Fix local en `e2e/fleet-admin.spec.ts`: esperar `POST /api/auth/logout` y HTTP 200 antes de verificar la cookie. Debe ejecutarse nueva Action completa sin flaky antes de cerrar esta fase.
 - Mantener siguiente brecha de misión: navegación paginada con API/MySQL real, a 320/768 px, usando datos con prefijo único sobre DB efímera.
+
+## Paginación real de Equipo — validación siguiente
+
+- QA encontró que el test API real sólo cambia de página si el tenant ya tiene >25 usuarios; navegación determinista existente era simulada.
+- `e2e/team-search.spec.ts` ahora añade escenario real que crea 26 Users con prefijo UUID por API, verifica página 1/2 API contra UI y opera siguiente a 320 px/anterior a 768 px; comprueba overflow. Sólo corre con `CI=true`, mutaciones habilitadas y `FLETFLOW_E2E_DISPOSABLE_DATABASE=true`. El workflow marca esta última sólo para MySQL efímero.
+- Lint pasó; volver a ejecutar build, discovery **55**, diff-check, luego commit/push y Action integrada; corregir flakes/fallos, comprobar cleanup de contenedores y actualizar resultados.
+- El commit anterior `057c1cc` está siendo validado en Action `45209292147` para remover flaky de logout. No mezclar ese resultado con este cambio nuevo.
+
+## BFF de sesión — validado estable en Action
+
+- Front `057c1cc`, Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): **54/54 E2E sin flaky**, responsive 1/1, Release/xUnit **158/158**, audit/lint/build y cleanup. La race de logout quedó resuelta al esperar HTTP 200 de `/api/auth/logout`.
+- El siguiente cambio local incorpora E2E real de paginación de Equipo en API/MySQL efímero y workflow guard `FLETFLOW_E2E_DISPOSABLE_DATABASE`. En el checkout actual: lint/build, discovery 55 y diff-check pasan; falta integrar y validar Action.
