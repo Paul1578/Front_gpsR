@@ -1,3 +1,9 @@
+## Limpieza de componentes obsoletos — validación local
+
+- Eliminados `SettingsModal` y `NotificationsPanel`: no tenían referencias en la aplicación; el primero afirmaba eliminar cuentas mientras sólo cerraba la sesión y ofrecía un cambio de contraseña ficticio; el segundo mostraba un panel vacío permanente.
+- El cambio de contraseña real está disponible en Mi Perfil. `rg` confirmó que no queda ningún import/referencia a esos componentes.
+- Tras la eliminación, `npm run lint` y `npm run build` pasan; Action con el nuevo HEAD pendiente.
+
 ## Mapa y flujo Driver — fixes E2E esperando Action
 
 - Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) terminó con **51/53 E2E**. Los fallos fueron aserciones desactualizadas: locator ambiguo del perfil Driver tras cambiar rol y expectativa del mapa que aún pedía IDs truncados después de pasar a placa/marca/modelo.

@@ -1,3 +1,10 @@
+## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
+
+- `SettingsModal.tsx` no estaba importado y ofrecía “Eliminar cuenta” implementado como logout, además de “Cambiar contraseña” que sólo mostraba un toast de próximamente. `NotificationsPanel.tsx` tampoco tenía referencias y siempre mostraba una lista vacía.
+- Solución: eliminados los dos componentes huérfanos; el cambio de clave real se ofrece en Mi Perfil. `rg` confirmó cero referencias restantes.
+- Validación: lint y build pasan localmente; Action con el nuevo HEAD pendiente.
+- Prevención: comprobar el handler real y el grafo de imports al auditar affordances; no dejar pantallas demo en componentes de producto.
+
 ## 2026-11-23 — E2E conservaron selectores/expectativas anteriores a etiquetas humanas — CORREGIDO LOCALMENTE
 
 - Front Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) pasó build, lint y responsive, pero E2E terminó **51/53**. La tarjeta del Driver se buscó por texto y `../..`, resolviendo tres elementos; el test del mapa todavía esperaba el ID truncado aunque la interfaz ya mostraba placa/marca/modelo.

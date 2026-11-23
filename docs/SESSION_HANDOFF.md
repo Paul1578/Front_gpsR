@@ -1,3 +1,9 @@
+## Handoff vigente — componentes obsoletos
+
+- Retirados `SettingsModal.tsx` y `NotificationsPanel.tsx`, ambos sin referencias. El modal presentaba eliminación que sólo cerraba sesión y cambio de contraseña simulado; el panel de notificaciones era un placeholder vacío.
+- La contraseña real se gestiona desde Mi Perfil. `rg` no encontró referencias tras eliminar ambos componentes.
+- Tras la eliminación, lint y build pasan. Pendiente publicar y validar este HEAD; la Action `45185761490` para `8dc1a2a` debe revisarse por separado.
+
 ## Handoff vigente — aserciones E2E tras mejora de mapa
 
 - Front `refactor/route-builder`, `main` intacta. Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) construyó backend/frontend y pasó lint/build/responsive; E2E terminó **51/53**.

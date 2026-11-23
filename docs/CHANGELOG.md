@@ -1,3 +1,8 @@
+## 2026-11-23 — Eliminación de controles de cuenta ficticios
+
+- Se retiraron componentes sin uso que afirmaban eliminar la cuenta pero sólo cerraban sesión, ofrecían cambio de contraseña simulado y mostraban notificaciones vacías.
+- La edición de contraseña real permanece en Mi Perfil. `npm run lint` y `npm run build` pasan; Action pendiente.
+
 ## 2026-11-23 — Fix de aserciones integradas del mapa y gestión Driver
 
 - Action integrada encontró una tarjeta Driver con locator ambiguo y expectativas de mapa aún acopladas al ID del vehículo.
