@@ -785,3 +785,8 @@ Fecha de actualización: 2026-11-22.
 
 - Front `29e320b`, Action [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214) success: **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - El flujo crea Manager, lo cambia a Logistics, lo promueve a Admin desde la pantalla principal con la sesión raíz, valida request y `GET /Users/my-team`, y restaura Logistics. El fixture temporal se limpia.
+
+## HEAD documental con promoción de Equipo validado — 2026-11-23
+
+- Front `357ffdc`, Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó: **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
+- La repetición ejecutó la promoción root-only desde Gestión de Equipo y la restauración de rol en API/MySQL descartables.

@@ -749,3 +749,5 @@
 
 - Action [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214) pasó: 51/51 E2E, responsive, Backend Release/xUnit, audit/lint/build y cleanup.
 - E2E promueve Manager→Admin desde TeamManagement con root, comprueba persistencia y restaura Logistics.
+
+- Revalidación del HEAD documental `357ffdc`: Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó 51/51 E2E, responsive, backend Release/xUnit y cleanup.

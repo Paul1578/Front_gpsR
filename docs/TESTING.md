@@ -685,3 +685,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action Front [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214), commit `29e320b`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success.
 - Usuario Manager se promueve a Admin desde la pantalla principal con sesión root. Se validan body de PUT, respuesta, lectura `/Users/my-team` y restauración a Logistics; el runner limpia el fixture.
+
+- Repetición del HEAD documental `357ffdc`: Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) success, 51/51 E2E, responsive 1/1 y cleanup; incluyó root promotion desde TeamManagement.

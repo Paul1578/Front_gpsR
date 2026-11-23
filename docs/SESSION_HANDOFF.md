@@ -1105,3 +1105,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `29e320b`, Action [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214): success, 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - `Gestión de Equipo` probó promoción Manager→Admin usando root, validó PUT/roleName y lectura persistida, y restauró Logistics. Esta cobertura complementa la promoción existente de la vista heredada.
 - Próximo: continuar la auditoría de criterios CRUD/responsive restantes; misión general no está cerrada.
+
+## HEAD documental de promoción root validado — 2026-11-23
+
+- Action Front [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó en `357ffdc`: 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
+- El test principal ejecutó promoción root→Admin desde Gestión de Equipo y restauró Logistics. Continuar con pendientes globales de CRUD/responsive.
