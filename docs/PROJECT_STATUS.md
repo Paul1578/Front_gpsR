@@ -1,3 +1,9 @@
+## Estado actual — 2026-11-23 (edición Logistics pendiente de CI)
+
+- Añadida cobertura E2E autenticada para editar desde el constructor una ruta de Logistics, validar `PUT /Routes/{id}` y consultar el GET persistido; luego el flujo verifica cancelación e historial.
+- Validación local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) y `git diff --check` pasan.
+- Pendiente: ejecución integrada con API/MySQL efímeros. No contar como cubierto hasta Action verde sin skip del escenario.
+
 ## Estado actual — 2026-11-23
 
 - Front `refactor/route-builder`, código `44946d4`, pasó Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup. El caso añadido completa un traslado desde Mi Ruta como Driver y confirma API `Completed` + vehículo `Available`.

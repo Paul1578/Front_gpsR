@@ -1,5 +1,13 @@
 # Handoff vigente — 2026-11-23
 
+## Siguiente cobertura — edición de rutas por Logistics
+
+- El test `Logistics ve rutas pero no vehículos ni administración de equipo` ya cubría alta en constructor, cancelación, historial y denegación de flota, pero no edición desde UI.
+- Se añadió edición de nombre y descripción del traslado, aserción de `PUT /Routes/{id}` HTTP 200 y lectura autenticada posterior que confirma persistencia sin cambiar conductor, vehículo ni estado.
+- El flujo continúa con cancelación e historial usando el nuevo nombre. No hubo errores durante lint/build/discovery; no se añade incidente a `ERROR_LOG.md`.
+- Validación local: lint, build y Playwright discovery **51 tests** pasan; Action integrado pendiente.
+- Siguiente paso: publicar en `refactor/route-builder`, ejecutar el workflow con MySQL desechable y registrar resultado; documentar cualquier fallo y su prevención en `ERROR_LOG.md`.
+
 ## Sincronización más reciente
 
 - Front `refactor/route-builder` HEAD documental `2cc3ee5`; código probado `f0acce7`; Actions `45123444413` y `45124271067` success con Playwright **51/51**, responsive **1/1**, audit/lint/build y cleanup.

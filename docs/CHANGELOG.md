@@ -1,3 +1,8 @@
+# 2026-11-23 — Cobertura de edición de rutas para Logistics
+
+- El E2E de Logistics ahora modifica nombre y descripción desde el constructor, verifica el PUT real y confirma persistencia con GET antes de cancelar y consultar historial.
+- Lint, build, discovery de 51 E2E y `git diff --check` pasan localmente. CI integrado API/MySQL pendiente.
+
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
 - `npm audit`: 0 vulnerabilidades.

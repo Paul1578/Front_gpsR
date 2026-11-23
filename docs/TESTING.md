@@ -1,3 +1,9 @@
+# E2E Logistics edita una ruta — validación integrada pendiente — 2026-11-23
+
+- El escenario autenticado crea un traslado desde la UI, cambia nombre y descripción en “Editar ruta”, espera `PUT /Routes/{id}` HTTP 200 y confirma por GET la persistencia junto al conductor/vehículo originales y estado Pending.
+- Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
+- Local: lint/build correctos; discovery enumera 51 pruebas. Pendiente ejecutar con API y MySQL descartables; no cuenta como verificado hasta pasar sin skip.
+
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
 ## Auditoría actual de dependencias — 2026-11-23

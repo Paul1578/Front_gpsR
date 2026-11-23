@@ -2552,6 +2552,8 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const routeName = `E2E QA ruta Logistics ${suffix}`;
+  const updatedRouteName = `${routeName} editada`;
+  const updatedRouteDescription = "Instrucciones actualizadas por Logistics desde UI";
   let routeId: string | undefined;
   const createdVehicle = await page.request.post("/api/backend/Vehicles", {
     headers,
@@ -2712,7 +2714,37 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       status: 0,
     });
 
-    const routeCard = logisticsPage.getByRole("heading", { name: routeName, exact: true }).locator("xpath=../../../..");
+    await test.step("Logistics edita y persiste una ruta desde la UI", async () => {
+      const routeHeading = logisticsPage.getByRole("heading", { name: routeName, exact: true });
+      await expect(routeHeading).toBeVisible();
+      await routeHeading.locator("xpath=../../../..").getByRole("button", { name: "Editar ruta", exact: true }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Editar ruta" })).toBeVisible();
+      await logisticsPage.getByPlaceholder("Ej. Entregas zona norte").fill(updatedRouteName);
+      await logisticsPage.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill(updatedRouteDescription);
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+      const updateRoutePromise = logisticsPage.waitForResponse((response) =>
+        response.url().includes(`/api/backend/Routes/${routeId}`) && response.request().method() === "PUT",
+      );
+      await logisticsPage.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+      expect((await updateRoutePromise).status()).toBe(200);
+
+      const updatedRouteResponse = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
+      expect(updatedRouteResponse.status()).toBe(200);
+      expect(await updatedRouteResponse.json()).toMatchObject({
+        name: updatedRouteName,
+        cargoDescription: updatedRouteDescription,
+        vehicleId,
+        driverId: routeDriverId,
+        status: 0,
+      });
+    });
+
+    const routeCard = logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true }).locator("xpath=../../../..");
     for (const width of [320, 768]) {
       await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
       const routeListDimensions = await logisticsPage.evaluate(() => ({
@@ -2723,9 +2755,9 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
       }));
       expect(routeListDimensions.document).toBeLessThanOrEqual(routeListDimensions.viewport);
       expect(routeListDimensions.mainContent).toBeLessThanOrEqual(routeListDimensions.main);
-      await expect(logisticsPage.getByRole("heading", { name: routeName, exact: true })).toBeVisible();
+      await expect(logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true })).toBeVisible();
     }
-    await routeCard.getByRole("button", { name: `Cancelar ruta ${routeName}` }).click();
+    await routeCard.getByRole("button", { name: `Cancelar ruta ${updatedRouteName}` }).click();
     const cancelDialog = logisticsPage.getByRole("alertdialog");
     await expect(logisticsPage.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
     for (const width of [320, 768]) {
@@ -2751,7 +2783,7 @@ test("Logistics ve rutas pero no vehículos ni administración de equipo", async
     await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
     await logisticsPage.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
     await expect(logisticsPage.getByRole("heading", { name: "Historial de Rutas", exact: true })).toBeVisible();
-    const historyCardHeading = logisticsPage.getByRole("heading", { name: routeName, exact: true });
+    const historyCardHeading = logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true });
     await expect(historyCardHeading).toBeVisible();
     const historyCard = historyCardHeading.locator("xpath=../../../..");
     await expect(historyCard).toContainText(`E2EQA${suffix}`);
