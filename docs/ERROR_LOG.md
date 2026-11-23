@@ -1522,3 +1522,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Consulta auxiliar con ruta incorrecta:** se buscó `scripts/` desde el repo Front, donde ese directorio no existe; la búsqueda equivalente se hizo en `/home/leonardo/Back_GPS`. Sin cambio de código. Prevención: localizar el repo dueño del script antes de `rg`.
 
 - **Cuarto intento Action 45101809749:** el mismo escenario ya pasó ambas bajas; quedó sólo la reactivación del User regular, también pendiente de confirmar. Añadido `Sí, activar cuenta`. El patrón muestra que todos los cambios de estado de cuenta (activar y desactivar) deben confirmar antes de esperar la mutación; el test cubre ambos. Cleanup falló tras la interrupción prematura.
+
+
+# 2026-11-23 — Action 45102498423 pasó Playwright pero falló cleanup MySQL
+
+- **Resultado:** responsive 1/1 y **43/43 E2E** en API/MySQL efímeros. El job acabó con error en cleanup tras los tests verdes.
+- **Causa:** el runner backend silenciaba stderr de mysql, así que no se sabía por qué falló el SQL de limpieza.
+- **Solución:** Backend `2ff5560` captura la salida temporal y la imprime sólo si el cleanup falla; luego elimina el archivo. Repetir Action para obtener diagnóstico/confirmar limpieza.
+- **Prevención:** el éxito de pruebas no se considera total si la limpieza de datos QA devuelve error; exigir ambos resultados.

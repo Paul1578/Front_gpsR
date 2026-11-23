@@ -577,3 +577,7 @@
 - Se muestran conductores ocupados como opciones deshabilitadas con su estado; se corrigió su omisión del selector.
 - Se alineó el E2E de traslado con el cambio de vista que ocurre al pulsar “Ubicar”.
 - E2E de asignación de roles y desactivación confirma el diálogo antes de validar persistencia.
+
+## 2026-11-23 — Suite integrada de rutas y equipo
+
+- Los 43 escenarios E2E pasan con el nuevo flujo de disponibilidad, traslado y confirmaciones. El pipeline detectó un fallo separado en cleanup MySQL, ahora instrumentado en el backend para mostrar el diagnóstico exacto.

@@ -512,3 +512,7 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Action `45101175529`: 42/43; añadió cobertura del segundo diálogo faltante (baja del User regular en el E2E Driver). Repetición completa y cleanup aún pendientes.
 
 - Action `45101809749`: 42/43; la última omisión era confirmar la reactivación, añadida. Repetir suite y revisar cleanup.
+
+## Action Front 45102498423
+
+- Responsive browser **1/1** y E2E API/MySQL **43/43** pasaron. Cleanup de fixtures falló, por lo que Action global está fallida. Backend `2ff5560` ahora expone el error mysql; repetir y exigir cleanup verde.

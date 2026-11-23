@@ -638,3 +638,8 @@ Fecha de actualización: 2026-11-22.
 - Action `45101175529`: nuevamente **42/43**; el test de ciclo Driver ya pasó la confirmación de desactivar el usuario vinculado y reveló una segunda omisión al desactivar el User regular del mismo escenario. Ambas interacciones ahora tienen confirmación explícita; repetir la Action.
 
 - Action `45101809749`: detectó que también faltaba confirmar la reactivación del User regular (42/43); corregido con `Sí, activar cuenta`. Se comprobará el test completo y cleanup en el siguiente run.
+
+## Action integrada actualizada — cleanup requiere repetición
+
+- Front `45102498423`: **43/43 E2E** y responsive 1/1; se creó ruta de traslado y se verificaron opciones de conductor y confirmaciones. El job falló sólo porque el cleanup MySQL no pudo completar.
+- Backend runner `2ff5560` revela ahora el error de mysql cuando falle; pendiente siguiente Front Action para verificar causa y cleanup correcto.

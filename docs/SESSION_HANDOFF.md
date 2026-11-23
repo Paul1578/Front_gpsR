@@ -918,3 +918,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45101175529`: 42/43; encontró la segunda omisión de confirmación en desactivación del User regular del test de ciclo Driver. Confirmación añadida. Limpieza SQL falla cuando el test aborta; comprobar con suite completa verde y diagnosticar si persiste.
 
 - Action `45101809749` 42/43: detectó última mutación no confirmada, reactivación del User regular en el E2E de ciclo. Añadido click `Sí, activar cuenta`; nuevo run pendiente.
+
+## E2E verdes, cleanup aún no verificado
+
+- Front Action `45102498423`: los 43 E2E pasaron y responsive 1/1, pero el runner informó fallo al limpiar MySQL desechable.
+- Backend commit `2ff5560` registra salida del error MySQL en cleanup sin exponer credenciales para diagnosticarlo en el próximo run.
+- Siguiente paso: correr Front con backend branch actualizado; revisar si cleanup pasa o leer error mysql y corregir SQL/fixture. No declarar este lote terminado antes de limpiar fixtures.
