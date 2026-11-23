@@ -1,3 +1,9 @@
+## 2026-11-23 — Action `45252999270` falló en 1/69 E2E — AJUSTE DE TEST PENDIENTE
+
+- Después de corregir metadata de parada y el refresh paralelo, el Action pasó **68/69**. El test de dos logins volvió a fallar porque asumía que el access token se guarda en `localStorage`; el producto lo mantiene sólo en memoria y borra `auth_tokens` deliberadamente.
+- Solución del test: eliminar esa lectura directa. Comprobar convergencia de identidad compartida después de ambos logins, recargar ambas pestañas mediante el flujo real de cookie HttpOnly/Web Lock, y validar la identidad restaurada con un refresh + `/Auth/me` de una sola pestaña; los dos tabs deben presentar usuario y `currentUser` idénticos.
+- Es un supuesto incorrecto del test, no una exposición/ausencia del token en el producto. Lint/build y la nueva Action integrada con este ajuste siguen pendientes.
+
 ## 2026-11-23 — Action `45249048978` falló en 2/67 E2E — CORREGIDO LOCALMENTE
 
 - **Bug funcional de rutas:** al fijar coordenadas de una parada con mapa, `setPoint` reemplazaba el objeto completo y eliminaba `operation`/`status`. El selector mostraba “Entrega” por fallback visual, pero el payload persistido omitía el tipo y Backend guardaba `None`. Solución: preservar la operación/estado existentes y aplicar `delivery`/`pending` sólo si faltaban. El E2E ahora comprueba la operación luego de eliminar/reordenar y guardar.

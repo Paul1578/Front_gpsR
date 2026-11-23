@@ -223,28 +223,8 @@ test("login simultáneo de cuentas distintas converge a la sesión vigente", asy
         ? identities[0]
         : null;
     }).not.toBeNull();
-    // Do not rotate the one-time refresh cookie concurrently from two tabs.
-    // The test is validating each tab's committed session, which is in memory/storage.
-    const [firstAccessToken, secondAccessToken] = await Promise.all([
-      page.evaluate(() => (JSON.parse(localStorage.getItem("auth_tokens") ?? "null") as { accessToken?: string } | null)?.accessToken),
-      secondPage.evaluate(() => (JSON.parse(localStorage.getItem("auth_tokens") ?? "null") as { accessToken?: string } | null)?.accessToken),
-    ]);
-    expect(firstAccessToken).toBeTruthy();
-    expect(secondAccessToken).toBeTruthy();
-    const concurrentIdentities = await Promise.all([
-      page.request.get("/api/backend/Auth/me", {
-        headers: { Authorization: `Bearer ${firstAccessToken}` },
-      }),
-      secondPage.request.get("/api/backend/Auth/me", {
-        headers: { Authorization: `Bearer ${secondAccessToken}` },
-      }),
-    ]);
-    expect(concurrentIdentities.map((response) => response.status())).toEqual([200, 200]);
-    const concurrentIds = await Promise.all(
-      concurrentIdentities.map(async (response) => (await response.json() as { id: string }).id),
-    );
-    expect(concurrentIds[0]).toBe(concurrentIds[1]);
-
+    // Access tokens live only in memory; verify the shared session after both tabs
+    // restore through the serialized HttpOnly refresh cookie below.
     await Promise.all([page.reload(), secondPage.reload()]);
     await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
     await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();

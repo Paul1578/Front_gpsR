@@ -8,7 +8,8 @@
 ## Mapa, operaciones de parada, auth concurrente y accesibilidad — CI pendiente — 2026-11-23
 
 - Action [`45249048978`](https://github.com/Paul1578/Front_gpsR/actions/runs/45249048978) ejecutó **65/67 E2E**; fallaron la operación Delivery al guardar punto fijado en mapa (bug corregido) y la aserción de token al rotar refresh concurrentemente en dos tabs (test corregido). Causas/soluciones detalladas en `ERROR_LOG.md`.
-- El E2E tablet verifica la selección al borrar/reordenar paradas y que coordenada, orden y operación se guarden. El caso concurrente usa los access tokens ya aplicados en cada pestaña y verifica ambos vía `Auth/me`, sin competir por el refresh de un solo uso.
+- El Action [`45252999270`](https://github.com/Paul1578/Front_gpsR/actions/runs/45252999270) pasó **68/69**; el fallo restante era otra suposición de test, ya corregida: el access token no se persiste en localStorage. El E2E ahora compara identidad tras ambos logins, restaura ambas pestañas y valida el token actual con un solo refresh.
+- El E2E tablet verifica la selección al borrar/reordenar paradas y que coordenada, orden y operación se guarden. El primer test concurrente de refresh y el segundo supuesto del token están documentados en `ERROR_LOG.md`.
 - `npm run test:a11y`: **2/2**; `npm run lint`, `npm run build` y `git diff --check`: correctos. Playwright descubre **69 tests**.
 - El check axe automatizado forma parte de CI; cubre login, recuperación, dashboard, Equipo, alta de usuario y confirmación de logout. No sustituye la suite E2E completa.
 - Próximo: Action integrada contra API/MySQL descartable y corrección/repetición de cualquier fallo.

@@ -2,7 +2,7 @@
 
 - Código Front: mapa recalcula al abrirse en móvil; selección acompaña reordenar/eliminar y fijar ubicación conserva operación/estado de cada parada. Auth mantiene Web Lock hasta aplicar login/refresh y sincroniza identidad entre pestañas.
 - Se añadieron 2 checks axe WCAG A/AA para login/recuperación y dashboard/Equipo/alta/logout; tres hallazgos de contraste, target táctil y nombre accesible están corregidos.
-- Action [`45249048978`](https://github.com/Paul1578/Front_gpsR/actions/runs/45249048978) ejecutó 65/67 E2E; detectó bug real de operación de parada y fallo de prueba por refresh paralelo. Ambos corregidos localmente; nueva Action integrada pendiente.
+- Action [`45249048978`](https://github.com/Paul1578/Front_gpsR/actions/runs/45249048978) ejecutó 65/67 E2E; detectó bug real de operación de parada y fallo de prueba por refresh paralelo. Action [`45252999270`](https://github.com/Paul1578/Front_gpsR/actions/runs/45252999270) ejecutó 68/69 y reveló que el token sólo vive en memoria; prueba ajustada, nueva Action integrada pendiente.
 - `npm run lint`, `npm run build`, `npm run test:a11y` (2/2) y diff-check pasan; Playwright descubre 69 tests.
 - Última combinación integrada verde previa: Front `b1d5924`, Backend runner `4079ae2`; Action [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó 67/67, responsive, audit/lint/build y backend 165/165.
 

@@ -4,6 +4,7 @@
 - Login/refresh aplican respuesta y perfil mientras mantienen el Web Lock; nuevas identidades recibidas desde otra pestaña se sincronizan sin interferir con un login local en curso.
 - Se agregó Playwright + axe con 2 checks WCAG A/AA y se corrigieron contraste, tamaño táctil y etiqueta accesible.
 - La primera Action tuvo 65/67 E2E; el otro fallo fue el test rotando en paralelo el refresh-cookie de un solo uso. Se corrigió y quedó documentado en `ERROR_LOG.md`; falta nueva Action integrada.
+- La Action siguiente llegó a 68/69: test asumía access token en localStorage aunque producto lo mantiene sólo en memoria. El test ahora valida la restauración en ambos tabs y usa un solo refresh para verificar `/Auth/me`.
 - Lint/build/test:a11y (2/2) correctos; Playwright descubre 69 tests.
 
 ## 2026-11-23 — Serialización de runners E2E — CI aprobado
