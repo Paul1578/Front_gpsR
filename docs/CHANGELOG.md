@@ -14,6 +14,7 @@
 - Action `45266610856` validó 69/69 E2E, controles de sesión, axe, responsive, API/MySQL y Backend xUnit 165/165.
 - La revisión documental `79020a8` pasó también la Action integrada [`45268671219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45268671219), con el mismo código funcional.
 - El HEAD documental `a6757b1` volvió a pasar la Action integrada [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519): 69/69 E2E y los pasos completos de responsive, axe, backend/API/MySQL y cleanup.
+- El HEAD final documental `405b89a` pasó [`45272144643`](https://github.com/Paul1578/Front_gpsR/actions/runs/45272144643): 69/69 E2E, responsive, axe, audit/lint/build, Backend 165/165 y API/MySQL.
 
 ## 2026-11-23 — Perfil accesible y pruebas móviles extendidas
 
