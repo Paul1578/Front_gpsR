@@ -30,7 +30,7 @@
 
 ## Estado actual — 2026-11-23
 
-- HEAD documental vigente: Front `refactor/route-builder` `433b430`; Action [`45147509399`](https://github.com/Paul1578/Front_gpsR/actions/runs/45147509399) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **139/139** y cleanup API/MySQL. Código funcional verificado: `53b7674`.
+- HEAD documental vigente antes de esta actualización: Front `refactor/route-builder` `fa3e349`; Action [`45148633887`](https://github.com/Paul1578/Front_gpsR/actions/runs/45148633887) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **139/139** y cleanup API/MySQL. Código funcional verificado: `53b7674`.
 - Revalidación del HEAD documental `2b3b523`: Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó **51/51 E2E**, responsive **1/1**, auditoría, lint/build, Backend Release/xUnit y cleanup. La ruta de correo duplicado con HTTP 409 se ejecutó sin mocks.
 - Se amplió el caso de tenant cruzado para cubrir estado/reactivación de vehículo y asignar/desasignar Driver mediante IDs de otra empresa; cada respuesta fue 404 y las lecturas del propietario confirmaron que no hubo mutación. Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit 139/139 y cleanup API/MySQL.
 - Backend `chore/stabilize-fleet-platform` código `ca1a278`, docs `c84e9dc`; Action [`45147903362`](https://github.com/Paul1578/Back_GPS/actions/runs/45147903362) pasó Release, xUnit **139/139**, smokes tenant HTTP/MySQL, concurrencia, login rate limit/proxy y cleanup.

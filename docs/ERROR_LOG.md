@@ -1736,4 +1736,4 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: consultar el Action desde `/home/leonardo/Back_GPS`.
 - Prevención: validar el repositorio dueño del identificador de Action antes de invocar `gh`.
 
-- Reincidencia en esta sesión: una consulta `gh run list` para la rama Backend volvió a ejecutarse desde Front y devolvió una lista vacía. Se repitió correctamente desde `/home/leonardo/Back_GPS`; no afectó datos ni Actions. Para prevenirlo, revisar `pwd`/`workdir` junto con el repositorio del branch antes de consultar.
+- Reincidencias en esta sesión: `gh run list` / `gh run view` para la rama o Action Backend volvieron a ejecutarse desde Front y devolvieron lista vacía/404. Se repitieron correctamente desde `/home/leonardo/Back_GPS`; no afectaron datos ni Actions. Para prevenirlo, revisar `pwd`/`workdir` junto con el propietario del branch/Action antes de consultar.
