@@ -34,19 +34,13 @@
 - Validación integrada Front `87da4aa`: Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y PR [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una, incluyendo `Manager usa el constructor de rutas...`; Release/xUnit, audit/lint/build, responsive y cleanup también pasaron. No hubo error nuevo.
 - El registro de validación de Logistics ya está en `b1dd4f4`; esta cobertura Manager queda probada en `87da4aa` (mismo código E2E, antes de los cambios documentales de b1dd4f4).
 
-## Últimos HEAD
+## HEAD y verificación integrados más recientes
 
-- Front `refactor/route-builder`: docs `0e5617b`, código verificado `87da4aa`; Manager y Logistics route-edit pasaron en Actions `45133416432` / `45132992521` (51/51 cada una).
-- Backend `chore/stabilize-fleet-platform`: docs `1c1fe13`, lógica verificada `63333bb`/`c42a306`; xUnit 136/136 y smoke HTTP/MySQL multi-parada, tenant, rate limit y cleanup en Action `45132350399`.
-- Ambas ramas siguen limpias y separadas de `main`.
-
-## Sincronización más reciente
-
-- Front `refactor/route-builder` HEAD documental `2cc3ee5`; código probado `f0acce7`; Actions `45123444413` y `45124271067` success con Playwright **51/51**, responsive **1/1**, audit/lint/build y cleanup.
-- Backend `chore/stabilize-fleet-platform` código `63333bb`, Action `45127502896` success con Release/xUnit **136/136**, smokes HTTP/MySQL y cleanup; detalle vigente en Backend `docs/SESSION_HANDOFF.md`.
-- Auditoría actual de paquetes: `npm audit` 0 vulnerabilidades; NuGet no encontró paquetes vulnerables en Backend ni tests.
-- Revisión de seguridad independiente read-only en Front `6555858` y Backend `391792e`: sin hallazgo nuevo explotable en tenant/roles/JWT/XSS inspeccionados. Confirmó filtros globales tenant, root-only y `TokenVersion` en `OnTokenValidated`. `dangerouslySetInnerHTML` está en `src/Components/ui/chart.tsx`, sin consumidores actuales ni datos de usuario conectados a CSS. Guardar access token en `localStorage` aumenta el impacto potencial de una XSS futura; no se identificó vector. Escenarios dinámicos no fueron reejecutados por el agente.
-- Decisiones: traslados permitidos, paradas pickup/delivery/both, Admin raíz solamente, app nativa móvil pospuesta. Misión amplia sigue abierta; actualizar este handoff y status al completar el siguiente lote.
+- Front `refactor/route-builder`: docs `73435a2`, código probado `e37cfeb`; Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup. Incluye alta de Manager/Logistics y rechazo real de email duplicado.
+- Backend `chore/stabilize-fleet-platform`: docs `4b7bc13`, código probado `7eab085`; Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó **138/138 xUnit**, Release build, smokes tenant/concurrencia/mantenimiento/login y cleanup.
+- Ambas ramas están limpias y separadas de `main`. Los HEAD funcionales apuntan a sus branches; los commits posteriores sólo actualizan evidencia/documentación.
+- Dependencias: `npm audit` reportó 0 vulnerabilidades y NuGet no encontró paquetes vulnerables en Backend/tests. Revisión de seguridad independiente fue estática y no encontró bypass tenant/roles/JWT ni XSS explotable en lo inspeccionado.
+- Decisiones confirmadas: traslados permitidos; paradas pickup/delivery/both; sólo raíz otorga Admin; app nativa móvil pospuesta. SMTP, rate limiter distribuido, IP confiable del ingress, key ring persistente y despliegue productivo requieren configuración externa.
 
 ## Ciclo de traslado desde la UI Driver — CI validada
 

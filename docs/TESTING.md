@@ -1,4 +1,8 @@
-# Correo duplicado desde Gestión de Equipo — validado — 2026-11-23
+# Estado vigente — 2026-11-23
+
+Las secciones históricas que siguen pueden describir pendientes ya cerrados al corte de aquella fecha; el estado actual está en esta cabecera y `docs/PROJECT_STATUS.md`.
+
+## Correo duplicado desde Gestión de Equipo — validado
 
 - El escenario autenticado crea miembros y vuelve a enviar un correo ya usado por UI; la API real debe responder `409 El correo ya fue registrado.`, conservar el diálogo y dejar una sola cuenta visible en `/Users/my-team`.
 - Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) ejecutó esta versión con **51/51 E2E**, responsive 1/1 y cleanup exitoso.

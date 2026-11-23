@@ -30,14 +30,11 @@
 
 ## Estado actual — 2026-11-23
 
-- Front `refactor/route-builder`, código `44946d4`, pasó Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup. El caso añadido completa un traslado desde Mi Ruta como Driver y confirma API `Completed` + vehículo `Available`.
-- El caso aislado tuvo dos fallos de aserción no funcionales antes de pasar: fallback de toast incorrecto y locator ambiguo cuando inicio/finalización mostraban el mismo texto. Ambos están documentados y corregidos en `ERROR_LOG.md`.
-- Backend `chore/stabilize-fleet-platform` código `63333bb` pasó Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): build Release, xUnit **136/136**, tenant/concurrencia/login HTTP ampliado y cleanup.
-- Auditoría local de dependencias: `npm audit` reporta **0 vulnerabilidades**; `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` no encontró paquetes vulnerables en Backend ni tests.
-- En Front HEAD documental `6555858`, `npm run lint` y `npm run build` pasaron localmente; TypeScript y generación de 11 páginas terminaron correctamente.
-- Revisión independiente read-only de Front `6555858` y Backend `391792e`: no identificó un bypass tenant/rol ni un vector XSS explotable. `dangerouslySetInnerHTML` aparece en el chart genérico sin consumidores actuales ni datos de usuario conectados a ese CSS. Token en `localStorage` aumenta el impacto potencial de una XSS futura; no se reportó una vulnerabilidad confirmada.
-- El ciclo de traslado ahora enlaza creación Admin con inicio/completado de Driver en “Mi Ruta”, verifica timestamps, puntos sin operación/evidencia y vehículo Available; Action `45131410815` lo ejecutó contra API/MySQL descartables.
-- Decisiones confirmadas: ruta de traslado permitida; paradas pickup/delivery/both; sólo raíz puede otorgar Admin; app nativa móvil pospuesta. SMTP real, rate limit distribuido, IPs de ingress, key ring persistente y despliegue productivo siguen dependiendo de configuración externa. La misión global continúa abierta.
+- HEAD vigente: Front `refactor/route-builder` docs `73435a2`, código probado `e37cfeb`; Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup API/MySQL.
+- Backend `chore/stabilize-fleet-platform` docs `4b7bc13`, código probado `7eab085`; Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó Release, xUnit **138/138**, smokes tenant HTTP/MySQL, concurrencia incluyendo Maintenance, rate limit de login y cleanup.
+- Verificaciones de dependencia recientes: `npm audit` reportó **0 vulnerabilidades** y NuGet no encontró paquetes vulnerables en Backend ni tests. Las revisiones estáticas de seguridad no reportaron bypass tenant/rol/JWT ni vector XSS explotable en el alcance inspeccionado.
+- Decisiones confirmadas: se permiten traslados; las paradas pueden ser recogida, entrega o ambas; sólo raíz otorga Admin; la app nativa queda pospuesta.
+- Pendientes externos: credenciales SMTP vigentes, rate limiter distribuido, IPs reales de ingress, key ring Data Protection persistente/cifrado y validación de despliegue productivo. La misión permanece abierta para seguir cerrando cobertura técnica alcanzable.
 
 ## Historial de estado (las notas siguientes pueden estar superadas)
 
