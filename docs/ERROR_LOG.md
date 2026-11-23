@@ -1910,6 +1910,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Prevención: no ejecutar mutaciones de cookie sin mecanismo de exclusión compartido entre pestañas y cubrir logins simultáneos con identidades distintas, no sólo refresh concurrente.
 - Revalidación: Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336) pasó **65/65 E2E** (incluidos los escenarios nuevos), backend **158/158**, responsive, audit/lint/build y cleanup. Sin flaky reportado.
 
+## 2026-11-23 — Retry E2E heredó rol Manager tras agotar timeout — CORREGIDO LOCALMENTE, ACTION PENDIENTE
+
+- Action Front `45227072219` pasó 66 de 67 pruebas. El escenario “API deniega mutaciones y Manager gestiona flota desde la interfaz” superó 120 s durante su recorrido UI; el error primario fue timeout en el PUT que restauraba el rol al final. El retry reutilizó el fixture todavía en Manager y recibió 201 al verificar una operación como Driver.
+- Diagnóstico: el 201 del retry no demostró que un Driver pudiera crear vehículos; la cuenta conservaba Manager porque el primer intento expiró antes de completar `finally`. Los casos anteriores de la misma corrida pasaron; backend xUnit/smokes y cleanup también pasaron.
+- Solución local: timeout 240 s para el escenario de matriz + CRUD de UI; fijar el rol Driver en el estado inicial antes de login/denegaciones, y mantener la restauración final Driver.
+- Prevención: cada retry debe restablecer estado mutable antes de hacer aserciones de autorización; un timeout de limpieza no debe contaminar el rol del intento siguiente. Separar API matrix y recorrido UI si el caso sigue superando cuatro minutos.
+- Verificación local de lint/build y nueva Action integrada pendiente al registrar esta nota. La descarga de traces recibió HTTP 503 por límite de egress; logs de Action disponibles identificaron ambos síntomas.
+
 ## 2026-11-23 — TypeScript rechazó asignación directa a NODE_ENV en prueba BFF — CORREGIDO
 
 - `next build` falló en el test de API remota HTTP porque Node declara `process.env.NODE_ENV` readonly en TypeScript.

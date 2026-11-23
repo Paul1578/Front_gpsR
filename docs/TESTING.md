@@ -30,6 +30,12 @@
 - Action Front `45172574266`: **50/51**; feature pasó flujos, falló un locator Playwright porque la sección de Drivers ya estaba abierta y el toggle se llamaba “Ocultar choferes”.
 - Fix local usa la tarjeta ya visible `team-driver-{id}` y espera su render. `npm run lint`, `npm run build`, discovery Playwright **51/51** y diff-check pasan; la nueva Action con API/MySQL descartable queda pendiente.
 
+## Corrida integrada vigente — Action `45227072219`
+
+- Passed: auditoría npm, lint, build, responsive **1/1**, Backend Release/xUnit **165/165**, smoke API/MySQL y cleanup.
+- Playwright E2E: **66 passed, 1 failed** (`API deniega mutaciones y Manager gestiona flota desde la interfaz`). Timeout 120 s en la restauración final del rol durante una matriz extensa y CRUD Manager. El retry encontró el fixture aún en Manager y obtuvo 201 en una aserción que esperaba Driver; no es evidencia de bypass de roles.
+- Se amplía el timeout a 240 s y el test fuerza rol Driver antes de comprobar las denegaciones. Falta validar lint/build y repetir Actions integradas con el fix.
+
 # Estado vigente — 2026-11-23
 
 Las secciones históricas que siguen pueden describir pendientes ya cerrados al corte de aquella fecha; el estado actual está en esta cabecera y `docs/PROJECT_STATUS.md`.

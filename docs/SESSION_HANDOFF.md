@@ -1,3 +1,12 @@
+## Handoff vigente — timeout E2E de matriz Driver/Manager
+
+- Front branch `refactor/route-builder`, code HEAD `36a453b`; Backend `ac14373`; `main` intacta.
+- Action integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): audit/lint/build/responsive y Backend 165/165 pasaron; E2E **66/67**, cleanup posterior correcto.
+- El único test (`e2e/fleet-admin.spec.ts`, “API deniega mutaciones y Manager gestiona flota desde la interfaz”) excedió timeout de 120 s durante la restauración del rol al final del recorrido Manager. En retry el fixture quedó como Manager, así la matriz que esperaba Driver obtuvo 201. Evidencia: Action logs; descarga de traces respondió HTTP 503 de almacenamiento de Actions.
+- Fix local: timeout ampliado a 240 s, normalización explícita del fixture a Driver antes de las denegaciones y mensajes de rol explícitos. Ejecutar lint/build, discovery, diff-check; publicar Front y esperar E2E integrada. Si vuelve a exceder el tiempo, dividir la matriz HTTP del recorrido UI y mantener fixtures distintos.
+- Backend JWT unificado validado por Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042), 165/165, smokes y cleanup; doc commit `45c7288` tiene workflows en curso.
+- Limitación de consulta: descarga de traces de Front falló con HTTP 503 por límite de egress de GitHub; los logs normales identifican el timeout y el retry, por lo que el fix se basa en evidencia disponible.
+
 ## Handoff vigente — evidencia fotográfica bajo demanda
 
 - Front refactor/route-builder: listas de rutas omiten el payload Base64. RouteHistory lo trae al abrir el modal; DriverView trae el detalle activo y vuelve a sincronizar cuando aumenta el conteo de evidencia.

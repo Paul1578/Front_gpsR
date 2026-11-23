@@ -1,3 +1,12 @@
+## Estado vigente — Front `36a453b`, Backend `ac14373` — 2026-11-23
+
+- Ramas `refactor/route-builder` y `chore/stabilize-fleet-platform`; `main` intacta. Front actual: BFF de autenticación endurecido, pines accesibles y feedback/confirmación de Driver.
+- Checks Front de Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): audit, lint, build y responsive pasaron; E2E **66/67**. El único escenario, matriz de permisos + CRUD Manager, excedió 120 s. En el retry, el rol Manager que dejó el primer intento hizo que la aserción de Driver devolviera 201; no se atribuye a un bypass de autorización.
+- Corrección local pendiente de Action: timeout del caso a 240 s, restablecer explícitamente el fixture a Driver antes de validar permisos y restauración final. Lint/build y Action integrada nueva pendientes al corte.
+- Backend `ac14373`: Release/xUnit **165/165**, smokes HTTP/MySQL, rate limit y cleanup aprobados en Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042).
+- Decisiones vigentes: ruta con paradas múltiples, cada una recogida/entrega/ambas; traslados permitidos; sólo raíz promueve Admin; unlink conserva cuenta/perfil/rol Driver y se bloquea con ruta Pending/InProgress; web responsive, app nativa pospuesta.
+- No declarar misión terminada: siguen por revisar los pendientes verificables del plan y configuración de producción/SMTP depende del entorno externo. La corrida E2E confirmó cleanup del API y contenedor; los detalles/prevención están en `ERROR_LOG.md`.
+
 ## Carga diferida de fotos de rutas — CI aprobado
 
 - Las listas de rutas ya no transfieren el Base64 de imágenes: conservan tipo, descripción y fecha, y las notas mantienen su contenido. El detalle de ruta sigue incluyendo fotos completas.

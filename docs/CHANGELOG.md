@@ -902,3 +902,4 @@
 - La baja desde Gestión de Conductores ahora exige confirmar; cancelar deja el perfil activo sin mutación. El E2E amplía alta/edición/asignación a 768px.
 - BFF usa allowlist de Origin en producción, ignora forwarded headers para CSRF y rechaza HTTP remoto; `.env.example`/README describen variables.
 - Validación local Front: lint/build, handlers **5/5**, discovery **67**, diff-check.
+- Action integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219) pasó todos los checks anteriores y Backend 165/165, pero Playwright quedó 66/67: timeout en matriz de permisos/CRUD Manager a 120 s y retry con rol residual Manager. Corrección local: ampliar a 240 s y normalizar explícitamente el rol Driver antes de probar; CI del fix pendiente.

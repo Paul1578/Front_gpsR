@@ -2164,7 +2164,8 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
     !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations,
     "Requiere fixtures QA de Admin, User y Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
-  test.setTimeout(120_000);
+  // Este escenario incluye una matriz API y una sesión Manager con varios CRUD de UI.
+  test.setTimeout(240_000);
   page.setDefaultTimeout(8_000);
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -2239,6 +2240,22 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
   const qaVehicleId = (await createdVehicle.json()).id as string;
   qaRoute.vehicleId = qaVehicleId;
 
+  const adminTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+  expect(adminTeam.status()).toBe(200);
+  const fixtureDriver = (await adminTeam.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
+  expect(fixtureDriver?.id).toBeTruthy();
+  const setFixtureRole = async (roleName: "Driver" | "Logistics" | "Manager") => {
+    const response = await page.request.put(`/api/backend/Users/${fixtureDriver.id}/role`, {
+      headers: adminHeaders,
+      data: { roleName },
+    });
+    expect(response.status(), `cambio del fixture a ${roleName}`).toBe(200);
+  };
+
+  // Un intento anterior expirado puede terminar antes del finally. Cada retry
+  // parte del rol explícito esperado y no interpreta un Manager como Driver.
+  await setFixtureRole("Driver");
+
   const expectDenied = async (role: string, operations: MutationCheck[]) => {
     for (const [operation, send] of operations) {
       const response = await send();
@@ -2296,18 +2313,6 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
     ...routeManagementMutations(driverHeaders),
     ...userAndRoleMutations(driverHeaders),
   ]);
-
-  const adminTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
-  expect(adminTeam.status()).toBe(200);
-  const fixtureDriver = (await adminTeam.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
-  expect(fixtureDriver?.id).toBeTruthy();
-  const setFixtureRole = async (roleName: "Driver" | "Logistics" | "Manager") => {
-    const response = await page.request.put(`/api/backend/Users/${fixtureDriver.id}/role`, {
-      headers: adminHeaders,
-      data: { roleName },
-    });
-    expect(response.status(), `cambio del fixture a ${roleName}`).toBe(200);
-  };
 
   try {
     await setFixtureRole("Logistics");
