@@ -12,24 +12,27 @@
 - La asignación de Driver continuaba siendo flaky en ambas Actions y motivó la corrección backend registrada arriba. Tras cada arreglo se debe correr el suite integrado; no inferir éxito desde estado optimista.
 - Prevención: al verificar campos de usuario respetar el DTO que realmente devuelve la API; en E2E usar el contenedor de la entidad por ID, no texto global duplicable por responsive.
 
-## 2026-11-22 — E2E Manager mapa esperaba menú móvil en desktop y compartía Driver de otros tests — CORREGIDO LOCALMENTE; CI PENDIENTE
+## 2026-11-22 — E2E Manager mapa esperaba menú móvil en desktop y compartía Driver de otros tests — CORREGIDO Y VALIDADO EN CI
 
 - Actions `45084368342` y `45084699175` ejecutaron **38/39 E2E**; los demás casos, incluido el CRUD Driver y su asignación SQL, pasaron. Manager mapa agotó 90 s al abrir la navegación como si el viewport desktop fuera móvil. El retry encontró el rol del mismo Driver ya cambiado a Manager y el primer intento había dejado recursos Pending porque expiró antes de cleanup.
 - Corrección: el runner prepara una cuenta Manager dedicada y un Driver de ruta dedicado. El E2E navega directamente por la opción de escritorio, conserva móvil/tablet sólo para aserciones responsive y usa un sufijo estable para limpiar recursos de un retry anterior antes/después del escenario.
 - Se añadió limpieza SQL de la cuenta `fletflow.e2e.manager.map.*`; Driver/Vehicle/Ruta usan los prefijos QA ya cubiertos. `bash -n`, lint/build/discovery 39 y diff-check pasan local; requiere Action autenticada nueva.
 - Prevención: no operar el hamburger mobile-only en desktop; no mutar fixtures de rol compartidos entre tests; timeout nunca debe dejar estado que invalide un retry.
+- Validación: Actions `45085920993`, `45086519736` y `45086827516` completaron **39/39 E2E**, responsive **1/1** y cleanup.
 
-## 2026-11-22 — Sufijo aleatorio del mapa podía cambiar al reiniciar worker — CORREGIDO LOCALMENTE; CI PENDIENTE
+## 2026-11-22 — Sufijo aleatorio del mapa podía cambiar al reiniciar worker — CORREGIDO Y VALIDADO EN CI
 
 - La revisión independiente detectó que un retry tras reiniciar el worker podía regenerar `randomUUID()` y dejar sin limpiar la ruta/vehículo del primer intento.
 - El runner exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` desde el identificador de la ejecución y el spec lo reutiliza para nombrar fixtures; el test se omite si falta esta variable.
 - Prevención: identificadores para cleanup E2E deben sobrevivir los retries del worker, no crearse sólo al cargar el módulo.
+- Validación: Action `45086519736` pasó 39/39 y cleanup con `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` compartido.
 
-## 2026-11-23 — E2E Vehicle dependía del orden de botones y estructura visual — CORREGIDO LOCALMENTE; CI PENDIENTE
+## 2026-11-23 — E2E Vehicle dependía del orden de botones y estructura visual — CORREGIDO Y VALIDADO EN CI
 
 - La auditoría observó que el flujo de vehículos localizaba tarjetas con `.grid > div` + texto y accionaba eliminar con `nth(1)`, frágil si cambia el layout o aparece otro botón.
 - Se agregó `data-testid` por VehicleId y nombre accesible `Eliminar vehículo <placa>`; el E2E usa la tarjeta y acción identificadas y comprueba que cancelar confirmación conserva el registro.
 - Prevención: los E2E de CRUD deben buscar entidades por ID y acciones por nombre accesible, sin depender del orden visual.
+- Validación: Action `45086827516` pasó **39/39 E2E** y responsive **1/1**, incluyendo cancelación y posterior baja real.
 
 ## 2026-11-22 — Runner E2E no suministraba UserId a Manager mapa — CORREGIDO EN RUNNER
 

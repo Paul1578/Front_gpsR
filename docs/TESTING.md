@@ -6,12 +6,14 @@
 # Validación de asignación concurrente, creación Driver y mapa Manager — pendiente de CI
 
 - Front Action `45085920993` para `d652652`: **39/39 E2E** y responsive browser **1/1**, sin skips; audit, lint, build, API/MySQL y cleanup pasaron. Incluye ejecución real Manager mapa.
+- Front Action `45086519736` para `104723a`: **39/39 E2E**, responsive **1/1**, cleanup correcto; valida Manager mapa con sufijo estable del runner.
+- Front Action `45086827516` para `8a90494`: **39/39 E2E**, responsive **1/1**, cleanup; incluye CRUD Vehicle con cancelar confirmación y selectores semánticos.
 - Backend Action `45085910280` pasó Release/xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup. Front Action `45085920993` pasó audit/lint/build y browser responsive; E2E integrado en curso.
 - Front local tras los fixes actuales: lint/build correctos, discovery **39 tests**, diff-check correcto. El E2E Manager mapa se descubrió y usa API real; ejecución local se omitió sin API/fixtures QA.
 - Actions `45082924174` y `45083215716` demostraron que un único worker no evita la escritura perdida; ambas llegaron a leer SQL `VehicleId=NULL` tras el éxito visual. Backend `f8edbcd` corrigió el mutador y pasó 113/113 xUnit; Action `45084368819` success.
 - `45084368342` y `45084699175`: **38/39 E2E**. Pasaron asignación Driver comprobada por SQL, CRUD dedicado, alta de Driver empresa y búsqueda responsive. Manager mapa fue el único fallo: menú mobile-only en desktop y fixture compartido tras retry.
 - Fix local sustituye fixture por Manager/Driver dedicados y hace setup/cleanup idempotentes. Lint/build/discovery **39**, `bash -n` y diff-check pasan; nueva Action debe validar Manager mapa.
-- Manager mapa comparte el sufijo de fixture de la ejecución vía `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`, incluso si Playwright reinicia el worker. Confirmar el cleanup en CI.
+- Manager mapa comparte `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`; Action `45086519736` completó 39/39, incluido el escenario sin skips y cleanup.
 - CRUD Vehicle ahora selecciona tarjeta por ID y acción eliminar por nombre accesible, con una aserción adicional de cancelar confirmación. Local lint/build y discovery 39 pasan; CI pendiente.
 
 ## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente

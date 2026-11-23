@@ -3,6 +3,8 @@
 ## Estado vigente — diagnóstico de asignación y pruebas responsive
 
 - Front `d652652` pasó Action `45085920993`: audit/lint/build, responsive browser **1/1** y **39/39 E2E**, incluido Manager mapa sin skips. Backend `1ce4d45` pasó Action `45085910280` (Release/xUnit, aislamiento tenant HTTP/MySQL, concurrencia y cleanup). Hay un fix adicional local del sufijo estable para reinicios de worker; volver a publicar y validar.
+- Front `104723a` pasó Action `45086519736`: **39/39 E2E**, responsive **1/1** y cleanup correcto; Manager mapa usó y limpió el sufijo estable entre retries. Los selectores Vehicle de `8a90494` están en una Action posterior aún en ejecución.
+- Front `8a90494` pasó Action `45086827516`: **39/39 E2E**, responsive **1/1**, audit/lint/build y cleanup; valida selector Vehicle por ID, botón de nombre accesible y cancelar baja.
 - Ramas: Front `refactor/route-builder`; Backend `chore/stabilize-fleet-platform`; main sin cambios.
 - Actions `45082924174` (1 worker) y `45083215716` reprodujeron asignación inestable: MySQL vio `Drivers.VehicleId=NULL` tras éxito UI. Causa: `UpdateDriverCommand` podía guardar un objeto previo al lock y sobrescribir el VehicleId concurrente. Backend fix `f8edbcd` publicado, regresión interleaving y Release xUnit **113/113**; Action `45084368819` pasó.
 - La Action `45083215716` también mostró que DTO User de `my-team` no incluye documento y la UI generaba `ID:` vacío; UI omite ese campo sin valor, E2E valida username y mantiene prueba Driver API. `team-search` usa testid de tarjeta identificada por API.

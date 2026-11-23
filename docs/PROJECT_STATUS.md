@@ -1,6 +1,8 @@
 ## Estado actual — 2026-11-22
 
 - Front `d652652` pasó Action `45085920993`: audit/lint/build, responsive browser **1/1** y **39/39 E2E** sin skips. Backend `1ce4d45` pasó Action `45085910280` con Release/xUnit, aislamiento tenant HTTP/MySQL y concurrencia. La corrección posterior para que el sufijo sobreviva reinicios de worker está en local y requiere repetir Action.
+- Front `104723a` pasó Action `45086519736`: **39/39 E2E** incluyendo Manager mapa con `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` estable, responsive browser **1/1**, audit/lint/build y cleanup.
+- Front `8a90494` pasó Action `45086827516`: **39/39 E2E**, responsive **1/1**, audit/lint/build y cleanup; incluye tarjeta Vehicle por ID, label accesible y cancelar confirmación.
 - Backend runner `1ce4d45` pasó Action `45085910280`: Release build/xUnit, aislamiento tenant HTTP/MySQL y concurrencia. Front Action `45085920993` pasó audit/lint/build y chequeo responsive; suite E2E autenticada en curso.
 - El fix Backend `f8edbcd` pasó xUnit **113/113** y Action `45084368819`; frontend `45084368342` y `45084699175` pasaron **38/39 E2E**: CRUD Driver/asignación, alta de administración de empresa y búsqueda responsive pasaron. El único fallo fue Manager mapa: navegación móvil usada en desktop y fixture Driver compartido; se corrigió localmente con fixtures dedicados/idempotencia.
 - `45083215716` confirmó además dos errores de aserción E2E: documento ausente del DTO User y locator que eligió un nodo responsive oculto. UI omite ID vacío, el test usa username y tarjetas Driver por ID. Nueva validación integrada pendiente.
