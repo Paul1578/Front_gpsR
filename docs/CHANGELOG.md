@@ -611,3 +611,9 @@
 
 - E2E retiene GET `/Routes`, exige “Cargando…” y prohíbe presentar actividad vacía antes de recibir respuesta. Con `200 []` comprueba el vacío y métrica 0.
 - `playwright.config.ts` alinea puerto del servidor con `PLAYWRIGHT_BASE_URL`. Test de producción aislado y suite focal **4/4** pasan; nueva Action integrada pendiente.
+
+## 2026-11-23 — E2E de reset y activación con API/MySQL descartables
+
+- Se añadieron recorridos reales desde formularios de reset y activación con tokens aleatorios preparados como hashes en MySQL efímero por el runner backend.
+- Cada flujo verifica clave inicial, nueva clave, rechazo de la anterior y rechazo de reutilizar el token. No se envía ni se simula correo SMTP.
+- Lint, build y discovery **49** pasan localmente. Backend runner `96b50cc` pasó Action `45112158616`; Action Front `45111678324` pasó 47/47 antes de incluir estos escenarios. Pendiente Action cross-repo del SHA actual.

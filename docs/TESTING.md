@@ -1,5 +1,12 @@
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
+## 2026-11-23 — Ciclo UI de reset y activación — pendiente de Action
+
+- El runner backend crea usuarios y tokens aleatorios de 256 bits en MySQL desechable; sólo persiste hashes SHA-256 y limpia los registros al terminar.
+- Los E2E usan formularios reales: login inicial, cambio de clave, rechazo de la clave anterior y replay del token (401), tanto para reset como para activación.
+- Validación local: lint, build y discovery Playwright **49 tests** correctos. El ciclo no se reporta como ejecutado localmente: sus fixtures reales los prepara el runner API/MySQL de CI.
+- Backend Action `45112158616` pasó con runner actualizado. Front Action `45111678324` pasó **47/47**, antes de incluir estos dos escenarios; siguiente push debe validar ejecución y cleanup integrado.
+
 ## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
 
 - Discovery Playwright **46**. Suite focal **4/4** con servidor limpio `127.0.0.1:3010`: Dashboard no muestra cero/vacío mientras Routes sigue pendiente; Team recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
