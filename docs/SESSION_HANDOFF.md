@@ -3,7 +3,7 @@
 ## E2E de correo duplicado en Equipo
 
 - Añadida validación real de crear Manager/Logistics y volver a enviar su correo con username nuevo; espera HTTP 409 y verifica que el GET de equipo conserva una sola cuenta. El escenario no intercepta la petición.
-- Lint/build/discovery 51/diff-check pasan localmente. Action previa `45140542275` obtuvo 51/51 y responsive 1/1 antes de esta edición; ejecutar Action integrada con el nuevo spec.
+- Lint/build/discovery 51/diff-check pasan localmente. Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) validó `e37cfeb`: **51/51 E2E**, responsive 1/1, audit, lint/build, backend Release/xUnit y cleanup exitoso.
 - Un primer `rg` usó rutas equivocadas entre los checkouts Front/Backend; `ERROR_LOG.md` registra cómo resolverlo con `rg --files` y confirmar la raíz correcta.
 
 ## Username largo en tarjeta Equipo — validado

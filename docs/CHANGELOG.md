@@ -1,7 +1,7 @@
 # 2026-11-23 — Correo duplicado en Gestión de Equipo
 
 - El E2E integrado intenta crear un segundo miembro con el mismo email por la UI; espera 409 real, mensaje de API, diálogo visible y una única cuenta persistida.
-- Lint, build, 51 tests descubiertos y diff-check pasan localmente; CI de API/MySQL pendiente.
+- Lint, build, 51 tests descubiertos y diff-check pasan localmente; Action `45142003636` validó 51/51 E2E, responsive, audit, backend Release/xUnit y cleanup API/MySQL.
 
 # 2026-11-23 — Cobertura de edición de rutas para Logistics
 

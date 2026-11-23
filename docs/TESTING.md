@@ -1,7 +1,7 @@
-# Correo duplicado desde Gestión de Equipo — Action pendiente — 2026-11-23
+# Correo duplicado desde Gestión de Equipo — validado — 2026-11-23
 
 - El escenario autenticado crea miembros y vuelve a enviar un correo ya usado por UI; la API real debe responder `409 El correo ya fue registrado.`, conservar el diálogo y dejar una sola cuenta visible en `/Users/my-team`.
-- Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action previa `45140542275` cubrió el SHA anterior con 51/51; falta ejecutar la nueva versión.
+- Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) ejecutó esta versión con **51/51 E2E**, responsive 1/1 y cleanup exitoso.
 
 # E2E Logistics edita una ruta — validado por Actions — 2026-11-23
 
