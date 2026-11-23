@@ -853,3 +853,4 @@
 - Se alineó el fallback de Next con el puerto `5046` de ASP.NET y se añadió `.env.example` sin secretos, incluido por la regla de excepción de `.gitignore`.
 - El README ya no afirma que la cobertura de fotos/tenant esté pendiente y explica cómo cambiar el origen del proxy.
 - Lint/build/diff-check locales pasan; CI integrado pendiente.
+- Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó: audit/lint/build, responsive 1/1, E2E 53/53, Backend Release/xUnit 158/158, API/MySQL y cleanup.

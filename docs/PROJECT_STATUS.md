@@ -7,11 +7,11 @@
 - Contrato TypeScript actualizado para representar `content=null` en fotos listadas. Front `13669f3` pasó lint/build local y Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694): **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **158/158**, API/MySQL y cleanup.
 - El historial y Mi Ruta solicitan el detalle con fotos cuando se necesitan y muestran carga/error/reintento. Continúa la auditoría global de cobertura CRUD/roles/responsive. SMTP y configuración productiva son dependencias externas; app nativa pospuesta.
 
-## Configuración de API local — fix local en validación integrada
+## Configuración de API local — CI aprobado
 
 - `next.config.ts` apuntaba por defecto a `localhost:5048`, mientras que el perfil ASP.NET de desarrollo y el README indican `localhost:5046`; además no había `.env.example` y el README mantenía notas ya obsoletas sobre fotos/aislamiento.
 - Alineado el default a `:5046`, añadido `.env.example` sin secretos y excepción precisa en `.gitignore`; corregidas instrucciones/estado del README.
-- `npm run lint`, `npm run build` (Next 16.4.6 + TypeScript) y `git diff --check` pasan localmente. Falta Action del commit para validar la integración del cambio.
+- `npm run lint`, `npm run build` (Next 16.4.6 + TypeScript) y `git diff --check` pasan localmente. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) del commit `48e654b` pasó audit/lint/build, responsive **1/1**, E2E autenticados **53/53**, Backend Release/xUnit **158/158**, API/MySQL y cleanup.
 
 ## Mapa, asignaciones y limpieza de componentes obsoletos — CI aprobado
 

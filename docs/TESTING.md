@@ -789,4 +789,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `npm run lint`: pasó.
 - `npm run build`: pasó en Next.js 16.4.6, TypeScript y generación de 11 páginas.
 - `git diff --check`: pasó.
-- Se alineó el fallback Next a `http://localhost:5046` (perfil ASP.NET); se agregó `.env.example` ignorado correctamente para otros orígenes. Action integrada pendiente.
+- Se alineó el fallback Next a `http://localhost:5046` (perfil ASP.NET); se agregó `.env.example` ignorado correctamente para otros orígenes. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó audit/lint/build, responsive 1/1, E2E autenticado 53/53, Backend Release/xUnit 158/158, API/MySQL y cleanup.
+- Smoke local con el `.env.local` existente (override de desarrollo): `/dashboard` en `:3000` respondió 200, `/api/backend/Auth/me` respondió 401 sin sesión y Swagger respondió 200 en la API `:5048`. El perfil default `:5046` coincide con `Properties/launchSettings.json`; no se modificó el `.env.local` existente.

@@ -17,6 +17,9 @@
 - El primer `rg` de configuración Backend se ejecutó desde Front usando un subdirectorio inexistente; después se localizaron los archivos con `rg --files` en la raíz correcta. También se detectó que el proxy Next caía en `:5048`, distinto del perfil Backend/README `:5046`, y que `.env.example` no podía incluirse por `.gitignore`. Solución: alinear el default a `:5046`, permitir y añadir un ejemplo sin secretos, y corregir el README. Prevención: comprobar raíz, ignore rules y perfil de ejecución antes de afirmar el endpoint local predeterminado.
 - No fue posible abrir un nuevo subagente de seguridad porque se alcanzó el límite de hilos del entorno. Se continúa la revisión desde este agente y no se atribuyen hallazgos a un agente que no se inició.
 - El primer diff-check del bloque de configuración encontró líneas vacías al final de `CHANGELOG.md` y `TESTING.md`; se normalizó el EOF y se repetirá el chequeo. La consulta de Action Front `45195109149` desde el checkout Backend devolvió 404; consultarla desde Front.
+- Dos expresiones `jq` para resumir el estado de Actions tuvieron errores de forma (`Cannot index array with string jobs` y `Cannot index string with status`); se simplificaron las expresiones y la lectura de estado quedó operativa. No afectaron las ejecuciones de CI.
+- Se consultó por error la Action Backend `45196512845` desde el checkout Front y GitHub respondió 404; repetir siempre la consulta desde `/home/leonardo/Back_GPS`. La acción Front se consultó desde el checkout correcto.
+- En una lectura Backend se usaron rutas `Api/` y `Application/` desde la raíz, aunque las carpetas reales están bajo `fletflow/` y `Aplication/`; `rg` informó ruta inexistente. `rg --files` dio las ubicaciones correctas antes de inspeccionar código.
 
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 
