@@ -4,6 +4,7 @@
 
 - Backend Action `45085910280` pasó build, xUnit, aislamiento multiempresa HTTP/MySQL y concurrencia; Front Action `45085920993` llegó a E2E tras audit/lint/build/responsive verdes.
 - Front Action `45085920993` terminó **39/39 E2E** y responsive **1/1**; el E2E Manager mapa corrió y pasó. El fix estable de sufijo de retry aún debe probarse en nueva Action.
+- Gestión de vehículos identifica su tarjeta por VehicleId y da nombre accesible al botón de baja; el E2E añade cancelación de confirmación y usa selectores semánticos.
 - `UpdateDriverCommand` ahora comparte el bloqueo de asignación y re-lee el Driver antes de guardar para preservar cambios concurrentes de `VehicleId`.
 - Alta Driver desde administración se verifica con User y perfil Driver persistidos; la lista omite `ID:` vacío si el DTO no trae identificación.
 - Búsqueda E2E de choferes usa ID de Driver y `data-testid` por registro; se añade E2E Manager mapa desktop/tablet/móvil web con fixtures API.

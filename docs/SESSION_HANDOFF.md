@@ -10,6 +10,7 @@
 - Front `baa0288` ya incorporó el resto de fixes (asignación SQL, alta Driver, testid de tarjeta y documento opcional); 38 casos pasaron en `45084699175`. El cambio actual Runner/Spec/cleanup tiene lint/build/discovery **39**, `bash -n` y diff-check locales; publicar ambos y repetir Actions.
 - Backend fix `f8edbcd` pasó Release xUnit **113/113**, HTTP/MySQL y concurrencia; runner `387b62f` pasó su Action. `44d224a` registra esos resultados.
 - Auditoría Front detectó que reiniciar el worker regeneraría el UUID del fixture. El runner exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` y el spec lo reutiliza para que el retry limpie los mismos nombres; CI pendiente.
+- Auditoría señaló selectores por estructura/nth en Vehicle. UI añade `data-testid` por ID y label de eliminar; E2E valida que cancelar confirmación mantiene la tarjeta. Lint/build/discovery 39 pasan localmente; debe publicarse y probarse en Action.
 - No marcar misión completa: quedan matriz CRUD/roles/responsive, SMTP productivo externo, móvil nativo pospuesto y decisiones pendientes de Admin delegado/desvincular User↔Driver.
 
 ## Auditoría de Administración de empresa — alta Driver con API/MySQL

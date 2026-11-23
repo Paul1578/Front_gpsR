@@ -25,6 +25,12 @@
 - El runner exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` desde el identificador de la ejecución y el spec lo reutiliza para nombrar fixtures; el test se omite si falta esta variable.
 - Prevención: identificadores para cleanup E2E deben sobrevivir los retries del worker, no crearse sólo al cargar el módulo.
 
+## 2026-11-23 — E2E Vehicle dependía del orden de botones y estructura visual — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- La auditoría observó que el flujo de vehículos localizaba tarjetas con `.grid > div` + texto y accionaba eliminar con `nth(1)`, frágil si cambia el layout o aparece otro botón.
+- Se agregó `data-testid` por VehicleId y nombre accesible `Eliminar vehículo <placa>`; el E2E usa la tarjeta y acción identificadas y comprueba que cancelar confirmación conserva el registro.
+- Prevención: los E2E de CRUD deben buscar entidades por ID y acciones por nombre accesible, sin depender del orden visual.
+
 ## 2026-11-22 — Runner E2E no suministraba UserId a Manager mapa — CORREGIDO EN RUNNER
 
 - Al auditar la nueva prueba se detectó que esperaba `FLETFLOW_E2E_DRIVER_USER_ID`, pero `run-e2e-local.sh` sólo exportaba DriverId. Eso habría omitido el test de Manager aunque el suite terminara verde.

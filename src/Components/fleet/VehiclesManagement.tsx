@@ -243,6 +243,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
               {filteredVehicles.map((vehicle) => (
                 <div
                   key={vehicle.id}
+                  data-testid={`vehicle-card-${vehicle.id}`}
                   className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -286,6 +287,7 @@ export function VehiclesManagement({ onBack }: VehiclesManagementProps = {}) {
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(vehicle.id)}
+                      aria-label={`Eliminar vehículo ${vehicle.placa}`}
                       className="flex items-center justify-center px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-xs"
                     >
                       <Trash2 size={14} />

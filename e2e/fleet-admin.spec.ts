@@ -590,7 +590,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     expect(createResponse.status()).toBe(201);
     vehicleId = (await createResponse.json()).id as string;
 
-    const card = page.locator(".grid > div").filter({ hasText: plate });
+    const card = page.getByTestId(`vehicle-card-${vehicleId}`);
     await expect(card).toContainText("FleetFlow QA Browser test");
 
     await page.getByRole("button", { name: "Agregar Vehículo" }).click();
@@ -608,7 +608,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     expect(duplicateResponse.status()).toBe(409);
     await expect(page.getByText(`Ya existe un vehículo con la placa ${plate} en esta empresa.`)).toBeVisible();
     await expect(duplicateDialog).toBeVisible();
-    await expect(page.locator(".grid > div").filter({ hasText: plate })).toHaveCount(1);
+    await expect(page.getByTestId(`vehicle-card-${vehicleId}`)).toHaveCount(1);
     await duplicateDialog.getByRole("button", { name: "Cancelar" }).click();
 
     await card.getByRole("button", { name: "Editar" }).click();
@@ -677,8 +677,8 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
-    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("Mantenimiento");
-    await page.locator(".grid > div").filter({ hasText: plate }).getByRole("button", { name: "Editar" }).click();
+    await expect(card).toContainText("Mantenimiento");
+    await card.getByRole("button", { name: "Editar" }).click();
     const availableDialog = page.getByRole("dialog");
     await availableDialog.locator("select").selectOption("disponible");
     await expect(availableDialog.locator("select")).toHaveValue("disponible");
@@ -693,16 +693,21 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
     expect(availableVehicle.status()).toBe(200);
     expect((await availableVehicle.json()).status).toBe(0);
-    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("Disponible");
+    await expect(card).toContainText("Disponible");
 
-    await card.getByRole("button").nth(1).click();
+    await card.getByRole("button", { name: `Eliminar vehículo ${plate}` }).click();
     const confirmation = page.getByRole("alertdialog");
     await expect(confirmation.getByText("Eliminar Vehículo")).toBeVisible();
+    await confirmation.getByRole("button", { name: "Cancelar" }).click();
+    await expect(card).toBeVisible();
+
+    await card.getByRole("button", { name: `Eliminar vehículo ${plate}` }).click();
+    const deleteConfirmation = page.getByRole("alertdialog");
     const deleted = page.waitForResponse((response) =>
       response.url().includes(`/api/backend/Vehicles/${vehicleId}`) &&
       response.request().method() === "DELETE",
     );
-    await confirmation.getByRole("button", { name: "Sí, eliminar" }).click();
+    await deleteConfirmation.getByRole("button", { name: "Sí, eliminar" }).click();
     expect((await deleted).status()).toBe(204);
     await expect(card).toHaveCount(0);
 
@@ -721,7 +726,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     });
     expect(vehicleAfterReactivation.status()).toBe(200);
     expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
-    await expect(page.locator(".grid > div").filter({ hasText: plate })).toContainText("FleetFlow QA Parcial Browser test");
+    await expect(card).toContainText("FleetFlow QA Parcial Browser test");
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await expectNoHorizontalOverflow();

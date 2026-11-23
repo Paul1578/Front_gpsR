@@ -8,6 +8,7 @@
 - Al revisar el runner se detectó y corrigió que faltaba exportar `FLETFLOW_E2E_DRIVER_USER_ID`; verifica que el Action no marque Manager mapa skipped.
 - Estado de ramas: Front `refactor/route-builder` (`baa0288` remoto + fix Manager local); Backend `chore/stabilize-fleet-platform` (`44d224a` remoto + fixtures Manager locales); `main` intacta. Front lint/build/discovery **39** pasan. Falta publicar el aislamiento Manager y ejecutar una Action Front con `manager-map` verde.
 - Auditoría Front detectó que reiniciar el worker regeneraría el UUID y escaparía al cleanup. El runner exporta ahora `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`, consumido por el spec; validación integrada sigue en curso.
+- Se estabilizaron selectores del CRUD de vehículos con VehicleId/nombre accesible y se añadió comprobación de cancelar baja; local lint/build/discovery 39 pasan, CI posterior pendiente.
 
 - Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Commit `f07d37d` añade E2E de creación Driver, lecturas persistidas User/Driver y UI/SMTP; lint/build/discovery 38 pasan, Action `45083215716` pendiente.
 

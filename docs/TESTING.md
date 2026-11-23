@@ -12,6 +12,7 @@
 - `45084368342` y `45084699175`: **38/39 E2E**. Pasaron asignación Driver comprobada por SQL, CRUD dedicado, alta de Driver empresa y búsqueda responsive. Manager mapa fue el único fallo: menú mobile-only en desktop y fixture compartido tras retry.
 - Fix local sustituye fixture por Manager/Driver dedicados y hace setup/cleanup idempotentes. Lint/build/discovery **39**, `bash -n` y diff-check pasan; nueva Action debe validar Manager mapa.
 - Manager mapa comparte el sufijo de fixture de la ejecución vía `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`, incluso si Playwright reinicia el worker. Confirmar el cleanup en CI.
+- CRUD Vehicle ahora selecciona tarjeta por ID y acción eliminar por nombre accesible, con una aserción adicional de cancelar confirmación. Local lint/build y discovery 39 pasan; CI pendiente.
 
 ## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente
 
