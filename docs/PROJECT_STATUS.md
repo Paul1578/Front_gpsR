@@ -634,3 +634,5 @@ Fecha de actualización: 2026-11-22.
 - Corregidos localmente: ahora se ven deshabilitados los conductores ocupados; traslado sigue la transición real de Ubicar→mapa; los tests confirman cambios de rol/estado. Validación local lint/build, confirmaciones 1/1 y discovery 43 pasan. Nueva Action integrada pendiente.
 
 - Action de repetición `45100344654`: **42/43 E2E**; el único fallo fue otra desactivación de cuenta sin confirmar dentro del test de ciclo Driver. Corregido localmente. Cleanup SQL informó error después del test fallido; resultado de limpieza tras la nueva Action pendiente.
+
+- Action `45101175529`: nuevamente **42/43**; el test de ciclo Driver ya pasó la confirmación de desactivar el usuario vinculado y reveló una segunda omisión al desactivar el User regular del mismo escenario. Ambas interacciones ahora tienen confirmación explícita; repetir la Action.

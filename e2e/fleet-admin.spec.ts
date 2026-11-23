@@ -3893,6 +3893,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
     response.request().method() === "PUT",
   );
   await editedRegularUserCard.getByRole("button", { name: "Activo", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
   expect((await deactivateRegularUserPromise).status()).toBe(200);
   const inactiveRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
   expect((await inactiveRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(false);
