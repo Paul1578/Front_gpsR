@@ -4,10 +4,11 @@
 - Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
 - CI: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend Release/xUnit, audit/lint/build, responsive y cleanup también pasaron.
 
-## E2E de cambio de rol Manager→Logistics desde Equipo — validación pendiente
+## E2E de cambio de rol Manager→Logistics desde Equipo — validado por Actions
 
 - El escenario autenticado crea Manager en 320 px, cancela la primera confirmación y comprueba que no salió PUT; confirma el cambio después, verifica HTTP/body y `/Users/my-team`, recarga en 768 px y comprueba el rol renderizado.
-- Lint, build y discovery 51 pasaron localmente tras TS7006. Actions `45135338276` y `45136332916` revelaron copy de rol inconsistente, una expectativa equivocada sobre opciones visibles y un mock con texto obsoleto; preflight encontró otro locator sin tilde antes del E2E y se corrigió. UI comparte `roleLabels`; repetir lint/build y suite API/MySQL.
+- Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend xUnit 136/136, audit/lint/build, responsive y cleanup.
+- Lint/build, discovery 51, diff-check y test enfocado Playwright **1/1** también pasaron localmente.
 
 ## Driver completa una ruta de varias paradas — validado por Actions
 

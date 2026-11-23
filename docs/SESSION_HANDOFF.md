@@ -1,10 +1,11 @@
 # Handoff vigente — 2026-11-23
 
-## Siguiente cobertura — cambio de rol persistido desde Gestión de Equipo
+## Cambio de rol persistido desde Gestión de Equipo — validado
 
 - Auditoría QA encontró que Admin creaba Manager/Logistics con navegador+API, pero el cambio de rol estaba cubierto sólo con API; la UI tenía confirmación/cancelación probada mediante mocks.
 - Se amplió el caso integrado para abrir/cancelar la confirmación sin PUT, cambiar Manager→Logistics desde UI, comprobar respuesta/body y `GET /Users/my-team`, recargar y verificar el rol persistido. Incluye ancho de confirmación a 320 px y lista responsive a 768 px.
-- Lint/build/discovery y CI integrada pendientes; el fixture de cuenta se limpia por prefijo en el teardown efímero.
+- Lint/build, discovery 51, diff-check y test enfocado 1/1 pasan localmente. Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una, backend xUnit 136/136, responsive, auditoría/build y cleanup. El fixture temporal se eliminó.
+- No queda pendiente este flujo; errores de tipado, copy, locator y aserciones encontrados están descritos con solución y prevención en `ERROR_LOG.md`.
 
 ## Edición de rutas por Logistics — validada
 

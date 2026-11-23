@@ -23,6 +23,7 @@
 - Una búsqueda completa tras centralizar `roleLabels` encontró que el ciclo integrado Driver/User aún buscaba el botón `Logistica` sin tilde en `fleet-admin.spec.ts`. Las corridas `f46b489` se cancelaron antes de Playwright para no repetir un fallo previsible.
 - Solución: actualizar ese locator a `Logística`, igual que el copy accesible de la UI.
 - Prevención: tras modificar etiquetas compartidas, buscar variantes antiguas en todos los specs E2E, incluso flujos indirectos.
+- Validación final de la fase: Actions `45138088658` y `45138084594` pasaron 51/51; los specs reales y mocks de rol quedaron alineados.
 
 ## 2026-11-23 — Consulta de Actions con job ID incorrecto y HTTP 502 transitorio — RESUELTO
 

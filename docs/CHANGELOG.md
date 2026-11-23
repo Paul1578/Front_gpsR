@@ -14,10 +14,11 @@
 
 # 2026-11-23 — E2E de cambio de rol en Gestión de Equipo
 
-- El caso de creación de miembros ahora verifica cancelación sin PUT y cambio Manager→Logistics confirmado desde UI, persistencia API tras reload y responsive de diálogo/lista. Validación pendiente.
+- El caso de creación de miembros ahora verifica cancelación sin PUT y cambio Manager→Logistics confirmado desde UI, persistencia API tras reload y responsive de diálogo/lista. Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) validaron 51/51 cada una, xUnit 136/136, responsive y cleanup.
 - El primer Action falló porque un botón mostraba `Logistica` en lugar de la etiqueta común `Logística`; se centralizó la presentación con `roleLabels`. Fix pendiente de CI.
 - La segunda corrida encontró que el rol anterior permanece como opción seleccionable y que un test simulado conservaba copy viejo; asserts corregidos para verificar selección deshabilitada y copy unificado. CI final pendiente.
 - Preflight encontró y corrigió un último locator sin tilde en el ciclo Driver/User; las Actions de `f46b489` se cancelaron antes del step E2E.
+- Validación local del cambio `6486865`: lint/build, discovery 51, diff-check y el test Playwright enfocado **1/1** pasan; validado en Actions `45138088658` y `45138084594`.
 
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 

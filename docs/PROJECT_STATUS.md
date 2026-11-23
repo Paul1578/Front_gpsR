@@ -10,10 +10,12 @@
 - La auditoría detectó que el E2E Manager cancelaba la edición tras abrir el editor. Ahora modifica nombre/descripción, guarda y comprueba por GET persistencia de ruta, asignación y parada.
 - Lint/build, discovery **51 tests** y diff-check pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una con API/MySQL descartables, Release/xUnit, audit/lint/build, responsive y cleanup. El fixture conserva restauración del rol y limpieza en `finally`.
 
-## Cambio de rol desde Equipo — validación local pendiente de CI — 2026-11-23
+## Cambio de rol desde Equipo — validado por Actions — 2026-11-23
 
 - Se extiende el E2E real de creación de miembros: cancelación de Manager→Logistics sin mutación, confirmación del PUT, lectura `/Users/my-team` y persistencia visual tras recargar.
-- El modal se mide en 320 px y la lista tras recarga a 768 px. El primer build encontró TS7006 (corregido, build verde); Actions detectaron copy sin tilde y dos expectativas incorrectas/de mock desactualizado. UI usa `roleLabels`; se corrigieron asserts, mocks y un locator antiguo adicional antes del E2E. Revalidación y Action final pendientes.
+- El modal se mide en 320 px y la lista tras recarga a 768 px. Se corrigieron TS7006, copy sin tilde, aserciones de opciones visibles, mock/locator obsoleto. UI usa `roleLabels` compartido.
+- Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una, incluyendo cancelación sin PUT, cambio Manager→Logistics por UI, lectura API y persistencia tras recarga. Release/xUnit 136/136, audit/lint/build, responsive y cleanup también pasaron.
+- Validación local adicional: lint/build, discovery 51, diff-check y test enfocado **1/1**.
 
 ## Estado actual — 2026-11-23
 
