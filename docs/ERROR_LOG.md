@@ -1798,3 +1798,21 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: adaptar los mocks para reconocer los endpoints paginados y responder `{items,page,pageSize,totalCount,totalPages}`; al asignar/desasignar actualizar tanto la página visible como la caché global; el botón de reintento sincroniza ambas fuentes. Las esperas E2E comparan `URL.searchParams`.
 - Verificación local final: `team-management-load-errors.spec.ts` **13/13** pasa; los 2 casos autenticados de `team-search.spec.ts` se omiten por falta de credenciales Admin locales. `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan; queda Action integrada pendiente.
 - Incidente secundario: ESLint concurrente con Playwright falló al leer `test-results` mientras Playwright lo creaba/limpiaba (`ENOENT`). Prevención: ejecutar lint/build después de terminar Playwright, no en paralelo con el runner.
+
+## 2026-11-23 — La Action de paginación encontró una aserción global obsoleta — CORREGIDO LOCALMENTE
+
+- Action Front `45180756427` ejecutó 52 pruebas: 51 pasaron. El flujo cambia la cuenta de un Driver a Logistics y verifica que el perfil Driver quede inactivo, pero luego buscaba el nombre en toda la página esperando cero resultados; el nombre seguía correctamente visible en la tarjeta de baja (y en otros nodos).
+- Solución: afirmar el estado `Inactivo` en la tarjeta de Driver previamente localizada; la aserción ahora valida el estado operativo que el flujo realmente exige.
+- Prevención: cuando la regla conserva perfiles inactivos en la vista de bajas, comprobar el estado del registro dentro de su tarjeta, no la desaparición global del texto.
+
+## 2026-11-23 — Indicador de carga de opciones quedó en el padre equivocado — CORREGIDO
+
+- La primera compilación de la mejora de carga detectó que `RouteBuilder` es un componente separado; `routeAssignmentOptionsLoading` y `assignmentOptionsUnavailable` se leían en el JSX hijo, pero sólo estaban definidos en `RoutesManagement`. ESLint también señaló el binding padre sin uso y TypeScript reportó los nombres ausentes.
+- Solución: pasar ambos estados como props a `RouteBuilder`; mantener el estado fuente en `FleetContext`.
+- Prevención: al agregar estado a un componente anidado, revisar la frontera de props y correr lint/build antes de integrar.
+
+## 2026-11-23 — El nuevo E2E de mapa no preparó toda la sesión ni el viewport — CORREGIDO
+
+- Primer intento: el mock de mapa omitía `/Vehicles`, `/Drivers` y `/Users/my-team`; solicitudes de inicialización quedaron sin mock, se invalidó la sesión temporal y el test acabó en Login. Tras añadir respuestas de colección vacía, la sesión quedó estable.
+- Segundo intento: se buscó el botón móvil `Abrir menú` con el viewport por defecto de escritorio. El test ahora fija 390×844 px antes de navegar.
+- Prevención: los E2E con Auth mock deben cubrir también las cargas globales de FleetContext, y fijar el viewport antes de usar controles adaptativos.

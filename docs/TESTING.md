@@ -4,6 +4,8 @@
 - Front Action [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) ejecutó 52 casos: **45 pasaron y 7 fallaron** por simulaciones que aún interceptaban las rutas antiguas, caché global Driver desactualizada después de asignar/desasignar y comparación literal de URL codificada. Ver solución y prevención en `ERROR_LOG.md`.
 - Tras corregirlo, Playwright local de carga/equipo/conductores: **13/13 passed**; ambos E2E de `team-search.spec.ts` quedan omitidos por falta de credenciales QA locales. La compilación pasó antes de los últimos ajustes; lint/build, suite completa de Actions y responsive deben volver a ejecutarse.
 - El E2E de paginación usa 26 fixtures y valida anterior/siguiente con sesión Admin, por lo que se verifica en CI con sus credenciales temporales.
+- Iteración UX adicional: E2E `map-retry.spec.ts` valida recuperación tras 503 y nombres de placa/conductor; junto con `team-management-load-errors.spec.ts`, Playwright focal pasó **14/14**. Lint/build pasan luego de conectar los estados a `RouteBuilder`.
+- Action `45180756427` terminó **51/52**; la única aserción errónea del perfil inactivo está corregida localmente. Los cambios de mapa/asignación y la corrección requieren nueva Action integrada.
 
 ## Unlink User–Driver — E2E corregido, CI pendiente
 

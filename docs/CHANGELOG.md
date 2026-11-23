@@ -817,3 +817,9 @@
 - Actualizados los mocks E2E para usar las respuestas paginadas reales y el matcher de búsquedas ahora lee `URL.searchParams`.
 - Asignar/desasignar un vehículo y reintentar la carga sincronizan tanto la página visible como la caché global Driver usada para evitar asignaciones duplicadas.
 - Playwright de carga/Equipo/Conductores pasó **13/13**; `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan. Dos pruebas que requieren Admin QA se omiten localmente. Action `45177437589` registró 45/52 antes de los fixes; validar la revisión en una Action nueva.
+
+# 2026-11-23 — Correcciones al mapa y al flujo de asignación
+
+- El mapa permite reintentar la carga de rutas, conserva datos previos si falla la actualización y muestra placa/nombre de conductor en vez de IDs truncados.
+- En el paso 3 del constructor se distinguen carga, fallo y lista sin opciones; los selectores quedan deshabilitados mientras carga o falló el endpoint.
+- Corregida la aserción E2E del Driver inactivo tras cambio de rol. Playwright focal equipo/mapa **14/14**; lint y build pasan. La Action integrada de la revisión queda pendiente.

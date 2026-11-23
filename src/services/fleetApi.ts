@@ -164,6 +164,9 @@ export interface RouteForMap {
   id: string;
   name: string;
   vehicleId: string;
+  vehiclePlate?: string;
+  vehicleBrand?: string;
+  vehicleModel?: string;
   driverId: string;
   status: number;
   isActive: boolean;
@@ -255,6 +258,9 @@ export const mapRouteApiToRouteForMap = (dto: RouteApiDto): RouteForMap => ({
   id: dto.id,
   name: dto.name,
   vehicleId: dto.vehicleId,
+  vehiclePlate: dto.vehiclePlate ?? undefined,
+  vehicleBrand: dto.vehicleBrand ?? undefined,
+  vehicleModel: dto.vehicleModel ?? undefined,
   driverId: dto.driverId,
   status: dto.status,
   isActive: dto.isActive,

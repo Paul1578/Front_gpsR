@@ -2,9 +2,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
 import { useAuth } from "@/Context/AuthContext";
+import { useFleet } from "@/Context/FleetContext";
 import {
   fetchRoutes,
   fetchRoutePositions,
@@ -49,12 +50,14 @@ function parseCoord(value?: number): number | null {
 
 export function MapView({ onBack }: MapViewProps) {
   const { apiFetch } = useAuth();
+  const { routeAssignmentVehicles, routeAssignmentDrivers } = useFleet();
 
   const [routes, setRoutes] = useState<RouteForMap[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [routesRetry, setRoutesRetry] = useState(0);
 
   const [trackingPositions, setTrackingPositions] = useState<LatLngTuple[]>([]);
   const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
@@ -96,7 +99,7 @@ export function MapView({ onBack }: MapViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [apiFetch]);
+  }, [apiFetch, routesRetry]);
 
   // --------- HELPERS PARA TRACKING ---------
   const fetchSnappedGeometry = async (
@@ -184,6 +187,21 @@ export function MapView({ onBack }: MapViewProps) {
     [routes, selectedRouteId]
   );
 
+  const getVehicleLabel = (route: RouteForMap) => {
+    const vehicle = routeAssignmentVehicles.find((item) => item.id === route.vehicleId);
+    const plate = route.vehiclePlate || vehicle?.placa;
+    if (!plate) return "Vehículo sin identificar";
+    const detail = [route.vehicleBrand || vehicle?.marca, route.vehicleModel || vehicle?.modelo]
+      .filter(Boolean)
+      .join(" ");
+    return detail ? `${plate} · ${detail}` : plate;
+  };
+
+  const getDriverLabel = (route: RouteForMap) => {
+    const driver = routeAssignmentDrivers.find((item) => item.id === route.driverId);
+    return driver ? `${driver.firstName} ${driver.lastName}`.trim() : "Conductor asignado";
+  };
+
   const stopsCount = useMemo(() => {
     if (!selectedRoute || !Array.isArray(selectedRoute.points)) return 0;
     // el backend incluye origen/destino en points; contamos intermedios
@@ -264,6 +282,15 @@ export function MapView({ onBack }: MapViewProps) {
         </div>
       )}
 
+      {error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-800">
+          <span>{error}. {routes.length > 0 ? "Se conserva la última lista de rutas." : ""}</span>
+          <button type="button" onClick={() => setRoutesRetry((value) => value + 1)} disabled={isLoading} className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+            <RefreshCw size={13} />{isLoading ? "Actualizando…" : "Reintentar"}
+          </button>
+        </div>
+      )}
+
       {trackingHasNoPositions && selectedRouteId && !trackingError && (
         <div role="status" className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-xs text-sky-900" aria-live="polite">
           Sin posiciones registradas para esta ruta. Se muestra únicamente la ruta planificada.
@@ -288,13 +315,9 @@ export function MapView({ onBack }: MapViewProps) {
                     </p>
                     <p className="text-[11px] text-gray-500">
                       Vehículo:{" "}
-                      <span className="font-medium">
-                        {selectedRoute.vehicleId.slice(0, 8)}…
-                      </span>{" "}
+                      <span className="font-medium">{getVehicleLabel(selectedRoute)}</span>{" "}
                       · Conductor:{" "}
-                      <span className="font-medium">
-                        {selectedRoute.driverId.slice(0, 8)}…
-                      </span>
+                      <span className="font-medium">{getDriverLabel(selectedRoute)}</span>
                     </p>
                   </div>
                   <span
@@ -336,17 +359,6 @@ export function MapView({ onBack }: MapViewProps) {
               </div>
             )}
 
-            {!isLoading && error && routes.length === 0 && (
-              <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/80 text-sm text-red-500">
-                {error}
-              </div>
-            )}
-
-            {!isLoading && error && routes.length > 0 && (
-              <div className="absolute left-3 bottom-3 z-[500] rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] text-red-700 shadow-sm">
-                {error}
-              </div>
-            )}
           </div>
         </div>
 
@@ -393,13 +405,9 @@ export function MapView({ onBack }: MapViewProps) {
                       </p>
                       <p className="text-[11px] text-gray-500 truncate">
                         Vehículo:{" "}
-                        <span className="font-medium">
-                          {route.vehicleId.slice(0, 8)}…
-                        </span>{" "}
+                        <span className="font-medium">{getVehicleLabel(route)}</span>{" "}
                         · Conductor:{" "}
-                        <span className="font-medium">
-                          {route.driverId.slice(0, 8)}…
-                        </span>
+                        <span className="font-medium">{getDriverLabel(route)}</span>
                       </p>
                     </div>
                     <span

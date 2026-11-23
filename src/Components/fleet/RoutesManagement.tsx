@@ -46,7 +46,7 @@ const validPoint = (point: PickerPoint | null) =>
   !(Math.abs(point.lat) < 0.0001 && Math.abs(point.lng) < 0.0001);
 
 export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
-  const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, routesLoading, retryFleetData } = useFleet();
+  const { routes, vehicles, routeAssignmentVehicles, routeAssignmentDrivers, addRoute, updateRoute, deleteRoute, loadErrors, routesLoading, routeAssignmentOptionsLoading, retryFleetData } = useFleet();
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -356,6 +356,8 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
         availableVehicles={availableVehicles}
         drivers={drivers}
         loadErrors={loadErrors}
+        routeAssignmentOptionsLoading={routeAssignmentOptionsLoading}
+        assignmentOptionsUnavailable={assignmentOptionsUnavailable}
         retryFleetData={retryFleetData}
         vehicleName={vehicleName}
         driverName={driverName}
@@ -583,6 +585,8 @@ function RouteBuilder({
   availableVehicles,
   drivers,
   loadErrors,
+  routeAssignmentOptionsLoading,
+  assignmentOptionsUnavailable,
   retryFleetData,
   vehicleName,
   driverName,
@@ -926,16 +930,23 @@ function RouteBuilder({
                   title="Asigna los recursos"
                   description="Elige quién hará la ruta y con qué vehículo."
                 />
+                {routeAssignmentOptionsLoading && (
+                  <p role="status" aria-live="polite" className="my-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                    Cargando vehículos y conductores disponibles…
+                  </p>
+                )}
                 {loadErrors.includes("opciones de asignación") && (
                   <div role="alert" className="my-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                     <span>No se pudieron cargar los vehículos y conductores para asignar. Reintenta antes de continuar.</span>
-                    <button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button>
+                    <button type="button" onClick={() => void retryFleetData()} disabled={routeAssignmentOptionsLoading} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Reintentar</button>
                   </div>
                 )}
                 <ResourceSelect
                   icon={<Truck size={18} />}
                   label="Vehículo"
                   value={formData.vehicleId}
+                  disabled={routeAssignmentOptionsLoading || assignmentOptionsUnavailable}
+                  emptyMessage="No hay vehículos disponibles para esta ruta."
                   onChange={(value: string) =>
                     setFormData((p: any) => ({ ...p, vehicleId: value }))
                   }
@@ -952,6 +963,8 @@ function RouteBuilder({
                   icon={<UserRound size={18} />}
                   label="Conductor"
                   value={formData.driverId}
+                  disabled={routeAssignmentOptionsLoading || assignmentOptionsUnavailable}
+                  emptyMessage="No hay conductores disponibles para esta ruta."
                   onChange={(value: string) =>
                     setFormData((p: any) => ({ ...p, driverId: value }))
                   }
@@ -1130,7 +1143,7 @@ function StepTitle({
     </div>
   );
 }
-function ResourceSelect({ icon, label, value, onChange, options }: any) {
+function ResourceSelect({ icon, label, value, onChange, options, disabled = false, emptyMessage }: any) {
   return (
     <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -1140,9 +1153,10 @@ function ResourceSelect({ icon, label, value, onChange, options }: any) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
         className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm outline-none focus:border-blue-500"
       >
-        <option value="">Seleccionar {label.toLowerCase()}</option>
+        <option value="">{options.length === 0 && emptyMessage ? emptyMessage : `Seleccionar ${label.toLowerCase()}`}</option>
         {options.map((option: any) => (
           <option key={option.value} value={option.value} disabled={option.disabled}>
             {option.label} · {option.detail}

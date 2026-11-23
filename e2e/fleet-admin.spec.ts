@@ -4245,7 +4245,7 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
   expect((await logisticsRoleResponse.json()).role).toBe("Logistics");
   const inactiveAfterRoleChange = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
   expect((await inactiveAfterRoleChange.json()).isActive).toBe(false);
-  await expect(page.getByText(`${firstName} editado ${lastName}`)).toHaveCount(0);
+  await expect(inactiveDriverCard).toContainText("Inactivo");
 
   const driverRolePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
