@@ -586,3 +586,8 @@
 ## 2026-11-23 — Cleanup de rutas QA relacionadas
 
 - El cleanup ahora elimina primero posiciones y rutas ligadas a Drivers QA, evitando FK RESTRICT al retirar los fixtures.
+
+
+## 2026-11-23 — Cleanup de fixtures verificado en CI
+
+- La FK `Routes.DriverId` ya no deja Drivers QA huérfanos al limpiar. Action Front `45103761122` confirma 43/43 E2E, responsive y cleanup en MySQL descartable.

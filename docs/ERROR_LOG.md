@@ -1538,3 +1538,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Causa:** quedó una ruta asociada al Driver con nombre fuera de `E2E QA ruta %`; FK `Routes.DriverId` usa RESTRICT.
 - **Solución:** Backend commit `7ea14a6` elimina posiciones/rutas vinculadas a Drivers QA (`DocumentNumber LIKE 'E2EQA%'`) antes de borrar Drivers.
 - **Prevención:** limpiar por la relación foránea real además del patrón del nombre de fixture. Validar con la siguiente Action, sólo en DB descartable.
+
+
+# 2026-11-23 — Cleanup QA por FK Driver resuelto y verificado
+
+- El SQL ampliado en Backend `7ea14a6` elimina RoutePositions/Routes ligadas a Drivers E2E antes de eliminar Drivers.
+- Front Action `45103761122` cerró en success: responsive **1/1**, Playwright **43/43**, cleanup MySQL completado; no hubo error 1451.
+- Backend Action `45103732510` pasó build/tests y smoke HTTP/MySQL tenant/concurrencia.
+- Causa, corrección y prevención quedan registradas en este historial; no ejecutar cleanup en la DB local persistente.

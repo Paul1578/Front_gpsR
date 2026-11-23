@@ -927,3 +927,11 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 
 - Commit Backend `7ea14a6` corrige FK 1451 en cleanup de Driver QA al eliminar primero RoutePositions/Routes referenciadas por `DocumentNumber E2EQA%`. Front debe correr de nuevo para verificar 43 E2E + cleanup success.
+
+
+## Limpieza validada y lote actual cerrado
+
+- Backend `7ea14a6`: Action `45103732510` success (Release, xUnit, HTTP/MySQL tenant y concurrencia).
+- Front `85da39c`: Action `45103761122` success: backend Release/tests, audit, lint/build, responsive 1/1, Playwright API/MySQL **43/43**, cleanup success.
+- Root cause del cleanup: rutas asignadas a Driver QA no coincidían con prefijo de nombre; SQL ahora limpia RoutePositions/Routes por relación `Driver.DocumentNumber E2EQA%` antes de Drivers.
+- Las dos ramas quedaron sin cambios pendientes; no se tocó main. La misión amplia sigue abierta; consultar PROJECT_STATUS para los siguientes riesgos/producto.

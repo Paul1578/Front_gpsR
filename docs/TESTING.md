@@ -519,3 +519,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 
 - FK 1451 de cleanup corregida en Backend `7ea14a6`; pendiente confirmar la limpieza en la siguiente Action Front.
+
+
+## Cierre de Action Front 45103761122
+
+- Backend Release build/xUnit y smoke HTTP/MySQL tenant/concurrency: success (Action Backend `45103732510`).
+- Front audit, lint/build, responsive browser **1/1** y Playwright API/MySQL **43/43**: success.
+- Cleanup SQL de fixtures QA: success tras ampliar selección a rutas vinculadas por Driver QA; sin FK 1451.
