@@ -1439,3 +1439,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** nuevo E2E delegado simula JWT con `owner_id` distinto al ID autenticado, API de equipo válida y verifica ausencia de “Gerente” tanto en alta como en la tarjeta existente. Navega directamente por “Gestión de Equipo”.
 - **Prevención:** probar explícitamente ambos lados de reglas de permisos en la interfaz y usar la navegación correspondiente al viewport del escenario.
 - **Verificación:** prueba enfocada posterior pasó 1/1 en 1.8 s. Repetir suite local y confirmar CI integrada para el SHA nuevo.
+
+# 2026-11-23 — Admin raíz quedó clasificado como delegado en navegador E2E
+
+- **Síntoma:** Action `45088879212` pasó lint/build/responsive browser, pero falló el E2E en 38/39: raíz autenticado abrió Gestión de Equipo y el selector no incluía “Gerente”. La traza preservada muestra login y `/Auth/me` 200.
+- **Causa:** el frontend infería `isRootAccount` desde el JWT, pero `/Auth/me` no proporcionaba explícitamente esa clasificación; la inferencia no coincidió con el contexto autenticado real.
+- **Solución:** backend añade `isRootAccount` a `/Auth/me` a partir de `OwnerUserId` (nulo o igual al ID); Front prioriza el dato del endpoint. Smoke backend comprueba root true/delegado false y E2E delegado cubre ausencia de opción.
+- **Prevención:** atributos de identidad/autorización para UX deben exponerse como campos explícitos desde el contrato autenticado y probarse mediante sesión integrada, además de las pruebas simuladas.
+- **Verificación:** CI del SHA con el contrato nuevo pendiente; la corrida fallida reportó 38 passed y 1 failed, cleanup correcto.

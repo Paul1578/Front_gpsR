@@ -24,6 +24,7 @@ interface ApiUser {
   firstName?: string;
   lastName?: string;
   isActive?: boolean;
+  isRootAccount?: boolean;
   roles: ApiRole[] | string[];
   driverId?: string;
 }
@@ -543,7 +544,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions: defaultPermissions[mappedRole],
       isActive: apiUser.isActive,
       driverId: apiUser.driverId,
-      isRootAccount: Boolean(ownerId && ownerId.toLowerCase() === apiUser.id.toLowerCase()),
+      isRootAccount: apiUser.isRootAccount ?? Boolean(ownerId && ownerId.toLowerCase() === apiUser.id.toLowerCase()),
     };
   };
 

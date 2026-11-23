@@ -582,8 +582,10 @@ Fecha de actualización: 2026-11-22.
 - Action `45065745273` pasó **33/33 E2E** con backend `825bbed`, incluida respuesta neutra del registro, comparación email nuevo/duplicado y login posterior. El piso temporal backend llegó después en `52d7e46`; integración de ese último SHA pendiente.
 # Actualización 2026-11-23 — UX de permisos para rol Admin
 
-- La vista de Gestión de Equipo ahora muestra la opción “Gerente” (rol backend Admin) sólo cuando el usuario autenticado es la cuenta raíz del tenant. La condición compara `owner_id` firmado del JWT con el identificador de `/Auth/me`; no sustituye la autorización backend.
+- La vista de Gestión de Equipo muestra “Gerente” (rol backend Admin) sólo cuando `/Auth/me` indica `isRootAccount=true`, calculado por backend desde la propiedad; no sustituye la autorización de la API.
 - Se agregó una aserción E2E en el flujo autenticado de Admin raíz para confirmar que puede seleccionar el rol.
 - Nuevo E2E aislado cubre Admin delegado: “Gerente” está ausente en alta y en el selector de cambio del miembro existente; prueba enfocada pasó 1/1.
 - Backend ya aplica la regla y quedó validada por Action `45088129188`: 113/113 xUnit y smoke HTTP/MySQL de permisos/persistencia.
 - Validación local del cambio completo: `npm run lint`, `npm run build`, discovery de 40 E2E y spec `team-management-load-errors.spec.ts` 10/10 pasan. La Action `45088879212` corresponde al commit previo `5784b36` (sin el nuevo E2E negativo) y sigue corriendo; el SHA actual necesita Action propia.
+- Action `45088879212` terminó **38/39**: Admin raíz autenticado no vio “Gerente”. `/Auth/me` ahora expone `isRootAccount` backend-derived y AuthContext lo prioriza; validar integración en la Action del SHA posterior.
+- Backend local tras agregar el campo: xUnit Release 113/113, build 0 warnings/0 errors, `bash -n` y diff-check pasan. Front local lint/build/discovery 40 y `team-management-load-errors` 10/10 pasan. CI integrada nueva pendiente.

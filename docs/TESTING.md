@@ -452,8 +452,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 # Validación UX Admin raíz — 2026-11-23
 
 - E2E ampliado: cuenta Admin raíz autenticada abre el formulario de creación en Gestión de Equipo y ve la opción “Gerente”.
-- `isRootAccount` se deriva de la comparación entre identificador autenticado de `/Auth/me` y claim `owner_id` del JWT, que alimenta la UX de creación y cambio de rol.
+- `isRootAccount` llega de `/Auth/me` y es calculado por el backend desde la propiedad de la entidad autenticada; alimenta la UX de creación y cambio de rol.
 - Local: `npm run lint` y `npm run build` pasaron; Playwright enumeró 39 pruebas. El escenario autenticado completo queda pendiente de CI integrado.
 - Backend Action `45088129188` validó la regla real mediante HTTP y MySQL efímero: root permitido, Admin delegado denegado, 113/113 pruebas y cleanup.
 - E2E simulado de Admin delegado verifica ausencia de “Gerente” al crear y cambiar rol; foco 1/1 en 0.8 s y archivo completo 10/10 en 15.3 s. La primera corrida expiró al usar locator hamburger en desktop; cambiado a navegación directa.
 - Lint, build, discovery de 40 E2E y diff-check pasan. Action `45088879212` cubre SHA anterior `5784b36`; queda publicar y ejecutar Action para este SHA con test delegado.
+- Action `45088879212` terminó **38 passed, 1 failed**: root-only opción falló porque el flag inferido del JWT no coincidió con el contexto integrado. Backend añadió `isRootAccount` a `/Auth/me`; validar build, smoke root/delegado y E2E completo en Actions del nuevo SHA.
+- Tras integrar el flag: lint/build y discovery Playwright 40 pasan; `team-management-load-errors.spec.ts` pasa **10/10** local. Backend Release xUnit **113/113**, build 0 warnings/0 errores y `bash -n`/diff-check correctos. HTTP/MySQL y suite browser integrada del SHA nuevo quedan pendientes.
