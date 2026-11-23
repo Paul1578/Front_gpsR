@@ -1723,3 +1723,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Action `45130498572` confirmó el mensaje real “Estado de ruta actualizado”, pero el mismo toast aparece para inicio y finalización y `getByText` falló por strict mode al resolver dos elementos.
 - Solución: el E2E ahora selecciona el último toast, correspondiente a la finalización. Prevención: en transiciones consecutivas con copy compartido, seleccionar el evento más reciente o capturar su orden, no exigir unicidad global.
+
+## 2026-11-23 — Búsqueda de comando Backend desde el checkout Front — RESUELTO
+
+- Una búsqueda de implementación apuntó a `fletflow/Aplication/Fleet/Commands` con el checkout Front como directorio de trabajo; `rg` informó que el path no existe allí. No se editó ni ejecutó código.
+- Solución: repetir la inspección desde `/home/leonardo/Back_GPS`, que es el repositorio propietario de esos comandos.
+- Prevención: ejecutar búsquedas de frontend y backend en procesos separados con el `workdir` del repositorio correspondiente.

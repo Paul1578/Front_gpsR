@@ -3446,6 +3446,7 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   const ownerHeaders = { Authorization: `Bearer ${ownerToken}` };
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   let vehicleId: string | undefined;
+  let inactiveVehicleId: string | undefined;
   let driverId: string | undefined;
   let routeId: string | undefined;
   try {
@@ -3461,6 +3462,14 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     });
     expect(created.status()).toBe(201);
     vehicleId = (await created.json()).id as string;
+
+    const inactiveVehicle = await page.request.post("/api/backend/Vehicles", {
+      headers: ownerHeaders,
+      data: { plate: `E2EIA${suffix}`, brand: "FleetFlow QA", model: "Inactive tenant test", year: 2025 },
+    });
+    expect(inactiveVehicle.status()).toBe(201);
+    inactiveVehicleId = (await inactiveVehicle.json()).id as string;
+    expect((await page.request.delete(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders })).status()).toBe(204);
 
     const createdRoute = await page.request.post("/api/backend/Routes", {
       headers: ownerHeaders,
@@ -3497,6 +3506,13 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     expect(otherToken).toBeTruthy();
     const otherHeaders = { Authorization: `Bearer ${otherToken}` };
 
+    const ownerVehicleBeforeAttacks = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
+    const ownerDriverBeforeAttacks = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+    expect(ownerVehicleBeforeAttacks.status()).toBe(200);
+    expect(ownerDriverBeforeAttacks.status()).toBe(200);
+    const vehicleBeforeAttacks = await ownerVehicleBeforeAttacks.json();
+    const driverBeforeAttacks = await ownerDriverBeforeAttacks.json();
+
     const otherVehicles = await page.request.get("/api/backend/Vehicles", { headers: otherHeaders });
     expect(otherVehicles.status()).toBe(200);
     expect((await otherVehicles.json() as Array<{ id: string }>).some((vehicle) => vehicle.id === vehicleId)).toBe(false);
@@ -3510,6 +3526,11 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     expect(crossTenantUpdate.status()).toBe(404);
     const crossTenantDelete = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: otherHeaders });
     expect(crossTenantDelete.status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Vehicles/${vehicleId}/status`, {
+      headers: otherHeaders,
+      data: { status: 2 },
+    })).status()).toBe(404);
+    expect((await page.request.post(`/api/backend/Vehicles/${inactiveVehicleId}/reactivate`, { headers: otherHeaders })).status()).toBe(404);
 
     const otherDrivers = await page.request.get("/api/backend/Drivers", { headers: otherHeaders });
     expect(otherDrivers.status()).toBe(200);
@@ -3523,6 +3544,11 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
       headers: otherHeaders,
       data: { isActive: false },
     })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, {
+      headers: otherHeaders,
+      data: { vehicleId },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: otherHeaders })).status()).toBe(404);
 
     const otherRoutes = await page.request.get("/api/backend/Routes", { headers: otherHeaders });
     expect(otherRoutes.status()).toBe(200);
@@ -3572,7 +3598,14 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     const ownerRead = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
     expect(ownerRead.status()).toBe(200);
     expect((await ownerRead.json()).plate).toBe(`E2EQA${suffix}`);
-    expect((await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders })).status()).toBe(200);
+    const ownerVehicleAfterAttacks = await ownerRead.json();
+    expect(ownerVehicleAfterAttacks.status).toBe(vehicleBeforeAttacks.status);
+    const ownerDriverAfterAttacks = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+    expect(ownerDriverAfterAttacks.status()).toBe(200);
+    expect((await ownerDriverAfterAttacks.json()).vehicleId).toBe(driverBeforeAttacks.vehicleId);
+    const inactiveVehicleRead = await page.request.get(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders });
+    expect(inactiveVehicleRead.status()).toBe(200);
+    expect((await inactiveVehicleRead.json()).isActive).toBe(false);
     expect((await page.request.get(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders })).status()).toBe(200);
     const ownerPositions = await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers: ownerHeaders });
     expect(ownerPositions.status()).toBe(200);
@@ -3604,6 +3637,15 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
       }
       const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
       expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
+    if (inactiveVehicleId) {
+      const persistedInactiveVehicle = await request.get(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders });
+      if (persistedInactiveVehicle.status() === 200) {
+        if (!(await persistedInactiveVehicle.json()).isActive) {
+          expect((await request.post(`/api/backend/Vehicles/${inactiveVehicleId}/reactivate`, { headers: ownerHeaders })).status()).toBe(204);
+        }
+        expect([200, 204, 404]).toContain((await request.delete(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders })).status());
+      }
     }
     if (driverId) {
       const cleanupDriver = await request.put(`/api/backend/Drivers/${driverId}/status`, { headers: ownerHeaders, data: { isActive: false } });

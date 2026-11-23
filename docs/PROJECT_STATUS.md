@@ -32,6 +32,7 @@
 
 - HEAD vigente: Front `refactor/route-builder` docs `2b3b523`, código probado `e37cfeb`; Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup API/MySQL.
 - Revalidación del HEAD documental `2b3b523`: Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó **51/51 E2E**, responsive **1/1**, auditoría, lint/build, Backend Release/xUnit y cleanup. La ruta de correo duplicado con HTTP 409 se ejecutó sin mocks.
+- Se amplía el caso de tenant cruzado para cubrir estado/reactivación de vehículo y asignar/desasignar Driver mediante IDs de otra empresa; aserciones 404 y no mutación. Lint/build/discovery 51 pasan localmente; verificación integrada API/MySQL pendiente.
 - Backend `chore/stabilize-fleet-platform` docs `4b7bc13`, código probado `7eab085`; Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó Release, xUnit **138/138**, smokes tenant HTTP/MySQL, concurrencia incluyendo Maintenance, rate limit de login y cleanup.
 - Verificaciones de dependencia recientes: `npm audit` reportó **0 vulnerabilidades** y NuGet no encontró paquetes vulnerables en Backend ni tests. Las revisiones estáticas de seguridad no reportaron bypass tenant/rol/JWT ni vector XSS explotable en el alcance inspeccionado.
 - Decisiones confirmadas: se permiten traslados; las paradas pueden ser recogida, entrega o ambas; sólo raíz otorga Admin; la app nativa queda pospuesta.
