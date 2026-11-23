@@ -751,3 +751,5 @@
 - E2E promueve Manager→Admin desde TeamManagement con root, comprueba persistencia y restaura Logistics.
 
 - Revalidación del HEAD documental `357ffdc`: Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó 51/51 E2E, responsive, backend Release/xUnit y cleanup.
+
+- HEAD Front `8f2e68a` validado por Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591): 51/51 E2E y resto de checks/cleanup exitosos.

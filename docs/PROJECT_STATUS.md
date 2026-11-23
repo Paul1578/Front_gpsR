@@ -790,3 +790,8 @@ Fecha de actualización: 2026-11-22.
 
 - Front `357ffdc`, Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó: **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - La repetición ejecutó la promoción root-only desde Gestión de Equipo y la restauración de rol en API/MySQL descartables.
+
+## HEAD Front actual validado — 2026-11-23
+
+- `refactor/route-builder` HEAD documental `8f2e68a`, Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591): success; 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
+- Incluye la cobertura de edición de orden/operaciones de paradas y promoción root-only desde Gestión de Equipo, ambas verificadas contra API/MySQL real.
