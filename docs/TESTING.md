@@ -742,3 +742,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987), Front `a3a4790`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup success.
 - El 500 dejó el rol original intacto y su mensaje visible; el reintento permitió y persistió Logistics. Playwright focal local 1/1.
+
+## Validación del HEAD documental Front `b9bede7` — 2026-11-23
+
+- Action [45169238486](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486): **51/51 Playwright E2E**, responsive browser **1/1**, audit de dependencias, lint, build, Backend Release/xUnit y cleanup API/MySQL descartable.
+- Entre los flujos autenticados se ejecutó el error 500 de cambio de rol y su reintento exitoso con persistencia; trazas de fallo se omitieron porque la suite terminó sin errores.

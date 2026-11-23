@@ -1170,3 +1170,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front `a3a4790`, Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987): 51/51, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup exitosos.
 - Confirmación de cambio User→Logistics recibió 500 simulado; el UI mostró copy y conservó rol User; el reintento respondió correctamente y persistió Logistics.
 - ESLint había tropezado con `ENOENT test-results` al correr paralelo a Playwright; repetido en secuencia, pasó. Ver `ERROR_LOG.md`.
+
+## Continuidad vigente — 2026-11-23
+
+- Front `refactor/route-builder`, HEAD documental `b9bede7`: Action [`45169238486`](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y limpieza API/MySQL.
+- La prueba de error de cambio de rol recibió HTTP 500, dejó rol User intacto y permitió reintentar Logistics con persistencia. Estado detallado en `PROJECT_STATUS.md` y `TESTING.md`.
+- Siguiente trabajo acordado Backend: endpoint para desvincular cuenta User del perfil Driver conservando ambos registros y rol Driver; rechazar si existe ruta `Pending` o `InProgress`, usar locks de asignación/cuenta e invalidar sesiones anteriores. Cubrir xUnit y smoke HTTP/MySQL, luego consumidor UI/E2E si aporta flujo operativo.
+- El objetivo global sigue abierto; quedan criterios de CRUD/roles/paginación y responsive por auditar, además de límites externos documentados.

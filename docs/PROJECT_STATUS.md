@@ -849,3 +849,9 @@ Fecha de actualización: 2026-11-22.
 
 - Front `a3a4790`, Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987): **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 - Gestión de Equipo probó HTTP 500 al confirmar el cambio, mostró el error y mantuvo el rol User; después cambió a Logistics con éxito y comprobó persistencia.
+
+## Corte vigente — Front validado — 2026-11-23
+
+- HEAD documental `b9bede7`, Action [45169238486](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486): **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup API/MySQL success.
+- La Action validó el E2E de error al cambiar rol (HTTP 500, mensaje visible y rol sin mutación; reintento exitoso) junto con conflictos de asignación reales, edición de rutas/paradas y persistencia de bajas.
+- La siguiente brecha Backend priorizada es desvincular un Usuario de su perfil Driver; decisión confirmada: conservar rol Driver y bloquear la operación si hay ruta Pending/InProgress. La cuenta y el registro Driver se conservan.
