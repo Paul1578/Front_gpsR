@@ -2,6 +2,7 @@
 
 - Front código `4f59b19`, rama `refactor/route-builder`; Action [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL descartable y cleanup. El HEAD documental `a6757b1` pasó además Action integrada [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519) con **69/69 E2E**, responsive, axe, audit/lint/build y API/MySQL.
 - El HEAD documental final `405b89a` pasó Action [`45272144643`](https://github.com/Paul1578/Front_gpsR/actions/runs/45272144643): **69/69 E2E**, responsive 1/1, axe 2/2, build/lint/audit, Backend xUnit 165/165, API/MySQL y cleanup.
+- El HEAD documental siguiente `7e081c5` pasó Action [`45273692118`](https://github.com/Paul1578/Front_gpsR/actions/runs/45273692118) con los mismos pasos en verde: 69/69 E2E, responsive, axe, build/lint/audit y API/MySQL.
 - `0bb20c8` corrige baseline obsoleto del caso PUT 503 y añade filtros Estado/Vehículo/Conductor accionables a 320 px.
 - Front `4f59b19` pasó Action integrada [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856): **69/69 E2E**, responsive 1/1, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL descartable y cleanup.
 - El HEAD documental `79020a8` pasó la Action [`45268671219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45268671219) con build, responsive, axe y E2E/API/MySQL integrados verdes; el código sigue siendo el `4f59b19` previamente validado.
