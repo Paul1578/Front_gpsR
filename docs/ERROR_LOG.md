@@ -1530,3 +1530,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Causa:** el runner backend silenciaba stderr de mysql, así que no se sabía por qué falló el SQL de limpieza.
 - **Solución:** Backend `2ff5560` captura la salida temporal y la imprime sólo si el cleanup falla; luego elimina el archivo. Repetir Action para obtener diagnóstico/confirmar limpieza.
 - **Prevención:** el éxito de pruebas no se considera total si la limpieza de datos QA devuelve error; exigir ambos resultados.
+
+
+# 2026-11-23 — Action 45103134467: FK 1451 en limpieza posterior a 43/43 E2E
+
+- **Síntoma:** Playwright pasó 43/43; cleanup SQL no pudo borrar un Driver QA.
+- **Causa:** quedó una ruta asociada al Driver con nombre fuera de `E2E QA ruta %`; FK `Routes.DriverId` usa RESTRICT.
+- **Solución:** Backend commit `7ea14a6` elimina posiciones/rutas vinculadas a Drivers QA (`DocumentNumber LIKE 'E2EQA%'`) antes de borrar Drivers.
+- **Prevención:** limpiar por la relación foránea real además del patrón del nombre de fixture. Validar con la siguiente Action, sólo en DB descartable.

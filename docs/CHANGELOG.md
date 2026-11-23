@@ -581,3 +581,8 @@
 ## 2026-11-23 — Suite integrada de rutas y equipo
 
 - Los 43 escenarios E2E pasan con el nuevo flujo de disponibilidad, traslado y confirmaciones. El pipeline detectó un fallo separado en cleanup MySQL, ahora instrumentado en el backend para mostrar el diagnóstico exacto.
+
+
+## 2026-11-23 — Cleanup de rutas QA relacionadas
+
+- El cleanup ahora elimina primero posiciones y rutas ligadas a Drivers QA, evitando FK RESTRICT al retirar los fixtures.

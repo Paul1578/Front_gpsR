@@ -643,3 +643,6 @@ Fecha de actualización: 2026-11-22.
 
 - Front `45102498423`: **43/43 E2E** y responsive 1/1; se creó ruta de traslado y se verificaron opciones de conductor y confirmaciones. El job falló sólo porque el cleanup MySQL no pudo completar.
 - Backend runner `2ff5560` revela ahora el error de mysql cuando falle; pendiente siguiente Front Action para verificar causa y cleanup correcto.
+
+
+- El error MySQL 1451 de cleanup está corregido en Backend `7ea14a6`: se limpian rutas y posiciones asociadas al Driver QA antes de borrarlo. Front debe repetir 43/43 y cleanup con este backend.

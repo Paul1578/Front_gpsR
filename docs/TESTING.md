@@ -516,3 +516,6 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 ## Action Front 45102498423
 
 - Responsive browser **1/1** y E2E API/MySQL **43/43** pasaron. Cleanup de fixtures falló, por lo que Action global está fallida. Backend `2ff5560` ahora expone el error mysql; repetir y exigir cleanup verde.
+
+
+- FK 1451 de cleanup corregida en Backend `7ea14a6`; pendiente confirmar la limpieza en la siguiente Action Front.

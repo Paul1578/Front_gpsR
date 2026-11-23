@@ -924,3 +924,6 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front Action `45102498423`: los 43 E2E pasaron y responsive 1/1, pero el runner informó fallo al limpiar MySQL desechable.
 - Backend commit `2ff5560` registra salida del error MySQL en cleanup sin exponer credenciales para diagnosticarlo en el próximo run.
 - Siguiente paso: correr Front con backend branch actualizado; revisar si cleanup pasa o leer error mysql y corregir SQL/fixture. No declarar este lote terminado antes de limpiar fixtures.
+
+
+- Commit Backend `7ea14a6` corrige FK 1451 en cleanup de Driver QA al eliminar primero RoutePositions/Routes referenciadas por `DocumentNumber E2EQA%`. Front debe correr de nuevo para verificar 43 E2E + cleanup success.
