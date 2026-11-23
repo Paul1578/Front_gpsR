@@ -2,7 +2,7 @@
 
 - GET /Routes incluía fotos completas; Historial vuelve a consultar cada 15 segundos, multiplicando transferencia y memoria por todas las rutas.
 - Solución: lista conserva metadata y notas; detalle conserva bytes de imágenes. Historial consulta bajo demanda y Driver sincroniza al aumentar evidencias. Se agregó cobertura E2E.
-- Verificación local: lint/build, discovery 53 y focales 13/13. Action autenticada pendiente.
+- Verificación local: lint/build, discovery 53, focales 13/13 y suite completa 19 passed/34 skipped. Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) pasó 53/53 E2E autenticados, responsive, backend Release/xUnit 158/158 y smokes API/MySQL.
 - Error de ejecución: dotnet del PATH resolvía a un host global sin runtime (/usr/lib64/dotnet/host/fxr vacío), aunque .NET 8 estaba instalado en ~/.dotnet. Solución: invocar /home/leonardo/.dotnet/dotnet con DOTNET_ROOT=/home/leonardo/.dotnet; después Release pasó.
 - Error de comando: una lectura exploratoria terminó con && sin comando siguiente y Bash devolvió error de sintaxis; se repitió correctamente, sin tocar archivos.
 - La primera suite Playwright completa ejecutó 18 tests y omitió 34 por falta de credenciales/fixtures; falló la aserción de login porque el texto del toast también aparecía en el overlay de Next. Se cambió el locator a texto exacto. Repetición completa: 19 passed, 34 skipped; login focal pasó 1/1.

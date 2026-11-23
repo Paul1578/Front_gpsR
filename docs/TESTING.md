@@ -5,7 +5,7 @@
 - npx playwright test --list: 53 tests detectados.
 - npx playwright test e2e/team-management-load-errors.spec.ts: 13/13 passed, incluidos errores y reintentos de Historial.
 - Suite Playwright completa: 19 passed, 34 skipped por falta de credenciales o fixtures autenticados. El test local de login detectó un locator ambiguo entre toast y overlay de Next; se ajustó a texto exacto y la suite pasó.
-- E2E autenticado Driver/Historial actualizado para comprobar el contrato JSON (lista sin Base64, detalle con imagen); falta Action integrada.
+- E2E autenticado Driver/Historial actualizado para comprobar el contrato JSON (lista sin Base64, detalle con imagen); Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) pasó 53/53 E2E autenticados, responsive 1/1, audit, lint/build, backend Release/xUnit 158/158 y cleanup API/MySQL.
 
 ## Historial de Action `45183402334` — aserciones corregidas y revalidadas
 

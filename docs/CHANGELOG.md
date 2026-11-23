@@ -1,7 +1,7 @@
 ## 2026-11-23 — Carga bajo demanda de fotos de ruta
 
 - Front solicita bytes de evidencia al abrir el detalle y resincroniza fotos activas tras nueva evidencia; listas periódicas mantienen metadata de imágenes.
-- Añadida aserción E2E para diferenciar payload de lista y detalle. Lint/build y focales 13/13 pasan; Action integrada pendiente.
+- Añadida aserción E2E para diferenciar payload de lista y detalle. Lint/build y focales 13/13 pasan; Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) pasó 53/53 E2E, responsive, backend Release/xUnit 158/158 y cleanup.
 
 ## 2026-11-23 — Eliminación de controles de cuenta ficticios
 
