@@ -1270,3 +1270,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Fix: Web Locks ya es requisito para mutaciones de cookie; sin API, se falla cerradamente. Nuevos E2E verifican ausencia de requests y login concurrente Admin/User con sincronización de identidad.
 - Verificación local: build/lint, discovery **65**, handlers BFF **3/3**, browser sin Web Locks **1/1**. Commit `85b5bec` publicado en feature branch. Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336) pasó 65/65 E2E, xUnit 158/158, responsive/audit/lint/build y cleanup; PR Action [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también verde.
 - Riesgo documentado: logout individual con API caída limpia el estado local, pero no se puede confirmar revocación remota; la UI lo advierte.
+
+## Estado de cambios UX/auth — Front pendiente de Action (2026-11-23)
+
+- Rama `refactor/route-builder`, cambios aún locales al tomar este handoff: markers accesibles y assertions A/1/2/B; baja Driver con confirmación; expansión tablet E2E CRUD Driver; BFF requiere `FLETFLOW_AUTH_ALLOWED_ORIGINS` exacto en producción, ignora forwarded headers y bloquea HTTP hacia API remota.
+- `.env.example`, README, SECURITY, ARCHITECTURE, CHANGELOG, TESTING, PROJECT_STATUS y ERROR_LOG actualizados. Falla inicial de build por asignar NODE_ENV readonly quedó corregida con Reflect y documentada.
+- Verificación local del diff actual: lint/build, handlers BFF **5/5**, discovery **67**, diff-check. Auth E2E integrado no se puede ejecutar localmente porque no hay credenciales descartables; CI Front debe probar los nuevos flujos y usar Backend `chore/stabilize-fleet-platform` más reciente.
+- Backend ya publicó `18fd6be` con JWT máximo de 15 minutos y contenedor non-root; Action de ese SHA está en curso. El smoke de DocumentNumber de `9d201e8` pasó Action backend `45220748028` (162/162 y 201/409 MySQL).

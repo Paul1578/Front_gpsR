@@ -18,6 +18,8 @@ Abre `http://localhost:3000/dashboard`. El proxy `/api/backend/*` reenvía al ba
 
 El backend ASP.NET usa `http://localhost:5046` en su perfil de desarrollo. Si necesitas otro origen, copia `.env.example` a `.env.local` y cambia `FLETFLOW_API_URL` (debe ser sólo el origen, sin `/api`).
 
+En producción define `FLETFLOW_AUTH_ALLOWED_ORIGINS` como una lista separada por comas de orígenes web exactos, por ejemplo `https://fleetflow.example.com`. El BFF rechaza orígenes no listados y conexiones HTTP a una API remota; usa HTTPS entre servicios. HTTP queda permitido sólo para loopback.
+
 ## Verificación
 
 ```bash

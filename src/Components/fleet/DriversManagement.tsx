@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { ArrowLeft, RefreshCw, Truck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useFleet, type Driver } from "../../Context/FleetContext";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { ServerPagination } from "../ui/ServerPagination";
 
 interface DriversManagementProps {
@@ -41,6 +42,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   const [form, setForm] = useState<DriverForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [vehicleSelections, setVehicleSelections] = useState<Record<string, string>>({});
+  const [driverPendingDeactivation, setDriverPendingDeactivation] = useState<Driver | null>(null);
 
   const loadDrivers = useCallback(async (includeInactive: boolean, requestedPage = page) => {
     const sequence = ++requestSequence.current;
@@ -149,6 +151,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   };
 
   return (
+    <>
     <section className="flex h-full min-h-full min-w-0 flex-col bg-white">
       <header className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between md:p-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -254,7 +257,15 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button type="button" onClick={() => edit(driver)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50">Editar</button>
-                      <button type="button" onClick={() => void changeStatus(driver)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50">{driver.isActive === false ? "Reactivar" : "Dar de baja"}</button>
+                      <button
+                        type="button"
+                        onClick={() => driver.isActive === false
+                          ? void changeStatus(driver)
+                          : setDriverPendingDeactivation(driver)}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50"
+                      >
+                        {driver.isActive === false ? "Reactivar" : "Dar de baja"}
+                      </button>
                     </div>
                   </div>
                   {driver.isActive !== false && (
@@ -281,5 +292,22 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
         {!loadError && !loading && pageData && <ServerPagination page={pageData.page} totalPages={pageData.totalPages} pageSize={pageData.pageSize} totalCount={pageData.totalCount} onPageChange={setPage} />}
       </div>
     </section>
+    <ConfirmDialog
+      open={driverPendingDeactivation !== null}
+      onClose={() => setDriverPendingDeactivation(null)}
+      onConfirm={() => {
+        const driver = driverPendingDeactivation;
+        setDriverPendingDeactivation(null);
+        if (driver) void changeStatus(driver);
+      }}
+      title="Confirmar baja del conductor"
+      description={driverPendingDeactivation
+        ? `Se dará de baja a ${driverPendingDeactivation.firstName} ${driverPendingDeactivation.lastName}. El perfil y su historial se conservarán, pero no podrá asignarse a nuevas rutas.`
+        : "Confirma la baja del conductor."}
+      confirmText="Sí, dar de baja"
+      cancelText="Mantener activo"
+      variant="destructive"
+    />
+    </>
   );
 }

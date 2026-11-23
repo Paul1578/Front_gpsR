@@ -941,3 +941,11 @@ Fecha de actualización: 2026-11-22.
 - La segunda revisión encontró un fallback inseguro sin Web Locks y ausencia de prueba para login simultáneo de cuentas distintas. Corregido: autenticación falla cerrada sin Web Locks; pruebas verifican ausencia de API y convergencia de identidad entre pestañas.
 - Validación: build/lint local; handlers BFF **3/3** y caso sin Web Locks **1/1** local. Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**, **158/158 xUnit**, responsive, audit/lint/build y cleanup aprobados; pull request del mismo commit [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también verde.
 - Limitación conocida: con backend fuera de servicio durante logout individual, el cierre local se completa y se informa que no se confirmó revocación remota.
+
+## Auditoría UX y transporte seguro — validación CI pendiente (2026-11-23)
+
+- El agente UX encontró que los tests de ruta comprobaban coordenadas no vacías pero no feedback visual del pin; `RoutePickerMap` ahora expone marcadores accesibles (A, parada 1/2, B) y el E2E verifica el estado visible.
+- La baja desde DriversManagement era inmediata. Se añadió diálogo de confirmación y el E2E exige cancelación sin PUT y confirmación con `isActive=false` persistido; reactivación sigue directa.
+- El CRUD E2E de conductores ahora crea en tablet, edita y asigna vehículo con lectura API persistida.
+- Revisión de seguridad: allowlist exacta de Origin en producción (`FLETFLOW_AUTH_ALLOWED_ORIGINS`), no confiar en X-Forwarded para CSRF, bloquear API remota HTTP.
+- Local: lint/build, direct handlers **5/5**, discovery **67**, diff-check. Esperar Action Front API/MySQL, revisar ausencia de skips/flaky y cleanup antes de cerrar.

@@ -35,10 +35,10 @@ const isValidPoint = (p: PickerPoint | null) => {
   return p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180;
 };
 
-const pointIcon = (label: string, color: string) =>
+const pointIcon = (label: string, color: string, accessibleName: string) =>
   L.divIcon({
     className: "route-point-label",
-    html: `<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.3);color:white;font:700 12px/1 Arial,sans-serif">${label}</span>`,
+    html: `<span role="img" aria-label="${accessibleName}" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.3);color:white;font:700 12px/1 Arial,sans-serif">${label}</span>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
@@ -145,7 +145,7 @@ export default function RoutePickerMap({
           />
           <Marker
             position={[origin.lat, origin.lng]}
-            icon={pointIcon("A", "#16a34a")}
+            icon={pointIcon("A", "#16a34a", "Origen de la ruta")}
           />
         </>
       )}
@@ -162,7 +162,7 @@ export default function RoutePickerMap({
           />
           <Marker
             position={[point.lat, point.lng]}
-            icon={pointIcon(String(index + 1), "#0284c7")}
+            icon={pointIcon(String(index + 1), "#0284c7", `Parada ${index + 1} de la ruta`)}
           />
         </Fragment>
       ))}
@@ -179,7 +179,7 @@ export default function RoutePickerMap({
           />
           <Marker
             position={[destination.lat, destination.lng]}
-            icon={pointIcon("B", "#dc2626")}
+            icon={pointIcon("B", "#dc2626", "Destino de la ruta")}
           />
         </>
       )}

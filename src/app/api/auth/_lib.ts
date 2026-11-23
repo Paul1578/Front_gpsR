@@ -42,17 +42,29 @@ export function verifySameOrigin(request: Request): boolean {
     const parsedOrigin = new URL(origin);
     if (origin !== parsedOrigin.origin) return false;
 
+    if (process.env.NODE_ENV === "production") {
+      const allowedOrigins = (process.env.FLETFLOW_AUTH_ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      return allowedOrigins.some((allowedOrigin) => {
+        try {
+          const parsedAllowedOrigin = new URL(allowedOrigin);
+          return allowedOrigin === parsedAllowedOrigin.origin && parsedOrigin.origin === parsedAllowedOrigin.origin;
+        } catch {
+          return false;
+        }
+      });
+    }
+
     // Next development may canonicalize request.url to localhost even when the
-    // browser connected through 127.0.0.1. Behind TLS proxies, forwarded host
-    // and protocol represent the public request origin.
+    // browser connected through 127.0.0.1. Never trust forwarded headers here:
+    // they are only safe when a deployment proxy explicitly strips client values.
     const requestUrl = new URL(request.url);
-    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",", 1)[0]?.trim();
     const host = request.headers.get("host")?.split(",", 1)[0]?.trim();
-    const expectedHost = forwardedHost || host || requestUrl.host;
-    const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",", 1)[0]?.trim();
-    const expectedProtocol = forwardedProtocol || requestUrl.protocol.slice(0, -1);
+    const expectedHost = host || requestUrl.host;
     return parsedOrigin.host.toLowerCase() === expectedHost.toLowerCase() &&
-      parsedOrigin.protocol === `${expectedProtocol}:`;
+      parsedOrigin.protocol === requestUrl.protocol;
   } catch {
     return false;
   }
@@ -84,6 +96,13 @@ export async function callBackend(
   try {
     url = new URL(baseUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Invalid API protocol");
+    if (url.username || url.password || url.search || url.hash) throw new Error("Invalid API URL components");
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    const isLoopback = hostname === "localhost" || hostname.endsWith(".localhost") ||
+      hostname === "127.0.0.1" || hostname === "::1";
+    if (process.env.NODE_ENV === "production" && url.protocol === "http:" && !isLoopback) {
+      throw new Error("Production API connections must use HTTPS");
+    }
   } catch {
     return {
       ok: false as const,

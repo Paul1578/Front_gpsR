@@ -97,6 +97,7 @@ jobs:
             echo "MYSQL_USER=root"
             echo "MYSQL_PWD=fletflow_ci_root"
             echo "FLETFLOW_API_URL=http://127.0.0.1:5048"
+            echo "FLETFLOW_AUTH_ALLOWED_ORIGINS=http://127.0.0.1:3000"
             echo "NEXT_PUBLIC_API_BASE_URL=/api/backend"
             echo "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000"
             echo "FLETFLOW_FRONTEND_DIR=$GITHUB_WORKSPACE"

@@ -1909,3 +1909,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Limitación residual: si la API está caída al hacer logout individual, el cliente borra su cookie y muestra advertencia, pero no puede revocar en remoto el refresh token copiado. Es necesaria conectividad para confirmar revocación; no presentar ese caso como revocado.
 - Prevención: no ejecutar mutaciones de cookie sin mecanismo de exclusión compartido entre pestañas y cubrir logins simultáneos con identidades distintas, no sólo refresh concurrente.
 - Revalidación: Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336) pasó **65/65 E2E** (incluidos los escenarios nuevos), backend **158/158**, responsive, audit/lint/build y cleanup. Sin flaky reportado.
+
+## 2026-11-23 — TypeScript rechazó asignación directa a NODE_ENV en prueba BFF — CORREGIDO
+
+- `next build` falló en el test de API remota HTTP porque Node declara `process.env.NODE_ENV` readonly en TypeScript.
+- Solución: el test usa `Reflect.set`/`Reflect.deleteProperty` para simular production y restaurar el valor sin violar los tipos.
+- Prevención: al simular variables de entorno readonly de Node en tests TypeScript, usar Reflect y siempre restaurar en `finally`.
+- Revalidación: build Next pasa, handlers BFF **5/5**, lint y discovery **67** pasan.

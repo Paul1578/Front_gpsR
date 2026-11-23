@@ -1332,7 +1332,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
   }
 });
 
-test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación", async ({ page }) => {
+test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirmación", async ({ page }) => {
   test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
   test.setTimeout(90_000);
   page.setDefaultTimeout(8_000);
@@ -1400,12 +1400,15 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await expect(page.getByText("Define un origen y un destino para continuar")).toBeVisible();
     await clickMapAwayFromMarkers(map);
     await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("origin-point-0")).toContainText("Ubicación fijada");
     await origin.fill("Origen E2E desde mapa");
     await page.getByRole("button", { name: "Agregar parada" }).click();
     await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
     await clickMapAwayFromMarkers(map);
     const stopOne = page.getByPlaceholder("Parada 1");
     await expect(page.getByTestId("stop-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("stop-point-0")).toContainText("Ubicación fijada");
+    await page.setViewportSize({ width: 768, height: 1024 });
     await stopOne.fill("Recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("pickup");
     await page.getByRole("button", { name: "Agregar parada" }).click();
@@ -1413,6 +1416,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await clickMapAwayFromMarkers(map);
     const stopTwo = page.getByPlaceholder("Parada 2");
     await expect(page.getByTestId("stop-point-1")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("stop-point-1")).toContainText("Ubicación fijada");
     await stopTwo.fill("Entrega y recogida E2E");
     await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
     await page.getByRole("button", { name: "Agregar parada" }).click();
@@ -1432,6 +1436,12 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await clickMapAwayFromMarkers(map);
     await destination.fill("Destino E2E desde mapa");
     await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación fijada");
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await expect(page.getByRole("img", { name: "Origen de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Parada 1 de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Parada 2 de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Destino de la ruta" })).toBeVisible();
 
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
@@ -1507,6 +1517,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     expect((await deactivatedRouteResponse.json()).isActive).toBe(false);
     routeId = undefined;
 
+    await page.setViewportSize({ width: 320, height: 844 });
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,

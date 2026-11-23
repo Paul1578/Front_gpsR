@@ -895,3 +895,10 @@
 ### Validación CI de seguridad BFF
 
 - Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**, backend **158/158 xUnit**, responsive **1/1**, audit/lint/build y cleanup aprobados; incluye login concurrente de cuentas distintas sobre API/MySQL efímeros.
+
+## 2026-11-23 — Feedback de mapa, confirmación Driver y endurecimiento BFF
+
+- Pines Leaflet anuncian Origen/Parada N/Destino con nombre accesible; E2E comprueba ubicación fijada y etiquetas del mapa en mobile/tablet/desktop.
+- La baja desde Gestión de Conductores ahora exige confirmar; cancelar deja el perfil activo sin mutación. El E2E amplía alta/edición/asignación a 768px.
+- BFF usa allowlist de Origin en producción, ignora forwarded headers para CSRF y rechaza HTTP remoto; `.env.example`/README describen variables.
+- Validación local Front: lint/build, handlers **5/5**, discovery **67**, diff-check.

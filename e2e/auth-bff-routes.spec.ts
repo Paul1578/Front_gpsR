@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { POST as logoutPost } from "../src/app/api/auth/logout/route";
 import { POST as logoutAllPost } from "../src/app/api/auth/logout-all/route";
 import { POST as refreshPost } from "../src/app/api/auth/refresh/route";
+import { callBackend, verifySameOrigin } from "../src/app/api/auth/_lib";
 
 const origin = "http://127.0.0.1:3000";
 
@@ -16,7 +17,7 @@ function request(path: string, headers: Record<string, string>) {
 async function withBackendResponse<T>(status: number, run: () => Promise<T>) {
   const originalFetch = globalThis.fetch;
   const originalApiUrl = process.env.FLETFLOW_API_URL;
-  process.env.FLETFLOW_API_URL = "http://fletflow-api.test";
+  process.env.FLETFLOW_API_URL = "https://fletflow-api.test";
   globalThis.fetch = (async () => new Response(JSON.stringify({ message: "Respuesta de prueba" }), {
     status,
     headers: { "Content-Type": "application/json" },
@@ -29,6 +30,44 @@ async function withBackendResponse<T>(status: number, run: () => Promise<T>) {
     else process.env.FLETFLOW_API_URL = originalApiUrl;
   }
 }
+
+test("la validación de origen ignora encabezados forwarded falsificables", () => {
+  const forged = new Request("https://fleetflow.example/api/auth/login", {
+    method: "POST",
+    headers: {
+      Origin: "https://attacker.example",
+      Host: "fleetflow.example",
+      "X-Forwarded-Host": "attacker.example",
+      "X-Forwarded-Proto": "https",
+    },
+  });
+  expect(verifySameOrigin(forged)).toBe(false);
+});
+
+test("producción rechaza una API remota configurada por HTTP antes de enviar credenciales", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalApiUrl = process.env.FLETFLOW_API_URL;
+  const originalNodeEnv = process.env.NODE_ENV;
+  let fetchAttempted = false;
+  Reflect.set(process.env, "NODE_ENV", "production");
+  process.env.FLETFLOW_API_URL = "http://api.example.test";
+  globalThis.fetch = (async () => {
+    fetchAttempted = true;
+    return new Response("{}", { status: 200 });
+  }) as typeof fetch;
+  try {
+    const result = await callBackend("login", { body: { email: "qa@example.test", password: "not-a-real-secret" } });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(500);
+    expect(fetchAttempted).toBe(false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalApiUrl === undefined) delete process.env.FLETFLOW_API_URL;
+    else process.env.FLETFLOW_API_URL = originalApiUrl;
+    if (originalNodeEnv === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+    else Reflect.set(process.env, "NODE_ENV", originalNodeEnv);
+  }
+});
 
 test("refresh 401 no borra una cookie que otra pestaña pudo rotar", async () => {
   await withBackendResponse(401, async () => {

@@ -835,3 +835,11 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `npx playwright test e2e/fleet-admin.spec.ts --grep 'falla cerrada si el navegador no ofrece Web Locks'`: **1/1** pasa y confirma que no se envían mutaciones de autenticación.
 - La prueba de logins concurrentes distintos usa las cuentas QA aprovisionadas por el runner sobre MySQL descartable.
 - Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**; backend **158/158 xUnit**; responsive, audit, lint, build y cleanup aprobados. La ejecución de pull request del mismo commit [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también terminó en verde. La Action integrada aprovisiona User QA y usa base MySQL efímera, así que el caso de login concurrente quedó incluido.
+
+## Auditoría seguridad BFF y feedback de rutas/conductores — 2026-11-23
+
+- `npm run lint`: pasa.
+- `npm run build`: pasa (Next.js 16.4.6 + TypeScript).
+- `npx playwright test e2e/auth-bff-routes.spec.ts`: **5/5** (origen forwarded falsificado, HTTPS API remota en producción, refresh/logout 401/503).
+- `npx playwright test --list`: descubre **67 E2E**.
+- E2E integrado pendiente en Action de la rama: puntos A/1/2/B visibles después de colocar puntos, confirmación cancelar/aceptar baja Driver y CRUD completo a 768px. Requiere credenciales API/MySQL de runner; variables QA no están configuradas localmente.

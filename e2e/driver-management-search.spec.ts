@@ -4,34 +4,33 @@ import { execFileSync } from "node:child_process";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
-let createdDriverId: string | undefined;
+let createdDriverIds: string[] = [];
 let createdVehicleId: string | undefined;
 let accessToken: string | undefined;
 
 test.afterEach(async ({ page }) => {
   if (!accessToken) return;
-  if (createdDriverId && createdVehicleId) {
-    const currentDriver = await page.request.get(`/api/backend/Drivers/${createdDriverId}`, {
+  for (const driverId of createdDriverIds) {
+    const currentDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (currentDriver.ok()) {
-      const driver = await currentDriver.json() as { vehicleId?: string | null };
-      if (driver.vehicleId) {
-        const unassign = await page.request.put(`/api/backend/Drivers/${createdDriverId}/unassign-vehicle`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        expect(unassign.status()).toBe(204);
-      }
+    if (!currentDriver.ok()) continue;
+    const driver = await currentDriver.json() as { vehicleId?: string | null; isActive?: boolean };
+    if (driver.vehicleId) {
+      const unassign = await page.request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      expect(unassign.status()).toBe(204);
+    }
+    if (driver.isActive !== false) {
+      const cleanup = await page.request.put(`/api/backend/Drivers/${driverId}/status`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        data: { isActive: false },
+      });
+      expect(cleanup.status()).toBe(204);
     }
   }
-  if (createdDriverId) {
-    const cleanup = await page.request.put(`/api/backend/Drivers/${createdDriverId}/status`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      data: { isActive: false },
-    });
-    expect(cleanup.status()).toBe(204);
-  }
-  createdDriverId = undefined;
+  createdDriverIds = [];
   if (createdVehicleId) {
     const deleteVehicle = await page.request.delete(`/api/backend/Vehicles/${createdVehicleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -67,7 +66,7 @@ test("Admin busca conductores en la pantalla operativa a 320 y 768 px", async ({
   });
   expect(created.status()).toBe(201);
   const driver = await created.json() as { id: string; documentNumber: string };
-  createdDriverId = driver.id;
+  createdDriverIds.push(driver.id);
 
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
@@ -144,7 +143,8 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   const persistedDrivers = await driversResponse.json() as { id: string; documentNumber: string }[];
   const createdDriver = persistedDrivers.find((driver) => driver.documentNumber === documentNumber);
   expect(createdDriver).toBeTruthy();
-  createdDriverId = createdDriver!.id;
+  const createdDriverId = createdDriver!.id;
+  createdDriverIds.push(createdDriverId);
   const driverCard = page.getByTestId(`managed-driver-${createdDriverId}`);
   await expect(driverCard).toBeVisible();
 
@@ -198,14 +198,81 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
 
   await page.setViewportSize({ width: 768, height: 1024 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  let statusMutations = 0;
+  page.on("request", (request) => {
+    if (request.method() === "PUT" && new URL(request.url()).pathname.endsWith(`/Drivers/${createdDriverId}/status`)) {
+      statusMutations += 1;
+    }
+  });
   await driverCard.getByRole("button", { name: "Dar de baja" }).click();
+  const deactivateDialog = page.getByRole("alertdialog");
+  await expect(deactivateDialog.getByRole("heading", { name: "Confirmar baja del conductor" })).toBeVisible();
+  await deactivateDialog.getByRole("button", { name: "Mantener activo" }).click();
+  expect(statusMutations, "Cancelar la baja no debe llamar a la API").toBe(0);
+  await expect(driverCard).toContainText("Activo");
+
+  await driverCard.getByRole("button", { name: "Dar de baja" }).click();
+  const deactivateResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "PUT" && new URL(response.url()).pathname.endsWith(`/Drivers/${createdDriverId}/status`),
+  );
+  await page.getByRole("alertdialog").getByRole("button", { name: "Sí, dar de baja" }).click();
+  expect((await deactivateResponsePromise).status()).toBe(204);
   await expect(driverCard).not.toBeVisible();
+  const inactiveDriver = await page.request.get(`/api/backend/Drivers/${createdDriverId}`, { headers });
+  expect(inactiveDriver.status()).toBe(200);
+  expect((await inactiveDriver.json()).isActive).toBe(false);
+
   await page.getByRole("button", { name: "Mostrar bajas" }).click();
   await expect(driverCard).toContainText("Inactivo");
+  const reactivateResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "PUT" && new URL(response.url()).pathname.endsWith(`/Drivers/${createdDriverId}/status`),
+  );
   await driverCard.getByRole("button", { name: "Reactivar" }).click();
+  expect((await reactivateResponsePromise).status()).toBe(204);
   await expect(driverCard).toContainText("Activo");
 
   const persistedDriver = await page.request.get(`/api/backend/Drivers/${createdDriverId}`, { headers });
   expect(persistedDriver.status()).toBe(200);
   expect((await persistedDriver.json()).isActive).toBe(true);
+
+  const tabletDocument = `E2EQA${suffix}T`;
+  await page.getByLabel("Nombres del conductor").fill("QA Tablet");
+  await page.getByLabel("Apellidos del conductor").fill("Operaciones");
+  await page.getByLabel("Documento del conductor").fill(tabletDocument);
+  await page.getByLabel("Teléfono del conductor").fill("0990000001");
+  const tabletForm = page.getByRole("heading", { name: "Registrar conductor" }).locator("xpath=..");
+  const tabletBounds = await tabletForm.boundingBox();
+  expect(tabletBounds).not.toBeNull();
+  expect(tabletBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(tabletBounds!.x + tabletBounds!.width).toBeLessThanOrEqual(768);
+  const createTabletDriverPromise = page.waitForResponse((response) =>
+    response.request().method() === "POST" && new URL(response.url()).pathname.endsWith("/Drivers"),
+  );
+  await page.getByRole("button", { name: "Crear conductor" }).click();
+  expect((await createTabletDriverPromise).status()).toBe(201);
+  const tabletDriversResponse = await page.request.get("/api/backend/Drivers", { headers });
+  expect(tabletDriversResponse.status()).toBe(200);
+  const tabletDrivers = await tabletDriversResponse.json() as { id: string; documentNumber: string }[];
+  const tabletDriver = tabletDrivers.find((item) => item.documentNumber === tabletDocument);
+  expect(tabletDriver).toBeTruthy();
+  createdDriverIds.push(tabletDriver!.id);
+  const tabletCard = page.getByTestId(`managed-driver-${tabletDriver!.id}`);
+  await expect(tabletCard).toBeVisible();
+  await tabletCard.getByRole("button", { name: "Editar" }).click();
+  await page.getByLabel("Apellidos del conductor").fill("Editado en tablet");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(tabletCard).toContainText("Editado en tablet");
+  const tabletDriverDetail = await page.request.get(`/api/backend/Drivers/${tabletDriver!.id}`, { headers });
+  expect((await tabletDriverDetail.json()).lastName).toBe("Editado en tablet");
+  await tabletCard.getByLabel("Vehículo para QA Tablet").selectOption(createdVehicleId!);
+  const assignTabletResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "PUT" && new URL(response.url()).pathname.endsWith(`/Drivers/${tabletDriver!.id}/assign-vehicle`),
+  );
+  await tabletCard.getByRole("button", { name: "Asignar" }).click();
+  expect((await assignTabletResponsePromise).status()).toBe(204);
+  await expect(tabletCard).toContainText(vehiclePlate);
+  const assignedTabletDriver = await page.request.get(`/api/backend/Drivers/${tabletDriver!.id}`, { headers });
+  expect((await assignedTabletDriver.json()).vehicleId).toBe(createdVehicleId);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
