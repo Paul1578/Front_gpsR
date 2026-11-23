@@ -833,3 +833,14 @@ Fecha de actualización: 2026-11-22.
 
 - Front `6d85ddd`, Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095): **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - El caso obtuvo `isActive=false` por GET inmediatamente tras DELETE y nuevamente tras recargar/reabrir la lista de bajas; luego reactivó y confirmó `isActive=true`.
+
+## Error de cambio de rol desde Gestión de Equipo — E2E agregado, CI pendiente
+
+- QA identificó que la confirmación tenía cobertura de cancelar y PUT exitoso, pero no del error de servidor.
+- El test de UI simula HTTP 500, verifica el mensaje visible y que la tarjeta/estado siga en User; luego confirma el mismo cambio con éxito y comprueba persistencia.
+- Playwright focal **1/1**, lint, build, discovery 51 y diff-check pasan localmente; CI frontend posterior aún pendiente.
+
+## HEAD documental `7ce8aef` validado — 2026-11-23
+
+- Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) success: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- El test adicional de fallo HTTP al cambiar rol pasa local 1/1; se incluirá en la siguiente Action.

@@ -1761,3 +1761,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El parche agrupado esperaba un callback `waitForResponse` con contexto distinto al archivo actual; fue rechazado sin cambiar archivos. El siguiente ajuste de regex de URL también quedó con un escape duplicado al construir el literal y se detectó al releer el diff antes de ejecutar pruebas.
 - Solución: releer el fragmento exacto, aplicar el bloque junto al texto vigente y corregir el literal a `/\/dashboard$/`; `git diff --check`, lint y discovery se ejecutan antes del commit.
 - Prevención: evitar asumir fragmentos amplios; inspeccionar el código resultante, especialmente regex/escapes, antes de validar.
+
+## 2026-11-23 — ESLint chocó con directorio temporal de Playwright — RESUELTO
+
+- Se ejecutaron `npm run lint` y Playwright en paralelo; durante el recorrido de archivos, ESLint falló con `ENOENT` al leer `test-results`, creado/eliminado por el reporter del test. El test focal pasó 1/1 y el build pasó; no era un error de lint del código.
+- Solución: repetir lint sin otro proceso de Playwright tocando los resultados temporales.
+- Prevención: no ejecutar lint en paralelo con Playwright cuando ambos pueden crear o limpiar `test-results`; secuenciar esas verificaciones.

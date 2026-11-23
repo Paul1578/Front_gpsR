@@ -727,3 +727,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095), Front `6d85ddd`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup.
 - GET `isActive=false` confirmado tras DELETE y recarga; luego POST Reactivate y GET `isActive=true`.
+
+## Rechazo de cambio de rol en UI — CI pendiente
+
+- Test focal simula HTTP 500 al confirmar User→Logistics, valida mensaje de error y rol User sin mutación; confirma después el cambio exitoso y persistencia.
+- Playwright focal 1/1 pasó local. Lint repetido sin concurrencia pasó, build y discovery 51 también; CI pendiente.
+
+## Resultado Front `7ce8aef` y siguiente test focal
+
+- Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) pasó 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- El caso focal nuevo de error en cambio de rol pasó 1/1 local; el lint repetido secuencialmente también pasó.

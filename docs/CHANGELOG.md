@@ -783,3 +783,9 @@
 ## 2026-11-23 — Baja lógica de Vehicle validada antes de reactivación
 
 - Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095) pasó con 51/51 E2E y cleanup; API confirmó `isActive=false` tras baja/reload y `true` después de reactivar.
+
+## 2026-11-23 — Error al actualizar rol desde Equipo
+
+- E2E cubre fallo HTTP 500 en `updateUserRole`, mensaje visible y rol intacto antes de probar la confirmación exitosa. Playwright focal 1/1, lint/build/discovery pasan localmente; CI pendiente.
+
+- HEAD Front `7ce8aef` validado por Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665): 51/51 E2E, responsive, backend Release/xUnit y cleanup.

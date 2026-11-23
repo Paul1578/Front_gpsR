@@ -1153,3 +1153,14 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front `6d85ddd`, Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095): 51/51 E2E, responsive, Backend Release/xUnit, audit/lint/build y cleanup success.
 - GET confirmó `isActive=false` tras DELETE y tras recargar la vista de bajas; reactivación posterior devolvió `true`.
+
+## Siguiente estado de error en roles — 2026-11-23
+
+- E2E de confirmación añade rechazo HTTP 500 al cambiar User→Logistics desde Gestión de Equipo: comprueba toast, rol User intacto y después repite el cambio permitido. Mock intencional para el error de transporte/UI.
+- Focal Playwright 1/1, lint/build, discovery 51 y diff-check pasan local. Falta Action integrado sobre commit posterior.
+- Incidente: ESLint y Playwright se ejecutaron en paralelo y ESLint recibió ENOENT en `test-results`; secuenciado de nuevo y pasó. Ver `ERROR_LOG.md`.
+
+## HEAD documental validado y error de rol — 2026-11-23
+
+- Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) pasó `7ce8aef`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup.
+- Focal de TeamManagement que prueba 500, mensaje visible/rol sin mutación y luego cambio exitoso pasó local 1/1; código aún pendiente de commit/Action.

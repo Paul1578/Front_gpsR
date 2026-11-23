@@ -976,6 +976,7 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
   };
   let roleRequests = 0;
   let statusRequests = 0;
+  let failNextRoleRequest = false;
 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.route("**/*", async (route) => {
@@ -1006,6 +1007,15 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
 
     if (request.method() === "PUT" && url.pathname.endsWith(`/Users/${persistedMember.id}/role`)) {
       roleRequests += 1;
+      if (failNextRoleRequest) {
+        failNextRoleRequest = false;
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "No se pudo actualizar el rol. Intenta nuevamente." }),
+        });
+        return;
+      }
       const payload = request.postDataJSON() as { roleName: string };
       persistedMember = { ...persistedMember, roles: [payload.roleName] };
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedMember) });
@@ -1109,6 +1119,18 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
   await expect(memberCard.getByRole("button", { name: "Usuario", exact: true })).toBeVisible();
 
   await logisticsRole.click();
+  failNextRoleRequest = true;
+  const rejectedRoleChange = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/Users/${persistedMember.id}/role`) && response.request().method() === "PUT",
+  );
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+  expect((await rejectedRoleChange).status()).toBe(500);
+  await expect(page.getByText("No se pudo actualizar el rol. Intenta nuevamente.", { exact: true })).toBeVisible();
+  expect(roleRequests).toBe(1);
+  expect(persistedMember.roles).toEqual(["User"]);
+  await expect(memberCard.getByRole("button", { name: "Usuario", exact: true })).toBeVisible();
+
+  await logisticsRole.click();
   const confirmRoleChange = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith(`/Users/${persistedMember.id}/role`) && response.request().method() === "PUT",
   );
@@ -1123,7 +1145,7 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
   const persistedCard = page.getByTestId(`team-user-${persistedMember.id}`);
   await expect(persistedCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
   await expect(persistedCard.getByRole("button", { name: "Activo", exact: true })).toBeVisible();
-  expect(roleRequests).toBe(1);
+  expect(roleRequests).toBe(2);
   expect(statusRequests).toBe(2);
 });
 
