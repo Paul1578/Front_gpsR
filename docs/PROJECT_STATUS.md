@@ -1,3 +1,10 @@
+## Auditoría adicional de usuarios, Admin raíz y baja de rutas — CI pendiente — 2026-11-23
+
+- E2E de dos tenants ahora intenta cambiar estado, perfil y rol de un usuario ajeno. Se esperan tres 404, ausencia en `/Users/my-team` del atacante e invariancia de perfil/rol/estado para el propietario.
+- Administración raíz promueve temporalmente un Driver a Admin por la UI, verifica `PUT` y persistencia en equipo, y restaura su rol. La fila tiene un `data-testid` asociado al ID.
+- Tras eliminar ruta desde el mapa, el E2E consulta el recurso y verifica `isActive=false` persistido.
+- Lint y build local pasaron; discovery **51 tests** y `git diff --check` limpios. Falta Action API/MySQL descartable para verificar ejecución real y cleanup.
+
 ## Correo duplicado en Gestión de Equipo — validado por Action — 2026-11-23
 
 - El E2E crea Manager/Logistics por UI y vuelve a enviar desde el formulario el mismo correo con username distinto, sin interceptar la API. Comprueba HTTP 409, mensaje, modal abierto y una sola cuenta persistida en `/Users/my-team`.

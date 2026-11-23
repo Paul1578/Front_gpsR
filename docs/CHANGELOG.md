@@ -708,3 +708,10 @@
 - Action Front [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413), código `f0acce7`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit, lint/build y teardown correctos.
 
 - Revalidación del HEAD documental `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) pasó todos los checks y 51/51 E2E.
+# 2026-11-23 — E2E tenant users, promoción root y soft delete route
+
+- Se cubren IDs de User entre tenants para estado, perfil y rol; la cuenta dueña confirma que no hubo mutación.
+- La UI de administración valida promoción root→Admin y persistencia y restaura el fixture.
+- El E2E de rutas comprueba el `isActive=false` guardado después de baja lógica.
+- Añadido testid a la fila de usuario de administración para anclar el selector por ID.
+- CI integrada pendiente; no declarar validación E2E completada hasta confirmar Action.

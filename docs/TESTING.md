@@ -641,3 +641,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - El manager map E2E valida OSRM exitoso con respuesta controlada de tres coordenadas y estado vial visible; Admin delegado conserva prohibición de crear/promover Admin (403) y UI deshabilita su rol propio; pruebas CRUD y cleanup incluidos.
 
 - Repetición en SHA documental final `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) success, con los mismos 51/51 E2E, responsive 1/1 y teardown.
+# Cobertura E2E de aislamiento, Admin raíz y baja lógica — 2026-11-23
+
+- Caso cross-tenant crea User propio y comprueba que otro tenant recibe 404 al modificar estado, perfil o rol; su listado de equipo no revela el ID y la lectura del propietario confirma todos los campos intactos.
+- Caso de Administración real eleva por interfaz un Driver de prueba al rol Admin como cuenta raíz; comprueba el `PUT` y la lectura autenticada de equipo, luego restaura Driver para no contaminar otras pruebas.
+- Caso de creación/eliminación de ruta verifica `isActive=false` consultando el recurso después del DELETE.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51**) y `git diff --check` pasan. Prueba integrada con API/MySQL y cleanup: pendiente de Action.

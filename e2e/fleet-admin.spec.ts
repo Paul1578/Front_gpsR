@@ -1180,6 +1180,9 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await confirmation.getByRole("button", { name: "Sí, eliminar" }).click();
     expect([200, 204]).toContain((await deleteRoutePromise).status());
     await expect(routeCard).toHaveCount(0);
+    const deactivatedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(deactivatedRouteResponse.status()).toBe(200);
+    expect((await deactivatedRouteResponse.json()).isActive).toBe(false);
     routeId = undefined;
 
     const widths = await page.evaluate(() => ({
@@ -3449,7 +3452,22 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   let inactiveVehicleId: string | undefined;
   let driverId: string | undefined;
   let routeId: string | undefined;
+  let userId: string | undefined;
   try {
+    const createdUser = await page.request.post("/api/backend/Users", {
+      headers: ownerHeaders,
+      data: {
+        username: `tenantqa${suffix}`,
+        email: `fletflow.e2e.user.tenant.${suffix}@example.test`,
+        password: "QA-only-Password-934!",
+        roleName: "User",
+        firstName: "Tenant",
+        lastName: "Isolation User QA",
+      },
+    });
+    expect(createdUser.status()).toBe(200);
+    userId = (await createdUser.json()).id as string;
+
     const createdDriver = await page.request.post("/api/backend/Drivers", {
       headers: ownerHeaders,
       data: { firstName: "Tenant", lastName: "Isolation QA", documentNumber: `E2EQA${suffix}`, phoneNumber: "0990000000" },
@@ -3505,6 +3523,19 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     const otherToken = (otherLoginResult.token ?? otherLoginResult.accessToken) as string | undefined;
     expect(otherToken).toBeTruthy();
     const otherHeaders = { Authorization: `Bearer ${otherToken}` };
+
+    expect((await page.request.put(`/api/backend/Users/${userId}/status?isActive=false`, { headers: otherHeaders })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Users/${userId}/profile`, {
+      headers: otherHeaders,
+      data: { username: `hacked${suffix}`, firstName: "Cross tenant", lastName: "Blocked" },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Users/${userId}/role`, {
+      headers: otherHeaders,
+      data: { roleName: "Manager" },
+    })).status()).toBe(404);
+    const otherTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: otherHeaders });
+    expect(otherTeamResponse.status()).toBe(200);
+    expect((await otherTeamResponse.json() as Array<{ id: string }>).some((member) => member.id === userId)).toBe(false);
 
     const ownerVehicleBeforeAttacks = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
     const ownerDriverBeforeAttacks = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
@@ -3610,6 +3641,17 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
     const ownerPositions = await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers: ownerHeaders });
     expect(ownerPositions.status()).toBe(200);
     expect(await ownerPositions.json()).toHaveLength(1);
+    const ownerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: ownerHeaders });
+    expect(ownerTeamResponse.status()).toBe(200);
+    const ownerTeam = await ownerTeamResponse.json() as Array<{ id: string; username: string; firstName: string; lastName: string; roles: string[]; isActive: boolean }>;
+    expect(ownerTeam.find((member) => member.id === userId)).toMatchObject({
+      id: userId,
+      username: `tenantqa${suffix}`,
+      firstName: "Tenant",
+      lastName: "Isolation User QA",
+      roles: ["User"],
+      isActive: true,
+    });
   } finally {
     if (routeId) {
       const currentRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders });

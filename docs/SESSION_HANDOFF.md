@@ -1,5 +1,15 @@
 # Handoff vigente — 2026-11-23
 
+## Tres brechas E2E adicionales — en validación integrada
+
+- QA de rutas/usuarios encontró (1) falta de aislamiento cross-tenant E2E en `/Users/{id}/status`, `/profile` y `/role`; (2) Admin raíz sólo tenía prueba de opción habilitada, sin promoción persistida; (3) eliminación de ruta comprobaba desaparición visual/HTTP pero no `isActive=false` persistido.
+- Se amplió el E2E multiempresa con una cuenta User temporal y ataques a los tres endpoints: todos deben devolver 404, el usuario no aparece en el equipo ajeno y el dueño confirma perfil/rol/estado sin cambios.
+- La prueba de Administración ahora promueve por UI a un Driver temporal a Admin desde la cuenta raíz, valida HTTP/body y `GET /Users/my-team`, y restaura Driver. Se agregó testid estable a la fila de usuario.
+- El flujo de ruta de mapa consulta el ID después de DELETE y exige `isActive=false`.
+- Validación local: lint, build Next 16/TS, discovery **51 tests** y `git diff --check` pasan. CI integrado aún pendiente; no marcar estos escenarios como probados en MySQL hasta recibir Action.
+- Incidentes de la iteración (contexto de parche no coincidente y paths de controlador equivocados) quedan registrados en `ERROR_LOG.md` del checkout propietario.
+- Siguiente: commit/push en `refactor/route-builder`, observar Action completa, corregir cualquier fallo y actualizar esta sección y `PROJECT_STATUS.md` con evidencia exacta.
+
 ## E2E de correo duplicado en Equipo
 
 - Añadida validación real de crear Manager/Logistics y volver a enviar su correo con username nuevo; espera HTTP 409 y verifica que el GET de equipo conserva una sola cuenta. El escenario no intercepta la petición.

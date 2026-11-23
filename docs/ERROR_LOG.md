@@ -1737,3 +1737,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Prevención: validar el repositorio dueño del identificador de Action antes de invocar `gh`.
 
 - Reincidencias en esta sesión: `gh run list` / `gh run view` para la rama o Action Backend volvieron a ejecutarse desde Front y devolvieron lista vacía/404. Se repitieron correctamente desde `/home/leonardo/Back_GPS`; no afectaron datos ni Actions. Para prevenirlo, revisar `pwd`/`workdir` junto con el propietario del branch/Action antes de consultar.
+# 2026-11-23 — Iteración E2E usó contexto de parche y rutas supuestas — CORREGIDO
+
+- Un parche agrupado se rechazó porque asumía el bloque de persistencia de posiciones en una ubicación distinta del spec; la edición fue atómica y no cambió archivos. Se releyeron los fragmentos concretos y se dividieron los cambios por contexto.
+- En Front se intentó abrir `fletflow/Api/Controllers/UserController.cs`, aunque esa ruta pertenece al checkout Backend y su controlador real de rutas se llama `RoutesController.cs`. En Backend otra búsqueda apuntó a `RouteController.cs` singular; `rg` devolvió path ausente y no se ejecutó ningún test ni se editó código.
+- Solución: usar `workdir` del repositorio propietario y localizar controladores con `rg --files fletflow/Api/Controllers`. Se confirmó `RoutesController.cs` y `UserController.cs` en `/home/leonardo/Back_GPS`.
+- Prevención: no asumir nombres o raíces entre repos; comprobar rutas antes de agrupar lecturas y aplicar parches pequeños con contexto recién leído.

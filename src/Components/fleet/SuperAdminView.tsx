@@ -402,6 +402,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                     return (
                       <div
                         key={user.id}
+                        data-testid={`company-user-${user.id}`}
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">

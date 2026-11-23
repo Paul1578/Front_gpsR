@@ -92,6 +92,31 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await expect(page.locator('select option[value="superadmin"]').first()).toBeEnabled();
   await expect(page.locator('select option[value="gerente"]').first()).toBeEnabled();
 
+  const companyUserRow = page.getByTestId(`company-user-${createdUser.id}`);
+  const adminPromotion = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdUser.id}/role`) &&
+    response.request().method() === "PUT",
+  );
+  await companyUserRow.getByRole("combobox").selectOption("superadmin");
+  const adminPromotionResponse = await adminPromotion;
+  expect(adminPromotionResponse.status()).toBe(200);
+  expect((await adminPromotionResponse.request().postDataJSON()).roleName).toBe("Admin");
+  const promotedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(promotedTeamResponse.status()).toBe(200);
+  expect((await promotedTeamResponse.json() as Array<{ id: string; roles: string[] }>)
+    .find((member) => member.id === createdUser.id)?.roles).toEqual(["Admin"]);
+
+  const roleRestore = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdUser.id}/role`) &&
+    response.request().method() === "PUT",
+  );
+  await companyUserRow.getByRole("combobox").selectOption("chofer");
+  expect((await roleRestore).status()).toBe(200);
+  const restoredTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(restoredTeamResponse.status()).toBe(200);
+  expect((await restoredTeamResponse.json() as Array<{ id: string; roles: string[] }>)
+    .find((member) => member.id === createdUser.id)?.roles).toEqual(["Driver"]);
+
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();
   const exportButton = page.getByRole("button", { name: "Exportar Ahora" });
