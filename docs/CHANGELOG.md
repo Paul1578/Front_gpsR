@@ -628,3 +628,8 @@
 - La edición enviaba las fechas planificadas como `undefined`; el adaptador producía `null` y backend las guardaba, borrando el horario.
 - La UI ahora omite esos campos al editar y hereda los valores existentes. El E2E de rutas verifica vía GET que inicio y fin se mantienen en ediciones tablet y móvil.
 - Lint/build y discovery **50** pasan localmente. Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930) pasó **50/50**, responsive **1/1**, API/MySQL y cleanup, comprobando inicio/fin tras cada edición.
+
+## 2026-11-23 — Handoff y evidencia de CI sincronizados
+
+- Se sincronizaron HEAD y Actions en `PROJECT_STATUS.md` y `SESSION_HANDOFF.md`; la referencia de CI obsoleta queda registrada en `ERROR_LOG.md`.
+- Front HEAD documental `d0a9342` pasó Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569): audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL E2E **50/50**, cleanup y teardown.

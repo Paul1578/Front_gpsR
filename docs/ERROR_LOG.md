@@ -1592,3 +1592,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - `RoutesManagement` enviaba `fechaInicio` y `fechaFin` como `undefined`; `updateRoute` combinaba ese patch sobre la ruta y `FleetContext` serializaba `plannedStart/plannedEnd` como `null`. El backend aceptaba y persistía la pérdida.
 - La edición ahora omite esos campos para preservar fechas cargadas. El E2E de edición consulta de nuevo la ruta tras los cambios tablet/móvil y compara ambas fechas con el horario original.
 - Prevención: no incluir claves opcionales con valor `undefined` en updates parciales; comprobar persistencia de todos los campos fuera del formulario. Action `45114492930` pasó **50/50** y confirmó el horario conservado tras editar desde tablet y móvil.
+
+## 2026-11-23 — Handoff de CI no sincronizado al finalizar — CORREGIDO
+
+- `PROJECT_STATUS.md` y `SESSION_HANDOFF.md` conservaban HEAD y estado “en curso” después de completar el workflow. Se cotejaron SHA y conclusión en GitHub y se actualizaron ambos archivos.
+- Front HEAD documental `d0a9342` pasó Action `45115772569`, con audit/lint/build, responsive **1/1**, API/MySQL E2E **50/50** y cleanup.
+- Prevención: comprobar SHA y conclusión de cada Action enlazada al actualizar la fuente vigente de handoff.
