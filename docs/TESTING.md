@@ -4,10 +4,10 @@
 - Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
 - CI: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend Release/xUnit, audit/lint/build, responsive y cleanup también pasaron.
 
-## E2E Manager edita una ruta — validación local, CI pendiente — 2026-11-23
+## E2E Manager edita una ruta — validado por Actions — 2026-11-23
 
 - El caso Manager ahora modifica nombre y descripción desde la UI a 320 px, verifica HTTP 200 del `PUT /Routes/{id}` y consulta API para comprobar persistencia de recursos y puntos.
-- Lint/build/discovery 51 y diff-check pasan localmente. Requiere Action integrada API/MySQL; `finally` mantiene restauración de rol y cleanup si el guardado falla.
+- Lint/build/discovery 51 y diff-check pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una con API/MySQL descartables; Release/xUnit, audit/lint/build, responsive y cleanup también pasaron. `finally` restaura el rol y limpia recursos.
 
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 

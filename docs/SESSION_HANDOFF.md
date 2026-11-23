@@ -12,7 +12,8 @@
 
 - La revisión QA encontró que el E2E Manager creaba la ruta y abría el editor a 320 px, pero cancelaba; backend ya cubría el permiso de actualización.
 - Se amplió localmente el escenario para cambiar nombre/descripción, guardar, esperar el PUT y comprobar por GET que persisten recursos, parada Delivery y traslado intactos. El fixture conserva `finally` para restaurar rol y limpiar flota/ruta.
-- Validación local de este cambio: lint/build, discovery (**51**) y `git diff --check` pasan. No es aún CI-validado ni está publicado; se integrará tras cerrar la Action de Logistics en curso.
+- Validación integrada Front `87da4aa`: Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y PR [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una, incluyendo `Manager usa el constructor de rutas...`; Release/xUnit, audit/lint/build, responsive y cleanup también pasaron. No hubo error nuevo.
+- El registro de validación de Logistics ya está en `b1dd4f4`; esta cobertura Manager queda probada en `87da4aa` (mismo código E2E, antes de los cambios documentales de b1dd4f4).
 
 ## Sincronización más reciente
 

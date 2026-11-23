@@ -4,10 +4,10 @@
 - Validación local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) y `git diff --check` pasan.
 - Validado por Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752): **51/51 E2E** en cada corrida, backend Release/xUnit, audit/lint/build, responsive y limpieza de API/MySQL efímeros.
 
-## Manager edita rutas desde UI — validación local, CI pendiente — 2026-11-23
+## Manager edita rutas desde UI — validado por Actions — 2026-11-23
 
 - La auditoría detectó que el E2E Manager cancelaba la edición tras abrir el editor. Ahora modifica nombre/descripción, guarda y comprueba por GET persistencia de ruta, asignación y parada.
-- Lint/build, discovery **51 tests** y diff-check pasan localmente. Action integrada pendiente; el fixture conserva restauración del rol y cleanup en `finally`.
+- Lint/build, discovery **51 tests** y diff-check pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una con API/MySQL descartables, Release/xUnit, audit/lint/build, responsive y cleanup. El fixture conserva restauración del rol y limpieza en `finally`.
 
 ## Estado actual — 2026-11-23
 
