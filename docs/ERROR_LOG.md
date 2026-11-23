@@ -1743,3 +1743,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - En Front se intentó abrir `fletflow/Api/Controllers/UserController.cs`, aunque esa ruta pertenece al checkout Backend y su controlador real de rutas se llama `RoutesController.cs`. En Backend otra búsqueda apuntó a `RouteController.cs` singular; `rg` devolvió path ausente y no se ejecutó ningún test ni se editó código.
 - Solución: usar `workdir` del repositorio propietario y localizar controladores con `rg --files fletflow/Api/Controllers`. Se confirmó `RoutesController.cs` y `UserController.cs` en `/home/leonardo/Back_GPS`.
 - Prevención: no asumir nombres o raíces entre repos; comprobar rutas antes de agrupar lecturas y aplicar parches pequeños con contexto recién leído.
+
+## 2026-11-23 — Parche documental agrupado usó encabezado inexistente — RESUELTO
+
+- Un `apply_patch` sobre varios documentos esperaba un encabezado de `TESTING.md` con otro nombre; el parche completo se rechazó y no modificó archivos.
+- Solución: añadir las notas de continuidad al final de cada documento y cambiar el título conocido mediante sustitución exacta; revisar `git diff --check`.
+- Prevención: confirmar el encabezado exacto por archivo antes de agrupar contextos en un parche.

@@ -1,4 +1,4 @@
-## Auditoría adicional de usuarios, Admin raíz y baja de rutas — CI pendiente — 2026-11-23
+## Auditoría adicional de usuarios, Admin raíz y baja de rutas — CI aprobado — 2026-11-23
 
 - E2E de dos tenants ahora intenta cambiar estado, perfil y rol de un usuario ajeno. Se esperan tres 404, ausencia en `/Users/my-team` del atacante e invariancia de perfil/rol/estado para el propietario.
 - Administración raíz promueve temporalmente un Driver a Admin por la UI, verifica `PUT` y persistencia en equipo, y restaura su rol. La fila tiene un `data-testid` asociado al ID.
@@ -756,3 +756,9 @@ Fecha de actualización: 2026-11-22.
 - Se confirmaron denegaciones cross-tenant de perfil/estado/rol sin mutación, promoción de rol desde cuenta raíz con confirmación UI/persistencia, restauración del fixture y baja lógica persistida de ruta.
 - Backend SHA documental `fa4a3a3`, Actions [45154037990](https://github.com/Paul1578/Back_GPS/actions/runs/45154037990) y [45154028662](https://github.com/Paul1578/Back_GPS/actions/runs/45154028662): push y PR success.
 - Misión integral abierta: continuar los criterios CRUD, permisos, responsive y pruebas aún marcados pendientes; SMTP y configuración productiva externa siguen delimitados.
+
+## Edición de paradas en ruta existente — E2E agregado, CI pendiente
+
+- Auditoría independiente detectó que el constructor permitía reordenar y cambiar operaciones al editar, pero E2E sólo probaba crear varias paradas y preservar una existente.
+- El E2E integrado ahora abre una ruta con recogida+entrega, cambia la operación de una parada, reordena ambas y compara la secuencia completa por GET después de guardar en tablet y móvil.
+- Lint, build, discovery de **51 tests** y `git diff --check` pasan localmente. El test necesita API/MySQL y credenciales QA; la Action del commit nuevo debe validar escritura real y cleanup.

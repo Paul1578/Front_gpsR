@@ -725,3 +725,8 @@
 - Action Front [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262): success con 51/51 E2E, responsive 1/1, backend Release/xUnit 139/139, audit, lint/build y cleanup.
 - Validó aislamiento cross-tenant, promoción root-only con confirmación y persistencia, baja lógica de ruta y flujo de mapa.
 - Backend docs `fa4a3a3`: Actions push/PR 45154037990 y 45154028662 success.
+
+## 2026-11-23 — E2E de edición de paradas
+
+- Se agrega una ruta existente con pickup y delivery; la UI cambia operación y orden y el test consulta por GET la secuencia persistida en tablet y móvil.
+- Lint/build/discovery 51/diff-check pasan local; API/MySQL autenticado y cleanup pendientes de Action.

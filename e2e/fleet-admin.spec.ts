@@ -815,7 +815,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
         plannedEnd: "2038-07-21T12:00:00Z",
         points: [
           { lat: -0.18, lng: -78.46, name: "E2E origen", operation: 0, status: 0 },
-          { lat: -0.19, lng: -78.47, name: "E2E parada", operation: 3, status: 0 },
+          { lat: -0.19, lng: -78.47, name: "E2E recogida", operation: 1, status: 0 },
+          { lat: -0.195, lng: -78.475, name: "E2E entrega", operation: 2, status: 0 },
           { lat: -0.2, lng: -78.48, name: "E2E destino", operation: 0, status: 0 },
         ],
       },
@@ -838,6 +839,10 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedName);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("delivery");
+    await page.getByTestId("stop-point-1").getByRole("button", { name: "Subir parada" }).click();
+    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("E2E entrega");
+    await expect(page.getByPlaceholder("Parada 2")).toHaveValue("E2E recogida");
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
     await page.getByRole("button", { name: "Continuar" }).click();
@@ -855,8 +860,27 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(tabletPersistedRoute.name).toBe(updatedName);
     expect(Date.parse(tabletPersistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
     expect(Date.parse(tabletPersistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
-    const tabletPersistedPoints = tabletPersistedRoute.points as Array<{ operation: number | string }>;
-    expect(tabletPersistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
+    const summarizePersistedPoints = (points: Array<{ name: string; operation: number | string }>) => {
+      const operationNames: Record<number, string> = {
+        0: "None",
+        1: "Pickup",
+        2: "Delivery",
+        3: "PickupAndDelivery",
+      };
+      return points.map((point) => ({
+        name: point.name,
+        operation: typeof point.operation === "number"
+          ? operationNames[point.operation] ?? `Unknown(${point.operation})`
+          : point.operation,
+      }));
+    };
+    const tabletPersistedPoints = tabletPersistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(summarizePersistedPoints(tabletPersistedPoints)).toEqual([
+      { name: "E2E origen", operation: "None" },
+      { name: "E2E entrega", operation: "Delivery" },
+      { name: "E2E recogida", operation: "Delivery" },
+      { name: "E2E destino", operation: "None" },
+    ]);
 
     await page.setViewportSize({ width: 320, height: 844 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -885,8 +909,13 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(persistedRoute.name).toBe(mobileUpdatedName);
     expect(Date.parse(persistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
     expect(Date.parse(persistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
-    const persistedPoints = persistedRoute.points as Array<{ operation: number | string }>;
-    expect(persistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
+    const persistedPoints = persistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(summarizePersistedPoints(persistedPoints)).toEqual([
+      { name: "E2E origen", operation: "None" },
+      { name: "E2E entrega", operation: "Delivery" },
+      { name: "E2E recogida", operation: "Delivery" },
+      { name: "E2E destino", operation: "None" },
+    ]);
 
     await page.getByLabel("Estado").selectOption("pendiente");
     await page.getByLabel("Vehículo").selectOption(vehicleId);

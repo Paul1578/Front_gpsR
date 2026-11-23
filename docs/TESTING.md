@@ -658,3 +658,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Front Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262), SHA `d002a93`: success; backend Release/xUnit **139/139**, dependency audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **51/51**, API y contenedores cerrados.
 - E2E verificó cambios cross-tenant rechazados sin alterar los datos; la cuenta raíz promovió y luego restauró el rol de un fixture con confirmación y lectura persistida; la baja de ruta se confirmó mediante lectura API.
 - Backend `fa4a3a3` validado en Actions push `45154037990` y pull request `45154028662`, ambos success.
+
+## Edición de paradas en ruta existente — CI pendiente
+
+- E2E autenticado modifica una ruta multi-parada desde el constructor: cambia recogida a entrega y reordena la siguiente parada.
+- Después del PUT, `GET /Routes/{id}` debe devolver la secuencia origen, entrega, recogida, destino con operaciones persistidas. Un segundo guardado móvil verifica que se conserva.
+- Lint/build, discovery **51** y diff-check pasan local; API/MySQL y cleanup se validarán en Action porque no hay credenciales QA locales.

@@ -1075,3 +1075,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Front Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262) terminó success en `d002a93`: backend Release/xUnit 139/139, audit, lint/build, responsive 1/1, E2E API/MySQL 51/51 y teardown.
 - Comprobó aislamiento por tenant en cambios de User, promoción root-only con confirmación/cancelación y persistencia, baja lógica de rutas, geometría OSRM y responsive 320/768/desktop.
 - Backend docs HEAD `fa4a3a3` pasó los Actions push/PR `45154037990` y `45154028662`. Se actualizará esta sincronización en el próximo commit Front; continuar misión global abierta desde los pendientes actuales.
+
+## Siguiente brecha CRUD — editar paradas — 2026-11-23
+
+- Auditoría Front independiente sobre `d03f3eb` halló que no se probaba cambiar contenido/orden de paradas de una ruta existente. Se amplió `e2e/fleet-admin.spec.ts`: cambia Recogida→Entrega y mueve la otra parada al primer lugar; GET verifica orden y operaciones tras PUT en tablet y móvil.
+- Lint/build/discovery 51/diff-check pasan local. No hay credenciales QA en el shell; validar en Action autenticada con API/MySQL descartables.
+- El E2E queda sin commit hasta que Action `45154834106` (documentación anterior) termine; después publicar y corregir cualquier fallo hasta verde.
