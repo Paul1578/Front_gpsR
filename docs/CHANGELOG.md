@@ -1,3 +1,8 @@
+## 2026-11-23 — Estado vigente de seguridad documentado
+
+- `SECURITY.md` ahora apunta a la validación integrada más reciente de autenticación/transporte y elimina la afirmación histórica de que faltaba E2E.
+- Action `45266610856` validó 69/69 E2E, controles de sesión, axe, responsive, API/MySQL y Backend xUnit 165/165.
+
 ## 2026-11-23 — Perfil accesible y pruebas móviles extendidas
 
 - Los campos para cambiar contraseña del perfil tienen etiquetas visibles, autocomplete y validación nativa; se corrigen tildes en mensajes.

@@ -6,6 +6,7 @@
 - `1470e5d` había terminado 68/69 por locator parcial coincidente con dos campos; se corrigió con nombre accesible exacto. El incidente y prevención constan en `ERROR_LOG.md`.
 - Perfil expone labels/autocomplete, corrige tildes y prueba formulario a 320 px. Axe encontró nombre accesible ausente y contraste bajo, corregidos y validados en CI.
 - Backend `chore/stabilize-fleet-platform` pasó Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285): build/xUnit 165/165, migration smoke, aislamiento HTTP/MySQL, concurrencia y rate limit. No se encontró fallo confirmado en roles/rutas/unlink; el riesgo condicional de Admin heredado con owner nulo sigue documentado en `Back_GPS/docs/SECURITY.md`.
+- La revisión de seguridad Front documenta la Action integrada actual en `docs/SECURITY.md`; BFF/orígenes/transporte y escenarios de sesión están cubiertos. Credenciales remotas y despliegue productivo siguen dependiendo de accesos/configuración externos.
 - Búsqueda/filtros reales de Equipo, filtros de ruta y Dashboard/mapa ya tienen interacciones a 320 px. Continúa auditoría responsive de contenido largo/formularios y cobertura CRUD. SMTP real e infraestructura productiva dependen de configuración externa; app nativa pospuesta.
 - La fase sigue abierta; errores, causa, solución y prevención se registran en `ERROR_LOG.md`.
 

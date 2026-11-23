@@ -6,6 +6,7 @@
 - Front `1470e5d` Action [`45265266802`](https://github.com/Paul1578/Front_gpsR/actions/runs/45265266802) terminó 68/69 por locator Playwright parcial; causa/prevención en `ERROR_LOG.md`.
 - Front `4f59b19` y Action [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) validaron el fix: **69/69 E2E**, responsive 1/1, axe 2/2, Backend xUnit 165/165, audit/lint/build, API/MySQL y cleanup. Axe incluye Perfil/formulario expandido; E2E comprueba Profile a 320 px.
 - Axe había descubierto nombre ausente en el botón «Volver» y contraste 4.36:1 al revocar sesiones; ambos corregidos. Validación local `npm run test:a11y` 2/2, build/lint, discovery 69 y diff-check correctos.
+- `docs/SECURITY.md` quedó reconciliado con la Action más reciente; ya no presenta el E2E de forwarded headers como pendiente.
 - Continuar auditoría del responsive y cobertura funcional; documentar cada hallazgo/fix y su evidencia. SMTP real e infraestructura de producción dependen de configuración externa; la app nativa queda pospuesta.
 
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
