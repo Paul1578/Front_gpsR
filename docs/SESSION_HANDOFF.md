@@ -1,19 +1,25 @@
 # Handoff vigente — 2026-11-23
 
-## Siguiente cobertura — edición de rutas por Logistics
+## Edición de rutas por Logistics — validada
 
 - El test `Logistics ve rutas pero no vehículos ni administración de equipo` ya cubría alta en constructor, cancelación, historial y denegación de flota, pero no edición desde UI.
 - Se añadió edición de nombre y descripción del traslado, aserción de `PUT /Routes/{id}` HTTP 200 y lectura autenticada posterior que confirma persistencia sin cambiar conductor, vehículo ni estado.
 - El flujo continúa con cancelación e historial usando el nuevo nombre. No hubo errores durante lint/build/discovery; no se añade incidente a `ERROR_LOG.md`.
 - Validación local: lint, build y Playwright discovery **51 tests** pasan. CI integrado pasó en Front `761ffab`: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y PR [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752), **51/51 E2E** cada una, build/xUnit, audit/lint, responsive y cleanup.
-- No hubo error nuevo en estas corridas; no se agrega incidente. Próximo foco: validar edición Manager en `87da4aa`.
+- No hubo error nuevo en estas corridas; no se agrega incidente.
 
-## Cobertura siguiente — edición de rutas por Manager
+## Edición de rutas por Manager — validada
 
 - La revisión QA encontró que el E2E Manager creaba la ruta y abría el editor a 320 px, pero cancelaba; backend ya cubría el permiso de actualización.
 - Se amplió localmente el escenario para cambiar nombre/descripción, guardar, esperar el PUT y comprobar por GET que persisten recursos, parada Delivery y traslado intactos. El fixture conserva `finally` para restaurar rol y limpiar flota/ruta.
 - Validación integrada Front `87da4aa`: Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y PR [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una, incluyendo `Manager usa el constructor de rutas...`; Release/xUnit, audit/lint/build, responsive y cleanup también pasaron. No hubo error nuevo.
 - El registro de validación de Logistics ya está en `b1dd4f4`; esta cobertura Manager queda probada en `87da4aa` (mismo código E2E, antes de los cambios documentales de b1dd4f4).
+
+## Últimos HEAD
+
+- Front `refactor/route-builder`: docs `0e5617b`, código verificado `87da4aa`; Manager y Logistics route-edit pasaron en Actions `45133416432` / `45132992521` (51/51 cada una).
+- Backend `chore/stabilize-fleet-platform`: docs `1c1fe13`, lógica verificada `63333bb`/`c42a306`; xUnit 136/136 y smoke HTTP/MySQL multi-parada, tenant, rate limit y cleanup en Action `45132350399`.
+- Ambas ramas siguen limpias y separadas de `main`.
 
 ## Sincronización más reciente
 
