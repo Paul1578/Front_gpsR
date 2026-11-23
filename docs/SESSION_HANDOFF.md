@@ -912,3 +912,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45099148002` (commit previo `d61b7a8`) falló en 5 E2E; backend, lint/build y responsive pasaron. Causas/correcciones detalladas en `ERROR_LOG.md`.
 - Fix local: `RoutesManagement` muestra conductores ocupados deshabilitados (antes se filtraban), fixture Playwright intercepta endpoint real; test de traslado no reabre mapa ya activo; cuatro mutaciones antiguas de equipo ahora confirman en diálogo.
 - Verificación local después del fix: lint/build OK, confirmaciones 1/1, discovery 43, diff-check OK. Pendiente push y nueva Action con API/MySQL para validar los cinco escenarios.
+
+- Action `45100344654` ejecutó **42/43 E2E**; quedó una confirmación de desactivar User vinculado a Driver en `fleet-admin.spec.ts` (línea cerca de 3820), añadida localmente. Cleanup del runner indicó error SQL al salir del test fallido; el script suprime stderr, se debe verificar en la Action posterior y hacer visible el diagnóstico si persiste.

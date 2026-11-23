@@ -632,3 +632,5 @@ Fecha de actualización: 2026-11-22.
 
 - La Action pasó backend build, lint, frontend build y responsive, pero Playwright reportó 5 fallos: 2 casos nuevos de rutas (conductor ocupado y apertura del mapa), y 3 tests antiguos sin interacción con el nuevo diálogo de confirmación.
 - Corregidos localmente: ahora se ven deshabilitados los conductores ocupados; traslado sigue la transición real de Ubicar→mapa; los tests confirman cambios de rol/estado. Validación local lint/build, confirmaciones 1/1 y discovery 43 pasan. Nueva Action integrada pendiente.
+
+- Action de repetición `45100344654`: **42/43 E2E**; el único fallo fue otra desactivación de cuenta sin confirmar dentro del test de ciclo Driver. Corregido localmente. Cleanup SQL informó error después del test fallido; resultado de limpieza tras la nueva Action pendiente.

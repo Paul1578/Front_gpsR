@@ -506,3 +506,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - La Action ejecutó responsive correctamente y falló **5 E2E**: selector conductor ocupado (opción ocultada por filtro UX), transición de mapa duplicada y tres operaciones de equipo que no confirmaban el diálogo nuevo.
 - Corregidos localmente; lint/build y `git diff --check` pasan; confirmaciones E2E 1/1; Playwright descubre 43 tests.
 - Repetición completa contra API/MySQL está pendiente; no marcar los cinco como verificados hasta que termine.
+
+- Repetición `45100344654`: **42/43**; únicamente faltaba confirmar desactivación del usuario en ciclo Driver. Fix local aplicado; la repetición final debe confirmar también cleanup MySQL, que informó error después del fallo.
