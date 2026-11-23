@@ -455,3 +455,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `isRootAccount` se deriva de la comparación entre identificador autenticado de `/Auth/me` y claim `owner_id` del JWT, que alimenta la UX de creación y cambio de rol.
 - Local: `npm run lint` y `npm run build` pasaron; Playwright enumeró 39 pruebas. El escenario autenticado completo queda pendiente de CI integrado.
 - Backend Action `45088129188` validó la regla real mediante HTTP y MySQL efímero: root permitido, Admin delegado denegado, 113/113 pruebas y cleanup.
+- E2E simulado de Admin delegado verifica ausencia de “Gerente” al crear y cambiar rol; foco 1/1 en 0.8 s y archivo completo 10/10 en 15.3 s. La primera corrida expiró al usar locator hamburger en desktop; cambiado a navegación directa.
+- Lint, build, discovery de 40 E2E y diff-check pasan. Action `45088879212` cubre SHA anterior `5784b36`; queda publicar y ejecutar Action para este SHA con test delegado.

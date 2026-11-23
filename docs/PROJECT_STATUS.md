@@ -584,5 +584,6 @@ Fecha de actualización: 2026-11-22.
 
 - La vista de Gestión de Equipo ahora muestra la opción “Gerente” (rol backend Admin) sólo cuando el usuario autenticado es la cuenta raíz del tenant. La condición compara `owner_id` firmado del JWT con el identificador de `/Auth/me`; no sustituye la autorización backend.
 - Se agregó una aserción E2E en el flujo autenticado de Admin raíz para confirmar que puede seleccionar el rol.
+- Nuevo E2E aislado cubre Admin delegado: “Gerente” está ausente en alta y en el selector de cambio del miembro existente; prueba enfocada pasó 1/1.
 - Backend ya aplica la regla y quedó validada por Action `45088129188`: 113/113 xUnit y smoke HTTP/MySQL de permisos/persistencia.
-- Validación local: `npm run lint` y `npm run build` pasan; Playwright descubre 39 tests (`npm run test:e2e -- --list`). Aserción E2E autenticada aún debe ejecutarse integrada con API/MySQL.
+- Validación local del cambio completo: `npm run lint`, `npm run build`, discovery de 40 E2E y spec `team-management-load-errors.spec.ts` 10/10 pasan. La Action `45088879212` corresponde al commit previo `5784b36` (sin el nuevo E2E negativo) y sigue corriendo; el SHA actual necesita Action propia.

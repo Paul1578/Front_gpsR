@@ -838,6 +838,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Branch Front `refactor/route-builder`; branch Backend `chore/stabilize-fleet-platform`; mantener `main` intacta.
 - El backend reservó crear/promover Admin a la cuenta raíz (decisión del usuario), validado por HTTP/MySQL y Action backend `45088129188`.
 - Detectado que la UI de Gestión de Equipo aún mostraba “Gerente” (rol API Admin) para cualquier administrador. `AuthContext` ahora compara el ID autenticado con `owner_id` del JWT para derivar `isRootAccount`; la lista de asignación oculta Gerente a cuentas no raíz. La API sigue siendo autoridad.
-- E2E autenticado del root comprueba que “Gerente” sí aparece. Local `npm run lint` y `npm run build` pasan; Playwright descubre 39 tests. Falta ejecutar la suite integrada tras publicar.
-- Un primer `next build` detectó dos errores TypeScript (tipo ampliado en `.filter`, callback `.map` trataba índice como token). Corregidos con guard de tipo y callback explícito; nueva ejecución build/lint terminó bien; `ERROR_LOG.md` lo documenta.
+- E2E autenticado del root comprueba que “Gerente” sí aparece. Revisión independiente pidió cubrir el lado negativo; nuevo test delegado con `owner_id` distinto verifica que no aparece al crear ni promover.
+- La primera corrida delegada expiró porque buscaba hamburger en desktop; navega ahora por barra lateral. Caso enfocado pasó 1/1 y el spec completo de carga/equipo pasó 10/10.
+- Local `npm run lint`, `npm run build`, discovery Playwright (40 tests) y `git diff --check` pasan. `ERROR_LOG.md` documenta dos errores TypeScript ya corregidos y el primer locator de navegación incorrecto.
+- Action `45088879212` valida el commit `5784b36` y continúa en ejecución, antes del E2E delegado nuevo. Publicar el SHA actual y validar la suite integrada.
 - Continuar auditoría de roles/CRUD y responsive. Misión abierta; móvil nativo aplazado.

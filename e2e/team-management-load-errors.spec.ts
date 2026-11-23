@@ -814,6 +814,82 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
   await expectNoHorizontalOverflow();
 });
 
+test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ page }) => {
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "delegated-admin-id",
+          email: "delegated-admin@example.test",
+          username: "delegated-admin",
+          firstName: "Admin delegado",
+          roles: ["Admin"],
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{
+          id: "member-user-1",
+          email: "member@example.test",
+          username: "member",
+          firstName: "Miembro",
+          lastName: "Equipo",
+          roles: ["User"],
+          isActive: true,
+        }]),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    const payload = btoa(JSON.stringify({ nameid: "delegated-admin-id", owner_id: "root-account-id", role: "Admin" }))
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: `e30.${payload}.test-signature`,
+      refreshToken: "playwright-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const createDialog = page.getByRole("dialog");
+  await expect(createDialog.getByRole("button", { name: "Gerente", exact: true })).toHaveCount(0);
+  await createDialog.getByRole("button", { name: "Cancelar" }).click();
+
+  const memberCard = page.getByTestId("team-user-member-user-1");
+  await expect(memberCard).toBeVisible();
+  await expect(memberCard.getByRole("button", { name: "Gerente", exact: true })).toHaveCount(0);
+});
+
 test("Historial distingue error de lista vacía y permite reintentar", async ({ page }) => {
   let failRouteHistory = false;
   await page.setViewportSize({ width: 390, height: 844 });

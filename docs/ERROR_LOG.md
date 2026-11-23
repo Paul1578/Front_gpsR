@@ -1431,3 +1431,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** usar guard explícito `role is UserRole` y una lambda `.map((apiUser) => mapApiUser(apiUser))` en el catálogo de usuarios.
 - **Prevención:** tras ampliar la firma de callbacks de colecciones, reemplazar referencias directas a la función por lambdas cuando los argumentos opcionales puedan coincidir con `index`/`array` y mantener el tipo del catálogo explícito.
 - **Verificación:** repetir `npm run lint`, `npm run build` y `npm run test:e2e -- --list`; documentar salida final al terminar.
+
+# 2026-11-23 — La prueba inicial no cubría Admin delegado y asumía navegación móvil
+
+- **Síntoma:** auditoría independiente detectó que la primera aserción sólo comprobaba que Admin raíz veía “Gerente”; no verificaba que Admin delegado careciera de esa opción para alta y promoción. El E2E delegado inicial expiró buscando “Abrir menú”.
+- **Causa:** cobertura positiva incompleta y el caso delegado no fijaba un viewport móvil; en el viewport desktop la navegación aparece en la barra lateral y no usa hamburger.
+- **Solución:** nuevo E2E delegado simula JWT con `owner_id` distinto al ID autenticado, API de equipo válida y verifica ausencia de “Gerente” tanto en alta como en la tarjeta existente. Navega directamente por “Gestión de Equipo”.
+- **Prevención:** probar explícitamente ambos lados de reglas de permisos en la interfaz y usar la navegación correspondiente al viewport del escenario.
+- **Verificación:** prueba enfocada posterior pasó 1/1 en 1.8 s. Repetir suite local y confirmar CI integrada para el SHA nuevo.
