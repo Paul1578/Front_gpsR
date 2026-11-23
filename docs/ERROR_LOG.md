@@ -1506,3 +1506,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** entrar a Gestión de Equipo en viewport de escritorio y reducir el viewport ya con el diálogo abierto; el test revisa ancho/alto y uso de botones a 320×360.
 - **Verificación:** E2E enfocado pasó 1/1; lint y build pasan.
 - **Prevención:** separar prueba de navegación móvil de prueba de accesibilidad vertical; abrir el componente antes de cambiar viewport cuando se mide el diálogo.
+
+# 2026-11-23 — Action Front 45099148002 detectó cinco fallos E2E — CORREGIDOS LOCALMENTE
+
+- **Conductor ocupado:** el test no encontraba el fixture porque `RoutesManagement` ocultaba los conductores no disponibles en vez de mostrarlos deshabilitados. Se corrigió mostrando todas las opciones y deshabilitando el estado ocupado; el test ahora intercepta la ruta real `/api/backend/Routes/assignment-options` y usa el valor de opción estable.
+- **Traslado:** E2E intentaba pulsar “Ver mapa” después de “Ubicar”; ese botón ya abrió el mapa y cambió a “Ver paradas y detalles”. Se quitó el click duplicado y se verifica el estado visible correcto.
+- **Tres pruebas preexistentes de rol/estado:** el nuevo diálogo de confirmación detuvo solicitudes que los tests esperaban inmediatamente. Se añadieron confirmaciones explícitas para cambio a Manager/Logistics/Driver y desactivación de cuenta.
+- **Verificación de corrección local:** lint/build pasan; test de confirmaciones 1/1; discovery 43; diff-check pasa. La repetición integrada API/MySQL de los cinco casos está pendiente.
+- **Prevención:** al agregar confirmaciones, buscar todos los consumidores E2E de mutaciones asociadas; mostrar recursos no disponibles con estado claro si la decisión UX es explicar por qué no se pueden seleccionar; comprobar el texto/estado del control tras cada transición móvil.

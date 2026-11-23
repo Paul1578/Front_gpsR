@@ -1025,9 +1025,11 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     expect(vehicleResponse.status()).toBe(201);
     vehicleId = (await vehicleResponse.json()).id as string;
 
-    await page.route("**/Routes/assignment-options", async (route) => {
+    let assignmentOptionsIntercepted = false;
+    await page.route("**/api/backend/Routes/assignment-options**", async (route) => {
       const response = await route.fetch();
       const options = await response.json();
+      assignmentOptionsIntercepted = true;
       options.drivers.push({
         id: "e2e-busy-driver",
         firstName: "Conductor",
@@ -1040,6 +1042,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
 
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard$/);
+    await expect.poll(() => assignmentOptionsIntercepted).toBe(true);
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -1095,7 +1098,7 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
     await page.locator("select").nth(0).selectOption(vehicleId!);
-    await expect(page.getByRole("option", { name: /Conductor Ocupado · En una ruta en curso/ })).toBeDisabled();
+    await expect(page.locator('select option[value="e2e-busy-driver"]')).toBeDisabled();
     await page.locator("select").nth(1).selectOption(driverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
@@ -1272,12 +1275,11 @@ test("Admin crea una ruta de traslado sin paradas operativas en tablet", async (
 
     const map = page.locator(".leaflet-container");
     await page.getByRole("button", { name: "Seleccionando" }).waitFor();
-    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
     await clickMapAwayFromMarkers(map);
     await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen del traslado");
     const destination = page.getByPlaceholder("¿A dónde llega?");
     await destination.locator("xpath=../..").getByRole("button", { name: "Ubicar" }).click();
-    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles", exact: true })).toBeVisible();
     await clickMapAwayFromMarkers(map);
     await destination.fill("Destino del traslado");
     await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
@@ -1916,6 +1918,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       new URL(response.url()).pathname.endsWith(`/api/backend/Users/${fixtureDriver.id}/role`) && response.request().method() === "PUT",
     );
     await roleCard.getByRole("button", { name: "Gestor de flota", exact: true }).click();
+    await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
     expect((await assignManagerRole).status()).toBe(200);
     const persistedManagerTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
     expect(persistedManagerTeam.status()).toBe(200);
@@ -3776,6 +3779,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
     response.request().method() === "PUT",
   );
   await teamMemberCard.getByRole("button", { name: "Logistica", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
   const logisticsRoleResponse = await logisticsRolePromise;
   expect(logisticsRoleResponse.status()).toBe(200);
   expect((await logisticsRoleResponse.json()).role).toBe("Logistics");
@@ -3788,6 +3792,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
     response.request().method() === "PUT",
   );
   await teamMemberCard.getByRole("button", { name: "Chofer", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
   const driverRoleResponse = await driverRolePromise;
   expect(driverRoleResponse.status()).toBe(200);
   expect((await driverRoleResponse.json()).role).toBe("Driver");
@@ -4055,6 +4060,7 @@ test("desactivar un usuario desde Equipo revoca su sesión y refresh token", asy
       response.url().includes(`/api/backend/Users/${member.id}/status`) && response.request().method() === "PUT",
     );
     await memberCard.getByRole("button", { name: "Activo", exact: true }).click();
+    await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
     expect((await deactivateResponse).status()).toBe(200);
 
     const rejectedRefresh = await page.request.post("/api/backend/Auth/refresh", {

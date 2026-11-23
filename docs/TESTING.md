@@ -500,3 +500,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Caso de traslado sin paradas operativas y opción de conductor ocupado añadidos a `fleet-admin.spec.ts`; pendientes de ejecución integrada contra API/MySQL en Actions.
 - Backend Release xUnit: 133/133; build Release 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos. Incluye límites de recuperación, tokens y validación de URL.
 - Limitación local: API/backend no estaban escuchando; las pruebas funcionales API/MySQL se ejecutarán con el runner integrado.
+
+## Corrección posterior a Action Front 45099148002
+
+- La Action ejecutó responsive correctamente y falló **5 E2E**: selector conductor ocupado (opción ocultada por filtro UX), transición de mapa duplicada y tres operaciones de equipo que no confirmaban el diálogo nuevo.
+- Corregidos localmente; lint/build y `git diff --check` pasan; confirmaciones E2E 1/1; Playwright descubre 43 tests.
+- Repetición completa contra API/MySQL está pendiente; no marcar los cinco como verificados hasta que termine.

@@ -906,3 +906,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend `chore/stabilize-fleet-platform`: rate limit recuperación 5/10 min/IP; token 256 bits; TTL 60 min por defecto (1–1440 validado); HTTPS obligatorio en URLs de email productivas. xUnit Release completo 133/133, build 0 warnings/errores, shell check y diff check pasan. Smoke HTTP/MySQL real pendiente de Actions.
 - Errores registrados: fixture con aridad incorrecta en `RouteE.Create` (corregido, test pasó); E2E de diálogo falló inicialmente al usar menú móvil a baja altura (flujo ajustado y 1/1 pasó).
 - Siguiente: revisar estado/diffs, commit y push de ambas ramas, observar Actions completas; corregir fallos y documentar IDs/resultados. No tocar `main`. SMTP, rate limiter distribuido, proxy confiable y Data Protection persistente quedan como limitaciones externas/productivas; misión global continúa abierta.
+
+## Seguimiento de Action Front fallida
+
+- Action `45099148002` (commit previo `d61b7a8`) falló en 5 E2E; backend, lint/build y responsive pasaron. Causas/correcciones detalladas en `ERROR_LOG.md`.
+- Fix local: `RoutesManagement` muestra conductores ocupados deshabilitados (antes se filtraban), fixture Playwright intercepta endpoint real; test de traslado no reabre mapa ya activo; cuatro mutaciones antiguas de equipo ahora confirman en diálogo.
+- Verificación local después del fix: lint/build OK, confirmaciones 1/1, discovery 43, diff-check OK. Pendiente push y nueva Action con API/MySQL para validar los cinco escenarios.

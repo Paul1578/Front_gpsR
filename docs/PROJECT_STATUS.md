@@ -627,3 +627,8 @@ Fecha de actualización: 2026-11-22.
 - Cambios de rol y activación/desactivación de cuentas requieren confirmación con impacto explicado. ConfirmDialog limita su altura y permite scroll en pantallas de 320×360.
 - Verificación local integrada: lint y build Next 16.4.6 pasan; Playwright descubre 43 E2E; test enfocado de Equipo 1/1 pasó (incluye persistencia interceptada, no backend real); `git diff --check` pasa. Suites API/MySQL reales pendientes de Actions tras publicar.
 - Primer intento del E2E de confirmación expiró porque el menú móvil ocultó Equipo; se ajustó para abrir el flujo en escritorio y probar diálogo en viewport bajo. Ver `ERROR_LOG.md`.
+
+## Correcciones por Action Front 45099148002
+
+- La Action pasó backend build, lint, frontend build y responsive, pero Playwright reportó 5 fallos: 2 casos nuevos de rutas (conductor ocupado y apertura del mapa), y 3 tests antiguos sin interacción con el nuevo diálogo de confirmación.
+- Corregidos localmente: ahora se ven deshabilitados los conductores ocupados; traslado sigue la transición real de Ubicar→mapa; los tests confirman cambios de rol/estado. Validación local lint/build, confirmaciones 1/1 y discovery 43 pasan. Nueva Action integrada pendiente.

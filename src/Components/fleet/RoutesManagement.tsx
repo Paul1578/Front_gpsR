@@ -75,9 +75,7 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
     destination: null as PickerPoint | null,
     status: "pendiente" as RouteStatus,
   });
-  const drivers = routeAssignmentDrivers
-    .filter((driver) => driver.isAvailable !== false || driver.id === formData.driverId)
-    .map((driver) => ({
+  const drivers = routeAssignmentDrivers.map((driver) => ({
       driverKey: driver.id,
       nombres: driver.firstName,
       apellidos: driver.lastName,

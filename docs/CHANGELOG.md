@@ -571,3 +571,9 @@
 - Se permite y prueba un traslado de origen a destino con puntos `None` y sin paradas operativas.
 - Gestión de Equipo confirma cambio de rol y activación/desactivación; diálogos se desplazan en viewports de poca altura.
 - Límite de recuperación 5/10 min/IP, tokens reset de 256 bits/TTL 60 min y URLs seguras por ambiente en backend.
+
+## 2026-11-23 — Correcciones E2E de asignación y confirmación
+
+- Se muestran conductores ocupados como opciones deshabilitadas con su estado; se corrigió su omisión del selector.
+- Se alineó el E2E de traslado con el cambio de vista que ocurre al pulsar “Ubicar”.
+- E2E de asignación de roles y desactivación confirma el diálogo antes de validar persistencia.
