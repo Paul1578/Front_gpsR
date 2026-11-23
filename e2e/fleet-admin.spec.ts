@@ -223,10 +223,14 @@ test("login simultáneo de cuentas distintas converge a la sesión vigente", asy
         ? identities[0]
         : null;
     }).not.toBeNull();
+    // Do not rotate the one-time refresh cookie concurrently from two tabs.
+    // The test is validating each tab's committed session, which is in memory/storage.
     const [firstAccessToken, secondAccessToken] = await Promise.all([
-      readAccessToken(page),
-      readAccessToken(secondPage),
+      page.evaluate(() => (JSON.parse(localStorage.getItem("auth_tokens") ?? "null") as { accessToken?: string } | null)?.accessToken),
+      secondPage.evaluate(() => (JSON.parse(localStorage.getItem("auth_tokens") ?? "null") as { accessToken?: string } | null)?.accessToken),
     ]);
+    expect(firstAccessToken).toBeTruthy();
+    expect(secondAccessToken).toBeTruthy();
     const concurrentIdentities = await Promise.all([
       page.request.get("/api/backend/Auth/me", {
         headers: { Authorization: `Bearer ${firstAccessToken}` },

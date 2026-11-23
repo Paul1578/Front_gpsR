@@ -1,3 +1,17 @@
+## 2026-11-23 — Action `45249048978` falló en 2/67 E2E — CORREGIDO LOCALMENTE
+
+- **Bug funcional de rutas:** al fijar coordenadas de una parada con mapa, `setPoint` reemplazaba el objeto completo y eliminaba `operation`/`status`. El selector mostraba “Entrega” por fallback visual, pero el payload persistido omitía el tipo y Backend guardaba `None`. Solución: preservar la operación/estado existentes y aplicar `delivery`/`pending` sólo si faltaban. El E2E ahora comprueba la operación luego de eliminar/reordenar y guardar.
+- **Falso fallo de autenticación E2E:** tras converger los logins en dos pestañas, ambas llamaban `readAccessToken`, que rotaba el refresh-cookie de un solo uso concurrentemente; una obtenía HTTP 401. No era un fallo de login. Solución: leer el access token que cada tab ya confirmó en `localStorage`, comprobar ambos con `Auth/me` y no rotar refresh en la aserción.
+- Action `45249048978`: **65/67 E2E**; fallaron solamente estos dos casos. Backend Release/xUnit, audit, lint, build y responsive pasaron. Los fixes locales pasan `npm run lint`, `npm run build`, `npm run test:a11y` (2/2), `npx playwright test --list` (69 casos) y `git diff --check`; la Action integrada con los fixes aún debe ejecutarse.
+- Prevención: tests de sesiones simultáneas deben validar la sesión ya aplicada sin ejecutar rotaciones refresh paralelas; al fijar una coordenada se conserva metadata de dominio asociada al punto.
+
+## 2026-11-23 — Auditoría axe expuso accesibilidad y servidor local interferente — CORREGIDO
+
+- La primera auditoría automática detectó: botón de mostrar contraseña con target de 16 px (WCAG 2.2), contraste 4.36:1 en Cerrar sesión y 2.6:1 en texto secundario de tarjetas del Dashboard, y botón de volver de Gestión de Equipo sin nombre accesible.
+- Solución: ampliar el botón de contraseña a 40 px; usar rojo `text-red-700` y gris `text-gray-500` para cumplir contraste; añadir `aria-label="Volver"` al botón iconográfico.
+- Un intento posterior del flujo AlertDialog agotó el timeout porque `nextjs-portal` de un servidor ya activo interceptó el click. El test `test:a11y` ahora arranca Next de producción en el puerto dedicado `3011`, evitando reutilizar ese proceso; la ejecución final pasó **2/2** y audita tanto el diálogo de creación como la confirmación de cierre.
+- Prevención: mantener el runner focal separado de servidores locales reutilizables y revisar todos los nodos WCAG reportados por axe antes de ampliar excepciones.
+
 ## 2026-11-23 — Mapa móvil y selección de paradas podían desincronizarse — CORREGIDO, CI PENDIENTE
 
 - Revisión UX encontró que el mapa recibía `isOpen=true` constante: Leaflet podía medirlo cuando el panel estaba oculto y no recalcular tamaño al abrirlo en móvil. El cambio deriva `isOpen` del paso, breakpoint desktop y control móvil; al mostrarse el mapa vuelve a ejecutar `invalidateSize`.

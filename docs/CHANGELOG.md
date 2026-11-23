@@ -1,8 +1,10 @@
-## 2026-11-23 — Correcciones de selección de mapa y coordinación de sesiones — CI pendiente
+## 2026-11-23 — Mapa, accesibilidad y coordinación de sesiones — CI pendiente
 
-- El estado de visibilidad del mapa móvil ahora se sincroniza con Leaflet; la selección de paradas acompaña eliminaciones y reordenamientos. E2E verifica coordenada y orden final.
+- El estado de visibilidad del mapa móvil ahora se sincroniza con Leaflet; la selección acompaña eliminaciones y reordenamientos. Fijar un punto conserva operación/estado: el primer E2E encontró que se mostraba “Entrega” pero la API guardaba `None`.
 - Login/refresh aplican respuesta y perfil mientras mantienen el Web Lock; nuevas identidades recibidas desde otra pestaña se sincronizan sin interferir con un login local en curso.
-- Lint/build correctos; E2E integrado actualizado pendiente.
+- Se agregó Playwright + axe con 2 checks WCAG A/AA y se corrigieron contraste, tamaño táctil y etiqueta accesible.
+- La primera Action tuvo 65/67 E2E; el otro fallo fue el test rotando en paralelo el refresh-cookie de un solo uso. Se corrigió y quedó documentado en `ERROR_LOG.md`; falta nueva Action integrada.
+- Lint/build/test:a11y (2/2) correctos; Playwright descubre 69 tests.
 
 ## 2026-11-23 — Serialización de runners E2E — CI aprobado
 

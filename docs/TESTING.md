@@ -1,8 +1,17 @@
-## Correcciones mapa/paradas y carrera de autenticación — validación integrada pendiente — 2026-11-23
+## QA automatizada de accesibilidad — 2026-11-23
 
-- `npm run lint` y `npm run build`: pasan. `npx playwright test --list`: 67 tests detectados.
-- El E2E tablet ahora cubre target activo al eliminar/reordenar paradas y confirma estado/orden/operación persistidos; el E2E de logins simultáneos comprueba identidad igual en ambas pestañas antes de recargar.
-- Suite E2E/MySQL aún pendiente de correr en Action con fixtures de base descartable.
+- Se añade `npm run test:a11y` con Playwright + `@axe-core/playwright` y etiqueta WCAG 2.0/2.1/2.2 A/AA. Prueba navegación Login↔Recuperación, Dashboard→Gestión de Equipo, formulario de recuperación, diálogo de alta y confirmación de logout.
+- CI ejecuta este comando como paso focal después de instalar Chromium; el test levanta Next de producción en `127.0.0.1:3011` para aislarlo de servidores de desarrollo existentes.
+- Evidencia local final: `npm run test:a11y` **2/2**, `npm run lint` **correcto**, `npm run build` **correcto** (Next 16.4.6, TypeScript y generación de 16 rutas) y `git diff --check` **correcto**. No se ejecutó la suite E2E completa.
+- La auditoría encontró área táctil pequeña en mostrar contraseña, bajo contraste en Dashboard y nombre accesible faltante en volver de Gestión de Equipo; los tres hallazgos se corrigieron y quedaron cubiertos por la ejecución 2/2. El primer test local también chocó con el overlay del Next reutilizado; el puerto dedicado resolvió esa interferencia. Detalle en `ERROR_LOG.md`.
+
+## Mapa, operaciones de parada, auth concurrente y accesibilidad — CI pendiente — 2026-11-23
+
+- Action [`45249048978`](https://github.com/Paul1578/Front_gpsR/actions/runs/45249048978) ejecutó **65/67 E2E**; fallaron la operación Delivery al guardar punto fijado en mapa (bug corregido) y la aserción de token al rotar refresh concurrentemente en dos tabs (test corregido). Causas/soluciones detalladas en `ERROR_LOG.md`.
+- El E2E tablet verifica la selección al borrar/reordenar paradas y que coordenada, orden y operación se guarden. El caso concurrente usa los access tokens ya aplicados en cada pestaña y verifica ambos vía `Auth/me`, sin competir por el refresh de un solo uso.
+- `npm run test:a11y`: **2/2**; `npm run lint`, `npm run build` y `git diff --check`: correctos. Playwright descubre **69 tests**.
+- El check axe automatizado forma parte de CI; cubre login, recuperación, dashboard, Equipo, alta de usuario y confirmación de logout. No sustituye la suite E2E completa.
+- Próximo: Action integrada contra API/MySQL descartable y corrección/repetición de cualquier fallo.
 
 ## Runner E2E serializado — Backend `4079ae2` — 2026-11-23
 

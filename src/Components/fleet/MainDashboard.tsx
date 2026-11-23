@@ -366,7 +366,7 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                 </div>
                 <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
                 <p className="text-2xl md:text-3xl text-gray-900 mb-2">{stat.value}</p>
-                <p className="text-xs text-gray-400">{stat.change}</p>
+                <p className="text-xs text-gray-500">{stat.change}</p>
               </div>
             ))}
           </div>

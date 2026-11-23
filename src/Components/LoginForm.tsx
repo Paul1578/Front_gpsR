@@ -93,7 +93,7 @@ export function LoginForm({ className, onForgotPassword, onSwitchToRegister, onB
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              className="absolute inset-y-0 right-2 flex w-10 items-center justify-center text-gray-500 hover:text-gray-700"
               aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

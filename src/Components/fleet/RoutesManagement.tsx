@@ -148,7 +148,13 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       if (target.type === "destination")
         return { ...previous, destination: normalized };
       const stops = [...previous.stops];
-      stops[target.index ?? stops.length] = normalized;
+      const stopIndex = target.index ?? stops.length;
+      const existingStop = stops[stopIndex];
+      stops[stopIndex] = {
+        ...normalized,
+        operation: existingStop?.operation ?? "delivery",
+        status: existingStop?.status ?? "pending",
+      };
       return { ...previous, stops };
     });
     setSearchResults([]);

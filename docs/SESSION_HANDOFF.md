@@ -1,9 +1,11 @@
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
 
-- En `refactor/route-builder` se corrigió la visibilidad/invalidateSize del mapa Leaflet móvil y el índice del punto seleccionado al borrar/mover paradas. E2E tablet amplía el recorrido real para verificar coordenada, orden y operación persistidos.
+- En `refactor/route-builder` se corrigió la visibilidad/invalidateSize del mapa Leaflet móvil y el índice del punto seleccionado al borrar/mover paradas. Al hacer clic en mapa se preserva `operation`/`status`; Action `45249048978` detectó que UI enseñaba Delivery pero el payload guardaba `None`.
 - También se corrigió carrera de login/refresh entre pestañas: Web Lock cubre procesamiento y aplicación del perfil; `/Auth/me` usa token explícito sin refresh recursivo; el evento de nueva identidad sincroniza pestañas aun si no tenían usuario, excepto durante su propio login. E2E valida `Auth/me` en ambos tabs antes del reload.
-- `npm run lint`, `npm run build` pasan; discovery 67. Cambios aún sin commit; debe ejecutarse Action Front completa (workflow_dispatch sobre `refactor/route-builder`) contra Backend `chore/stabilize-fleet-platform` y MySQL descartable, corregir fallos, documentar y publicar. No usar el esquema persistente local para E2E mutante.
-- Revisiones multiagente: Backend tenant/lifecycle sin hallazgo nuevo; Front detectó los dos bugs de mapa; auth review detectó la carrera descrita; QA señala automatizar upgrade histórico, inyección SQL y matriz responsive/a11y (brechas de cobertura, no defectos confirmados).
+- Test simultáneo usa access tokens ya aplicados para evitar competir por refresh-cookie de un solo uso; la Action original `45249048978` falló este test por rotación concurrente y falló el bug Delivery anterior (65/67). Ambos están corregidos localmente.
+- Se añadió axe (`npm run test:a11y`: 2/2), paso CI, correcciones WCAG, lint/build y discovery 69 correctos. Cambios de continuación sin commit; hace falta Action Front integrada completa en Backend `chore/stabilize-fleet-platform` y MySQL descartable antes de concluir.
+- En Backend, smoke nuevo de migración histórica y payload SQL-like está localmente validado. El primer borrador tomó `.env` y revirtió migraciones locales; se reaplicaron y DB se verificó en solo lectura. Script corregido para copiar fuente excluyendo secretos y crear MySQL aislado; CI Front ya llama la prueba.
+- Revisiones multiagente: Backend tenant/lifecycle sin hallazgo de producción; UX mapa confirmó bug ya corregido; auth confirmó race ahora cubierta; QA priorizó migración histórica, inyección SQL, responsive y a11y (brechas de cobertura). No usar la DB persistente para tests mutantes.
 
 ## Handoff histórico — runner E2E serializado — 2026-11-23
 

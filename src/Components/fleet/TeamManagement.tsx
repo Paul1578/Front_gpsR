@@ -483,6 +483,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 <button
                   onClick={onBack}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Volver"
                 >
                   <ArrowLeft size={20} className="text-gray-600" />
                 </button>
