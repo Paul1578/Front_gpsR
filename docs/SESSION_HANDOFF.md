@@ -1115,3 +1115,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front `8f2e68a` pasó Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591): 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - Ambas brechas E2E de la auditoría independiente están cerradas y validadas. Mantener la misión abierta y continuar con restantes criterios técnicos.
+
+## Siguiente brecha de integridad — asignación conflictiva real — 2026-11-23
+
+- Auditoría Front señaló que el caso 409 de asignación de vehículo en UI interceptaba la petición y devolvía JSON simulado. El caso ahora crea un Driver bloqueador, ocupa el vehículo por API real, intenta asignarlo desde la UI Manager y verifica 409 más `vehicleId` intactos en ambos Drivers; luego libera el recurso y continúa con asignación válida.
+- Limpieza del bloqueador quedó añadida al `finally`; fixture usa prefijo `E2EQA` para el SQL de runner.
+- Local lint/build/discovery 51/diff-check pasa. No hay credenciales QA locales; el run autenticado API/MySQL debe validar el cambio.

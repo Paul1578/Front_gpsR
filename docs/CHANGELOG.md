@@ -753,3 +753,8 @@
 - Revalidación del HEAD documental `357ffdc`: Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) pasó 51/51 E2E, responsive, backend Release/xUnit y cleanup.
 
 - HEAD Front `8f2e68a` validado por Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591): 51/51 E2E y resto de checks/cleanup exitosos.
+
+## 2026-11-23 — Conflicto de asignación probado contra backend real
+
+- E2E Manager reemplaza el mock de HTTP 409 por un Driver bloqueador creado/asignado en API real; verifica error y persistencia inalterada antes de liberar vehículo.
+- Fixture bloqueador se desasigna/desactiva en `finally`. Lint/build/discovery 51 pasan; CI integrado pendiente.

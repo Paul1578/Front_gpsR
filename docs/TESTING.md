@@ -691,3 +691,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 ## Validación del HEAD Front `8f2e68a`
 
 - Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591) success: 51/51 Playwright, responsive 1/1, backend Release/xUnit, audit/lint/build, teardown API/MySQL.
+
+## Rechazo real por vehículo ocupado desde UI — CI pendiente
+
+- El E2E ya no intercepta `PUT /Drivers/{id}/assign-vehicle` con un 409 artificial. Crea un Driver temporal y ocupa el vehículo mediante API real antes de operar la tarjeta Manager.
+- Comprueba el 409 del backend y el mensaje real “El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.”; verifica que `vehicleId` siga en el Driver bloqueador y permanezca null en el Driver objetivo. Libera el bloqueador y comprueba la asignación permitida posterior.
+- Lint/build/discovery 51/diff-check pasan local; Action API/MySQL descartable confirmará comportamiento y cleanup.

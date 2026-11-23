@@ -1749,3 +1749,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Un `apply_patch` sobre varios documentos esperaba un encabezado de `TESTING.md` con otro nombre; el parche completo se rechazó y no modificó archivos.
 - Solución: añadir las notas de continuidad al final de cada documento y cambiar el título conocido mediante sustitución exacta; revisar `git diff --check`.
 - Prevención: confirmar el encabezado exacto por archivo antes de agrupar contextos en un parche.
+
+## 2026-11-23 — Expectativa 409 no coincidía con mensaje real — CORREGIDO ANTES DE ACTION
+
+- Al reemplazar el mock de asignación por una colisión real, la primera expectativa reutilizó el texto corto del mock. El backend devuelve `El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.`; el test fallaría si se publicaba sin corregirlo.
+- Solución: contrastar el mensaje con `AssignDriverToVehicleCommand` y afirmar el body real y su toast exacto.
+- Prevención: al quitar mocks de error, derivar la expectativa de la respuesta del command/endpoint actual, no del JSON inventado por el test antiguo.

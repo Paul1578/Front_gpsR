@@ -2058,6 +2058,7 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
 
     let managerVehicleId: string | undefined;
     let managerUiDriverId: string | undefined;
+    let managerBlockerDriverId: string | undefined;
     try {
       const managerVehicle = await page.request.post("/api/backend/Vehicles", {
         headers: managerHeaders,
@@ -2226,19 +2227,44 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
       await expect(managerDriverCard).toContainText(`E2E QA Manager editado ${suffix}`);
 
-      await managerDriverCard.getByLabel(`Vehículo para E2E QA Manager editado ${suffix}`).selectOption(managerVehicleId!);
-      const assignVehiclePath = `**/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`;
-      await managerPage.route(assignVehiclePath, async (route) => {
-        await route.fulfill({
-          status: 409,
-          contentType: "application/json",
-          body: JSON.stringify({ message: "El vehículo ya está asignado a otro conductor." }),
-        });
+      const blockerDriverDocument = `E2EQA${suffix}B`;
+      const blockerDriverResponse = await managerPage.request.post("/api/backend/Drivers", {
+        headers: managerAuthHeaders,
+        data: {
+          firstName: `E2E QA Manager bloqueador ${suffix}`,
+          lastName: "Chofer",
+          documentNumber: blockerDriverDocument,
+          phoneNumber: "0990000081",
+        },
       });
+      expect(blockerDriverResponse.status()).toBe(201);
+      managerBlockerDriverId = (await blockerDriverResponse.json()).id as string;
+      const occupyManagerVehicle = await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/assign-vehicle`, {
+        headers: managerAuthHeaders,
+        data: { vehicleId: managerVehicleId },
+      });
+      expect(occupyManagerVehicle.status()).toBe(204);
+
+      await managerDriverCard.getByLabel(`Vehículo para E2E QA Manager editado ${suffix}`).selectOption(managerVehicleId!);
+      const rejectedAssignmentPromise = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) &&
+        response.request().method() === "PUT",
+      );
       await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
-      await expect(managerPage.getByText("El vehículo ya está asignado a otro conductor.")).toBeVisible();
+      const rejectedAssignment = await rejectedAssignmentPromise;
+      expect(rejectedAssignment.status()).toBe(409);
+      const rejectedAssignmentBody = await rejectedAssignment.json();
+      expect(rejectedAssignmentBody.message).toBe("El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.");
+      await expect(managerPage.getByText(rejectedAssignmentBody.message, { exact: true })).toBeVisible();
       await expect(managerPage.getByText("Vehículo asignado.", { exact: true })).toHaveCount(0);
-      await managerPage.unroute(assignVehiclePath);
+      const driverAfterRejectedAssignment = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(driverAfterRejectedAssignment.status()).toBe(200);
+      expect((await driverAfterRejectedAssignment.json()).vehicleId).toBeNull();
+      const blockerAfterRejectedAssignment = await managerPage.request.get(`/api/backend/Drivers/${managerBlockerDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(blockerAfterRejectedAssignment.status()).toBe(200);
+      expect((await blockerAfterRejectedAssignment.json()).vehicleId).toBe(managerVehicleId);
+      const releaseBlockingDriver = await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/unassign-vehicle`, { headers: managerAuthHeaders });
+      expect(releaseBlockingDriver.status()).toBe(204);
 
       const assignManagerDriverVehicle = managerPage.waitForResponse((response) =>
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
@@ -2355,6 +2381,22 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       await managerPage.setViewportSize({ width: 390, height: 844 });
       await expectManagerNoOverflow();
     } finally {
+      if (managerBlockerDriverId) {
+        const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
+        if (token) {
+          const headers = { Authorization: `Bearer ${token}` };
+          const currentBlocker = await managerPage.request.get(`/api/backend/Drivers/${managerBlockerDriverId}`, { headers }).catch(() => null);
+          if (currentBlocker?.ok()) {
+            const blockerData = await currentBlocker.json().catch(() => null);
+            if (blockerData?.vehicleId) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/unassign-vehicle`, { headers }).catch(() => undefined);
+            }
+            if (blockerData?.isActive) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/status`, { headers, data: { isActive: false } }).catch(() => undefined);
+            }
+          }
+        }
+      }
       if (managerUiDriverId) {
         const token = await managerPage.evaluate(() => JSON.parse(localStorage.getItem("auth_tokens") ?? "{}").accessToken as string).catch(() => null);
         if (token) {
