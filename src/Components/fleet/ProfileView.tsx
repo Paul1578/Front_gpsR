@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
-import { ArrowLeft, User, Mail, IdCard, Shield, Calendar, Edit2, Check, X, Lock, LogOut, Moon } from "lucide-react";
+import {
+  ArrowLeft,
+  User,
+  IdCard,
+  Shield,
+  Lock,
+  LogOut,
+  Moon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import { useThemePreference } from "../../Context/ThemeContext";
@@ -10,14 +18,13 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ onBack }: ProfileViewProps = {}) {
-  const { user, updateTeamName, changePassword, logoutAll, logout } = useAuth();
+  const { user, changePassword, logoutAll, logout } = useAuth();
   const { scheme, setPreference } = useThemePreference();
-  const [editingTeamName, setEditingTeamName] = useState(false);
-  const [tempTeamName, setTempTeamName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   if (!user) {
@@ -34,6 +41,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       gerente: "Gerente",
       logistica: "Logística",
       chofer: "Chofer",
+      usuario: "Usuario",
     };
     return labels[role as keyof typeof labels] || role;
   };
@@ -44,6 +52,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       gerente: "text-purple-700 bg-purple-100",
       logistica: "text-blue-700 bg-blue-100",
       chofer: "text-green-700 bg-green-100",
+      usuario: "text-gray-700 bg-gray-100",
     };
     return colors[role as keyof typeof colors] || "text-gray-700 bg-gray-100";
   };
@@ -52,9 +61,10 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     canViewMap: "Ver Mapa en Tiempo Real",
     canCreateRoutes: "Crear y Gestionar Rutas",
     canManageVehicles: "Gestionar Vehículos",
+    canManageDrivers: "Gestionar Conductores",
     canManageTeam: "Gestionar Equipo",
     canViewOwnRoute: "Ver Mi Ruta",
-    canAccessSuperAdmin: "Acceso a Panel Super Admin",
+    canAccessSuperAdmin: "Administración de la empresa",
     canManageAllOrganizations: "Gestionar Todas las Organizaciones",
     canViewSystemLogs: "Ver Logs del Sistema",
     canExportData: "Exportar Datos del Sistema",
@@ -63,39 +73,47 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      toast.error("Completa todos los campos de contrasena");
+      toast.error("Completa todos los campos de contraseña");
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error("La nueva contrasena debe tener al menos 8 caracteres");
+    if (newPassword.length < 12) {
+      toast.error("La nueva contraseña debe tener al menos 12 caracteres");
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      toast.error("Las contrasenas no coinciden");
+      toast.error("Las contraseñas no coinciden");
       return;
     }
     if (currentPassword === newPassword) {
-      toast.error("La nueva contrasena no puede ser igual a la actual");
+      toast.error("La nueva contraseña no puede ser igual a la actual");
       return;
     }
     setIsUpdatingPassword(true);
-    const result = await changePassword(currentPassword, newPassword, confirmNewPassword);
+    const result = await changePassword(
+      currentPassword,
+      newPassword,
+      confirmNewPassword,
+    );
     setIsUpdatingPassword(false);
     if (result.ok) {
-      toast.success("Contrasena actualizada. Cerrando sesion por seguridad...");
+      toast.success("Contraseña actualizada. Cerrando sesión por seguridad...");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
       setShowPasswordForm(false);
       await logout();
     } else {
-      toast.error(result.message ?? "No se pudo cambiar la contrasena");
+      toast.error(result.message ?? "No se pudo cambiar la contraseña");
     }
   };
 
   const handleLogoutAll = async () => {
-    await logoutAll();
-    toast.success("Cerraste sesión en todos los dispositivos");
+    if (isLoggingOutAll) return;
+    setIsLoggingOutAll(true);
+    const result = await logoutAll();
+    if (result.ok) toast.success("Cerraste sesión en todos los dispositivos");
+    else toast.error(result.message ?? "No se pudo cerrar sesión en los demás dispositivos");
+    setIsLoggingOutAll(false);
   };
 
   const isDark = scheme === "dark";
@@ -109,6 +127,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
             <button
               onClick={onBack}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Volver"
             >
               <ArrowLeft size={20} />
             </button>
@@ -135,7 +154,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className={`px-3 py-1 rounded-full text-xs ${getRoleColor(
-                    user.role
+                    user.role,
                   )}`}
                 >
                   {getRoleLabel(user.role)}
@@ -153,15 +172,20 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <div className="flex items-center gap-2">
                 <Moon size={18} className="text-gray-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Modo oscuro</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    Modo oscuro
+                  </p>
                   <p className="text-xs text-gray-500">
                     Cambia el tema de la app. Se guarda en este dispositivo.
                   </p>
                 </div>
               </div>
               <Switch
+                ariaLabel="Modo oscuro"
                 checked={isDark}
-                onCheckedChange={(checked) => setPreference(checked ? "dark" : "light")}
+                onCheckedChange={(checked) =>
+                  setPreference(checked ? "dark" : "light")
+                }
               />
             </div>
           </div>
@@ -173,7 +197,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                 <Lock size={18} className="text-gray-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Seguridad</p>
-                  <p className="text-xs text-gray-500">Actualiza tu contraseña con el token actual</p>
+                  <p className="text-xs text-gray-500">
+                    Actualiza tu contraseña con el token actual
+                  </p>
                 </div>
               </div>
               <button
@@ -185,47 +211,79 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               </button>
             </div>
             {showPasswordForm && (
-              <form onSubmit={handleChangePassword} className="mt-4 flex flex-col gap-3">
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Contraseña actual"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nueva contraseña"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
-                <input
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Confirmar nueva contraseña"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
+              <form
+                onSubmit={handleChangePassword}
+                className="mt-4 grid grid-cols-1 gap-3"
+              >
+                <label htmlFor="profile-current-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Contraseña actual
+                  <input
+                    id="profile-current-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Contraseña actual"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <label htmlFor="profile-new-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Nueva contraseña
+                  <input
+                    id="profile-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={12}
+                    placeholder="Nueva contraseña"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <label htmlFor="profile-confirm-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Confirmar nueva contraseña
+                  <input
+                    id="profile-confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    minLength={12}
+                    placeholder="Confirmar nueva contraseña"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <p className="text-xs text-gray-500">Usa al menos 12 caracteres.</p>
                 <div className="md:col-span-3 flex flex-wrap gap-2">
                   <button
                     type="submit"
                     disabled={isUpdatingPassword}
                     className="px-4 py-2 bg-[#3271a4] text-white rounded-lg text-sm hover:bg-[#2a5f8c] disabled:opacity-60"
                   >
-                    {isUpdatingPassword ? "Actualizando..." : "Cambiar contraseña"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogoutAll}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 flex items-center gap-2"
-                  >
-                    <LogOut size={16} />
-                    Cerrar sesión en todos los dispositivos
+                    {isUpdatingPassword
+                      ? "Actualizando..."
+                      : "Cambiar contraseña"}
                   </button>
                 </div>
               </form>
             )}
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <p className="mb-2 text-xs text-gray-500">
+                Revoca todas las sesiones activas de tu cuenta, incluida esta.
+              </p>
+              <button
+                type="button"
+                onClick={handleLogoutAll}
+                disabled={isLoggingOutAll}
+                className="px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm hover:bg-red-100 disabled:opacity-60 flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                {isLoggingOutAll ? "Cerrando sesiones..." : "Cerrar sesión en todos los dispositivos"}
+              </button>
+            </div>
           </div>
 
           {/* Identification */}
@@ -235,7 +293,9 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
               <p className="text-xs text-gray-500 mb-1">
                 Número de Identificación
               </p>
-              <p className="text-sm text-gray-900">{user.identificacion || "No asignado"}</p>
+              <p className="text-sm text-gray-900">
+                {user.identificacion || "No asignado"}
+              </p>
             </div>
           </div>
 
@@ -264,49 +324,12 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <Shield size={20} className="text-blue-600 mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs text-blue-600 mb-1">Nombre de tu Equipo</p>
-                {editingTeamName ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={tempTeamName}
-                      onChange={(e) => setTempTeamName(e.target.value)}
-                      className="flex-1 px-3 py-1 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
-                      placeholder="Nombre del equipo"
-                    />
-                    <button
-                      onClick={() => {
-                        updateTeamName(tempTeamName);
-                        setEditingTeamName(false);
-                        toast.success("Nombre del equipo actualizado");
-                      }}
-                      className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                    >
-                      <Check size={18} />
-                    </button>
-                    <button
-                      onClick={() => setEditingTeamName(false)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-blue-900">
-                      {user.teamName || `Equipo de ${user.nombres}`}
-                    </p>
-                    <button
-                      onClick={() => {
-                        setTempTeamName(user.teamName || `Equipo de ${user.nombres}`);
-                        setEditingTeamName(true);
-                      }}
-                      className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <p className="text-xs text-blue-600 mb-1">
+                  Nombre de tu Equipo
+                </p>
+                <p className="text-sm text-blue-900">
+                  {user.teamName || `Equipo de ${user.nombres}`}
+                </p>
               </div>
             </div>
           )}
@@ -337,11 +360,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                       value ? "text-gray-900" : "text-gray-400"
                     }`}
                   >
-                    {
-                      permissionLabels[
-                        key as keyof typeof permissionLabels
-                      ]
-                    }
+                    {permissionLabels[key as keyof typeof permissionLabels]}
                   </p>
                 </div>
               ))}
@@ -351,7 +370,8 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
           {/* Additional Info */}
           <div className="pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-400">
-              Para cambiar tu información personal o permisos, contacta a un administrador del sistema.
+              Para cambiar tu información personal o permisos, contacta a un
+              administrador del sistema.
             </p>
           </div>
         </div>

@@ -1,0 +1,894 @@
+## Seguimiento responsive y estados de gestión — 2026-11-23
+
+- Action Front `4f59b19`: [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856), **69/69 E2E**, axe 2/2, responsive, audit/lint/build, Backend xUnit 165/165, API/MySQL y cleanup. Incluye perfil a 320 px y axe sobre perfil/formulario expandido. La Action previa `45265266802` fue 68/69 por un locator ambiguo, corregido y validado aquí.
+- HEAD documental `a6757b1` volvió a pasar en [`45270273519`](https://github.com/Paul1578/Front_gpsR/actions/runs/45270273519): 69/69 E2E, responsive, axe, audit/lint/build y API/MySQL.
+- HEAD documental final `405b89a` pasó [`45272144643`](https://github.com/Paul1578/Front_gpsR/actions/runs/45272144643): 69/69 E2E, responsive 1/1, axe 2/2, build/lint/audit, Backend 165/165 y API/MySQL.
+- HEAD documental `7e081c5` repitió la Action [`45273692118`](https://github.com/Paul1578/Front_gpsR/actions/runs/45273692118): 69/69 E2E, responsive, axe, Backend 165/165 y API/MySQL.
+- `Gestión de Vehículos no confunde fallo de carga con flota vacía`: falla el endpoint de activos/inactivos de forma independiente y prueba alert/reintento sin mostrar vacío engañoso. E2E local pasó 1/1 en Next dev y 1/1 en build de producción.
+- El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. Action `45266610856` lo validó con credenciales de un solo run y DB descartable.
+- En el formulario de alta se verifica copy que no garantiza el envío antes de la respuesta; el E2E real comprueba `invitationSent=false` y aviso SMTP posterior.
+- `npm run lint`, `npm run build` con Next 16.4.6/TypeScript en worktree aislado y `git diff --check` pasan. El E2E de error/reintento de vehículos se ejecutó 1/1 en Next dev y production.
+- El E2E real de edición Driver agrega 503 en el PUT y verifica mensaje, editor conservado y `/Users/my-team` sin cambio antes de intentar el guardado exitoso. Action `45261649009` pasó 68/69 porque se comparaba con el nombre inicial pese a una edición anterior del propio caso; usa un GET baseline inmediato y lo validó `45263308491`.
+- Los filtros de rutas a 320 px comprueban límites e interacción Estado/Vehículo/Conductor sobre datos reales. Action integrada `45263308491` validó 69/69 E2E.
+
+## QA automatizada de accesibilidad — 2026-11-23
+
+- Se añade `npm run test:a11y` con Playwright + `@axe-core/playwright` y etiqueta WCAG 2.0/2.1/2.2 A/AA. Incluye login/recuperación, Dashboard/Equipo, diálogo alta, Mi Perfil y su formulario expandido, confirmación logout.
+- CI ejecuta este comando como paso focal después de instalar Chromium; el test levanta Next de producción en `127.0.0.1:3011` para aislarlo de servidores de desarrollo existentes.
+- Evidencia local final: `npm run test:a11y` **2/2**, `npm run lint` **correcto**, `npm run build` **correcto** (Next 16.4.6, TypeScript y generación de 16 rutas) y `git diff --check` **correcto**. Action integrada posterior ejecutó la suite completa.
+- Las auditorías detectaron área táctil pequeña, bajo contraste en Dashboard/Perfil y nombres accesibles faltantes en volver de Equipo/Perfil; se corrigieron y quedaron cubiertos por axe local 2/2 y Action `45266610856`. El primer test local chocó con un bundle Next de producción obsoleto; reconstruirlo resolvió la discrepancia. Detalle en `ERROR_LOG.md`.
+
+## Mapa, operaciones de parada, auth concurrente y accesibilidad — CI aprobado — 2026-11-23
+
+- Action [`45249048978`](https://github.com/Paul1578/Front_gpsR/actions/runs/45249048978) ejecutó **65/67 E2E**; fallaron la operación Delivery al guardar punto fijado en mapa (bug corregido) y la aserción de token al rotar refresh concurrentemente en dos tabs (test corregido). Causas/soluciones detalladas en `ERROR_LOG.md`.
+- El Action [`45252999270`](https://github.com/Paul1578/Front_gpsR/actions/runs/45252999270) pasó **68/69**; el fallo restante era otra suposición de test, ya corregida: el access token no se persiste en localStorage. El E2E ahora compara identidad tras ambos logins, restaura ambas pestañas y valida el token actual con un solo refresh.
+- Action integrada [`45254654316`](https://github.com/Paul1578/Front_gpsR/actions/runs/45254654316) pasó **69/69 E2E**, responsive **1/1**, axe **2/2**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown.
+- El E2E tablet verifica la selección al borrar/reordenar paradas y que coordenada, orden y operación se guarden. El primer test concurrente de refresh y el segundo supuesto del token están documentados en `ERROR_LOG.md`.
+- `npm run test:a11y`: **2/2**; `npm run lint`, `npm run build` y `git diff --check`: correctos. Playwright descubre **69 tests**.
+- El check axe automatizado forma parte de CI; cubre login, recuperación, dashboard, Equipo, alta de usuario y confirmación de logout. No sustituye la suite E2E completa.
+- Los dos fallos intermedios quedaron corregidos; la última Action valida el código vigente.
+
+## Runner E2E serializado — Backend `4079ae2` — 2026-11-23
+
+- La integración [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) ejecutó el runner Backend con advisory lock MySQL: **67/67 E2E**, responsive 1/1, audit/lint/build, Release/xUnit Backend **165/165**, API/MySQL y cleanup.
+- En local, lock titular=1 y competidor=0; con otro propietario, el runner completo salió con código 2 antes de cleanup. No se alteraron filas.
+
+## Evidencia previa — Front `b58ef4c`, Backend `cd2a512`
+
+- Lint/build locales pasan; Playwright detecta **67** pruebas; `git diff --check` limpio.
+- Action Front integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209): build/audit/lint/responsive pasaron y E2E **66/67**; faltaba confirmar las bajas Driver en móvil/tablet.
+- Fix `b58ef4c` + Backend `cd2a512`: fixture Logistics con estado activado verificado, dos AlertDialog confirmados y límite de 360 s. Action [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) sobre los HEADs documentales pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit **165/165**, API/MySQL y teardown. Smoke local de lectura: `/dashboard` y Swagger `:5048` HTTP 200.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**67 tests**) y diff-check pasan. Backend Actions [`45238865888`](https://github.com/Paul1578/Back_GPS/actions/runs/45238865888) y [`45238853928`](https://github.com/Paul1578/Back_GPS/actions/runs/45238853928) pasaron **165/165 xUnit**, smokes HTTP/MySQL y cleanup.
+
+## 2026-11-23 — Lista de rutas liviana y detalle con fotos
+
+- npm run lint: correcto.
+- npm run build: correcto (Next.js 16.4.6; TypeScript y generación estática completados).
+- npx playwright test --list: 53 tests detectados.
+- npx playwright test e2e/team-management-load-errors.spec.ts: 13/13 passed, incluidos errores y reintentos de Historial.
+- Suite Playwright completa: 19 passed, 34 skipped por falta de credenciales o fixtures autenticados. El test local de login detectó un locator ambiguo entre toast y overlay de Next; se ajustó a texto exacto y la suite pasó.
+- E2E autenticado Driver/Historial actualizado para comprobar el contrato JSON (lista sin Base64, detalle con imagen); Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) pasó 53/53 E2E autenticados, responsive 1/1, audit, lint/build, backend Release/xUnit 158/158 y cleanup API/MySQL.
+- Contrato frontend: `content` acepta `string | null` en el DTO crudo de puntos. Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó: **53/53 E2E autenticados**, responsive **1/1**, audit/lint/build, backend Release/xUnit **158/158**, smokes API/MySQL y cleanup.
+
+## Historial de Action `45183402334` — aserciones corregidas y revalidadas
+
+- Front/backend build, lint, auditoría de dependencias y responsive pasaron. La suite autenticada ejecutó **51/53**.
+- `fleet-admin.spec.ts`: el nombre coincidía con tres nodos y el locator `../..` era ambiguo; se usa el test ID de la tarjeta Driver.
+- `manager-map.spec.ts`: el producto presenta placa/marca/modelo y la prueba aún exigía el ID truncado; se actualizó al vehículo QA real.
+- Después del fix, `npm run lint`, `npm run build`, discovery (**53 tests**) y focales mapa/carga (**14/14**) pasan local. Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive **1/1**, Backend Release/xUnit, API/MySQL y cleanup.
+
+## Paginación de Equipo/Conductores — validada
+
+- Backend Release/xUnit **151/151** y smoke API/MySQL paginado/tenant pasaron en Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623).
+- Front Action [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) ejecutó 52 casos: **45 pasaron y 7 fallaron** por simulaciones que aún interceptaban las rutas antiguas, caché global Driver desactualizada después de asignar/desasignar y comparación literal de URL codificada. Ver solución y prevención en `ERROR_LOG.md`.
+- La integración actual [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) confirmó el suite completo: **53/53 E2E**, responsive, lint/build y backend Release/xUnit.
+- Tras corregirlo, Playwright local de carga/equipo/conductores: **13/13 passed**; ambos E2E de `team-search.spec.ts` quedan omitidos por falta de credenciales QA locales. La compilación pasó antes de los últimos ajustes; lint/build, suite completa de Actions y responsive deben volver a ejecutarse.
+- El E2E de paginación usa 26 fixtures y valida anterior/siguiente con sesión Admin, por lo que se verifica en CI con sus credenciales temporales.
+- Iteración UX adicional: E2E `map-retry.spec.ts` valida recuperación tras 503 y nombres de placa/conductor; junto con `team-management-load-errors.spec.ts`, Playwright focal pasó **14/14**. Lint/build pasan luego de conectar los estados a `RouteBuilder`.
+- Action `45180756427` terminó **51/52**; la única aserción errónea del perfil inactivo está corregida localmente. Los cambios de mapa/asignación y la corrección requieren nueva Action integrada.
+
+## Unlink User–Driver — E2E corregido, CI pendiente
+
+- Action Front `45172574266`: **50/51**; feature pasó flujos, falló un locator Playwright porque la sección de Drivers ya estaba abierta y el toggle se llamaba “Ocultar choferes”.
+- Fix local usa la tarjeta ya visible `team-driver-{id}` y espera su render. `npm run lint`, `npm run build`, discovery Playwright **51/51** y diff-check pasan; la nueva Action con API/MySQL descartable queda pendiente.
+
+## Corridas integradas de matriz de roles — 2026-11-23
+
+- Passed: auditoría npm, lint, build, responsive **1/1**, Backend Release/xUnit **165/165**, smoke API/MySQL y cleanup.
+- Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): **66 passed / 1 failed**. Timeout 120 s al restaurar rol; retry encontró Manager y obtuvo 201 en una aserción Driver.
+- Primer fix `3fd12c5`, Action [`45229598514`](https://github.com/Paul1578/Front_gpsR/actions/runs/45229598514): el PUT de cambio de rol del fixture Driver agotó 240 s en ambos intentos. Backend 165/165, audit/lint/build/responsive y cleanup pasaron.
+- Fix local pendiente de Action: no cambiar rol Driver; Logistics temporal limpiable y Manager provisionado se usan como identidades propias en matriz y CRUD responsive.
+
+# Estado vigente — 2026-11-23
+
+Las secciones históricas que siguen pueden describir pendientes ya cerrados al corte de aquella fecha; el estado actual está en esta cabecera y `docs/PROJECT_STATUS.md`.
+
+## Correo duplicado desde Gestión de Equipo — validado
+
+- El escenario autenticado crea miembros y vuelve a enviar un correo ya usado por UI; la API real debe responder `409 El correo ya fue registrado.`, conservar el diálogo y dejar una sola cuenta visible en `/Users/my-team`.
+- Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) ejecutó esta versión con **51/51 E2E**, responsive 1/1 y cleanup exitoso. El HEAD documental posterior `2b3b523` volvió a pasar el flujo completo en Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336): 51/51, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+
+## Aislamiento tenant de mutaciones secundarias de flota — validado por Action
+
+- QA confirmó que la prueba entre dos empresas ya verificaba GET/PUT/DELETE de vehículos y GET/PUT/status de conductores, pero no los endpoints de estado/reactivación de vehículos ni asignar/desasignar vehículo a Driver por ID ajeno.
+- El escenario ahora intenta `PUT /Vehicles/{id}/status`, `POST /Vehicles/{id}/reactivate`, `PUT /Drivers/{id}/assign-vehicle` y `unassign-vehicle` con Admin de otra empresa; espera 404 y comprueba desde el propietario que estado y asignación siguen iguales. Reactivación prueba un vehículo inactivo real y el `finally` restaura/elimina el fixture.
+- Lint, build, discovery **51 tests** y diff-check pasan localmente. Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive 1/1, API/MySQL descartables, Backend Release/xUnit 139/139 y cleanup. Actions documentales [`45147509399`](https://github.com/Paul1578/Front_gpsR/actions/runs/45147509399) y [`45148633887`](https://github.com/Paul1578/Front_gpsR/actions/runs/45148633887) repitieron la suite completa, ambas verdes. Los cuatro endpoints respondieron 404 y los GET propietario confirmaron que vehículo/asignación conservaron valores.
+
+# E2E Logistics edita una ruta — validado por Actions — 2026-11-23
+
+- El escenario autenticado crea un traslado desde la UI, cambia nombre y descripción en “Editar ruta”, espera `PUT /Routes/{id}` HTTP 200 y confirma por GET la persistencia junto al conductor/vehículo originales y estado Pending.
+- Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
+- CI: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend Release/xUnit, audit/lint/build, responsive y cleanup también pasaron.
+
+## E2E de cambio de rol Manager→Logistics desde Equipo — validado por Actions
+
+- El escenario autenticado crea Manager en 320 px, cancela la primera confirmación y comprueba que no salió PUT; confirma el cambio después, verifica HTTP/body y `/Users/my-team`, recarga en 768 px y comprueba el rol renderizado.
+- Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend xUnit 136/136, audit/lint/build, responsive y cleanup.
+- Lint/build, discovery 51, diff-check y test enfocado Playwright **1/1** también pasaron localmente.
+
+## E2E de username largo en equipo — responsive límite — validado por Actions
+
+- El flujo real de creación/edición de User usa usernames sin espacios de 93/95 caracteres, verifica la tarjeta y ausencia de overflow a 320/768 px, guarda cambios y confirma por GET `/Users/my-team`.
+- UI aplica `break-words`; el E2E confirma creación/edición, texto visible y sin overflow a 320/768 px, persistencia GET. Action [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) pasó 51/51 con API/MySQL descartables, responsive, Release/xUnit y cleanup. Lint/build/discovery 51 también pasan local.
+
+## Driver completa una ruta de varias paradas — validado por Actions
+
+- El caso `Driver sólo ve su operación...` en `e2e/fleet-admin.spec.ts` inicia la ruta, comprueba el orden de dos paradas, exige evidencia, guarda nota y foto, completa ambas y cierra la ruta; luego consulta API/Historial y confirma persistencia.
+- Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815) pasó 51/51 E2E con API/MySQL descartables, responsive y cleanup.
+
+## E2E Manager edita una ruta — validado por Actions — 2026-11-23
+
+- El caso Manager ahora modifica nombre y descripción desde la UI a 320 px, verifica HTTP 200 del `PUT /Routes/{id}` y consulta API para comprobar persistencia de recursos y puntos.
+- Lint/build/discovery 51 y diff-check pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una con API/MySQL descartables; Release/xUnit, audit/lint/build, responsive y cleanup también pasaron. `finally` restaura el rol y limpia recursos.
+
+# Administración de empresa — errores y reintento — validación local 2026-11-22
+
+## Auditoría actual de dependencias — 2026-11-23
+
+- Frontend: `npm audit` — **0 vulnerabilidades**.
+- Backend: `PATH=/home/leonardo/.dotnet:$PATH dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` — sin paquetes vulnerables en `BackEnd_Gps` ni `BackEnd_Gps.Tests`.
+- Front HEAD documental `6555858`: `npm run lint` y `npm run build` pasaron; TypeScript correcto y 11 páginas estáticas generadas.
+- La última validación backend integrada es Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): Release build, xUnit **136/136**, smokes HTTP/MySQL y cleanup. Ver Backend `docs/TESTING.md` para forwarded headers.
+- Auditoría independiente de seguridad fue estática/read-only, no una prueba dinámica: no encontró un vector XSS ni bypass nuevo. La búsqueda encontró `dangerouslySetInnerHTML` en el chart genérico; no tiene consumidores en `src` ni datos de usuario conectados al contenido CSS. La verificación dinámica de aislamiento sigue respaldada por Actions/smokes HTTP/MySQL citados; el agente no los volvió a ejecutar.
+
+## Traslado iniciado y completado por Driver desde “Mi Ruta” — VALIDADO
+
+- El caso E2E existente ahora combina creación de traslado en el constructor Admin a 768 px con login real del Driver QA, acciones UI de iniciar/completar y lecturas API posteriores. Debe terminar `Completed` con timestamps, ambos puntos `operation=None/status=Pending`, evidencia vacía y vehículo `Available`.
+- Lint/build y descubrimiento Playwright (51 tests) pasaron localmente. Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51**, responsive 1/1, API/MySQL descartables y cleanup correctos.
+
+## 2026-11-23 — Ciclo UI real de reset y activación — validado
+
+- El runner backend crea usuarios y tokens aleatorios de 256 bits en MySQL desechable; sólo persiste hashes SHA-256 y limpia los registros al terminar.
+- Los E2E usan formularios reales: login inicial, cambio de clave, rechazo de la clave anterior y replay del token (401), tanto para reset como para activación.
+- Validación local: lint, build y discovery Playwright **49 tests** correctos. El ciclo no se reporta como ejecutado localmente: sus fixtures reales los prepara el runner API/MySQL de CI.
+- Backend Action `45112158616` pasó con runner actualizado. Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49** en 3.2 min; responsive **1/1**, audit/lint/build, Release/xUnit backend, cleanup y teardown correctos. Ambos flujos usaron API/MySQL efímeros sin SMTP.
+
+## 2026-11-23 — Persistencia del tema — validado en CI
+
+- `theme-preference.spec.ts` inicia sesión con Admin descartable, cambia el switch en Mi Perfil, recarga y verifica clase del documento y `localStorage`; luego cambia a claro y comprueba lo mismo.
+- El switch ahora tiene el nombre accesible “Modo oscuro”. Action [`45113527889`](https://github.com/Paul1578/Front_gpsR/actions/runs/45113527889) pasó **50/50**, responsive **1/1**, audit/lint/build y cleanup. Verificó persistencia oscuro/claro en navegador real con API/MySQL desechables.
+
+## 2026-11-23 — Horario planificado al editar rutas — validado en CI
+
+- La auditoría encontró que edición enviaba `fechaInicio/fechaFin: undefined`; el adaptador los transformaba en `plannedStart/plannedEnd: null`, y backend persistía la pérdida.
+- Se quitaron esas claves del payload de edición. El E2E de edición existente ahora verifica vía GET que las fechas originales permanecen tanto tras editar en tablet como en móvil.
+- Front Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930) pasó **50/50**, responsive **1/1**, audit/lint/build, backend Release/xUnit, API/MySQL y cleanup. El E2E verificó `plannedStart/plannedEnd` preservados por GET tras editar en tablet y móvil.
+
+## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
+
+- Discovery Playwright **46**. Suite focal **4/4** con servidor limpio `127.0.0.1:3010`: Dashboard no muestra cero/vacío mientras Routes sigue pendiente; Team recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
+- `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`. Esto evita conectar a un Next anterior reutilizado en otro puerto.
+- Action `45107030228` (45/45, responsive 1/1) precede al nuevo test Dashboard y al ajuste de puerto; Action integrada nueva pendiente.
+
+- Action `45076629351` en SHA `2147be7`: **37/37 E2E** autenticados con API/MySQL efímeros, responsive **1/1**, audit/lint/build y cleanup correctos. Incluye 503 separados para Users y Routes/Vehicles, reintentos recuperables, exportación parcial bloqueada, formulario Driver a 320/768 px y regresión de persistencia parcial Vehicle.
+- Action `45077576665` en docs HEAD `8887649` repitió esos checks sin cambios funcionales: **37/37 E2E**, responsive **1/1**, build/lint/audit y cleanup success.
+
+# Validación de asignación concurrente, creación Driver y mapa Manager — pendiente de CI
+
+- Front Action `45085920993` para `d652652`: **39/39 E2E** y responsive browser **1/1**, sin skips; audit, lint, build, API/MySQL y cleanup pasaron. Incluye ejecución real Manager mapa.
+- Front Action `45086519736` para `104723a`: **39/39 E2E**, responsive **1/1**, cleanup correcto; valida Manager mapa con sufijo estable del runner.
+- Front Action `45086827516` para `8a90494`: **39/39 E2E**, responsive **1/1**, cleanup; incluye CRUD Vehicle con cancelar confirmación y selectores semánticos.
+- Backend Action `45085910280` pasó Release/xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup. Front Action `45085920993` pasó audit/lint/build y browser responsive; E2E integrado en curso.
+- Front local tras los fixes actuales: lint/build correctos, discovery **39 tests**, diff-check correcto. El E2E Manager mapa se descubrió y usa API real; ejecución local se omitió sin API/fixtures QA.
+- Actions `45082924174` y `45083215716` demostraron que un único worker no evita la escritura perdida; ambas llegaron a leer SQL `VehicleId=NULL` tras el éxito visual. Backend `f8edbcd` corrigió el mutador y pasó 113/113 xUnit; Action `45084368819` success.
+- `45084368342` y `45084699175`: **38/39 E2E**. Pasaron asignación Driver comprobada por SQL, CRUD dedicado, alta de Driver empresa y búsqueda responsive. Manager mapa fue el único fallo: menú mobile-only en desktop y fixture compartido tras retry.
+- Fix local sustituye fixture por Manager/Driver dedicados y hace setup/cleanup idempotentes. Lint/build/discovery **39**, `bash -n` y diff-check pasan; nueva Action debe validar Manager mapa.
+- Manager mapa comparte `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`; Action `45086519736` completó 39/39, incluido el escenario sin skips y cleanup.
+- CRUD Vehicle ahora selecciona tarjeta por ID y acción eliminar por nombre accesible, con una aserción adicional de cancelar confirmación. Local lint/build y discovery 39 pasan; CI pendiente.
+
+## CRUD responsive de Gestión de Conductores — persistencia de asignación pendiente
+
+- Nuevo Playwright en `e2e/driver-management-search.spec.ts`: alta desde la pantalla dedicada, edición, asignación y retiro de Vehicle, baja/reactivación; consulta API verifica persistencia. Interacciones a 320 px y comprobación tablet a 768 px.
+- Local: `npm run lint`, `npm run build`, descubrimiento Playwright **38 tests** y `git diff --check` pasan. La Action de API/MySQL y el cleanup son requeridos para validar el caso integrado.
+- Action `45078351055` ejecutó **37/38**; trace identificó un selector sin opciones por contexto anterior a la creación del Vehicle. El test recarga antes de navegar.
+- Action `45079269083` ejecutó **37/38**; locator ambiguo al compartir texto placa y documento. Corregido con claves distintas e ID de Driver consultado por API.
+- Action `45080069469` ejecutó **37/38**; UI mostró placa tras PUT 204, pero GET de Driver retornó `vehicleId:null`. Action `45080342001` finalizó success con 37 passed y **1 flaky**: el intento inicial falló igual y el retry pasó. No se considera validada la persistencia estable; ver `ERROR_LOG.md`.
+- El siguiente test consulta el mismo Driver por el origen API directo y por `/api/backend`, comparando ambos `vehicleId` para localizar divergencia de persistencia/instancia o rewrite.
+- Action `45081264602` confirmó que el GET directo al origen API también devolvió null; no se atribuye a Next rewrite. El test ahora lee además `Drivers.VehicleId` del MySQL efímero usando el cliente instalado por CI, para separar escritura de lectura.
+- Action `45081992619` leyó SQL `VehicleId=NULL` tras el PUT 204; la corrida pasó sólo tras retry. Config CI de Playwright cambia a un worker para aislar interferencia entre pruebas; Action siguiente pendiente.
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), discovery **37 tests** y `git diff --check` pasan.
+- El nuevo E2E intercepta `/Users/my-team`, `/Vehicles` y `/Routes` con HTTP 503; comprueba errores visibles, valores no presentados como cero, exportación deshabilitada y recuperación al reintentar. Action API/MySQL pendiente.
+- `340eb55` pasó Action `45072015727`: E2E **36/36**, responsive 1/1, backend xUnit 111/111, audit/lint/build y cleanup.
+
+# Administración de empresa y alta Driver — validación local 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npm run test:e2e -- --list` (**36 tests**) y `git diff --check` pasan tras eliminar Equipos ficticios y completar el formulario.
+- El E2E `company-admin.spec.ts` valida que la pestaña Equipos no aparezca, el campo de email sea de tipo email y al elegir Chofer se pidan documento y teléfono. Action autenticada Chrome/API/MySQL todavía pendiente.
+
+# Registro duplicado visible desde formulario — 2026-11-22
+
+- E2E registra la empresa, repite el mismo email desde UI y espera HTTP 200 con el mismo payload neutral; verifica mensaje visible y redirección a Login, después inicia sesión con la cuenta creada.
+- Conserva además intento API directo de duplicado con status/body idénticos. Action `45071113746` pasó **36/36 E2E** con API/MySQL descartables, responsive 1/1 y cleanup; no se expone indicador de email existente.
+
+# Evidencia obligatoria para cierre de parada/ruta — 2026-11-22
+
+- E2E intenta por API cerrar parada `InProgress→Completed` sin evidencia y cerrar ruta sin evidencia; espera HTTP 400, vuelve a leer y comprueba ruta/parada abiertas, evidencia vacía y vehículo OnRoute. Luego completa el camino positivo con evidencia.
+- Smoke backend prueba `Pending→Skipped` sin evidencia, `InProgress→Completed` sin evidencia y cierre ruta; compara en MySQL status, fecha de cierre, JSON completo de puntos y vehículo antes/después. Smoke completo y cleanup cero pasaron.
+- Backend unit tests Release: **110/110**. Front lint/build/audit (0 vulnerabilidades)/discovery 36, `bash -n` y diff-check pasan local. API local Front no está disponible; los nuevos E2E quedan para Action autenticada con DB efímera.
+
+# Validación de búsqueda de conductores y corrección E2E — 2026-11-22
+
+- Front lint y build correctos; `npm audit --audit-level=low`: 0 vulnerabilidades; Playwright descubre **36 tests** en 5 archivos; `git diff --check` correcto.
+- Action `45067692881`: backend Release/xUnit **107/107**, audit/lint/build y responsive browser **1/1** pasaron; E2E **34/35**. El único fallo fue un locator estricto ambiguo para Documento/Teléfono en el ciclo de alta Driver, no un fallo de API.
+- Corrección con roles textbox y nombres accesibles pasó Action `45068474426`: **36/36** E2E autenticados, responsive **1/1**, backend, audit/lint/build y cleanup.
+- Commit `58e2b4c` crea un Driver API temporal para que el E2E de búsqueda no dependa de datos preexistentes. Action `45069041959` pasó **36/36**, backend **107/107**, responsive **1/1**, audit/lint/build; cleanup por runner y DB MySQL efímera.
+- La API local :5048 no está disponible, por lo que no se reporta ejecución funcional local de estos E2E.
+- El caso de búsqueda ahora crea/desactiva su Driver API temporal, sin skip por lista vacía. Un primer build de este ajuste encontró tipo nullable de `localStorage`; corregido a `undefined` y se repite build antes de Actions.
+
+# Actualización 2026-11-22 — administración de empresa, búsquedas y responsive
+
+- Front Action previo `45066249833` sobre `57e44c6`: Release backend/xUnit 107/107, audit/lint/build, responsive browser 1/1, Playwright autenticado API/MySQL 33/33 y cleanup.
+- El lote local añade navegación Admin al panel de empresa, remueve operaciones simuladas, búsqueda de miembros/conductores y cobertura de edición/cancelación de rutas a 320/768 px.
+- Validación local del lote: lint/build/discovery 35/npm audit/diff-check; Action autenticada debe confirmar los E2E nuevos.
+- El frontend local responde 200 en :3000, pero API :5048 responde HTTP 000; no se ejecutó una suite funcional local sin API/fixtures. CI usa API y MySQL descartables.
+
+# Actualización 2026-11-22 — constructor, asignaciones y tablet
+
+- `npm run lint`: correcto.
+- `npm run build`: correcto (Next.js 16.4.6, TypeScript y páginas estáticas).
+- `npx playwright test --list`: **31 casos** descubiertos.
+- `npx playwright test e2e/team-management-load-errors.spec.ts`: **9/9**; incluye 503/reintento de assignment-options en Rutas y etiqueta temporal que no se confunde con vehículo/conductor ausente.
+- E2E de API/MySQL: Action `45050067540` pasó **28/30**; selectores corregidos. Action `45051132073` pasó Release/xUnit, audit/lint/build y responsive; E2E **29/31**. El test de mapa agotó los 30 s y su cleanup quedó sin margen; Mi Ruta esperaba menú móvil con viewport desktop. Se amplió timeout del mapa a 90 s y se fijó 390×844 en Mi Ruta. Repetición pendiente.
+- El lote local siguiente añade ciclo User a 768 px, rol a 320, acciones Driver a 768, edición ruta a 320 y cancelación a 768; integrado pendiente.
+- El primer build del cambio produjo TS18047 por acceso a `point.lat/lng` nullable; se añadió guard explícito `point && validPoint(point)` y el build final pasó. Ver registro y prevención en `ERROR_LOG.md`.
+
+# Validación integrada pendiente — Historial Logistics y cambio de contraseña — 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**21 tests**) y `git diff --check` pasan localmente.
+- Actions `45033061272` pasó 20/20 E2E autenticados, responsive 1/1 y cleanup. Actions `45033318956` ejecutó backend Release/xUnit, audit/lint/build y responsive con éxito; E2E **20/21** por locator ambiguo del caso de contraseña, luego corregido.
+- Actions `45033927966` validó ruta/placa pero falló **20/21** porque el assert global `role=alert` encontró una alerta no relacionada. El assert quedó limitado a `No se pudieron cargar las rutas`.
+- Actions `45034387245` pasó backend Release/xUnit, audit/lint/build, responsive browser **1/1**, E2E Chrome/API/MySQL **21/21** y cleanup. Incluye Historial Logistics en 320/768 px, cambio de contraseña, revocación del refresh/password anterior y nuevo login.
+- Después del pase se añadió una aserción más estricta del diálogo de detalle de Logistics dentro del viewport a 320/768 px; lint/build/discovery 21 y diff-check locales pasan; Actions pendiente para esta ampliación.
+- Dashboard Logistics verifica la cifra de vehículos disponibles contra `/Routes/assignment-options`, además de garantizar que el navegador no llame `GET /Vehicles`. Actions `45035807218` pasó **21/21** Chrome/API/MySQL, responsive browser **1/1**, backend tests y cleanup; incluye diálogo de detalle Historial en 320/768 px y cambio real de contraseña.
+- Historial Logistics usa placa/marca/modelo del DTO de ruta, sin GET administrativo `/Vehicles`.
+
+# Validación integrada local — creación Manager responsive — 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm audit --audit-level=low` (0 vulnerabilidades), `npx playwright test --list` (**33**) y `git diff --check`: correctos.
+- Runner `scripts/run-e2e-local.sh` contra API y MySQL 8 efímero: **33/33** Chrome/API/MySQL; incluye creación Manager de ruta con punto Delivery, persistencia, edición/cancelación, alta Manager/Logistics en 320/768 px y ciclo User a 320 px. Cleanup final sin residuos.
+- E2E Manager aislado pasó **1/1** antes de la suite completa.
+- Action `45058535602` sobre Front `50bf9d0` pasó audit, lint/build, responsive **1/1**, Release/xUnit del Backend, E2E integrado **33/33** y cleanup.
+- La primera corrida integrada fue 32/33. Se corrigieron guardas de rol, fixture Driver no asignable, selector Editar, aria-label de edición y prefijo del cleanup SQL; el primer cleanup falló por FK en el contenedor descartable, que se eliminó completamente. El siguiente pase focal y el suite final pasaron.
+
+# Validación QA actual — 2026-11-22
+
+- `npm run lint`: correcto después de corregir la carrera de `refreshTeamUsers`.
+- `npm run build`: correcto; Next.js 16.4.6 compiló TypeScript y generó las 10 rutas.
+- `npm run test:e2e -- --list`: descubre 37 escenarios. Incluye fallo HTTP 503, retry de usuarios y recuperación conjunta de rutas/vehículos; la Action del SHA actualizado debe ejecutar el flujo autenticado con API/MySQL efímeros.
+- Action `45072706025` (SHA `7f4841c`): **35/37 E2E**. Fallaron (1) el test buscaba Exportar en Resumen, donde no se renderiza y (2) Gestión de Equipo no veía un error Driver compartido cuando una carga local obsoleta se descartaba por carrera. Ambos corregidos en el siguiente cambio; aún sin ejecución integrada.
+- Action `45073324431` (`147ba89`): **36/37 E2E**; sólo falló el conteo global de `—` (7 encontrados frente a 3 esperados) porque métricas ajenas también usan el valor. Selector acotado a la tarjeta “Resumen de Datos”; repetir Action.
+- Action `45074489447` (`00f3b7c`): **36/37 E2E**. Error-context confirma que quedaba toast “Bienvenido, admin” aunque el error consultado ya se hubiera retirado. Se sustituyó conteo global ARIA por aserciones de texto de error concretas; nueva Action pendiente.
+- Action `45075092805` (`ae34fa9`): **36/37 E2E**. Al navegar entre tabs se recargaban rutas/vehículos y ya no existía su botón retry en el regreso; secuencia reordenada para recuperar rutas/vehículos primero desde Resumen, después usuarios.
+- Action `45075805793` (`067793e`): **36/37 E2E**; el retry de flota recargó miembros también y el botón de Usuarios ya no existía. La secuencia invierte el orden: Users primero, luego verifica recuperación conjunta de la flota.
+- Interceptor desacoplado: `shouldFailUsers` y `shouldFailFleet` evitan que una recarga de contexto reactive antes de tiempo el endpoint que todavía se prueba en 503; ahora se prueban los retries de cada grupo explícitamente.
+- Action `45075980605` (`4eec893`): **36/37 E2E**. El formulario de empresa nuevo pasó responsive 320/768; el único error fue retry fleet ausente tras auto-recarga. El HEAD posterior desacopla fallos API y queda por ejecutar.
+- E2E company-admin verifica que el formulario Driver acepte datos y siga visible sin overflow a 320/768 px; Action del test pendiente.
+- E2E de vehículo amplía ahora ciclo real para provocar HTTP 409 en el segundo endpoint (estado) tras persistir los campos generales; verifica respuesta visible, tarjeta y GET real antes de continuar la operación válida. La prueba integrada de este parche está pendiente.
+- QA independiente detectó que el segundo clic de retry también apuntaba a una alerta ya retirada. El test ahora ejecuta un solo retry conjunto. El resumen de datos muestra `—`/carga durante fallos en vez de arrays vacíos como ceros.
+
+# Pruebas frontend
+
+## Búsqueda de Equipo en móvil/tablet — ampliación local, Action pendiente
+
+- `team-search.spec.ts` ahora ejercita la búsqueda de miembros a 320 px y la búsqueda de conductores a 768 px, además del flujo existente a 390 px; verifica que no haya overflow horizontal en móvil/tablet.
+- El flujo autenticado necesita fixtures reales de miembros y conductores; la Action API/MySQL valida interacción y cleanup. Ejecutar lint/build/discovery local y repetir Action integrada.
+
+## Alta de Driver en Administración de la empresa — ampliación local, Action pendiente
+
+- La vista tenía un formulario de creación, pero el E2E sólo comprobaba campos responsive y no enviaba. Ahora crea un Driver con identidad aleatoria a 320/768 px, verifica POST 200, respuesta honesta de correo no enviado, persistencia en `/Users/my-team` y perfil Driver en API, y lo localiza en la lista.
+- Email/documento usan prefijos incluidos en `cleanup-e2e.sql`. Lint/build y Action integrada de esta ampliación pendientes.
+
+## Comandos y resultados
+
+- 2026-11-21, rama aislada `test/route-builder-persistence`: `npm ci` correcto (0 vulnerabilidades), `npm run lint` correcto, `npm run build` correcto y `npm run test:e2e -- --list` descubre 14 casos.
+- Action `45051977357`, SHA `bffe183`: backend Release/xUnit, audit, lint/build y responsive pasan; suite integrada **29/31**.
+- Action `45053076619`, SHA `514c0b9`: backend, audit, lint/build y responsive pasan; E2E **30/31**. La falla de Mi Ruta quedó corregida y pasó; trace del mapa identificó el fill del destino cuando el editor estaba oculto. Orden corregido localmente: editar nombre antes de abrir mapa. Repetir la suite integrada para validar **31/31** y cleanup.
+- Action `45053782460`, SHA `b1823db`: backend, audit, lint/build y responsive pasan; E2E **30/31**, cleanup completo. El único fallo fue el nombre del destino después de fijar ubicación; corregido en trabajo local.
+- Corrección de nombre aplica la etiqueta después de fijar punto. E2E también cubre alta directa de Manager/Logistics y acceso responsive de Manager al constructor. Lint/build y discovery **33** pasan local.
+- Action `45054550439`, SHA `a2c1ca1`: valida mapa final y roles; concluyó con **32/33**; detalle del único fallo abajo.
+- Resultado `45054550439`: backend/audit/lint/build/responsive pasan; **32/33 E2E** y cleanup. Alta Manager/Logistics pasó; el único fallo fue heading incorrecto del nuevo test de Manager (esperaba “Gestión de Rutas”, h1 real “Rutas”). Locator corregido; nueva Action pendiente.
+- Action `45055100816`, SHA `1a893c9`: pasó **33/33 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup de MySQL. Valida el mapa, roles directos Manager/Logistics y acceso/responsive de Manager.
+- Constructor de rutas: el caso existente agrega tres paradas, elimina una, reordena otra y crea la ruta desde el navegador. La aserción API ahora compara cada punto persistido por nombre y operación en orden exacto (incluye origen/destino sin operación), lo que demuestra que la parada eliminada no quedó y que los tipos siguieron a sus paradas al reordenar. El `finally` verifica las respuestas de limpieza de la ruta y vehículo.
+- Intento Playwright autenticado local: `CI=true npm run test:e2e -- --grep "Admin crea una ruta desde el mapa móvil"` arrancó Next y reportó 1 skipped; faltaban credenciales QA/mutaciones y API no estaba activa (Swagger local HTTP 000). No se crearon fixtures; para resultado funcional se requiere el runner con API/MySQL descartables y variables QA.
+
+- Cierre 2026-11-21: lint, build de producción Next y npm audit (`--audit-level=low`) correctos, 0 vulnerabilidades.
+- Backend asociado: `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`, 47/47.
+- Chrome Admin E2E: editó un conductor, verificó persistencia por API, lo dio de baja, lo encontró con “Mostrar bajas”, lo reactivó y verificó estado. Viewport 390×844 sin overflow.
+- Chrome User E2E: el dashboard informa que no tiene permisos operativos y oculta Equipo/Rutas; API Vehicles/Routes respondió 403. E2E previos del constructor/Driver y tenant siguen abajo; fixtures de esta pasada fueron eliminados.
+- Chrome Logistics E2E: Manager cambiado a Logistics; rutas visibles y API 200, Equipo/Vehículos ocultos y API Vehicles 403; fixture eliminado.
+- Chrome Vehicle E2E: alta, búsqueda y vacío sin coincidencias, edición verificada por API y baja lógica; GET por ID conserva `isActive=false`, `onlyActive=true` lo excluye. Fixture limpiado.
+- CI frontend añadido: `npm ci`, `npm audit --audit-level=low`, lint y build en Node 22 para push/PR a `main`.
+- Playwright está integrado (`npm run test:e2e`) con cinco escenarios: credenciales inválidas/error legible y layout móvil; CRUD vehículo Admin en 390×844; edición de ruta preservando operación; permisos User en UI/API; CRUD de Driver desde Gestión de Equipo.
+- Ejecución autenticada real: 5/5 en Chrome con backend/MySQL. Admin creó/editó/dio de baja vehículo; editó una ruta con Driver de equipo recorriendo los cuatro pasos en viewport 390×844 y la API confirmó `PickupAndDelivery`; canceló esa ruta y la encontró en Historial, filtro “Canceladas” y diálogo de detalles. User no vio operaciones y recibió 403; creó Driver desde UI, verificó el aviso SMTP, editó datos persistidos, lo dio de baja/reactivó y cambió su rol Driver→Logistics→Driver. API confirmó perfil inactivo/activo y la UI ocultó/reincorporó el perfil a la lista de conductores.
+- Los casos móviles de rutas y Equipo verifican que no exista overflow horizontal. Runner limpió Admin/User/Driver/vehículo/conductor/ruta; conteos finales cero.
+- E2E negativo real: login con credenciales inválidas muestra el error esperado. Viewport 390×844 sin overflow.
+- Repetición de cierre 2026-11-21: `npm run lint`, `npm run build` y `npm audit --audit-level=low` pasaron; Next.js 16.4.6 generó las 10 páginas estáticas y npm reportó 0 vulnerabilidades.
+- Configuración de navegador: Playwright toma `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` o detecta Chrome del sistema; `npm run test:e2e` sin cuenta ejecuta login negativo y salta explícitamente los tres flujos con credenciales/fixtures.
+- Backend hermano repetido en Release: 45/45 pruebas aprobadas, 0 fallidas/omitidas.
+- El workflow frontend parsea como YAML y ambos workflows quedan sujetos a ejecución en GitHub Actions al abrir PR/push.
+- Health check posterior al reinicio persistente: `/dashboard` 200, Swagger 200, `/api/Routes` sin sesión 401. MySQL: 22 migraciones y cero usuarios, vehículos, conductores o rutas QA; cero refresh tokens activos.
+
+- `npm run lint`: pasa sin diagnósticos.
+- `npm run build`: pasa en Next.js 16.4.6.
+- `npm audit`: cero vulnerabilidades conocidas en el lockfile actual.
+- Chrome headless: login desktop/móvil y dashboard autenticado revisados; dashboard mostró inventario real desde API.
+- Dashboard en viewport móvil 390×844: tarjetas en dos columnas, navegación compacta y sin desbordamiento horizontal.
+- Chrome headless: en el constructor, el paso 2 entra con Origen seleccionado; clic en mapa actualiza coordenadas y muestra marcador `A`.
+- Gestión de equipo distingue usuario creado de invitación enviada; Driver se crea una sola vez con documento/teléfono.
+- `curl -i http://localhost:3000/dashboard`: HTTP 200.
+- Verificación local final: dashboard/login/root 200; proxy correcto `/api/backend/Routes` devuelve 401 sin sesión, Swagger backend 200.
+- Proxy de API protegido sin token: HTTP 401 esperado.
+- E2E HTTP/MySQL ejecutado desde backend: recogida, entrega, evidencia, posición y cierre verificados.
+
+## Flujos cubiertos
+
+- Constructor de rutas de cuatro pasos: origen, paradas múltiples, destino, operación recogida/entrega/ambas.
+- `DriverView`: estado visible por parada, notas/fotos persistidas y cierre sujeto a estados/evidencia.
+- Edición conserva operación de puntos; el mapper conserva evidencia incluso en origen/destino.
+- El mapa no simula GPS: usa geolocalización del navegador o la última ubicación persistida.
+- Se retiraron porcentajes/usuarios falsos del dashboard y login; ahora se presentan conteos reales y textos de producto.
+
+## Limitaciones
+
+Chrome verificó login Admin y Driver, alta/edición de vehículo, gestión de usuarios/roles, creación de ruta y operación Driver móvil. Este pase también verificó visualmente edición/baja/filtro/reactivación Driver y límites del rol User. Faltan los CRUD y roles visuales no enumerados y otras vistas responsive.
+
+La revisión independiente de frontend también pasó lint/build: eliminó una llamada a endpoint de ubicación inexistente, agregó estados de error/reintento al seguimiento, timeout de sesión y etiqueta para geometría vial estimada.
+
+Para repetir la matriz completa: usar sólo una base local/QA descartable, iniciar API Development y web local, crear bootstrap Admin temporal `fletflow.e2e.admin.<id>@example.test`, definir `FLETFLOW_E2E_ADMIN_EMAIL/PASSWORD`, marcar `FLETFLOW_E2E_ALLOW_MUTATIONS=true` y ejecutar `Back_GPS/scripts/run-e2e-local.sh`. El runner rechaza destinos web/API no locales, provisiona el User QA e invalida la activación sólo en la base QA; elimina los fixtures por prefijos exclusivos. No conectar a producción: los endpoints implementan baja lógica y los registros requieren limpieza física para no quedar mezclados.
+# Validación final del constructor (2026-11-20)
+
+- Navegador Chrome real con sesión Admin QA: alta completa desde Gestión de Rutas, selección de origen, destino y parada mediante clics en el mapa; marcadores `A`, `B`, `1` visibles.
+- Se seleccionó `pickup_and_delivery`, vehículo y conductor, se revisó el resumen y se creó desde el botón `Crear ruta`.
+- API autenticada confirmó ruta persistida con 3 puntos y operaciones `[None, PickupAndDelivery, None]`. El listado mostró “Ruta creada correctamente”. Datos QA borrados en MySQL y verificados en cero.
+- Resolución de la prueba: crear e inspeccionar rutas desde el navegador había quedado pendiente; el recorrido fue completado hasta la persistencia y lectura de la operación.
+- Chrome Admin Gestión de Vehículos/Equipo: alta y edición de vehículo, alta de Driver con documento/teléfono, asignar y quitar vehículo; alta de Manager, cambiarlo a Logistics, recargar y confirmar el rol persistido, desactivar y reactivar. La UI reportó SMTP no enviado con claridad. SQL confirmó cero cuentas/vehículos/Drivers QA al terminar.
+- El primer intento de la automatización de equipo no cambió la selección de Driver a Manager y el formulario mostró correctamente “Para chofer indica documento y teléfono”. La prueba se ajustó para seleccionar la tarjeta por texto y verificar la selección antes de enviar; el alta Manager pasó.
+- Driver E2E en Chrome, viewport 390×844: login, ruta asignada visible, iniciar ruta, iniciar parada, agregar nota, recargar y confirmar persistencia, completar parada y ruta. Sin overflow horizontal; sin GPS mostró estado explícito.
+- API verificó al terminar: `Completed`, punto `Completed` con evidencia, vehículo `Available`. La ruta incluye resumen de placa/marca/modelo para mostrar el vehículo sin habilitar al Driver el listado de toda la flota.
+- Segundo Driver del mismo tenant: no recibe rutas en la lista; detalle ajeno 403 y cambio de estado ajeno 404.
+- Tablet 768×1024: dashboard, vehículo, equipo, rutas y paso 2 del constructor sin overflow horizontal; un clic real en el mapa colocó el origen `A` y actualizó las coordenadas a `-0.28152, -78.39294`.
+
+## Verificación 2026-11-21
+
+- `npm run lint`: correcto, sin diagnósticos.
+- `npm run build`: correcto, páginas Next.js generadas.
+- `npm audit --audit-level=low`: 0 vulnerabilidades.
+- API Development Swagger 200; endpoint protegido sin token 401; frontend `/dashboard` 200.
+- Backend xUnit 43/43 y Release build sin warnings; incluye prueba de asignación de vehículo y creación de ruta en el mismo commit.
+- E2E Chrome/MySQL de Driver y User ejecutados después: cambios de Driver persisten; User no ve navegación de flota y obtiene 403.
+- E2E visual Admin para gestión de conductores y E2E User se completaron con cuentas temporales en esta pasada; el smoke API también se ejecutó y todos los fixtures se limpiaron.
+- La aplicación móvil nativa queda para después por decisión del usuario; el requisito actual es responsive web.
+
+## Cierre extendido — 2026-11-21
+
+- Playwright autenticado: **7/7** en Chrome/API/MySQL. Nuevo caso en 390×844 crea ruta desde el constructor con clics de mapa, dos operaciones de parada, asignación, lectura de cuatro puntos por API y eliminación mediante el diálogo; limpieza SQL confirmó cero filas QA.
+- La primera repetición detectó que el nombre de parada no tenía ancho visible en 390 px. Se corrigió el layout flexible y la prueba completa pasó.
+- CI ejecuta la prueba Playwright no mutante `formulario de inicio de sesión se adapta a móvil sin desbordarse`; el mismo caso pasó localmente con el servidor Next de producción.
+- El runner local exige frontend y API ya iniciados antes de provisionar fixtures. Tras iniciar Next en `127.0.0.1:3000`, la ejecución protegida pasó.
+
+### Cruces entre empresas por HTTP/MySQL
+
+- Se provisionaron dos cuentas Admin raíz con tenants separados y un Driver/ruta/vehículo sólo en el tenant A.
+- Tenant B obtiene listados aislados; Vehicle, Driver y Route ajenos devuelven 404 al leer, editar, cambiar estado o borrar. Crear una ruta en B enlazando vehículo/Driver de A devuelve 404.
+- La ruta de A se puso en progreso y se guardó una posición. A lee una posición; B obtiene colección vacía (`200 []`) y su escritura de posición recibe 404.
+- Suite Playwright completa autenticada: **8/8**. La consulta SQL final confirmó cero fixtures y cero refresh tokens activos.
+
+### CI autenticado frontend/API/MySQL
+
+- Workflow frontend provisiona MySQL 8, extrae el backend público desde `chore/stabilize-fleet-platform`, ejecuta build/tests backend, arranca API con credenciales efímeras y corre el runner Playwright completo.
+- `scripts/run-e2e-local.sh` acepta configuración MySQL por variables, usa el cliente host y limita en CI las DB a `fletflow_ci*`; servicios locales se limitan a loopback.
+- Repetición local del runner en base nueva: Playwright Chrome **8/8**. Cleanup confirmado y esquema temporal descartado.
+- No se afirma ejecución en GitHub Actions: falta publicar las ramas y abrir/ejecutar sus PR.
+- Las ramas se publicaron y abrieron PRs borrador (#2 frontend, #5 backend). Backend Actions pasó. Primer frontend Actions pasó todas las fases previas, pero el runner abortó porque Next aún no estaba iniciado; `playwright.config.ts` lo inicia en CI. El precheck ya se corrigió; nueva ejecución pendiente.
+
+## E2E adicional de rutas, historial y asignaciones — 2026-11-21
+
+- Comando: `npm run lint`, `npm run build` y `scripts/run-e2e-local.sh` con Chrome, API real y MySQL desechable.
+- Resultado: lint/build correctos; Playwright autenticado **13/13**. Se cubrieron filtros combinados de rutas, búsqueda sin coincidencias, limpieza, asociación del conductor al historial, fechas planificadas frente a reales, error 503/reintento y asignar/quitar vehículo al Driver con comprobación de `vehicleId` persistido.
+- La corrida usó `fletflow_ci_validation_16`; el cleanup descartó la base. Primera invocación con URL que incluía `/api` abortó en prevalidación y está documentada en `ERROR_LOG.md`; la repetición pasó usando el origen API.
+- El test de error/reintento del Historial comprueba estado móvil de 390×844 sin overflow. Native mobile permanece fuera de alcance por decisión del usuario.
+- Resultado remoto previo: frontend Actions `44976408960` pasó para commit `1c8856a` con la suite anterior (12 escenarios). Esta iteración 13/13 local está pendiente de publicarse y verificar en Actions.
+
+## Verificación de autorización, concurrencia y recuperación de vehículos — 2026-11-21
+
+- Backend Release: `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **50/50**; build Release: 0 warnings/0 errores. NuGet vulnerability audit previo permanece limpio.
+- En MySQL temporal `fletflow_ci_validation_stab20261121`, `smoke-tenant-http.sh` confirmó aislamiento de tenant y que desactivar una cuenta invalida access y refresh tokens (401). `smoke-route-concurrency.sh` confirmó 409 para rutas/vehículos/Driver incompatibles, inicio rechazado con vehículo inactivo, ciclo de baja/reactivación, dos escrituras concurrentes en paradas sin pérdida y estados persistidos. Ambos esquemas se eliminaron mediante trap.
+- Frontend lint/build correctos; `npm audit --audit-level=low`: cero vulnerabilidades. Playwright autenticado sobre Chrome/API/MySQL: **14/14**, incluyendo mensaje de error de alta, baja/reactivación de usuario Driver, gestión móvil de vehículos con reactivación, mapa/equipo en móvil/tablet, filtros, reordenar/quitar paradas e Historial. E2E limpió fixtures y se descartó el esquema temporal.
+- Una corrida intermedia obtuvo 13/14 por una carrera del propio mock 503 del Historial; se corrigió sincronizando respuesta inicial y resultado esperado. Repetición final completa: 14/14.
+- La corrida de backend remota nueva y la de frontend para este lote quedan pendientes de publicar los commits siguientes.
+
+## Corte de roles y sesiones — 2026-11-21
+
+- `npm run lint`, `npm run build` y `npm audit --omit=dev`.
+- Runner `Back_GPS/scripts/run-e2e-local.sh`, API y MySQL temporales: **14/14 Playwright**. Incluye crear una cuenta `User`, comprobar el arreglo de roles persistido, error simulado de `POST /Auth/logout-all` sin cerrar la sesión local, y overflow de perfil/equipo/mapa en móvil/tablet.
+- El cleanup retiró los fixtures QA y descartó el esquema. Backend smoke de tenant/roles y concurrencia también pasó en su DB aislada.
+- Actions remoto para estos cambios locales: pendiente de commit/push y ejecución.
+- Backend MySQL autenticado verificó también que registro público no eleva rol (Admin pedido → User/403) y logout-all invalida el refresh (200→401).
+
+## Resultado remoto final — 2026-11-21
+
+- Frontend Actions run `44982243409` completado `success` en SHA `6e37c4d`; incluye checks publicados y E2E integrado.
+- Backend Actions run `44982244087` completado `success` en SHA `4cf62a3`; suite local posterior ampliada a 54/54 con recovery/activación.
+- Localmente frontend lint/build/audit y Playwright autenticado Chrome/API/MySQL 14/14 pasaron.
+
+## Estado de usuario en equipo — 2026-11-21
+
+- El E2E de Gestión de Equipo ahora crea una cuenta `User`, la desactiva y reactiva desde botones de UI, y comprueba el estado persistido usando `GET /Users/my-team` después de cada operación.
+- Validación previa a CI: lint, build y `git diff --check` completados correctamente; Actions pendiente para el SHA siguiente.
+
+- Resultado de Actions `44982723150`: `success` para `96caf15`. El caso de alta/estado/reactivación de User y el resto de Playwright autenticado pasaron contra el backend de la rama y MySQL descartable.
+
+- Repetición integrada con backend actualizado `cff33c6`: Actions `44983346765` success, responsive 1/1 y Playwright Chrome/API/MySQL **14/14**; lint, build y audit también pasaron.
+
+- Actions `44983694110`: **14/14** E2E y 1/1 responsive, éxito completo con backend branch actualizado y MySQL descartable. Lint/build/audit correctos.
+
+## Driver completa recogida/entrega en móvil — 2026-11-21
+
+- Ampliado el E2E Driver: recibe una ruta real de la API, inicia desde Mi Ruta, inicia la parada, agrega evidencia de nota, marca completada y cierra la ruta; API debe mostrar ruta Completed y vehículo Available.
+- Viewport 390×844. Lint, build y discovery de 14 tests pasan localmente; MySQL/Chrome integrado queda pendiente de Actions del nuevo SHA.
+
+- Run `44984300436`: suite 14 tuvo fallo nuevo en Driver por espera 204 en endpoint de parada, cuyo contrato entrega 200. La ruta InProgress residual provocó 409 en retry y en el test siguiente. Aserción corregida y cleanup `finally` añadido. No contabilizar como pase; Actions nuevo pendiente.
+
+- Trace del fallo reveló modal de evidencia tapado por controles del mapa (`z-50`); se corrigió elevando Dialog a z-index 2000/2001. Cleanup de ruta ahora comprueba las respuestas de cancelación/baja. Prueba integral pendiente.
+
+- `44985230566`: **13/14**. Dialog Note guardó evidencia y dejó que la parada se completara; assert falló por esperar 204 en vez del HTTP 200 real. Tenant cross-tenant y cleanup pasaron. La expectativa se corrigió y fue validada en Actions `44985541718`.
+
+## Driver E2E integrado — 2026-11-22
+
+- Actions `44985541718` en SHA `1f3a24c`: audit, lint y build correctos; backend Release **56/56** sin warnings/errores; responsive Chrome **1/1**; Playwright autenticado Chrome/API/MySQL **14/14**.
+- El E2E Driver inicia y completa una ruta móvil con evidencia de nota, y verifica por API que el vehículo vuelve a `Available`. CI usó MySQL desechable.
+- Las aserciones HTTP quedaron alineadas a 200 según el contrato observado; la ruta se limpia desde `finally`. El modal sobre Leaflet quedó comprobado en la ejecución integrada.
+
+## Limpieza de fixture de reordenar paradas — 2026-11-22
+
+- Actions `44986079119` ejecutó la nueva persistencia del orden/tipos, pero el `finally` falló con 409 al borrar el vehículo: la ruta había asignado ese vehículo al Driver. Se corrigió restaurando la asignación previa; Actions `44986497890` pasó responsive 1/1 y Playwright 14/14.
+- Una revisión separada detectó que el cleanup podía cortar pasos posteriores si fallaba la ruta o la restauración. El `finally` ahora cancela rutas activas, intenta todas las operaciones aunque una falle y acumula errores explícitos. Validado local con lint/build/list/diff check y por Actions `44986877646` en SHA `aa49b83`: Release **57/57**, responsive **1/1**, E2E autenticado **14/14**; no se ejercitó el camino de cancelación de emergencia.
+
+## Breakpoint de 320 px — 2026-11-22
+
+- El E2E Admin responsive ahora reduce Mi Perfil a 320×844 y comprueba que el cambio de contraseña sigue visible sin overflow. Actions `44987222908` validó el navegador: responsive 1/1, Playwright autenticado 14/14; backend Release 57/57 y build sin warnings/errores.
+
+## Cobertura negativa por rol y errores móviles — 2026-11-22
+
+- Playwright discovery actual: 15 tests en dos archivos. `npm run lint`, `npm run build` y `git diff --check` pasan.
+- El spec `team-management-load-errors.spec.ts` se ejecutó localmente: **2/2**. Equipo y Choferes a 390×844 conservan visibles los avisos/Reintentar y no desbordan documento ni área principal, antes y después de recuperar.
+- Se añadió un caso API que espera 403 para mutaciones no permitidas de User/Driver/Logistics/Manager. Usa las identidades User y Driver efímeras del runner; el rol Driver se restaura en `finally`.
+- El caso nuevo de permisos no se ejecutó localmente: API y frontend locales devolvieron HTTP 000 y no había credenciales QA disponibles. No se cuenta como aprobado ni omitido; requiere Actions con API/MySQL descartables.
+- Verificación integrada: Actions `44989454133` para `286b100` terminó success; xUnit **57/57**, Playwright autenticado **15/15** (sin skips), responsive **1/1**, audit, lint y build correctos. El runner ejecutó la matriz por rol contra API/MySQL efímeros y limpió los datos al cerrar.
+- Backend final `chore/stabilize-fleet-platform` ahora está en `029e94d`, con ciclo Logistics y cleanup verificados por Actions `44991181335`. Falta repetir el workflow frontend contra ese HEAD para confirmar la integración cruzada final.
+# Reejecución integrada con backend actual — 2026-11-22
+
+- GitHub Actions frontend run [`44991377967`](https://github.com/Paul1578/Front_gpsR/actions/runs/44991377967): `success`, frontend SHA `8b59308`.
+- El workflow descargó `chore/stabilize-fleet-platform` en SHA `029e94d`.
+- Backend: build Release correcto; xUnit **57/57**, 0 fallidas y 0 omitidas.
+- Frontend: `npm audit --audit-level=low` con 0 vulnerabilidades, ESLint y build Next correctos.
+- Navegador: responsive no mutante **1/1**; E2E autenticado Chrome/API/MySQL **15/15**, sin skips.
+- Alcance: valida el estado publicado de ambas ramas y sus flujos automatizados; la cobertura no equivale a pruebas exhaustivas de cada acción CRUD/pantalla responsive.
+# Nuevo caso responsive tablet pendiente de CI — 2026-11-22
+
+- `fleet-admin.spec.ts` añade `Admin crea una ruta con parada operativa en tablet sin desbordamiento`: viewport 768×1024, creación visual por mapa, asignación, revisión, persistencia HTTP de origen/parada recogida+entrega/destino y verificación de overflow en cada etapa.
+- El `finally` retira ruta y vehículo QA y restaura la asignación original del Driver; el workflow usa API y MySQL descartables.
+- Verificación local posterior al cambio: ESLint correcto, build Next correcto, Playwright discovery **16 tests**, `git diff --check` correcto.
+- Pendiente para considerar el caso probado: resultado CI completo en Chrome/API/MySQL; no se afirma ejecución local real porque no hay credenciales/servicios QA disponibles en esta sesión.
+
+# Validación de ruta tablet y cleanup final — 2026-11-22
+
+- Actions frontend `44993827707`, SHA `2932aa0`, backend `029e94d`: xUnit **57/57**, audit **0 vulnerabilidades**, lint/build correctos, responsive **1/1**, Playwright autenticado **16/16** y job success. El script de cleanup MySQL finalizó con código cero.
+- La ruta de tablet se creó en UI a 768×1024, persistió tres puntos con recogida+entrega según GET real y el cleanup retiró registros temporales.
+- Trabajo añadido después de esa corrida: el E2E de vehículos verifica estado operativo Mantenimiento→Disponible mediante UI, GET API y recarga. Aún no probado por CI.
+- Primera corrida de esta ampliación (`44994219944`) falló en GET inmediato porque el waiter reconocía el PUT de datos generales, anterior al PUT `/status`. Se estrechó a ruta exacta `/status`, se validan 204/payload y luego GET; volver a correr CI.
+- Resultado corregido: Actions `44994623654` en SHA `cf8dc13` terminó success con backend `029e94d`; xUnit **57/57**, responsive **1/1**, E2E **16/16**, cleanup MySQL, audit, lint y build correctos. Vehículo cambió `status 0→2→0` y el estado persistió en API y UI tras recarga.
+
+# Manager: permisos positivos HTTP — 2026-11-22
+
+- La matriz E2E ahora también comprueba que Manager lee vehículos y rutas y completa el ciclo API de vehículo crear/editar/cambiar a mantenimiento/volver a disponible/leer/eliminar.
+- Cuenta QA cambia a Manager y se restaura a Driver en `finally`. Vehículo usa prefijo `E2EQA` y limpieza local más fallback SQL del runner.
+- ESLint/build/discovery local pasaron; Actions `44994997016` para Front `202ec3d` + Back `029e94d` terminó success: xUnit 57/57, audit 0, lint/build, responsive 1/1, Playwright autenticado 16/16 y cleanup MySQL correctos.
+- Manager leyó vehículos/rutas y completó por API crear, editar, cambiar estado a mantenimiento/disponible, leer y eliminar vehículo; el fixture de rol se restauró.
+- Primera corrida Actions `44991979019`: backend 57/57, audit/lint/build y responsive 1/1; E2E 15/16. Caso tablet expiró al timeout 30 s; cambio aplicado a límite 90 s y cleanup con fixture `request` independiente. Repetición de CI pendiente; no contar el nuevo test como aprobado.
+- Actions `44992464372` identificó el locator exacto tras bajar el límite de espera: el botón `Abrir menú` no existe en breakpoint tablet, el sidebar está desplegado. El selector se corrigió; 15 casos y cleanup pasaron, pero la ruta no se creó y el E2E sigue sin aprobar.
+- Actions `44992803081` falló después al no encontrar el vehículo creado por API en el selector del contexto ya cargado. Se agregó reload antes de crear la ruta; no se cuenta el E2E como pase hasta otra corrida (los otros 15 y cleanup sí pasaron).
+- Actions `44993132771` llegó a revisión; falló una expectativa de nombre de parada que no forma parte del resumen UI. Ahora se comprueba el conteo de puntos y los datos exactos se dejan al GET de ruta persistida. Quedan 15 E2E y cleanup aprobados, nuevo caso pendiente.
+- Actions `44993456874`: backend 57/57, build/audit/lint y responsive 1/1 correctos; Playwright autenticado **16/16**. El job terminó fail porque cleanup SQL no reconoció el nombre `E2E QA tablet ...`; ya se ajustó a `E2E QA ruta tablet ...`, prefijo requerido por `cleanup-e2e.sql`. CI debe confirmar cleanup después del fix.
+
+## Validaciones negativas de vehículo y GPS móvil Driver — 2026-11-22
+
+- `npm run lint`, `npm run build`, `npm run test:e2e -- --list` (**16 tests**) y `git diff --check` pasan localmente.
+- Se amplió el E2E móvil Admin para intentar alta con placa repetida: espera 409, comprueba el mensaje del backend y confirma que queda un solo vehículo.
+- Se amplió el E2E móvil Driver con geolocalización Playwright fija: espera `GPS en vivo`, inicia la ruta en UI, verifica el POST de posición y GET API con latitud/longitud esperadas.
+- Backend local Release 59/59; Actions backend para `6ec5315` en curso. La ejecución integrada Playwright/API/MySQL frontend sigue pendiente.
+
+## Negativo de placa duplicada y GPS Driver móvil — 2026-11-22
+
+- Backend `6ec5315` pasó Actions `44995681296`: build, xUnit y smokes HTTP/MySQL de tenant y concurrencia. Release local backend 59/59.
+- E2E Admin móvil valida que repetir una placa recibe HTTP 409, muestra el mensaje en español y no duplica la tarjeta.
+- E2E Driver móvil usa geolocalización Playwright conocida, valida `GPS en vivo`, inicia la ruta, comprueba POST y lectura GET de coordenadas persistidas.
+- `npm run lint`, `npm run build`, discovery Playwright **16 tests** y `git diff --check`: correctos. Actions frontend/API/MySQL del nuevo código pendiente.
+
+## Seguimiento de GPS móvil — corrección posterior a Actions 44995899244
+
+- Primera ejecución integrada: **14/16**. La cobertura nueva de GPS reveló que el throttle de 20 s se actualizaba cuando la ruta aún estaba pendiente; el inicio no enviaba posición y expiraba el test. El timeout además impedía cleanup con `page.request`; retries encontraron recursos activos (409).
+- Se movió la guarda de estado antes del throttle y setup/cleanup pasa al request fixture independiente; ambos E2E restauran asignación de Driver y eliminan vehículo/ruta.
+- Nueva repetición integrada pendiente. La corrida anterior no valida el caso GPS.
+- Resultado: Actions `44996497487` validó Front `6fe66f7` + Back `104cda8`: xUnit 59/59, responsive 1/1, E2E 16/16, audit/lint/build y cleanup completos. Driver recibió GPS en vivo y el GET de ruta confirmó coordenadas; placa duplicada mostró el 409 sin duplicar vehículo.
+
+## Documento Driver duplicado — 2026-11-22
+
+- Backend Release local **61/61**; cambios de CreateDriver, UpdateDriver y `POST /Users` para HTTP 409 en documento repetido.
+- E2E Admin móvil vuelve a enviar el documento con correo nuevo, espera 409/mensaje claro y verifica por GET `/Users/my-team` que el correo no fue creado.
+- `npm run lint`, `npm run build`, discovery **16 tests** y diff-check pasaron. CI browser/API/MySQL integrado pendiente.
+- Resultado de la nueva validación: Actions `44997054375`, Front `1bb7d71` + Back `a7f7c4e`, success con 61/61 xUnit, 16/16 E2E y responsive 1/1. El nuevo caso verifica el 409 y ausencia en el equipo.
+
+## Edición de miembros — 2026-11-22
+
+- npm run lint, npm run build y discovery Playwright (18 tests): correctos.
+- Spec de estados de error/reintento: 2/2. El test Historial conserva 503 hasta observar el alert y luego permite reintentar.
+- Dos primeras E2E API/MySQL dieron 16/18 y 17/18; tras corregir selectores y mock, repetición completa pasó 18/18 en Chrome. Runner local acabó código 0 y eliminó la DB/fixtures efímeros.
+- Actions Front `45023625523` para SHA `42b1b4b35b3489e388488910e1ee084595f8b3b7` terminó `success`; el workflow incluye backend Release/xUnit, frontend lint/build, responsive y E2E autenticado con API/MySQL/cleanup.
+
+## Actions integradas más recientes — 2026-11-22
+
+- Run 45025319275 para Front 000d6cb terminó success: backend Release/xUnit/smoke, audit/lint/build, responsive 1/1, E2E autenticado Playwright/API/MySQL y cleanup.
+- Este run usó Backend 8d3cb32. La implementación posterior de EmailOutbox requiere un nuevo run integrado para confirmar migración y API actuales.
+
+## Matriz adicional Manager/Logistics y filtros — 2026-11-22
+
+- Agregados asserts HTTP con tokens reales: GET /Users/my-team devuelve 403 a Manager y Logistics y el body no contiene el email de la cuenta objetivo.
+- E2E crea dos rutas/vehículos/conductores temporales; combina estado+vehículo+conductor, exige sólo la ruta que coincide, limpia filtros y exige restaurar ambas.
+- Logistics recorre asignación y diálogo de cancelación a 320×844 y 768×1024; se comprueba sin overflow y con selecciones/dialog visible dentro del viewport.
+- La prueba encontró que Limpiar filtros desaparecía cuando aún había resultados; UI corregida.
+- Validación local final: npm run lint, npm run build, discovery Playwright 20 y runner completo Chrome/API/MySQL 20/20. MySQL en container y esquema fletflow_ci_front_routes_20261122 fueron descartables; runner cleanup final se ejecutó y el container/key ring se eliminaron.
+- Errores de la primera iteración (acción de limpiar ausente, DELETE Driver 405, prefijos de cleanup y path inicial del runner) constan en ERROR_LOG.
+# Validación integrada 2026-11-22 — `da70521`
+
+- Actions `45028577152`: **success** para Front `da70521` + Backend `f2f18cd`.
+- `npm audit --audit-level=low`, lint, build, browser responsive y suite autenticada Playwright Chrome/API/MySQL: **20/20**, cero skips.
+- El workflow finalizó API, MySQL y cleanup sin errores.
+
+## Validación integrada posterior — `505d6c3`
+
+- Actions `45030366554` success: backend Release/xUnit **80/80**, npm audit, lint, build, responsive browser **1/1** y Playwright autenticado Chrome/API/MySQL **20/20**.
+- Runner ejecutó cleanup de la DB MySQL efímera; backend descargado `43c074d`. El backend ya había pasado su propio HTTP/MySQL smoke `45029798323` y el worker outbox está cubierto por SQLite.
+
+## Dashboard Logistics: error y reintento de flota
+
+- Nuevo caso de Playwright valida el endpoint autorizado `/Routes/assignment-options`: un 503 se representa con `—` y alerta (sin confundirlo con cero vehículos); tras Reintentar, el endpoint devuelve un vehículo y el dashboard presenta `1`.
+- El test verifica además que el navegador no use GET `/Vehicles` para el rol Logistics y mide overflow a 390×844.
+- Verificación local: caso enfocado **1/1**, `npm run lint`, `npm run build`, discovery **22 tests** y `git diff --check` correctos.
+- E2E integrado con API/MySQL descartable pendiente en Actions para el SHA que incluye esta prueba.
+
+- Cierre CI del E2E Dashboard Logistics: Actions [`45036661541`](https://github.com/Paul1578/Front_gpsR/actions/runs/45036661541), Front `a75914f`, **22/22** Playwright autenticado API/MySQL, responsive **1/1**, auditoría/lint/build correctos y cleanup completado.
+- El run previo [`45036249291`](https://github.com/Paul1578/Front_gpsR/actions/runs/45036249291) pasó **21/21** para SHA `4e3ddc8`, incluyendo validación del diálogo History en 320/768 px.
+- Revalidación cruzada Front [`45037486681`](https://github.com/Paul1578/Front_gpsR/actions/runs/45037486681): Front docs SHA `c7b0771`, checkout Backend `0b1c1d1` (código de seguridad `94c3e90`), **22/22 E2E**, responsive 1/1, backend build/tests, audit/lint/build y cleanup success.
+
+## Gestión de Vehículos: error de carga inicial
+
+- E2E en 320×844 simula 503 de GET `/Vehicles`, comprueba alerta visible y ausencia de “No hay vehículos registrados”; tras reintentar con 200, valida vehículo renderizado y sin overflow.
+- `npx playwright test e2e/team-management-load-errors.spec.ts`: **5/5**; lint/build y discovery **23** correctos localmente. Actions integrado pendiente.
+- Cierre E2E de Vehículos: Actions [`45038229853`](https://github.com/Paul1578/Front_gpsR/actions/runs/45038229853), Front `40bdcea`, **23/23** API/MySQL, responsive **1/1**, audit/lint/build y cleanup success. Checkout Backend `4090176`.
+- Backend integrado actual `b625c28`: Actions [`45038446662`](https://github.com/Paul1578/Back_GPS/actions/runs/45038446662), xUnit **86/86**, build 0 warnings/0 errors, HTTP/MySQL y concurrencia/cleanup success. Repetir Front contra este SHA tras publicar esta evidencia.
+- Revalidación completa contra backend actual: Actions [`45038687601`](https://github.com/Paul1578/Front_gpsR/actions/runs/45038687601) validó Front `f972e19` + Backend `b625c28`: xUnit **86/86**, E2E API/MySQL **23/23**, responsive 1/1, audit/lint/build y cleanup success.
+
+## Logout global y desactivación de usuario — 2026-11-22
+
+- E2E añadidos: dos contextos de navegador inician sesión; logout-all termina la sesión actual y el refresh del segundo contexto recibe 401; otro caso autentica un miembro, lo da de baja desde Gestión de Equipo y comprueba 401 tanto de refresh como de access.
+- El runner crea una cuenta de baja independiente para mantener aislado el test de cambio de contraseña y la elimina con el cleanup de fixtures `fletflow.e2e.user.*`.
+- ESLint y `npm run build` pasan; Playwright descubre **28 pruebas**. Suite autenticada contra API/MySQL descartable pendiente.
+
+## E2E de Mi Ruta y cierre de sesiones — 2026-11-22
+
+- Acción Front `45048803279`: 26/28 E2E pasaron. Los dos fallos esperaban el botón responsive “Abrir menú” con el viewport desktop por defecto; corregido fijando 390×844 en logout-all y offboarding. El fallo y prevención están en `ERROR_LOG.md`.
+- Mi Ruta: agregados casos para ruta InProgress sobre Pending más reciente, GET `/Routes` 503 y retry, y avance de “Siguiente punto” al completar dos operaciones. `npm run lint`, `npm run build` y discovery **30** pasaron tras el ajuste del viewport. E2E autenticado integrado de estas pruebas sigue pendiente.
+
+## Cobertura añadida — 2026-11-22
+
+- Driver adjunta PNG; Playwright comprueba respuesta, render/persistencia y evidencia en Historial tras completar ruta.
+- Ciclo Driver de asignación, edición, baja/reactivación a 320 px.
+- Registro y cambio de contraseña a 320/768 px sin overflow.
+- Validación local: lint/build/discovery 33. E2E API/MySQL y CI pendientes.
+
+## Corrida integrada 33 escenarios — repetición requerida
+
+- Action `45060482928`: 30/33. Dos escenarios recibieron HTTP 409 porque compartían el mismo Driver de QA y solicitaron rutas activas en paralelo; el formulario de Driver excedió el viewport 320 px (413 px).
+- Correcciones posteriores: fixtures Driver independientes para escenarios operativos y aislamiento tenant; ancho mínimo corregido en `DriversManagement.tsx`. `npm run lint`, `npm run build`, `npx playwright test --list` (33) y `git diff --check` pasan localmente.
+- Estado: no declarar E2E integrados como aprobados hasta repetir Actions con frontend/backend actualizados.
+
+## Acción Front `45061522878` — 31/33; nueva repetición requerida
+
+- Evidencia: el diálogo conservó modo “Nota” cuando el test esperaba el campo de foto. Venció el límite de 30 s; el retry vio la ruta pendiente del primer intento y recibió 409 para el mismo Driver. Las trazas Playwright están descargadas y la causa quedó confirmada.
+- El segundo caso de Equipo midió el formulario CRUD de Driver a 413 px en viewport 320 px. Se añadieron `min-w-0` en sus ancestros y `w-full min-w-0` al form; la prueba selecciona explícitamente el modo Foto.
+- Estado de este fix: local y Actions pendientes.
+
+- Front Action `45062280254`: **31/33**. El caso de Mapa detectó overflow interno a 320 px (363 px) y el de evidencia llegó a Historial pero no encontró evidencia en `route.evidencias`; el endpoint la entrega en cada `points[].evidence`. Fix local mapea evidencia por parada y limita ancestros del mapa; se agregó aserción de detalle Admin a 768 px. Nueva ejecución pendiente.
+
+- Tras la Action `45062280254` (31/33), se corrigieron el desborde interno del mapa a 320 px y el mapeo de evidencia desde las paradas; el E2E ahora mide también el detalle Admin en 768 px. Lint/build, discovery 33 y diff-check pasan localmente. Action del SHA actualizado pendiente.
+
+- Action integrada `45063487802`: **31/33**. El mapa siguió excediendo `<main>` 43 px; ahora su wrapper también tiene ancho máximo y recorta overflow. El test de Historial esperaba 1, pero el flujo real agrega 3 evidencias; expectativa alineada a dos notas+foto. Volver a ejecutar 33 E2E.
+- Action integrada `45064475585`: **33/33 E2E autenticados**, Responsive browser check, lint, build y audit pasaron. Cubre mapa a 320 px e Historial/foto/descripción a 320/768 px.
+- Registro neutral: UI redirige a Login; E2E compara status/payload para email nuevo/duplicado y valida login posterior. Discovery sigue en 33 pruebas; lint/build pasan localmente. Action integrada pendiente.
+- Action `45065014129` pasó **33/33 E2E** con backend `30bcb2f`; no incluye aún el commit de registro neutral, que requiere nueva integración.
+- Action `45065745273` pasó **33/33** e incluye alta neutral, email duplicado y login posterior sobre backend `825bbed`. Sólo falta integrar en Front el piso temporal de backend `52d7e46`.
+# Validación UX Admin raíz — 2026-11-23
+
+- E2E ampliado: cuenta Admin raíz autenticada abre el formulario de creación en Gestión de Equipo y ve la opción “Gerente”.
+- `isRootAccount` llega de `/Auth/me` y es calculado por el backend desde la propiedad de la entidad autenticada; alimenta la UX de creación y cambio de rol.
+- Local: `npm run lint` y `npm run build` pasaron; Playwright enumeró 39 pruebas. El escenario autenticado completo queda pendiente de CI integrado.
+- Backend Action `45088129188` validó la regla real mediante HTTP y MySQL efímero: root permitido, Admin delegado denegado, 113/113 pruebas y cleanup.
+- E2E simulado de Admin delegado verifica ausencia de “Gerente” al crear y cambiar rol; foco 1/1 en 0.8 s y archivo completo 10/10 en 15.3 s. La primera corrida expiró al usar locator hamburger en desktop; cambiado a navegación directa.
+- Lint, build, discovery de 40 E2E y diff-check pasan. Action `45088879212` cubre SHA anterior `5784b36`; queda publicar y ejecutar Action para este SHA con test delegado.
+- Action `45088879212` terminó **38 passed, 1 failed**: root-only opción falló porque el flag inferido del JWT no coincidió con el contexto integrado. Backend añadió `isRootAccount` a `/Auth/me`; validar build, smoke root/delegado y E2E completo en Actions del nuevo SHA.
+- Tras integrar el flag: lint/build y discovery Playwright 40 pasan; `team-management-load-errors.spec.ts` pasa **10/10** local. Backend Release xUnit **113/113**, build 0 warnings/0 errores y `bash -n`/diff-check correctos. HTTP/MySQL y suite browser integrada del SHA nuevo quedan pendientes.
+
+## Revisión del selector de rol raíz — 2026-11-23
+
+- Action `45090273209`: responsive browser 1/1, audit, lint y build correctos; suite integrada **39/40**. El fallo fue locator con nombre exacto, no autorización: la traza mostraba el botón “Gerente” con su descripción accesible.
+- El trace/error-context se descargó y revisó. Fix afirma primero `/Auth/me.isRootAccount === true` y usa locator por prefijo del nombre accesible.
+- Backend Action `45090274537`: Release build correcto, xUnit **113/113**, smoke HTTP/MySQL y concurrencia con limpieza.
+- Front Action `45091340306` aprobó el fix integrado: backend Release/xUnit, audit, lint/build, responsive **1/1**, E2E **40/40** y cleanup.
+- Local antes del ajuste al constructor: `npm run lint`, `npm run build`, discovery **40** y `npx playwright test e2e/team-management-load-errors.spec.ts` **10/10**.
+
+## Constructor de rutas — revisión/search retry — validado
+
+- E2E existente de creación mapa mantiene puntos reales y operaciones. Se amplía el test tablet para probar búsqueda de dirección, estado sin resultados, fallo de servicio, respuesta tardía al cambiar objetivo, orden/operación en revisión y primer POST 503 seguido de retry.
+- Local tras el refactor: lint/build correctos, discovery 40 y diff-check limpio.
+- Action Front `45092540906` para `992053d`: **40/40 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup correctos. El caso tablet valida Nominatim con resultado, vacío, error y respuesta tardía tras cambiar objetivo; valida revisión ordenada/tipos y 503 seguido de creación/persistencia exitosa al reintentar.
+
+## Constructor de rutas — validado
+
+- Action Front `45092540906` para `992053d`: E2E autenticado API/MySQL **40/40**, responsive **1/1**, build/audit/lint y cleanup exitosos. Casos: Nominatim con resultado, vacío, error y respuesta tardía tras cambio de destino; orden/tipos en revisión; creación que responde 503 seguida de retry persistido.
+- Backend smoke local actualizado: ruta con origen, pickup, delivery, parada pickup+delivery y destino; evidencia individual, cambios de estado en secuencia, GPS y finalización con vehículo disponible. API + MySQL descartables, resultado exit 0 y cleanup completo. La Action backend debe ejecutarse tras publicar este cambio.
+
+## Historial — cobertura adicional 2026-11-23
+
+- `npx playwright test e2e/team-management-load-errors.spec.ts --grep "Historial"`: **2/2**. Se valida que carga inicial no muestre vacío, error/reintento, etiquetas y estados de recogida/entrega/ambas, y que focus durante una consulta activa no dispare otra solicitud.
+- `npm run lint`, `npm run build` y `git diff --check` pasan para los cambios locales del Historial. Action integrada pendiente.
+
+- Seguridad UI local: build/lint pasan con el mínimo de 12 en Registro, Perfil, activación y recuperación. El E2E autenticado de perfil requiere fixtures QA y queda incluido en Action integrada; nueva Action pendiente.
+- Action `45094647703` tuvo 40 E2E aprobados y falló el test de foco por un endpoint de Dashboard sin mock; fix local en fixture y repetición enfocada Historial 2/2.
+
+## Contraseña nueva y prueba estable de Historial — validación local
+
+- `npm run lint` y `npm run build` correctos con Next.js 16.4.6; la interfaz exige 12 caracteres en registro, cambio, activación y recuperación.
+- E2E Historial enfocado **2/2**; Playwright descubre **41 tests**; `git diff --check` correcto.
+- Action Front [`45096403768`](https://github.com/Paul1578/Front_gpsR/actions/runs/45096403768) pasó con **41/41 E2E**, responsive **1/1**, audit/lint/build y Backend Release/xUnit; limpieza correcta. El workflow confirmó el backend de la rama.
+
+## Constructor, seguridad de cuentas y disponibilidad
+
+- Playwright discovery local: 43 casos en seis archivos. Lint, build Next.js y `git diff --check` correctos.
+- E2E enfocado de confirmación de rol/estado: 1/1; verifica cancelación sin PUT, confirmación y el diálogo accesible en 320×360. API interceptada en el test, no backend real.
+- Caso de traslado sin paradas operativas y opción de conductor ocupado añadidos a `fleet-admin.spec.ts`; pendientes de ejecución integrada contra API/MySQL en Actions.
+- Backend Release xUnit: 133/133; build Release 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos. Incluye límites de recuperación, tokens y validación de URL.
+- Limitación local: API/backend no estaban escuchando; las pruebas funcionales API/MySQL se ejecutarán con el runner integrado.
+
+## Corrección posterior a Action Front 45099148002
+
+- La Action ejecutó responsive correctamente y falló **5 E2E**: selector conductor ocupado (opción ocultada por filtro UX), transición de mapa duplicada y tres operaciones de equipo que no confirmaban el diálogo nuevo.
+- Corregidos localmente; lint/build y `git diff --check` pasan; confirmaciones E2E 1/1; Playwright descubre 43 tests.
+- Repetición completa contra API/MySQL está pendiente; no marcar los cinco como verificados hasta que termine.
+
+- Repetición `45100344654`: **42/43**; únicamente faltaba confirmar desactivación del usuario en ciclo Driver. Fix local aplicado; la repetición final debe confirmar también cleanup MySQL, que informó error después del fallo.
+
+- Action `45101175529`: 42/43; añadió cobertura del segundo diálogo faltante (baja del User regular en el E2E Driver). Repetición completa y cleanup aún pendientes.
+
+- Action `45101809749`: 42/43; la última omisión era confirmar la reactivación, añadida. Repetir suite y revisar cleanup.
+
+## Action Front 45102498423
+
+- Responsive browser **1/1** y E2E API/MySQL **43/43** pasaron. Cleanup de fixtures falló, por lo que Action global está fallida. Backend `2ff5560` ahora expone el error mysql; repetir y exigir cleanup verde.
+
+
+- FK 1451 de cleanup corregida en Backend `7ea14a6`; pendiente confirmar la limpieza en la siguiente Action Front.
+
+
+## Cierre de Action Front 45103761122
+
+- Backend Release build/xUnit y smoke HTTP/MySQL tenant/concurrency: success (Action Backend `45103732510`).
+- Front audit, lint/build, responsive browser **1/1** y Playwright API/MySQL **43/43**: success.
+- Cleanup SQL de fixtures QA: success tras ampliar selección a rutas vinculadas por Driver QA; sin FK 1451.
+# Validación local e integrada — permisos, tracking y cargas — 2026-11-23
+
+- `npm run lint`: correcto, sin warnings. `npm run build`: Next.js 16.4.6 compila TypeScript y genera diez rutas.
+- Discovery Playwright **45**. Suite focal **3/3**: Team muestra y recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
+- E2E completo API/MySQL: Action `45107030228`, **45/45**, responsive browser **1/1**, backend Release/xUnit, audit/lint/build y cleanup correctos. Incluye mapa y Admin delegado; no hubo skips.
+- API local `localhost:5048` detenida y faltan credenciales QA; el flujo real de mapa se validó en Action. Un test aislado de carga de Dashboard se retiró porque el gate de requests no manejaba los abort/replays del bootstrap; la Action completa pasó, pero falta aserción directa de esa carga inicial.
+
+## Exportación de datos de empresa — VALIDADO EN CI
+
+- `company-admin.spec.ts` descarga el JSON desde la UI y lo analiza; comprueba nombre de archivo, usuario QA creado, arrays de rutas/vehículos, fecha válida y mensaje de éxito.
+- Front commit `f1e1ea7`; Action [`45110885218`](https://github.com/Paul1578/Front_gpsR/actions/runs/45110885218): API/MySQL **46/46**, responsive **1/1**, audit/lint/build y cleanup completos.
+
+## Recuperación y activación responsive — validación local pendiente de CI
+
+- `auth-recovery-responsive.spec.ts` comprueba Recovery/Reset/Activate en 320×844 y 768×1024 sin overflow; con token fixture revisa estado listo y copy corregido. En 1280×900 valida los paneles laterales.
+- Playwright focal pasa **1/1** local sobre build de producción en `127.0.0.1:3010`. Falta lint/build final tras los últimos ajustes y Action integrada.
+## Admin delegado con sesión real — en integración
+
+- Nuevo E2E usa el fixture Admin delegado creado por `Back_GPS/scripts/run-e2e-local.sh`, inicia sesión en el navegador y confirma `/Auth/me` root=false.
+- Verifica que el frontend no expone Admin, la API devuelve 403 al crear y promover, y una nueva lectura confirma que el miembro continúa como User.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) pasan. E2E autenticado con API/MySQL descartables pendiente de Actions.
+
+## Mapa: geometría de carretera OSRM
+
+- `manager-map.spec.ts` intercepta `router.project-osrm.org` con una respuesta determinista de tres puntos; el test espera la solicitud y comprueba que el SVG de la ruta contiene al menos dos segmentos `L`, incluido el punto intermedio de la geometría.
+- La prueba sigue autenticando un Manager y crea/consulta ruta y vehículo en API/MySQL descartables; verifica desktop, tablet y móvil web.
+- Lint/build y discovery de 51 tests pasan local. Resultado E2E integrado pendiente del nuevo commit.
+
+## Resultado integral Front `f0acce7` — 2026-11-23
+
+- Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413): success.
+- Backend Release build/xUnit: success; audit de dependencias: success; `npm run lint`: success; `npm run build`: success.
+- Responsive browser: **1/1**. Playwright autenticado contra API y MySQL descartables: **51/51** en 3.6 minutos; se ejecutó con un worker y sin skips. La API y los contenedores se detuvieron correctamente tras el suite.
+- El manager map E2E valida OSRM exitoso con respuesta controlada de tres coordenadas y estado vial visible; Admin delegado conserva prohibición de crear/promover Admin (403) y UI deshabilita su rol propio; pruebas CRUD y cleanup incluidos.
+
+- Repetición en SHA documental final `1d7b922`: Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) success, con los mismos 51/51 E2E, responsive 1/1 y teardown.
+# Cobertura E2E de aislamiento, Admin raíz y baja lógica — 2026-11-23
+
+- Caso cross-tenant crea User propio y comprueba que otro tenant recibe 404 al modificar estado, perfil o rol; su listado de equipo no revela el ID y la lectura del propietario confirma todos los campos intactos.
+- Caso de Administración real eleva por interfaz un Driver de prueba al rol Admin como cuenta raíz; comprueba el `PUT` y la lectura autenticada de equipo, luego restaura Driver para no contaminar otras pruebas.
+- Caso de creación/eliminación de ruta verifica `isActive=false` consultando el recurso después del DELETE.
+- Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51**) y `git diff --check` pasan. Prueba integrada con API/MySQL y cleanup: pendiente de Action.
+# Confirmación de rol y Administración responsive — 2026-11-23
+
+- La vista Administración raíz requiere confirmar los cambios de rol. Su E2E selecciona Admin, cancela y comprueba cero PUT y rol Driver intacto; luego confirma, verifica persistencia, restaura Driver y verifica la respuesta.
+- El mismo listado/selector se valida sin overflow ni ocultamiento a 320×844 y 768×1024.
+- Lint/build/discovery 51 pasan localmente. Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) confirmó **51/51 E2E**, responsive 1/1, backend Release/xUnit y cleanup.
+
+## Admin root, aislamiento tenant y rutas — CI integrado 2026-11-23
+
+- Front Action [45153408262](https://github.com/Paul1578/Front_gpsR/actions/runs/45153408262), SHA `d002a93`: success; backend Release/xUnit **139/139**, dependency audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **51/51**, API y contenedores cerrados.
+- E2E verificó cambios cross-tenant rechazados sin alterar los datos; la cuenta raíz promovió y luego restauró el rol de un fixture con confirmación y lectura persistida; la baja de ruta se confirmó mediante lectura API.
+- Backend `fa4a3a3` validado en Actions push `45154037990` y pull request `45154028662`, ambos success.
+
+## Edición de paradas en ruta existente — CI pendiente
+
+- E2E autenticado modifica una ruta multi-parada desde el constructor: cambia recogida a entrega y reordena la siguiente parada.
+- Después del PUT, `GET /Routes/{id}` debe devolver la secuencia origen, entrega, recogida, destino con operaciones persistidas. Un segundo guardado móvil verifica que se conserva.
+- Lint/build, discovery **51** y diff-check pasan local; API/MySQL y cleanup se validarán en Action porque no hay credenciales QA locales.
+
+## Resultado E2E de edición de paradas — CI aprobado
+
+- Front `ee49ce8`, Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y teardown success.
+- API/MySQL confirma el cambio de operación y el orden después de editar; el segundo guardado en móvil preserva la secuencia. Cleanup completado.
+
+## Promoción root-only desde Gestión de Equipo — CI pendiente
+
+- El flujo autenticado de creación de Manager ahora, desde Gestión de Equipo, promueve ese miembro a Admin con confirmación, valida el cuerpo del PUT y la lectura de `/Users/my-team`, luego restaura Logistics y comprueba estado final.
+- El test utiliza la sesión root y el fixture temporal del workflow. Lint/build/discovery 51/diff-check pasan local; validación HTTP/MySQL y teardown pendientes de Action.
+
+## CI de edición de paradas y HEAD documental previo
+
+- Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) en `ee49ce8`: 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success; API/MySQL verificó operaciones y orden editados.
+- Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) para `3a131a8`: 51/51, responsive, backend Release/xUnit y cleanup success.
+- La nueva promoción root-only desde `TeamManagement` aún requiere CI integrado.
+
+## Promoción root-only desde Gestión de Equipo — CI aprobado
+
+- Action Front [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214), commit `29e320b`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success.
+- Usuario Manager se promueve a Admin desde la pantalla principal con sesión root. Se validan body de PUT, respuesta, lectura `/Users/my-team` y restauración a Logistics; el runner limpia el fixture.
+
+- Repetición del HEAD documental `357ffdc`: Action [45159425207](https://github.com/Paul1578/Front_gpsR/actions/runs/45159425207) success, 51/51 E2E, responsive 1/1 y cleanup; incluyó root promotion desde TeamManagement.
+
+## Validación del HEAD Front `8f2e68a`
+
+- Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591) success: 51/51 Playwright, responsive 1/1, backend Release/xUnit, audit/lint/build, teardown API/MySQL.
+
+## Rechazo real por vehículo ocupado desde UI — CI pendiente
+
+- El E2E ya no intercepta `PUT /Drivers/{id}/assign-vehicle` con un 409 artificial. Crea un Driver temporal y ocupa el vehículo mediante API real antes de operar la tarjeta Manager.
+- Comprueba el 409 del backend y el mensaje real “El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.”; verifica que `vehicleId` siga en el Driver bloqueador y permanezca null en el Driver objetivo. Libera el bloqueador y comprueba la asignación permitida posterior.
+- Lint/build/discovery 51/diff-check pasan local; Action API/MySQL descartable confirmará comportamiento y cleanup.
+
+## Reasignar vehículo al editar ruta — CI pendiente
+
+- El test edita la ruta existente y selecciona un vehículo QA diferente disponible. Tras guardar compara GET de ruta (VehicleId nuevo, mismo Driver y paradas editadas) y GET de Driver (VehicleId actualizado); el guardado en móvil vuelve a comprobar persistencia.
+- Cleanup restaura el vehículo explícito previo del Driver y elimina los vehículos QA. Lint/build/discovery 51/diff-check pasan; queda verificar Action API/MySQL.
+
+## Conflicto 409 de vehículo ocupado — CI aprobado
+
+- Action Front [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023), commit `7b23ac5`: **51/51 E2E**, responsive, backend Release/xUnit, audit/lint/build y cleanup success.
+- API real rechazó el segundo vínculo con el copy exacto de Backend; API GET confirmó el Driver solicitado sin vehículo y el Driver bloqueador aún asignado. Posteriormente se liberó y verificó el flujo exitoso.
+
+## Reasignación de recurso al editar — CI aprobado
+
+- Action Front [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259), `5dd199d`: 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup success.
+- Se asignó otro Vehicle desde la UI y se verificó por GET la relación Route/Driver; segunda actualización móvil conservó el VehicleId. Cleanup restauró fixture y retiró vehículos QA.
+
+## Baja lógica Vehicle antes de Reactivar — CI pendiente
+
+- El E2E ahora consulta el Vehicle inmediatamente después del DELETE y exige `isActive=false`, recarga Dashboard, vuelve a Gestión de Vehículos y confirma que aparece en la lista de bajas con `isActive=false` antes de pulsar Reactivar.
+- Falta validar el flujo real y cleanup en Action API/MySQL.
+
+## HEAD `e8c058f` y persistencia de Vehicle desactivado
+
+- Action [45164864584](https://github.com/Paul1578/Front_gpsR/actions/runs/45164864584) pasó con 51/51 E2E, responsive, Backend Release/xUnit y cleanup.
+- Cambio local posterior agrega GET `isActive=false` justo después de DELETE y después de recarga/navegación antes de reactivación; lint/build/discovery 51 pasan, CI pendiente.
+
+## Baja Vehicle persistida antes de reactivar — CI aprobado
+
+- Action [45165992095](https://github.com/Paul1578/Front_gpsR/actions/runs/45165992095), Front `6d85ddd`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup.
+- GET `isActive=false` confirmado tras DELETE y recarga; luego POST Reactivate y GET `isActive=true`.
+
+## Rechazo de cambio de rol en UI — CI pendiente
+
+- Test focal simula HTTP 500 al confirmar User→Logistics, valida mensaje de error y rol User sin mutación; confirma después el cambio exitoso y persistencia.
+- Playwright focal 1/1 pasó local. Lint repetido sin concurrencia pasó, build y discovery 51 también; CI pendiente.
+
+## Resultado Front `7ce8aef` y siguiente test focal
+
+- Action [45167032665](https://github.com/Paul1578/Front_gpsR/actions/runs/45167032665) pasó 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- El caso focal nuevo de error en cambio de rol pasó 1/1 local; el lint repetido secuencialmente también pasó.
+
+## Rechazo al cambiar rol desde Equipo — CI aprobado
+
+- Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987), Front `a3a4790`: 51/51 E2E, responsive, Release/xUnit, audit/lint/build y cleanup success.
+- El 500 dejó el rol original intacto y su mensaje visible; el reintento permitió y persistió Logistics. Playwright focal local 1/1.
+
+## Validación del HEAD documental Front `b9bede7` — 2026-11-23
+
+- Action [45169238486](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486): **51/51 Playwright E2E**, responsive browser **1/1**, audit de dependencias, lint, build, Backend Release/xUnit y cleanup API/MySQL descartable.
+- Entre los flujos autenticados se ejecutó el error 500 de cambio de rol y su reintento exitoso con persistencia; trazas de fallo se omitieron porque la suite terminó sin errores.
+
+## E2E de desvinculación User–Driver — local
+
+- El caso CRUD de Driver cancela la confirmación y consulta por API que `userId` siga vinculado; luego confirma en UI y verifica HTTP 204, perfil Driver conservado/activo con `userId=null`, cuenta presente, `driverId=null` y rol Driver persistido.
+- Comprueba el flujo a 320 y 768 px. `npm run lint`, `npm run build`, discovery **51** y diff-check pasan. Action Front integrada con API/MySQL/cleanup aún pendiente.
+## Default de API del frontend — comprobación local
+
+- `npm run lint`: pasó.
+- `npm run build`: pasó en Next.js 16.4.6, TypeScript y generación de 11 páginas.
+- `git diff --check`: pasó.
+- Se alineó el fallback Next a `http://localhost:5046` (perfil ASP.NET); se agregó `.env.example` ignorado correctamente para otros orígenes. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó audit/lint/build, responsive 1/1, E2E autenticado 53/53, Backend Release/xUnit 158/158, API/MySQL y cleanup.
+- Smoke local con el `.env.local` existente (override de desarrollo): `/dashboard` en `:3000` respondió 200, `/api/backend/Auth/me` respondió 401 sin sesión y Swagger respondió 200 en la API `:5048`. El perfil default `:5046` coincide con `Properties/launchSettings.json`; no se modificó el `.env.local` existente.
+# Sesión BFF HttpOnly — 2026-11-23
+
+- Añadido E2E autenticado para comprobar que el refresh token no está en localStorage ni es visible a JavaScript, cookie HttpOnly/SameSite/path/expiración, rechazo de Origin externo, rotación (reuso anterior recibe 401), restauración tras reload y limpieza al logout.
+- `npm run lint`, `npm run build` (Next 16.4.6/TypeScript) y `git diff --check` pasan. Playwright descubre **54 tests**.
+- Playwright focal de mocks y concurrencia: **4/4** (dashboard, reintento de mapa, error Equipo, refresh tardío al cambiar de cuenta). HTTP local de CSRF: mismo origen sin cookie **401**, origen externo **403**.
+- Suite autenticada inicial local no es válida para aceptación: 48 fallos por Origin incorrecto en Next Development y handlers E2E apilados que omitían fixture; ambos están corregidos y los focales pasan. El segundo intento fue detenido antes de Playwright por 429 de registro del API local. Suite/API/MySQL completa pendiente de Actions con proceso y DB descartables.
+
+## Revisión de Action 45204753979 — fixes locales, Action nueva pendiente
+
+- Pasaron audit, lint, build, responsive browser y Backend Release/xUnit. El job E2E tuvo cuatro fallos: endpoint de mock logout-all anterior, consulta de cookie limitada por Path, extracción residual del token desde localStorage, y botón móvil esperado en viewport de escritorio.
+- Trace: al recargar, el BFF envió cookie al backend; `/api/auth/refresh` y `/api/backend/Auth/me` respondieron 200. No fue un fallo de restauración; el DOM de escritorio no tenía el botón mobile “Abrir menú”.
+- Fixes aplicados: interceptar `/api/auth/logout-all`, usar `context.cookies()` sin URL para la cookie path-scoped, usar `readAccessToken`, y fijar viewport 390×844 para el test responsive de sesión.
+- `npm run lint` y `npm run build` pasan localmente. La nueva Action debe verificar E2E autenticado completo y cleanup.
+
+## Action BFF 45207209347 — estable sólo tras corregir un flaky
+
+- Backend Release/xUnit **158/158**, audit, lint/build, responsive browser check **1/1**, suite E2E **53 passed**; CI marcó **1 flaky** en logout. El test esperaba cookie borrada al llegar a Login, antes de observar la respuesta BFF.
+- El retry pasó; se sincronizó la comprobación con HTTP 200 de `POST /api/auth/logout`. No se considera cerrado hasta ejecutar nuevamente toda la Action sin flaky.
+
+## Cobertura real de paginación de Equipo — Action pendiente
+
+- Se añadió un E2E integrado que crea 26 cuentas User por endpoint real y exige respuestas paginadas API/MySQL con datos persistidos; contrasta los IDs de página 1/2 con tarjetas reales y opera siguiente/anterior en 320×844 y 768×1024, comprobando overflow.
+- Este test sólo se ejecuta con `CI=true`, `FLETFLOW_E2E_ALLOW_MUTATIONS=true` y `FLETFLOW_E2E_DISPOSABLE_DATABASE=true`; CI asigna el último valor únicamente al MySQL/servicio de un solo uso. Usa usernames/email `e2e-pagination-{UUID}` y la DB se descarta al finalizar el job.
+- Local: lint pasa; build/discovery 55/diff-check pasan antes del ajuste final del guard; volver a correr local y validar la Action integrada antes de considerar el criterio cerrado.
+
+## Logout HttpOnly y suite integrada — estable
+
+- Front `057c1cc`, Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): **54/54 E2E sin flaky**, responsive 1/1, Backend Release/xUnit **158/158**, audit, lint/build y cleanup API/MySQL. El E2E esperó HTTP 200 de `/api/auth/logout` antes de comprobar que la cookie HttpOnly desapareció.
+
+## Protecciones adicionales de sesión BFF — local verde, Action pendiente
+
+- Se añadieron tres tests directos de Route Handlers: refresh 401 no borra cookie, logout-all 401 conserva cookie, logout 503 la limpia localmente. Resultado local **3/3**.
+- E2E autenticado nuevos: dos pestañas restauran concurrentemente, refresh 503 mantiene cookie y permite recuperación tras recargar, logout individual advierte que revocación no fue confirmada y logout-all 401 permite reintentar.
+- AuthContext coordina mutaciones con Web Locks y cambios de cuenta con el evento `storage`; lint y build pasan localmente; Playwright descubre **63 tests**. E2E browser completo con API/MySQL y revisión de flakiness pendiente.
+
+## Follow-up de seguridad BFF — 2026-11-23
+
+- `npm run build`: pasa con Next.js 16.4.6 y TypeScript.
+- `npm run lint`: pasa.
+- `npx playwright test --list`: descubre 65 pruebas.
+- `npx playwright test e2e/auth-bff-routes.spec.ts`: **3/3** pasan (refresh 401, logout-all 401, logout 503).
+- `npx playwright test e2e/fleet-admin.spec.ts --grep 'falla cerrada si el navegador no ofrece Web Locks'`: **1/1** pasa y confirma que no se envían mutaciones de autenticación.
+- La prueba de logins concurrentes distintos usa las cuentas QA aprovisionadas por el runner sobre MySQL descartable.
+- Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**; backend **158/158 xUnit**; responsive, audit, lint, build y cleanup aprobados. La ejecución de pull request del mismo commit [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también terminó en verde. La Action integrada aprovisiona User QA y usa base MySQL efímera, así que el caso de login concurrente quedó incluido.
+
+## Auditoría seguridad BFF y feedback de rutas/conductores — 2026-11-23
+
+- `npm run lint`: pasa.
+- `npm run build`: pasa (Next.js 16.4.6 + TypeScript).
+- `npx playwright test e2e/auth-bff-routes.spec.ts`: **5/5** (origen forwarded falsificado, HTTPS API remota en producción, refresh/logout 401/503).
+- `npx playwright test --list`: descubre **67 E2E**.
+- E2E integrado pendiente en Action de la rama: puntos A/1/2/B visibles después de colocar puntos, confirmación cancelar/aceptar baja Driver y CRUD completo a 768px. Requiere credenciales API/MySQL de runner; variables QA no están configuradas localmente.

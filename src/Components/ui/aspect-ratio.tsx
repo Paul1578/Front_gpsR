@@ -1,15 +1,11 @@
-import { AspectRatio } from "@/Components/ui/aspect-ratio";
+import type { ReactNode } from "react";
 
-export default function ExampleAspectRatio() {
-  return (
-    <div className="w-[400px]">
-      <AspectRatio ratio={16 / 9}>
-        <img
-          src="https://placehold.co/600x400"
-          alt="Ejemplo de imagen"
-          className="rounded-md object-cover"
-        />
-      </AspectRatio>
-    </div>
-  );
+export function AspectRatio({
+  ratio,
+  children,
+}: {
+  ratio: number;
+  children: ReactNode;
+}) {
+  return <div style={{ aspectRatio: ratio }}>{children}</div>;
 }

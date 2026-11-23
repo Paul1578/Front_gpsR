@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FletFlow — Frontend web
 
-## Getting Started
+Aplicación web Next.js para gestionar vehículos, conductores, rutas, recogidas, entregas y seguimiento de flota.
 
-First, run the development server:
+## Requisitos
+
+- Node.js compatible con Next.js 16.
+- Backend FletFlow y MySQL configurados. El backend local carga sus variables desde `Back_GPS/.env`.
+
+## Desarrollo local
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre `http://localhost:3000/dashboard`. El proxy `/api/backend/*` reenvía al backend. Puedes cambiar el destino con `FLETFLOW_API_URL`; el valor por defecto es `http://localhost:5046`. No pongas secretos en esta variable.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+El backend ASP.NET usa `http://localhost:5046` en su perfil de desarrollo. Si necesitas otro origen, copia `.env.example` a `.env.local` y cambia `FLETFLOW_API_URL` (debe ser sólo el origen, sin `/api`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+En producción define `FLETFLOW_AUTH_ALLOWED_ORIGINS` como una lista separada por comas de orígenes web exactos, por ejemplo `https://fleetflow.example.com`. El BFF rechaza orígenes no listados y conexiones HTTP a una API remota; usa HTTPS entre servicios. HTTP queda permitido sólo para loopback.
 
-## Learn More
+## Verificación
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npm run build
+npm audit
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Reglas de producto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Una ruta admite varias paradas; cada parada puede ser recogida, entrega o ambas.
+- La API es la fuente de verdad para operaciones y permisos. No usar datos ficticios como si fueran persistidos.
+- Antes de trabajar, consulta `AGENTS.md`, `docs/PROJECT_STATUS.md` y `docs/SESSION_HANDOFF.md`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La cobertura de evidencia, aislamiento multiempresa, roles y responsive está registrada en `docs/PROJECT_STATUS.md` y `docs/TESTING.md`. Revisa esos documentos para conocer los límites actuales de SMTP y la preparación de producción.

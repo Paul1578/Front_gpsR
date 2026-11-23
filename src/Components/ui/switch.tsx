@@ -7,14 +7,16 @@ type SwitchProps = {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   disabled?: boolean;
+  ariaLabel?: string;
   className?: string;
 };
 
-function Switch({ checked = false, onCheckedChange, disabled, className }: SwitchProps) {
+function Switch({ checked = false, onCheckedChange, disabled, ariaLabel, className }: SwitchProps) {
   return (
     <button
       type="button"
       role="switch"
+      aria-label={ariaLabel}
       aria-checked={checked}
       disabled={disabled}
       onClick={() => {

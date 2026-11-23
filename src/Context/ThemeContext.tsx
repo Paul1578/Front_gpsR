@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 
 const THEME_STORAGE_KEY = "theme_preference";
 
@@ -14,37 +21,52 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [systemScheme, setSystemScheme] = useState<"light" | "dark">("light");
+const THEME_CHANGE_EVENT = "fletflow:theme-preference-change";
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      setPreferenceState(stored);
-    }
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const applySystem = () => setSystemScheme(media.matches ? "dark" : "light");
-    applySystem();
-
-    if (media.addEventListener) {
-      media.addEventListener("change", applySystem);
-      return () => media.removeEventListener("change", applySystem);
-    }
-
-    media.addListener(applySystem);
-    return () => media.removeListener(applySystem);
-  }, []);
-
-  const setPreference = (value: ThemePreference) => {
-    setPreferenceState(value);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(THEME_STORAGE_KEY, value);
-    }
+function subscribeToPreference(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(THEME_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(THEME_CHANGE_EVENT, onChange);
   };
+}
+
+function getPreferenceSnapshot(): ThemePreference {
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+  return stored === "light" || stored === "dark" || stored === "system"
+    ? stored
+    : "system";
+}
+
+function subscribeToSystemScheme(onChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getSystemSchemeSnapshot(): "light" | "dark" {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const preference = useSyncExternalStore<ThemePreference>(
+    subscribeToPreference,
+    getPreferenceSnapshot,
+    () => "system",
+  );
+  const systemScheme = useSyncExternalStore<"light" | "dark">(
+    subscribeToSystemScheme,
+    getSystemSchemeSnapshot,
+    () => "light",
+  );
+
+  const setPreference = useCallback((value: ThemePreference) => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, value);
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+  }, []);
 
   const scheme: "light" | "dark" =
     preference === "system" ? systemScheme : preference;
@@ -57,7 +79,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({ scheme, preference, setPreference }),
-    [scheme, preference]
+    [scheme, preference, setPreference]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

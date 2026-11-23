@@ -1,97 +1,148 @@
 import { useState } from "react";
-import { ArrowLeft, Shield, Users, Database, Activity, Download, Upload, AlertTriangle, BarChart3, Building2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Shield, Users, Database, Download, BarChart3, Eye, EyeOff } from "lucide-react";
 import { useAuth, UserRole } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
-import { TeamDetailsView } from "./TeamDetailsView";
+import { ConfirmDialog } from "../ConfirmDialog";
 
 interface SuperAdminViewProps {
   onBack?: () => void;
 }
 
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
-  const { getAllUsers, updateUserRole, getManagers, createUser } = useAuth();
-  const { vehicles, routes } = useFleet();
-  const [activeTab, setActiveTab] = useState<"overview" | "teams" | "users" | "create" | "data" | "logs">("overview");
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const { user: currentUser, getAllUsers, updateUserRole, createUser, refreshTeamUsers, teamUsersLoading, teamUsersError } = useAuth();
+  const { vehicles, routes, loadErrors, vehiclesLoading, routesLoading, retryFleetData } = useFleet();
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "create" | "data">("overview");
   const [isCreating, setIsCreating] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string; memberName: string; role: UserRole } | null>(null);
 
   const [createUserForm, setCreateUserForm] = useState({
     nombres: "",
     apellidos: "",
     usuario: "",
+    email: "",
     password: "",
     role: "gerente" as UserRole,
-    teamId: "",
+    documentNumber: "",
+    phoneNumber: "",
   });
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const users = getAllUsers();
-  const managers = getManagers();
+  const isRootAccount = currentUser?.isRootAccount === true;
+  const routesLoadFailed = loadErrors.includes("rutas");
+  const vehiclesLoadFailed = loadErrors.includes("vehículos");
+  const exportDisabled = teamUsersLoading || !!teamUsersError || vehiclesLoading || routesLoading || routesLoadFailed || vehiclesLoadFailed;
+  const metricValue = (value: number, loading: boolean, failed: boolean) => failed ? "—" : loading ? "…" : value;
 
-  // Obtener todas las rutas y vehículos del sistema (sin filtro de equipo)
+  // Los contextos entregan los recursos visibles para la empresa autenticada.
   const allRoutes = routes;
   const allVehicles = vehicles;
 
-  // Estadísticas del sistema para uso/actividad
+  // Todos los datos provienen del ámbito de empresa entregado por los contextos.
   const stats = {
     totalUsers: users.length,
-    superAdmins: users.filter(u => u.role === "superadmin").length,
     managers: users.filter(u => u.role === "gerente").length,
+    fleetManagers: users.filter(u => u.role === "manager").length,
     logistics: users.filter(u => u.role === "logistica").length,
     drivers: users.filter(u => u.role === "chofer").length,
+    regularUsers: users.filter(u => u.role === "usuario").length,
     totalRoutes: allRoutes.length,
-    activeRoutes: allRoutes.filter((r: any) => r.estado === "en_progreso").length,
-    completedRoutes: allRoutes.filter((r: any) => r.estado === "completada").length,
+    pendingRoutes: allRoutes.filter((r) => r.estado === "pendiente").length,
+    activeRoutes: allRoutes.filter((r) => r.estado === "en_progreso").length,
+    completedRoutes: allRoutes.filter((r) => r.estado === "completada").length,
+    cancelledRoutes: allRoutes.filter((r) => r.estado === "cancelada").length,
     totalVehicles: allVehicles.length,
-    activeVehicles: allVehicles.filter((v: any) => v.estado === "en_ruta").length,
-    totalTeams: managers.length,
+    availableVehicles: allVehicles.filter((v) => v.estado === "disponible").length,
+    vehiclesOnRoute: allVehicles.filter((v) => v.estado === "en_ruta").length,
+    vehiclesInMaintenance: allVehicles.filter((v) => v.estado === "mantenimiento").length,
   };
 
-  // Si hay un equipo seleccionado, mostrar la vista de detalles
-  if (selectedTeamId) {
-    return <TeamDetailsView teamId={selectedTeamId} onBack={() => setSelectedTeamId(null)} />;
-  }
-
   const handleCreateUser = async () => {
-    if (!createUserForm.nombres || !createUserForm.apellidos || !createUserForm.usuario || !createUserForm.password) {
+    if (!createUserForm.nombres.trim() || !createUserForm.apellidos.trim() || !createUserForm.usuario.trim() || !createUserForm.email.trim() || !createUserForm.password) {
       toast.error("Por favor completa todos los campos");
       return;
     }
-
-    // Si el rol no es gerente ni superadmin, debe seleccionar un equipo
-    if (createUserForm.role !== "gerente" && createUserForm.role !== "superadmin" && !createUserForm.teamId) {
-      toast.error("Debes seleccionar un equipo para este usuario");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createUserForm.email.trim())) {
+      toast.error("Escribe un correo electrónico válido");
+      return;
+    }
+    if (createUserForm.role === "chofer" && (!createUserForm.documentNumber || !createUserForm.phoneNumber)) {
+      toast.error("Para crear un chofer indica documento y teléfono");
       return;
     }
 
     setIsCreating(true);
     
-    const success = await createUser({
-      ...createUserForm,
-      teamId: createUserForm.role === "gerente" || createUserForm.role === "superadmin" ? undefined : createUserForm.teamId,
+    const result = await createUser({
+      nombres: createUserForm.nombres.trim(),
+      apellidos: createUserForm.apellidos.trim(),
+      usuario: createUserForm.usuario.trim(),
+      email: createUserForm.email.trim(),
+      password: createUserForm.password,
+      role: createUserForm.role,
+      identificacion: createUserForm.documentNumber,
+      phoneNumber: createUserForm.phoneNumber,
     });
 
     setIsCreating(false);
 
-    if (success) {
-      toast.success("Usuario creado exitosamente");
+    if (result.ok) {
+      let usersRefreshed = true;
+      try {
+        await refreshTeamUsers();
+      } catch {
+        usersRefreshed = false;
+      }
+      toast.success(result.invitationSent ? "Usuario creado y correo enviado" : "Usuario creado. No se pudo enviar el correo de invitación.");
+      if (!usersRefreshed) toast.warning("La cuenta se creó, pero no se pudo actualizar la lista de usuarios.");
       setCreateUserForm({
         nombres: "",
         apellidos: "",
         usuario: "",
+        email: "",
         password: "",
         role: "gerente",
-        teamId: "",
+        documentNumber: "",
+        phoneNumber: "",
       });
       setShowCreatePassword(false);
     } else {
-      toast.error("Error al crear usuario. El nombre de usuario podría estar en uso.");
+      toast.error(result.message ?? "No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
     }
   };
 
-  const handleExportData = () => {
+  const requestRoleUpdate = (userId: string, role: UserRole) => {
+    const member = users.find((user) => user.id === userId);
+    if (!member || member.role === role) return;
+    setPendingRoleChange({
+      userId,
+      memberName: `${member.nombres} ${member.apellidos}`.trim(),
+      role,
+    });
+  };
+
+  const confirmRoleUpdate = async () => {
+    if (!pendingRoleChange) return;
+    const { userId, role } = pendingRoleChange;
+    setPendingRoleChange(null);
+    const result = await updateUserRole(userId, role);
+    if (result.ok) {
+      toast.success("Rol actualizado correctamente");
+    } else {
+      toast.error(result.message ?? "No se pudo actualizar el rol");
+    }
+  };
+
+  const handleRetryUsers = async () => {
+    try {
+      await refreshTeamUsers();
+    } catch {
+      // El contexto conserva el error para que la vista muestre el estado y el reintento.
+    }
+  };
+
+  const handleExportData = (timestamp: number) => {
     const data = {
       users,
       routes: allRoutes,
@@ -103,7 +154,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fleettrack-backup-${Date.now()}.json`;
+    a.download = `fletflow-empresa-${timestamp}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -112,19 +163,11 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     toast.success("Datos exportados exitosamente");
   };
 
-  const handleImportData = () => {
-    toast.info("La importacion de datos se gestiona desde el backend");
-  };
-
-  const handleResetSystem = () => {
-    toast.info("El reseteo del sistema se realiza desde el backend");
-    setShowResetConfirm(false);
-  };
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case "superadmin": return "bg-red-100 text-red-800";
       case "gerente": return "bg-blue-100 text-blue-800";
+      case "manager": return "bg-cyan-100 text-cyan-800";
       case "logistica": return "bg-purple-100 text-purple-800";
       case "chofer": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
@@ -133,8 +176,9 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "superadmin": return "Super Admin";
+      case "superadmin": return "Administrador";
       case "gerente": return "Gerente";
+      case "manager": return "Gestor de flota";
       case "logistica": return "Logística";
       case "chofer": return "Chofer";
       default: return role;
@@ -160,8 +204,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                 <Shield size={24} />
               </div>
               <div>
-                <h1 className="text-2xl">Panel Super Admin</h1>
-                <p className="text-red-100 text-sm">Administración del Sistema FleetTrack</p>
+                <h1 className="text-2xl">Administración de la empresa</h1>
+                <p className="text-red-100 text-sm">Usuarios y operación de tu empresa</p>
               </div>
             </div>
           </div>
@@ -169,20 +213,20 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Total Equipos</p>
-              <p className="text-2xl">{stats.totalTeams}</p>
+                <p className="text-red-100 text-xs mb-1">Administradores</p>
+                <p className="text-2xl">{metricValue(stats.managers, teamUsersLoading, !!teamUsersError)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Total Usuarios</p>
-              <p className="text-2xl">{stats.totalUsers}</p>
+              <p className="text-red-100 text-xs mb-1">Usuarios de la empresa</p>
+              <p className="text-2xl">{metricValue(stats.totalUsers, teamUsersLoading, !!teamUsersError)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Rutas Activas</p>
-              <p className="text-2xl">{stats.activeRoutes}</p>
+              <p className="text-red-100 text-xs mb-1">Rutas en curso</p>
+              <p className="text-2xl">{metricValue(stats.activeRoutes, routesLoading, routesLoadFailed)}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <p className="text-red-100 text-xs mb-1">Vehículos Totales</p>
-              <p className="text-2xl">{stats.totalVehicles}</p>
+              <p className="text-red-100 text-xs mb-1">Vehículos</p>
+              <p className="text-2xl">{metricValue(stats.totalVehicles, vehiclesLoading, vehiclesLoadFailed)}</p>
             </div>
           </div>
         </div>
@@ -201,18 +245,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               }`}
             >
               <BarChart3 size={18} />
-              Estadísticas de Uso
-            </button>
-            <button
-              onClick={() => setActiveTab("teams")}
-              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === "teams"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <Building2 size={18} />
-              Equipos
+              Resumen
             </button>
             <button
               onClick={() => setActiveTab("users")}
@@ -223,7 +256,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               }`}
             >
               <Users size={18} />
-              Todos los Usuarios
+              Usuarios de la empresa
             </button>
             <button
               onClick={() => setActiveTab("create")}
@@ -247,17 +280,6 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <Database size={18} />
               Gestión de Datos
             </button>
-            <button
-              onClick={() => setActiveTab("logs")}
-              className={`flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === "logs"
-                  ? "border-red-600 text-red-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <Activity size={18} />
-              Actividad del Sistema
-            </button>
           </div>
         </div>
       </div>
@@ -270,178 +292,109 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
                   <BarChart3 size={20} />
-                  Estadísticas de Uso del Sistema
+                  Operación de la empresa
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Usuarios */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Distribución de Usuarios</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Usuarios</h4>
+                    {teamUsersLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando usuarios...</p>}
+                    {teamUsersError && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>{teamUsersError}</p>
+                        <button type="button" onClick={() => void handleRetryUsers()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Super Admins</span>
-                        <span className="text-lg text-red-600">{stats.superAdmins}</span>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Total</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalUsers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">Gerentes</span>
-                        <span className="text-lg text-blue-600">{stats.managers}</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.managers, teamUsersLoading, !!teamUsersError)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Gestores de flota</span>
+                        <span className="text-lg text-cyan-700">{metricValue(stats.fleetManagers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                         <span className="text-sm text-gray-700">Logística</span>
-                        <span className="text-lg text-purple-600">{stats.logistics}</span>
+                        <span className="text-lg text-purple-600">{metricValue(stats.logistics, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Choferes</span>
-                        <span className="text-lg text-green-600">{stats.drivers}</span>
+                        <span className="text-lg text-green-600">{metricValue(stats.drivers, teamUsersLoading, !!teamUsersError)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Usuarios</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.regularUsers, teamUsersLoading, !!teamUsersError)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Rutas */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Estado de Rutas</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Estado de rutas</h4>
+                    {routesLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando rutas...</p>}
+                    {routesLoadFailed && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>No se pudieron cargar las rutas.</p>
+                        <button type="button" onClick={() => void retryFleetData()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
-                        <span className="text-lg text-gray-900">{stats.totalRoutes}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-gray-700">En Progreso</span>
-                        <span className="text-lg text-blue-600">{stats.activeRoutes}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Completadas</span>
-                        <span className="text-lg text-green-600">{stats.completedRoutes}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                         <span className="text-sm text-gray-700">Pendientes</span>
-                        <span className="text-lg text-yellow-600">
-                          {stats.totalRoutes - stats.activeRoutes - stats.completedRoutes}
-                        </span>
+                        <span className="text-lg text-yellow-700">{metricValue(stats.pendingRoutes, routesLoading, routesLoadFailed)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <span className="text-sm text-gray-700">En curso</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.activeRoutes, routesLoading, routesLoadFailed)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Completadas</span>
+                        <span className="text-lg text-green-600">{metricValue(stats.completedRoutes, routesLoading, routesLoadFailed)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <span className="text-sm text-gray-700">Canceladas</span>
+                        <span className="text-lg text-red-600">{metricValue(stats.cancelledRoutes, routesLoading, routesLoadFailed)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Vehículos */}
                   <div>
-                    <h4 className="text-sm text-gray-600 mb-3">Estado de Vehículos</h4>
+                    <h4 className="text-sm text-gray-600 mb-3">Estado de vehículos</h4>
+                    {vehiclesLoading && <p role="status" className="mb-2 text-sm text-gray-500">Cargando vehículos...</p>}
+                    {vehiclesLoadFailed && (
+                      <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <p>No se pudieron cargar los vehículos.</p>
+                        <button type="button" onClick={() => void retryFleetData()} className="mt-2 font-medium underline">Reintentar</button>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-700">Total</span>
-                        <span className="text-lg text-gray-900">{stats.totalVehicles}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-gray-700">En Ruta</span>
-                        <span className="text-lg text-blue-600">{stats.activeVehicles}</span>
+                        <span className="text-lg text-gray-900">{metricValue(stats.totalVehicles, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <span className="text-sm text-gray-700">Disponibles</span>
-                        <span className="text-lg text-green-600">
-                          {stats.totalVehicles - stats.activeVehicles}
-                        </span>
+                        <span className="text-lg text-green-600">{metricValue(stats.availableVehicles, vehiclesLoading, vehiclesLoadFailed)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <span className="text-sm text-gray-700">En ruta</span>
+                        <span className="text-lg text-blue-600">{metricValue(stats.vehiclesOnRoute, vehiclesLoading, vehiclesLoadFailed)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                        <span className="text-sm text-gray-700">En mantenimiento</span>
+                        <span className="text-lg text-orange-700">{metricValue(stats.vehiclesInMaintenance, vehiclesLoading, vehiclesLoadFailed)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* System Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-sm text-gray-600 mb-3">Información del Sistema</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Versión</span>
-                      <span className="text-sm text-gray-900">FleetTrack v1.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Estado</span>
-                      <span className="text-sm text-green-600">Operativo</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Equipos Activos</span>
-                      <span className="text-sm text-gray-900">{stats.totalTeams}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-sm text-gray-600 mb-3">Almacenamiento</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Usuarios</span>
-                      <span className="text-sm text-gray-900">{users.length} registros</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Rutas</span>
-                      <span className="text-sm text-gray-900">{allRoutes.length} registros</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-700">Vehículos</span>
-                      <span className="text-sm text-gray-900">{allVehicles.length} registros</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "teams" && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg text-gray-900 mb-4">
-                  Equipos Registrados ({managers.length})
-                </h3>
-                {managers.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-8">
-                    No hay equipos registrados aún
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {managers.map((manager) => {
-                      const teamMembers = users.filter(u => u.teamId === manager.id);
-                      const teamVehicles = allVehicles.filter((v: any) => v.teamId === manager.id);
-                      const teamRoutes = allRoutes.filter((r: any) => r.teamId === manager.id);
-                      
-                      return (
-                        <button
-                          key={manager.id}
-                          onClick={() => setSelectedTeamId(manager.id)}
-                          className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-600 hover:bg-red-50 transition-all text-left"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white">
-                              {manager.nombres.charAt(0)}
-                              {manager.apellidos.charAt(0)}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-900">
-                                {manager.teamName || `Equipo de ${manager.nombres}`}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                Gerente: {manager.nombres} {manager.apellidos}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="bg-blue-50 rounded p-2">
-                              <p className="text-xs text-blue-600">Miembros</p>
-                              <p className="text-sm text-blue-900">{teamMembers.length}</p>
-                            </div>
-                            <div className="bg-green-50 rounded p-2">
-                              <p className="text-xs text-green-600">Vehículos</p>
-                              <p className="text-sm text-green-900">{teamVehicles.length}</p>
-                            </div>
-                            <div className="bg-purple-50 rounded p-2">
-                              <p className="text-xs text-purple-600">Rutas</p>
-                              <p className="text-sm text-purple-900">{teamRoutes.length}</p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -449,14 +402,22 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
           {activeTab === "users" && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg text-gray-900 mb-4">Todos los Usuarios del Sistema</h3>
-                <div className="space-y-3">
+                <h3 className="text-lg text-gray-900 mb-4">Usuarios de la empresa</h3>
+                {teamUsersLoading ? (
+                  <p role="status" className="py-8 text-center text-sm text-gray-500">Cargando usuarios...</p>
+                ) : teamUsersError ? (
+                  <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <p>{teamUsersError}</p>
+                    <button type="button" onClick={() => void handleRetryUsers()} className="mt-2 font-medium underline">Reintentar</button>
+                  </div>
+                ) : users.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-gray-500">Aún no hay usuarios registrados en la empresa.</p>
+                ) : <div className="space-y-3">
                   {users.map((user) => {
-                    const manager = user.teamId ? users.find(u => u.id === user.teamId) : null;
-                    
                     return (
                       <div
                         key={user.id}
+                        data-testid={`company-user-${user.id}`}
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
@@ -473,21 +434,24 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                               {user.nombres} {user.apellidos}
                             </p>
                             <p className="text-xs text-gray-500">
-                              @{user.usuario} · ID: {user.identificacion}
-                              {manager && ` · Equipo: ${manager.teamName || manager.nombres}`}
+                              @{user.usuario}{user.identificacion ? ` · ID: ${user.identificacion}` : ""}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <select
                             value={user.role}
-                            onChange={(e) =>
-                              updateUserRole(user.id, e.target.value as UserRole)
-                            }
+                            aria-label={`Rol de ${user.nombres} ${user.apellidos}`}
+                            onChange={(e) => requestRoleUpdate(user.id, e.target.value as UserRole)}
                             className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
                           >
-                            <option value="superadmin">Super Admin</option>
-                            <option value="gerente">Gerente</option>
+                            {(isRootAccount || user.role === "superadmin") && (
+                              <option value="superadmin" disabled={!isRootAccount}>Administrador</option>
+                            )}
+                            {(isRootAccount || user.role === "gerente") && (
+                              <option value="gerente" disabled={!isRootAccount}>Gerente</option>
+                            )}
+                            <option value="manager">Gestor de flota</option>
                             <option value="logistica">Logística</option>
                             <option value="chofer">Chofer</option>
                           </select>
@@ -502,7 +466,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                       </div>
                     );
                   })}
-                </div>
+                </div>}
               </div>
             </div>
           )}
@@ -512,7 +476,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-4">Crear Nuevo Usuario</h3>
                 <p className="text-sm text-gray-600 mb-6">
-                  Como Super Admin, puedes crear usuarios asignándolos a equipos específicos.
+                  Crea usuarios de tu empresa. Para choferes, el documento y teléfono son necesarios para crear su perfil operativo.
                 </p>
 
                 <div className="space-y-4">
@@ -557,6 +521,18 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm text-gray-700 mb-2" htmlFor="company-user-email">Correo electrónico</label>
+                      <input
+                        id="company-user-email"
+                        type="email"
+                        autoComplete="email"
+                        value={createUserForm.email}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm"
+                        placeholder="usuario@empresa.com"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm text-gray-700 mb-2">Contraseña</label>
                       <div className="relative">
                         <input
@@ -583,47 +559,35 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["superadmin", "gerente", "logistica", "chofer"] as UserRole[]).map((role) => (
+                      {([...(isRootAccount ? ["gerente" as const] : []), "manager", "logistica", "chofer"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           type="button"
-                          onClick={() => setCreateUserForm({ ...createUserForm, role, teamId: role === "gerente" || role === "superadmin" ? "" : createUserForm.teamId })}
+                          onClick={() => setCreateUserForm({ ...createUserForm, role })}
                           className={`px-3 py-2 rounded-lg border-2 transition-all text-xs ${
                             createUserForm.role === role
-                              ? role === "superadmin"
-                                ? "border-red-600 bg-red-600 text-white"
-                                : "border-red-600 bg-red-600 text-white"
+                              ? "border-red-600 bg-red-600 text-white"
                               : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          {role === "superadmin" ? "Super Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+                          {getRoleLabel(role)}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {createUserForm.role !== "gerente" && createUserForm.role !== "superadmin" && (
+                  {createUserForm.role === "chofer" && (
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">
-                        Equipo (Gerente) *
-                      </label>
-                      <select
-                        value={createUserForm.teamId}
-                        onChange={(e) =>
-                          setCreateUserForm({ ...createUserForm, teamId: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent text-sm"
-                      >
-                        <option value="">Seleccionar equipo...</option>
-                        {managers.map((manager) => (
-                          <option key={manager.id} value={manager.id}>
-                            {manager.teamName || `Equipo de ${manager.nombres} ${manager.apellidos}`} (@{manager.usuario})
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Selecciona el gerente al que pertenecerá este usuario
-                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-700 mb-2" htmlFor="company-driver-document">Documento *</label>
+                          <input id="company-driver-document" value={createUserForm.documentNumber} onChange={(event) => setCreateUserForm({ ...createUserForm, documentNumber: event.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" autoComplete="off" />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-700 mb-2" htmlFor="company-driver-phone">Teléfono *</label>
+                          <input id="company-driver-phone" value={createUserForm.phoneNumber} onChange={(event) => setCreateUserForm({ ...createUserForm, phoneNumber: event.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" inputMode="tel" autoComplete="tel" />
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -646,7 +610,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
                   <Database size={20} />
-                  Gestión de Datos del Sistema
+                  Datos de la empresa
                 </h3>
 
                 <div className="space-y-4">
@@ -659,76 +623,16 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                           Exportar Datos
                         </h4>
                         <p className="text-xs text-gray-600 mb-3">
-                          Descarga una copia de seguridad completa del sistema en formato JSON
+                          Descarga una copia de los datos disponibles de tu empresa en formato JSON
                         </p>
                         <button
-                          onClick={handleExportData}
+                          onClick={() => handleExportData(Date.now())}
+                          disabled={exportDisabled}
+                          title={exportDisabled ? "Espera a que carguen correctamente los datos" : undefined}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                         >
                           Exportar Ahora
                         </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Import Data */}
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Upload size={20} className="text-green-600 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="text-sm text-gray-900 mb-1">
-                          Importar Datos
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-3">
-                          Restaura el sistema desde un archivo de respaldo JSON
-                        </p>
-                        <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm cursor-pointer inline-block">
-                          Seleccionar Archivo
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleImportData}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reset System */}
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle size={20} className="text-red-600 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="text-sm text-gray-900 mb-1">
-                          Reiniciar Sistema
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-3">
-                          Elimina todos los datos del sistema. Esta acción no se puede deshacer.
-                        </p>
-                        {!showResetConfirm ? (
-                          <button
-                            onClick={handleResetSystem}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                          >
-                            Reiniciar Sistema
-                          </button>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={handleResetSystem}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                            >
-                              Confirmar Reinicio
-                            </button>
-                            <button
-                              onClick={() => setShowResetConfirm(false)}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -739,15 +643,15 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-xs text-gray-600">Usuarios</p>
-                        <p className="text-lg text-gray-900">{users.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(users.length, teamUsersLoading, !!teamUsersError)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Rutas</p>
-                        <p className="text-lg text-gray-900">{allRoutes.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(allRoutes.length, routesLoading, routesLoadFailed)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600">Vehículos</p>
-                        <p className="text-lg text-gray-900">{allVehicles.length}</p>
+                        <p className="text-lg text-gray-900">{metricValue(allVehicles.length, vehiclesLoading, vehiclesLoadFailed)}</p>
                       </div>
                     </div>
                   </div>
@@ -756,49 +660,20 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
             </div>
           )}
 
-          {activeTab === "logs" && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
-                <Activity size={20} />
-                Actividad del Sistema
-              </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">Sistema iniciado</p>
-                      <p className="text-xs text-gray-500">{new Date().toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">
-                        {stats.totalUsers} usuarios registrados
-                      </p>
-                      <p className="text-xs text-gray-500">Estado actual</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
-                    <div>
-                      <p className="text-sm text-gray-900">
-                        {stats.activeRoutes} rutas activas en el sistema
-                      </p>
-                      <p className="text-xs text-gray-500">En progreso</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
+      <ConfirmDialog
+        open={pendingRoleChange !== null}
+        onClose={() => setPendingRoleChange(null)}
+        onConfirm={() => void confirmRoleUpdate()}
+        title="Confirmar cambio de rol"
+        description={pendingRoleChange?.role === "superadmin"
+          ? `${pendingRoleChange.memberName} recibirá permisos de Administrador para gestionar la empresa y su flota.`
+          : `¿Confirmas cambiar el rol de ${pendingRoleChange?.memberName} a ${pendingRoleChange ? getRoleLabel(pendingRoleChange.role) : ""}?`}
+        confirmText="Confirmar cambio"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }

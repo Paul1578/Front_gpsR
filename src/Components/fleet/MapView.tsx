@@ -2,9 +2,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
 import { useAuth } from "@/Context/AuthContext";
+import { useFleet } from "@/Context/FleetContext";
 import {
   fetchRoutes,
   fetchRoutePositions,
@@ -20,18 +21,50 @@ export interface MapViewProps {
 
 type LatLngTuple = [number, number];
 
+interface OsrmRouteResponse {
+  routes?: Array<{
+    geometry?: { coordinates?: Array<[number, number]> };
+  }>;
+}
+
+function normalizeTrackingPositions(positions: RoutePositionDto[]): LatLngTuple[] {
+  const sorted = [...positions].sort((a, b) => {
+    const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+    const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+    return aTime - bTime;
+  });
+
+  return sorted
+    .map((position) => {
+      const lat = parseCoord(position.latitude);
+      const lng = parseCoord(position.longitude);
+      if (lat == null || lng == null) return null;
+      return [lat, lng] as LatLngTuple;
+    })
+    .filter((point): point is LatLngTuple => point !== null);
+}
+
+function parseCoord(value?: number): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 export function MapView({ onBack }: MapViewProps) {
   const { apiFetch } = useAuth();
+  const { routeAssignmentVehicles, routeAssignmentDrivers } = useFleet();
 
   const [routes, setRoutes] = useState<RouteForMap[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [routesRetry, setRoutesRetry] = useState(0);
 
   const [trackingPositions, setTrackingPositions] = useState<LatLngTuple[]>([]);
   const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
   const [isLoadingTracking, setIsLoadingTracking] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [trackingHasNoPositions, setTrackingHasNoPositions] = useState(false);
+  const [trackingRetry, setTrackingRetry] = useState(0);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
   useEffect(() => {
@@ -46,7 +79,7 @@ export function MapView({ onBack }: MapViewProps) {
         const apiRoutes = await fetchRoutes(apiFetch);
         if (cancelled) return;
 
-        const filtered = apiRoutes.filter((r) => (r as any).isActive !== false);
+        const filtered = apiRoutes.filter((route) => route.isActive !== false);
         const mapped = mapRoutesApiToRoutesForMap(filtered);
         setRoutes(mapped);
 
@@ -66,35 +99,9 @@ export function MapView({ onBack }: MapViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [apiFetch]);
+  }, [apiFetch, routesRetry]);
 
   // --------- HELPERS PARA TRACKING ---------
-  const parseCoord = (value?: number | string): number | null => {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string") {
-      const parsed = parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  };
-
-  const normalizeTrackingPositions = (positions: RoutePositionDto[]): LatLngTuple[] => {
-    const sorted = [...positions].sort((a, b) => {
-      const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
-      const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
-      return aTime - bTime;
-    });
-
-    return sorted
-      .map((p) => {
-        const lat = parseCoord((p as any).latitude);
-        const lng = parseCoord((p as any).longitude);
-        if (lat == null || lng == null) return null;
-        return [lat, lng] as LatLngTuple;
-      })
-      .filter((v): v is LatLngTuple => v !== null);
-  };
-
   const fetchSnappedGeometry = async (
     planned: LatLngTuple[]
   ): Promise<LatLngTuple[] | null> => {
@@ -109,7 +116,7 @@ export function MapView({ onBack }: MapViewProps) {
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = (await res.json()) as any;
+      const data = (await res.json()) as OsrmRouteResponse;
       const geometry = data?.routes?.[0]?.geometry?.coordinates as
         | Array<[number, number]>
         | undefined;
@@ -125,6 +132,7 @@ export function MapView({ onBack }: MapViewProps) {
   useEffect(() => {
     if (!apiFetch || !selectedRouteId) {
       setTrackingPositions([]);
+      setTrackingError(null);
       return;
     }
     let cancelled = false;
@@ -136,9 +144,11 @@ export function MapView({ onBack }: MapViewProps) {
         if (cancelled) return;
         const coords = normalizeTrackingPositions(apiPositions);
         setTrackingPositions(coords);
+        setTrackingHasNoPositions(apiPositions.length === 0);
+        setTrackingError(null);
       } catch (err) {
         console.error("Error cargando tracking de la ruta", err);
-        if (!cancelled) setTrackingPositions([]);
+        if (!cancelled) setTrackingError("No se pudo actualizar el tracking.");
       } finally {
         if (!cancelled) setIsLoadingTracking(false);
       }
@@ -150,7 +160,7 @@ export function MapView({ onBack }: MapViewProps) {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [apiFetch, selectedRouteId]);
+  }, [apiFetch, selectedRouteId, trackingRetry]);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,6 +187,21 @@ export function MapView({ onBack }: MapViewProps) {
     [routes, selectedRouteId]
   );
 
+  const getVehicleLabel = (route: RouteForMap) => {
+    const vehicle = routeAssignmentVehicles.find((item) => item.id === route.vehicleId);
+    const plate = route.vehiclePlate || vehicle?.placa;
+    if (!plate) return "Vehículo sin identificar";
+    const detail = [route.vehicleBrand || vehicle?.marca, route.vehicleModel || vehicle?.modelo]
+      .filter(Boolean)
+      .join(" ");
+    return detail ? `${plate} · ${detail}` : plate;
+  };
+
+  const getDriverLabel = (route: RouteForMap) => {
+    const driver = routeAssignmentDrivers.find((item) => item.id === route.driverId);
+    return driver ? `${driver.firstName} ${driver.lastName}`.trim() : "Conductor asignado";
+  };
+
   const stopsCount = useMemo(() => {
     if (!selectedRoute || !Array.isArray(selectedRoute.points)) return 0;
     // el backend incluye origen/destino en points; contamos intermedios
@@ -184,6 +209,13 @@ export function MapView({ onBack }: MapViewProps) {
   }, [selectedRoute]);
 
   const summary = { routes: routes.length, stopsCount };
+
+  useEffect(() => {
+    setTrackingPositions([]);
+    setTrackingDisplay([]);
+    setTrackingError(null);
+    setTrackingHasNoPositions(false);
+  }, [selectedRouteId]);
 
   const getStatusMeta = (status?: number) => {
     switch (status) {
@@ -202,7 +234,7 @@ export function MapView({ onBack }: MapViewProps) {
 
   // --------- UI ---------
   return (
-    <div className="flex flex-col h-full w-full bg-white border border-gray-200 rounded-2xl shadow-sm">
+    <div className="flex h-full w-full min-w-0 max-w-full flex-col overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">
       {/* HEADER */}
       <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 bg-gradient-to-r from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
         <div className="flex items-center gap-3">
@@ -243,10 +275,32 @@ export function MapView({ onBack }: MapViewProps) {
         </div>
       </header>
 
+      {trackingError && selectedRouteId && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          <span>{trackingError} {trackingPositions.length > 0 ? "Se conserva la última posición recibida." : "No hay posiciones disponibles para mostrar."}</span>
+          <button type="button" onClick={() => setTrackingRetry((value) => value + 1)} disabled={isLoadingTracking} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">{isLoadingTracking ? "Actualizando…" : "Reintentar"}</button>
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-800">
+          <span>{error}. {routes.length > 0 ? "Se conserva la última lista de rutas." : ""}</span>
+          <button type="button" onClick={() => setRoutesRetry((value) => value + 1)} disabled={isLoading} className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+            <RefreshCw size={13} />{isLoading ? "Actualizando…" : "Reintentar"}
+          </button>
+        </div>
+      )}
+
+      {trackingHasNoPositions && selectedRouteId && !trackingError && (
+        <div role="status" className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-xs text-sky-900" aria-live="polite">
+          Sin posiciones registradas para esta ruta. Se muestra únicamente la ruta planificada.
+        </div>
+      )}
+
       {/* CONTENIDO */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50">
+      <div className="flex w-full min-w-0 max-w-full flex-1 flex-col gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50 lg:flex-row">
         {/* MAPA */}
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           {/* Panel flotante con info de la ruta seleccionada */}
           {selectedRoute && (
             <div className="absolute z-[400] top-3 left-3 right-3 md:left-4 md:right-auto max-w-sm">
@@ -261,13 +315,9 @@ export function MapView({ onBack }: MapViewProps) {
                     </p>
                     <p className="text-[11px] text-gray-500">
                       Vehículo:{" "}
-                      <span className="font-medium">
-                        {selectedRoute.vehicleId.slice(0, 8)}…
-                      </span>{" "}
+                      <span className="font-medium">{getVehicleLabel(selectedRoute)}</span>{" "}
                       · Conductor:{" "}
-                      <span className="font-medium">
-                        {selectedRoute.driverId.slice(0, 8)}…
-                      </span>
+                      <span className="font-medium">{getDriverLabel(selectedRoute)}</span>
                     </p>
                   </div>
                   <span
@@ -280,11 +330,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <div className="mt-2 flex items-center gap-3 text-[10px] text-gray-500">
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-3 h-1.5 rounded-full bg-blue-500" />
-                    <span>Planificada</span>
+                    <span>Ruta planificada</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-3 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Tracking real</span>
+                    <span>Recorrido GPS registrado</span>
                   </div>
                 </div>
               </div>
@@ -309,22 +359,11 @@ export function MapView({ onBack }: MapViewProps) {
               </div>
             )}
 
-            {!isLoading && error && routes.length === 0 && (
-              <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/80 text-sm text-red-500">
-                {error}
-              </div>
-            )}
-
-            {!isLoading && error && routes.length > 0 && (
-              <div className="absolute left-3 bottom-3 z-[500] rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] text-red-700 shadow-sm">
-                {error}
-              </div>
-            )}
           </div>
         </div>
 
         {/* SIDEBAR LISTA DE RUTAS */}
-        <aside className="w-full lg:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 md:p-4 space-y-3">
+        <aside className="w-full min-w-0 flex-shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 md:p-4 space-y-3 lg:w-80">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-gray-900">
               Rutas planificadas
@@ -366,13 +405,9 @@ export function MapView({ onBack }: MapViewProps) {
                       </p>
                       <p className="text-[11px] text-gray-500 truncate">
                         Vehículo:{" "}
-                        <span className="font-medium">
-                          {route.vehicleId.slice(0, 8)}…
-                        </span>{" "}
+                        <span className="font-medium">{getVehicleLabel(route)}</span>{" "}
                         · Conductor:{" "}
-                        <span className="font-medium">
-                          {route.driverId.slice(0, 8)}…
-                        </span>
+                        <span className="font-medium">{getDriverLabel(route)}</span>
                       </p>
                     </div>
                     <span

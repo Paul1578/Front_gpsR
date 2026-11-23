@@ -1,6 +1,6 @@
 import { useFleet } from "../../Context/FleetContext";
 import { useAuth } from "../../Context/AuthContext";
-import { Map, Truck, Route, Users, Activity, TrendingUp, Clock, CheckCircle, History, Shield } from "lucide-react";
+import { Map, Truck, Route, Users, Activity, Clock, CheckCircle, History, Shield } from "lucide-react";
 import { ViewType } from "../FleetDashboard";
 
 
@@ -9,7 +9,7 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onNavigate }: MainDashboardProps) {
-  const { vehicles, routes } = useFleet();
+  const { vehicles, routes, routeAssignmentVehicles, loadErrors, vehiclesLoading, routesLoading, routeAssignmentOptionsLoading, vehiclesLoaded, routesLoaded, routeAssignmentOptionsLoaded, retryFleetData } = useFleet();
   const { user, getAllUsers } = useAuth();
 
   const users = getAllUsers();
@@ -18,8 +18,36 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const completedRoutes = routes.filter(r => r.estado === "completada");
   const availableVehicles = vehicles.filter(v => v.estado === "disponible");
   const vehiclesInRoute = vehicles.filter(v => v.estado === "en_ruta");
+  const isLogistics = user?.role === "logistica";
+  const availableVehicleCount = isLogistics
+    ? routeAssignmentVehicles.length
+    : availableVehicles.length;
+  const vehiclesInRouteCount = isLogistics
+    ? new Set(activeRoutes.map((route) => route.vehiculoId)).size
+    : vehiclesInRoute.length;
+  const completedOperationalStops = routes
+    .flatMap((route) => [
+      ...(route.origen ? [route.origen] : []),
+      ...route.puntos,
+      ...(route.destino ? [route.destino] : []),
+    ])
+    .filter(
+      (point) =>
+        point.operation &&
+        point.operation !== "none" &&
+        point.status === "completed",
+    ).length;
+  const recentRoutes = [...routes].sort((left, right) => {
+    const leftDate = left.createdAtUtc ?? left.fechaFinReal ?? left.fechaInicioReal ?? "";
+    const rightDate = right.createdAtUtc ?? right.fechaFinReal ?? right.fechaInicioReal ?? "";
+    return rightDate.localeCompare(leftDate);
+  });
 
-  // Si es Super Admin, mostrar dashboard especial
+  if (user?.role === "usuario") {
+    return <div className="flex h-full items-center justify-center p-6"><div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center"><h1 className="text-xl font-semibold text-slate-900">Hola, {user.nombres}</h1><p className="mt-2 text-sm text-slate-600">Tu cuenta no tiene permisos operativos asignados. Contacta al administrador de tu empresa.</p></div></div>;
+  }
+
+  // Compatibilidad visual para cuentas administrativas heredadas.
   if (user?.role === "superadmin") {
     const allUsers = getAllUsers();
     const allRoutes = routes;
@@ -35,10 +63,10 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                 <Shield size={40} className="text-white" />
               </div>
               <h1 className="text-2xl md:text-3xl text-gray-900 dark:text-white mb-2">
-                Bienvenido Super Admin, {user?.nombres} 👋
+                Administración de la empresa, {user?.nombres} 👋
               </h1>
               <p className="text-gray-600 dark:text-slate-300">
-                Panel de administración del sistema FleetTrack
+                Consulta la operación y los miembros de tu empresa.
               </p>
             </div>
 
@@ -88,20 +116,18 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                   <Shield size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg mb-2">Panel de Super Admin</h3>
+                  <h3 className="text-lg mb-2">Administración de la empresa</h3>
                   <p className="text-red-100 mb-4">
-                    Como Super Admin, eres el administrador del sistema. Puedes gestionar todos los usuarios,
-                    exportar datos y configurar el sistema.
+                    Administra miembros de tu empresa y consulta las rutas y vehículos disponibles para tu cuenta.
                   </p>
                   <p className="text-red-100 mb-4">
-                    Para crear rutas o gestionar vehículos, los gerentes de cada equipo deben hacerlo desde sus
-                    propias cuentas. Usa el Panel Super Admin para gestionar usuarios y equipos.
+                    Los datos mostrados respetan el alcance de tu empresa y los permisos de tu cuenta.
                   </p>
                   <button
                     onClick={() => onNavigate("superadmin")}
                     className="px-6 py-3 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    Ir al Panel Super Admin
+                    Abrir administración
                   </button>
                 </div>
               </div>
@@ -123,12 +149,12 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
 }[] = [
   {
     id: "superadmin",
-    title: "Panel Super Admin",
-    description: "Acceso completo a la administración del sistema",
+    title: "Administración de la empresa",
+    description: "Gestiona miembros y consulta datos operativos de tu empresa",
     icon: Shield,
     color: "from-red-500 to-red-600",
     permission: user?.permissions.canAccessSuperAdmin,
-    stats: "Acceso total",
+    stats: "Empresa",
   },
   {
     id: "map",
@@ -180,38 +206,41 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const stats = [
     {
       label: "Rutas Activas",
-      value: activeRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : activeRoutes.length,
       icon: Activity,
       color: "bg-blue-100 text-blue-600",
-      change: "+12%",
+      change: "En progreso",
     },
     {
       label: "Vehículos Disponibles",
-      value: availableVehicles.length,
+      value: loadErrors.includes(isLogistics ? "opciones de asignación" : "vehículos")
+        ? "—"
+        : (isLogistics ? !routeAssignmentOptionsLoaded || routeAssignmentOptionsLoading : !vehiclesLoaded || vehiclesLoading) ? "Cargando…" : availableVehicleCount,
       icon: Truck,
       color: "bg-green-100 text-green-600",
-      change: `${vehiclesInRoute.length} en ruta`,
+      change: loadErrors.includes("rutas") ? "— en ruta" : !routesLoaded || routesLoading ? "Cargando…" : `${vehiclesInRouteCount} en ruta`,
     },
     {
       label: "Rutas Pendientes",
-      value: pendingRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : pendingRoutes.length,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
       change: "Por iniciar",
     },
     {
-      label: "Completadas Hoy",
-      value: completedRoutes.length,
+      label: "Rutas Completadas",
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : completedRoutes.length,
       icon: CheckCircle,
       color: "bg-purple-100 text-purple-600",
-      change: "+8 esta semana",
+      change: "Total registrado",
     },
   ];
 
   // Para choferes, mostrar su dashboard específico
   if (user?.role === "chofer" && user?.permissions.canViewOwnRoute && !user?.permissions.canViewMap) {
-    const myRoutes = routes;
-    const myActiveRoute = myRoutes.find(r => r.estado === "en_progreso" || r.estado === "pendiente");
+    const myRoutes = user.driverId ? routes.filter((route) => route.conductorId === user.driverId) : routes;
+    const myActiveRoute = myRoutes.find((route) => route.estado === "en_progreso") ??
+      myRoutes.find((route) => route.estado === "pendiente");
 
     return (
       <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -230,7 +259,17 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
             </div>
 
             {/* Ruta activa o mensaje */}
-            {myActiveRoute ? (
+            {loadErrors.includes("rutas") && (
+              <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                <span>No se pudieron cargar tus rutas. Las rutas asignadas pueden no aparecer.</span>
+                <button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button>
+              </div>
+            )}
+            {routesLoading && !myActiveRoute ? (
+              <div role="status" className="mb-6 rounded-xl border border-blue-100 bg-white p-6 text-center text-sm text-gray-600">
+                Cargando tus rutas...
+              </div>
+            ) : loadErrors.includes("rutas") && !myActiveRoute ? null : myActiveRoute ? (
               <div className="mb-6">
                 <button
                   onClick={() => onNavigate("driver")}
@@ -282,11 +321,11 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
               <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp size={20} className="text-purple-600" />
+                    <CheckCircle size={20} className="text-purple-600" />
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">Rendimiento</p>
-                <p className="text-2xl text-gray-900 mt-1">Excelente</p>
+                <p className="text-xs text-gray-500">Paradas completadas</p>
+                <p className="text-2xl text-gray-900 mt-1">{completedOperationalStops}</p>
               </div>
             </div>
           </div>
@@ -311,6 +350,8 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
             </p>
           </div>
 
+          {loadErrors.length > 0 && <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>No se pudieron cargar {loadErrors.join(", ")}. Las cifras marcadas con — no están disponibles.</span><button onClick={() => void retryFleetData()} className="rounded-md bg-white px-3 py-1.5 font-semibold">Reintentar</button></div>}
+
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {stats.map((stat, index) => (
@@ -325,7 +366,7 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
                 </div>
                 <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
                 <p className="text-2xl md:text-3xl text-gray-900 mb-2">{stat.value}</p>
-                <p className="text-xs text-gray-400">{stat.change}</p>
+                <p className="text-xs text-gray-500">{stat.change}</p>
               </div>
             ))}
           </div>
@@ -373,14 +414,18 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg md:text-xl text-gray-900 mb-4">Actividad Reciente</h2>
             
-            {routes.length === 0 ? (
+            {!routesLoaded || routesLoading ? (
+              <div role="status" className="py-8 text-center text-sm text-gray-600">Cargando actividad de rutas…</div>
+            ) : loadErrors.includes("rutas") ? (
+              <div role="status" className="py-8 text-center text-sm text-red-700">No se pudo consultar la actividad de rutas.</div>
+            ) : routes.length === 0 ? (
               <div className="text-center py-8">
                 <Activity size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500 text-sm">No hay actividad reciente</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {routes.slice(0, 5).map((route) => {
+                {recentRoutes.slice(0, 5).map((route) => {
                   const vehicle = vehicles.find(v => v.id === route.vehiculoId);
                   const driver = users.find(u => u.id === route.conductorId);
                   

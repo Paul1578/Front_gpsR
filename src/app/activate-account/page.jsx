@@ -27,7 +27,7 @@ export default function ActivateAccountPage() {
       newPassword.length > 0 &&
       confirmNewPassword.length > 0 &&
       newPassword !== confirmNewPassword,
-    [newPassword, confirmNewPassword]
+    [newPassword, confirmNewPassword],
   );
 
   const disabled =
@@ -47,8 +47,8 @@ export default function ActivateAccountPage() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("La nueva contraseña debe tener al menos 8 caracteres.");
+    if (newPassword.length < 12) {
+      setError("La nueva contraseña debe tener al menos 12 caracteres.");
       return;
     }
 
@@ -81,11 +81,15 @@ export default function ActivateAccountPage() {
         if (msg && msg.toLowerCase().includes("token")) {
           setError("Este enlace ya no es válido.");
         } else {
-          setError(msg || "No pudimos activar tu cuenta. Inténtalo nuevamente.");
+          setError(
+            msg || "No pudimos activar tu cuenta. Inténtalo nuevamente.",
+          );
         }
       }
-    } catch (err) {
-      setError("Hubo un problema de conexión. Por favor, inténtalo nuevamente.");
+    } catch {
+      setError(
+        "Hubo un problema de conexión. Por favor, inténtalo nuevamente.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -105,17 +109,22 @@ export default function ActivateAccountPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-[#3271a4]/60 to-transparent" />
             <div className="relative h-full flex flex-col justify-between p-10 text-white">
               <div className="space-y-4">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/70">Bienvenida</p>
-                <h2 className="text-3xl font-semibold leading-tight">Activa tu cuenta con tu propia contraseña</h2>
+                <p className="text-sm uppercase tracking-[0.2em] text-white/70">
+                  Bienvenida
+                </p>
+                <h2 className="text-3xl font-semibold leading-tight">
+                  Activa tu cuenta con tu propia contraseña
+                </h2>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  El enlace de activación usa un token de 12 caracteres. Configura tu contraseña para empezar a usar la
-                  plataforma de inmediato.
+                  El enlace de activación es seguro y de un solo uso.
+                  Configura tu contraseña para empezar a usar la plataforma de
+                  inmediato.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
-                  <p className="text-sm text-white/80">Tokens válidos</p>
-                  <p className="text-2xl font-semibold">12 caracteres</p>
+                  <p className="text-sm text-white/80">Enlace de activación</p>
+                  <p className="text-2xl font-semibold">Seguro y temporal</p>
                 </div>
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
                   <p className="text-sm text-white/80">Estado</p>
@@ -133,17 +142,20 @@ export default function ActivateAccountPage() {
                 <ShieldCheck className="w-4 h-4" />
                 Enlace seguro de activación
               </div>
-              <h1 className="text-3xl font-semibold text-gray-900">Activa tu cuenta creando tu nueva contraseña</h1>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                Activa tu cuenta creando tu nueva contraseña
+              </h1>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Tu token se envió por correo. Por seguridad, el enlace expira pronto. El botón se activará cuando
-                detectemos el token.
+                Tu token se envió por correo. Por seguridad, el enlace expira
+                pronto. El botón se activará cuando detectemos el token.
               </p>
             </div>
 
             <div className="space-y-3">
               {!token && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-700 px-4 py-3 text-sm">
-                  No encontramos el token en el enlace. Intenta abrir nuevamente el correo o solicita uno nuevo.
+                  No encontramos el token en el enlace. Intenta abrir nuevamente
+                  el correo o solicita uno nuevo.
                 </div>
               )}
               {error && (
@@ -166,7 +178,7 @@ export default function ActivateAccountPage() {
                   <input
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
-                    minLength={8}
+                    minLength={12}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Ingresa una nueva contraseña"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] disabled:opacity-60 pr-12"
@@ -176,9 +188,17 @@ export default function ActivateAccountPage() {
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                    aria-label={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={
+                      showNewPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
                   >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showNewPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </label>
@@ -189,7 +209,7 @@ export default function ActivateAccountPage() {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmNewPassword}
-                    minLength={8}
+                    minLength={12}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     placeholder="Repite tu nueva contraseña"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] disabled:opacity-60 pr-12"
@@ -199,17 +219,29 @@ export default function ActivateAccountPage() {
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </label>
 
-              {passwordsMismatch && <div className="text-xs text-red-600">Las contraseñas no coinciden.</div>}
+              {passwordsMismatch && (
+                <div className="text-xs text-red-600">
+                  Las contraseñas no coinciden.
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Mínimo 8 caracteres. No compartas este formulario.</span>
+                <span>Mínimo 12 caracteres. No compartas este formulario.</span>
                 {token ? (
                   <span className="inline-flex items-center gap-1 text-emerald-600">
                     <CheckCircle2 className="w-3 h-3" />

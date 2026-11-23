@@ -1,0 +1,4873 @@
+import { expect, readAccessToken, test, type Locator, type Request } from "./fixtures";
+import { randomUUID } from "node:crypto";
+
+const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
+const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
+const userEmail = process.env.FLETFLOW_E2E_USER_EMAIL;
+const userPassword = process.env.FLETFLOW_E2E_USER_PASSWORD;
+const deactivationUserEmail = process.env.FLETFLOW_E2E_DEACTIVATION_EMAIL;
+const deactivationUserPassword = process.env.FLETFLOW_E2E_DEACTIVATION_PASSWORD;
+const driverEmail = process.env.FLETFLOW_E2E_DRIVER_EMAIL;
+const driverPassword = process.env.FLETFLOW_E2E_DRIVER_PASSWORD;
+const routeDriverEmail = process.env.FLETFLOW_E2E_ROUTE_DRIVER_EMAIL;
+const routeDriverPassword = process.env.FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD;
+const routeDriverIdFixture = process.env.FLETFLOW_E2E_ROUTE_DRIVER_ID;
+const managerEmail = process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL;
+const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
+const logisticsEmail = process.env.FLETFLOW_E2E_LOGISTICS_EMAIL;
+const logisticsPassword = process.env.FLETFLOW_E2E_LOGISTICS_PASSWORD;
+const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
+const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
+const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
+const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
+
+test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const initialStorage = await page.evaluate(() => localStorage.getItem("auth_tokens"));
+  const clientCookie = await page.evaluate(() => document.cookie);
+  expect(initialStorage).toBeNull();
+  expect(clientCookie).not.toContain("fletflow_refresh");
+
+  const origin = new URL(page.url()).origin;
+  const initialCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(initialCookie).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/api/auth" });
+  if (process.env.CI === "true") expect(initialCookie?.secure).toBe(true);
+  expect(initialCookie?.expires).toBeGreaterThan(Date.now() / 1000);
+
+  const rejectedCrossOrigin = await page.request.post(`${origin}/api/auth/refresh`, {
+    headers: { Origin: "https://attacker.invalid" },
+    data: {},
+  });
+  expect(rejectedCrossOrigin.status()).toBe(403);
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(initialCookie?.value);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  const rotatedAccess = await readAccessToken(page);
+  expect(rotatedAccess).toBeTruthy();
+  const rotatedCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(rotatedCookie?.value).toBeTruthy();
+  expect(rotatedCookie?.value).not.toBe(initialCookie?.value);
+  expect(await page.evaluate(() => localStorage.getItem("auth_tokens"))).toBeNull();
+  expect(await page.evaluate(() => document.cookie)).not.toContain("fletflow_refresh");
+
+  const reusedRefresh = await page.request.post("/api/backend/Auth/refresh", {
+    data: { refreshToken: initialCookie!.value },
+  });
+  expect(reusedRefresh.status()).toBe(401);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  const logoutResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/auth/logout" && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  const logoutResponse = await logoutResponsePromise;
+  expect(logoutResponse.status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+  expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
+});
+
+test("la autenticación falla cerrada si el navegador no ofrece Web Locks", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "locks", { configurable: true, value: undefined });
+  });
+  let authMutationRequests = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/auth/") && request.method() === "POST") {
+      authMutationRequests += 1;
+    }
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email ?? "fletflow.e2e.admin@example.test");
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password ?? "invalid-test-password");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page.getByText("Este navegador no admite la coordinación segura de sesiones. Actualiza el navegador.").first()).toBeVisible();
+  expect(authMutationRequests).toBe(0);
+  expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
+});
+
+test("un refresh temporal 503 permite restaurar la sesión al reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const refreshCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(refreshCookie?.value).toBeTruthy();
+
+  await page.route("**/api/auth/refresh", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API temporalmente no disponible" }) });
+  });
+  await page.reload();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("No se pudo verificar la sesión por un problema temporal. Intenta recargar.")).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(refreshCookie?.value);
+
+  await page.unroute("**/api/auth/refresh");
+  await page.reload();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+});
+
+test("logout informa si el servidor no confirma la revocación", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.route("**/api/auth/logout", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API no disponible" }) });
+  });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("La sesión local se cerró, pero el servidor no confirmó la revocación.")).toBeVisible();
+});
+
+test("logout-all 401 conserva la cookie y deja reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const cookieBefore = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  await page.route("**/api/auth/logout-all", async (route) => {
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Sesión de acceso vencida." }) });
+  });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+  await expect(page.getByText("Sesión de acceso vencida.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(cookieBefore?.value);
+});
+
+test("login simultáneo de cuentas distintas converge a la sesión vigente", async ({ page }) => {
+  test.skip(!email || !password || !userEmail || !userPassword, "Requiere cuentas QA Admin/User activas.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const adminToken = await readAccessToken(page);
+  const adminResponse = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  expect(adminResponse.status()).toBe(200);
+  const adminId = (await adminResponse.json() as { id: string }).id;
+  const userResponse = await page.request.get("/api/backend/Users/my-team", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  expect(userResponse.status()).toBe(200);
+  const qaUser = (await userResponse.json() as Array<{ id: string; email: string }>).find((item) => item.email === userEmail);
+  expect(qaUser?.id).toBeTruthy();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  const logoutResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/auth/logout" && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  expect((await logoutResponsePromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+
+  const secondPage = await page.context().newPage();
+  await secondPage.setViewportSize({ width: 390, height: 844 });
+  await secondPage.goto("/login");
+  await Promise.all([
+    page.getByLabel("Correo electrónico").fill(email!),
+    secondPage.getByLabel("Correo electrónico").fill(userEmail!),
+  ]);
+  await Promise.all([
+    page.getByRole("textbox", { name: "Contraseña" }).fill(password!),
+    secondPage.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!),
+  ]);
+  const loginStatuses: number[] = [];
+  const recordLogin = (response: import("@playwright/test").Response) => {
+    if (new URL(response.url()).pathname === "/api/auth/login") loginStatuses.push(response.status());
+  };
+  page.on("response", recordLogin);
+  secondPage.on("response", recordLogin);
+  try {
+    await Promise.all([
+      page.getByRole("button", { name: "Iniciar sesión" }).click(),
+      secondPage.getByRole("button", { name: "Iniciar sesión" }).click(),
+    ]);
+    await Promise.all([expect(page).toHaveURL(/\/dashboard$/), expect(secondPage).toHaveURL(/\/dashboard$/)]);
+    expect(loginStatuses).toEqual([200, 200]);
+
+    await expect.poll(async () => {
+      const identities = await Promise.all([
+        page.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+        secondPage.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+      ]);
+      return identities[0] === identities[1] &&
+        [adminId, qaUser!.id].includes(identities[0] ?? "")
+        ? identities[0]
+        : null;
+    }).not.toBeNull();
+    // Access tokens live only in memory; verify the shared session after both tabs
+    // restore through the serialized HttpOnly refresh cookie below.
+    await Promise.all([page.reload(), secondPage.reload()]);
+    await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    const finalToken = await readAccessToken(page);
+    const finalIdentityResponse = await page.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${finalToken}` },
+    });
+    expect(finalIdentityResponse.status()).toBe(200);
+    const finalId = (await finalIdentityResponse.json() as { id: string }).id;
+    expect([adminId, qaUser!.id]).toContain(finalId);
+    const storedIdentities = await Promise.all([
+      page.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+      secondPage.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+    ]);
+    expect(storedIdentities).toEqual([finalId, finalId]);
+  } finally {
+    await secondPage.close();
+  }
+});
+
+test("dos pestañas restauran la sesión sin competir por el refresh", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const secondPage = await page.context().newPage();
+  await secondPage.setViewportSize({ width: 390, height: 844 });
+  const refreshStatuses: number[] = [];
+  const recordRefresh = (response: import("@playwright/test").Response) => {
+    if (new URL(response.url()).pathname === "/api/auth/refresh") refreshStatuses.push(response.status());
+  };
+  page.on("response", recordRefresh);
+  secondPage.on("response", recordRefresh);
+  try {
+    await Promise.all([page.reload(), secondPage.goto("/dashboard")]);
+    await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    expect(refreshStatuses.filter((status) => status === 200).length).toBeGreaterThanOrEqual(2);
+    expect(refreshStatuses).not.toContain(401);
+    const sharedCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+    expect(sharedCookie?.httpOnly).toBe(true);
+    expect(sharedCookie?.expires).toBeGreaterThan(Date.now() / 1000);
+  } finally {
+    await secondPage.close();
+  }
+});
+
+test("un refresh 503 conserva la sesión local y la cookie para reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/auth/refresh", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API temporalmente no disponible" }) });
+  });
+  await page.route("**/api/backend/Users/my-team/page**", async (route) => {
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Prueba de expiración de acceso" }) });
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const cookieBefore = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(cookieBefore?.value).toBeTruthy();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByText("No se pudo renovar la sesión por un problema temporal. Intenta de nuevo.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(cookieBefore?.value);
+});
+
+async function clickMapAwayFromMarkers(map: Locator) {
+  const page = map.page();
+  const mapToggle = page.getByRole("button", { name: "Ver mapa", exact: true });
+  const usesMobileMapToggle = await mapToggle.isVisible();
+  if (usesMobileMapToggle) {
+    await mapToggle.click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles", exact: true })).toBeVisible();
+  }
+  await map.scrollIntoViewIfNeeded();
+  const bounds = await map.boundingBox();
+  if (!bounds) throw new Error("El mapa de selección no tiene dimensiones visibles.");
+
+  const markerCenters = await map.locator(".leaflet-marker-icon").evaluateAll((markers) => {
+    const mapElement = markers[0]?.closest(".leaflet-container");
+    if (!mapElement) return [];
+    const mapRect = mapElement.getBoundingClientRect();
+    return markers.map((marker) => {
+      const rect = marker.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - mapRect.left,
+        y: rect.top + rect.height / 2 - mapRect.top,
+      };
+    });
+  });
+  const candidates = [0.18, 0.32, 0.5, 0.68, 0.82].flatMap((x) =>
+    [0.32, 0.46, 0.6, 0.74].map((y) => ({
+      x: bounds.width * x,
+      y: bounds.height * y,
+    })),
+  );
+  const safeSpot = candidates
+    .map((candidate) => ({
+      ...candidate,
+      clearance: markerCenters.length
+        ? Math.min(...markerCenters.map((marker) => Math.hypot(candidate.x - marker.x, candidate.y - marker.y)))
+        : Number.POSITIVE_INFINITY,
+    }))
+    .sort((left, right) => right.clearance - left.clearance)
+    .find((candidate) => candidate.clearance > 36);
+
+  if (!safeSpot) throw new Error("No se encontró un área libre de marcadores para seleccionar el punto.");
+  await map.click({ position: { x: safeSpot.x, y: safeSpot.y } });
+  if (usesMobileMapToggle) {
+    await expect(page.getByRole("button", { name: "Ver mapa", exact: true })).toBeVisible();
+  }
+}
+
+test("formulario de inicio de sesión se adapta a móvil sin desbordarse", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Contraseña" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("login con credenciales inválidas muestra un error comprensible", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill("invalid.qa@example.test");
+  await page.getByRole("textbox", { name: "Contraseña" }).fill("invalid-password");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page.getByText("Correo o contraseña incorrectos", { exact: true })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("el registro público crea el tenant Gerente aislado y permite administrar la flota", async ({ page, request }) => {
+  test.skip(!allowMutations, "Requiere API/MySQL QA descartables con FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/register");
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+    await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Crear cuenta" })).toBeVisible();
+    const registrationBounds = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+      form: document.querySelector("form")?.getBoundingClientRect(),
+    }));
+    expect(registrationBounds.content).toBeLessThanOrEqual(registrationBounds.viewport);
+    expect(registrationBounds.form).not.toBeNull();
+    expect(registrationBounds.form!.width).toBeLessThanOrEqual(width);
+  }
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const emailAddress = `fletflow.e2e.admin.register.${suffix}@example.test`;
+  const password = `RegisterQA-${randomUUID()}aA1!`;
+  await expect(page.locator('input[type="password"]').nth(0)).toHaveAttribute("minlength", "12");
+  await expect(page.locator('input[type="password"]').nth(1)).toHaveAttribute("minlength", "12");
+
+  await page.getByLabel("Nombres").fill("E2E QA Empresa");
+  await page.getByLabel("Apellidos").fill("Propietaria");
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.locator('input[type="password"]').nth(0).fill(password);
+  await page.locator('input[type="password"]').nth(1).fill(password);
+  const registrationPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/register") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  const registrationResponse = await registrationPromise;
+  expect(registrationResponse.status()).toBe(200);
+  const neutralRegistrationResponse = await registrationResponse.json();
+  expect(neutralRegistrationResponse).toEqual({ message: "Si el registro puede completarse, podrás iniciar sesión con tus credenciales." });
+  const duplicateRegistration = await request.post("/api/backend/Auth/register", {
+    data: { username: "E2E duplicate", email: emailAddress, password },
+  });
+  expect(duplicateRegistration.status()).toBe(200);
+  expect(await duplicateRegistration.json()).toEqual(neutralRegistrationResponse);
+  await page.goto("/register");
+  await page.getByLabel("Nombres").fill("E2E QA Empresa duplicada");
+  await page.getByLabel("Apellidos").fill("Propietaria");
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.locator('input[type="password"]').nth(0).fill(password);
+  await page.locator('input[type="password"]').nth(1).fill(password);
+  const duplicateUiResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/register") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  const duplicateUiResponse = await duplicateUiResponsePromise;
+  expect(duplicateUiResponse.status()).toBe(200);
+  expect(await duplicateUiResponse.json()).toEqual(neutralRegistrationResponse);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.locator("[data-sonner-toast]").filter({ hasText: neutralRegistrationResponse.message }).last(),
+  ).toBeVisible();
+  await page.getByLabel("Correo electrónico").fill(emailAddress);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const meResponse = await request.get("/api/backend/Auth/me", { headers });
+  expect(meResponse.status()).toBe(200);
+  const me = await meResponse.json();
+  expect(me.username).toBe("E2E QA Empresa Propietaria");
+  expect(me.roles).toEqual(["Admin"]);
+
+  const vehiclesResponse = await request.get("/api/backend/Vehicles", { headers });
+  expect(vehiclesResponse.status()).toBe(200);
+  expect(await vehiclesResponse.json()).toEqual([]);
+  await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("Admin navega el dashboard y rutas en tablet sin desbordamiento", async ({ page, request }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin.");
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText("Rutas Activas", { exact: true })).toBeVisible();
+
+  const dashboardToken = await readAccessToken(page);
+  expect(dashboardToken).toBeTruthy();
+  const dashboardHeaders = { Authorization: `Bearer ${dashboardToken}` };
+  const [routesResponse, vehiclesResponse] = await Promise.all([
+    request.get("/api/backend/Routes", { headers: dashboardHeaders }),
+    request.get("/api/backend/Vehicles", { headers: dashboardHeaders }),
+  ]);
+  expect(routesResponse.status()).toBe(200);
+  expect(vehiclesResponse.status()).toBe(200);
+  const apiRoutes = await routesResponse.json() as { name: string; status: string | number; isActive?: boolean; createdAtUtc?: string | null; endedAt?: string | null; startedAt?: string | null }[];
+  const apiVehicles = await vehiclesResponse.json() as { status: string | number; isActive?: boolean }[];
+  const routeState = (status: string | number) => {
+    const value = String(status).toLowerCase();
+    if (value === "1" || value.includes("progress")) return "in_progress";
+    if (value === "2" || value.includes("complet")) return "completed";
+    if (value === "3" || value.includes("cancel")) return "cancelled";
+    return "pending";
+  };
+  const vehicleState = (status: string | number) => {
+    const value = String(status).toLowerCase();
+    if (value === "1" || value.includes("route")) return "in_route";
+    if (value === "2" || value.includes("maint")) return "maintenance";
+    return "available";
+  };
+  const visibleRoutes = apiRoutes.filter((route) => route.isActive !== false);
+  const visibleVehicles = apiVehicles.filter((vehicle) => vehicle.isActive !== false);
+  const expectDashboardStat = async (label: string, value: number) => {
+    const card = page.getByText(label, { exact: true }).locator("xpath=..");
+    await expect(card.locator("p").nth(1)).toHaveText(String(value));
+  };
+  await expectDashboardStat("Rutas Activas", visibleRoutes.filter((route) => routeState(route.status) === "in_progress").length);
+  await expectDashboardStat("Vehículos Disponibles", visibleVehicles.filter((vehicle) => vehicleState(vehicle.status) === "available").length);
+  await expectDashboardStat("Rutas Pendientes", visibleRoutes.filter((route) => routeState(route.status) === "pending").length);
+  await expectDashboardStat("Rutas Completadas", visibleRoutes.filter((route) => routeState(route.status) === "completed").length);
+  const latestKnownRoute = visibleRoutes
+    .filter((route) => route.createdAtUtc || route.endedAt || route.startedAt)
+    .sort((left, right) => (right.createdAtUtc ?? right.endedAt ?? right.startedAt ?? "")
+      .localeCompare(left.createdAtUtc ?? left.endedAt ?? left.startedAt ?? ""))[0];
+  if (latestKnownRoute) {
+    const activity = page.getByRole("heading", { name: "Actividad Reciente" }).locator("xpath=..");
+    await expect(activity.locator(".space-y-3 > div").first()).toContainText(latestKnownRoute.name);
+  }
+
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("button", { name: "Dashboard Principal", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+    main: document.querySelector("main")?.getBoundingClientRect().width ?? 0,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  expect(widths.main).toBeGreaterThan(700);
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  const assertMobileWidth = async () => {
+    const mobileWidths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(mobileWidths.content).toBeLessThanOrEqual(mobileWidths.viewport);
+  };
+  await assertMobileWidth();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Dashboard Principal", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  await assertMobileWidth();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Historial de Rutas", exact: true })).toBeVisible();
+  await assertMobileWidth();
+});
+
+test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin.");
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const meResponse = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(meResponse.status()).toBe(200);
+  expect(await meResponse.json()).toMatchObject({ isRootAccount: true, roles: ["Admin"] });
+
+  const dashboardBounds = async (locator: Locator) => {
+    await expect(locator).toBeVisible();
+    const bounds = await locator.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+    expect(bounds!.width).toBeGreaterThan(0);
+  };
+  await dashboardBounds(page.getByRole("heading", { name: /Bienvenido,/ }));
+  await dashboardBounds(page.getByText("Vehículos Disponibles", { exact: true }));
+  await dashboardBounds(page.getByText("Rutas Pendientes", { exact: true }));
+  await dashboardBounds(page.getByRole("heading", { name: "Accesos Rápidos" }));
+  const quickMapAction = page.getByRole("button", { name: /Mapa en Tiempo Real/ }).last();
+  await dashboardBounds(quickMapAction);
+  await quickMapAction.click();
+  await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+  const mobileMapBounds = await page.locator(".leaflet-container").boundingBox();
+  expect(mobileMapBounds).not.toBeNull();
+  expect(mobileMapBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(mobileMapBounds!.x + mobileMapBounds!.width).toBeLessThanOrEqual(320);
+
+  const assertNoHorizontalOverflow = async () => {
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  };
+
+  await page.getByRole("button", { name: "Volver" }).click();
+  await assertNoHorizontalOverflow();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Crear Usuario" })).toBeVisible();
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^Gerente\b/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+  await assertNoHorizontalOverflow();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await assertNoHorizontalOverflow();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoHorizontalOverflow();
+  await page.getByRole("button", { name: "Volver" }).click();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  await assertNoHorizontalOverflow();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertNoHorizontalOverflow();
+  await page.getByRole("button", { name: "Cambiar contraseña" }).click();
+  await expect(page.getByPlaceholder("Contraseña actual")).toBeVisible();
+  await assertNoHorizontalOverflow();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoHorizontalOverflow();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/auth/logout-all", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+  });
+  await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+  await expect(page.getByText("Servicio temporalmente no disponible")).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+});
+
+test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async ({ page, request }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere cuenta Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta mapa ${suffix}`;
+  const secondRouteName = `E2E QA ruta mapa alterna ${suffix}`;
+  const secondDriverEmail = `fletflow.e2e.driver.map.${suffix}@example.test`;
+  let firstVehicleId: string | undefined;
+  let secondVehicleId: string | undefined;
+  let firstRouteId: string | undefined;
+  let secondRouteId: string | undefined;
+  let secondDriverId: string | undefined;
+  const originalDriverResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(originalDriverResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await originalDriverResponse.json()).vehicleId as string | null;
+
+  try {
+    const secondDriverResponse = await request.post("/api/backend/Users", {
+      headers,
+      data: {
+        username: `E2E QA Map ${suffix}`,
+        email: secondDriverEmail,
+        password: `MapQA-${randomUUID()}aA1!`,
+        roleName: "Driver",
+        firstName: "E2E QA Map",
+        lastName: suffix,
+        documentNumber: `E2EQA${suffix}`,
+        phoneNumber: "0990000000",
+      },
+    });
+    expect(secondDriverResponse.status()).toBe(200);
+    const secondDriver = await secondDriverResponse.json();
+    secondDriverId = secondDriver.driverId as string;
+    const activateUserResponse = await request.put(`/api/backend/Users/${secondDriver.id}/status?isActive=true`, { headers });
+    expect(activateUserResponse.status()).toBe(200);
+
+    const firstVehicleResponse = await request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Map tracking", year: 2025 },
+    });
+    expect(firstVehicleResponse.status()).toBe(201);
+    firstVehicleId = (await firstVehicleResponse.json()).id as string;
+    const secondVehicleResponse = await request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}B`, brand: "FleetFlow QA", model: "Map selection", year: 2025 },
+    });
+    expect(secondVehicleResponse.status()).toBe(201);
+    secondVehicleId = (await secondVehicleResponse.json()).id as string;
+
+    const firstRouteResponse = await request.post("/api/backend/Routes", {
+      headers,
+      data: {
+        name: routeName,
+        cargoDescription: "Tracking real para prueba responsive",
+        vehicleId: firstVehicleId,
+        driverId: driverIdFixture,
+        points: [
+          { lat: -0.18, lng: -78.46, name: "Origen tracking QA", operation: 0, status: 0 },
+          { lat: -0.2, lng: -78.48, name: "Destino tracking QA", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(firstRouteResponse.status()).toBe(201);
+    firstRouteId = (await firstRouteResponse.json()).id as string;
+    const startRouteResponse = await request.put(`/api/backend/Routes/${firstRouteId}/status`, {
+      headers,
+      data: { status: 1 },
+    });
+    expect(startRouteResponse.status()).toBe(204);
+    const positionResponse = await request.post(`/api/backend/Routes/${firstRouteId}/positions`, {
+      headers,
+      data: { latitude: -0.185, longitude: -78.465, recordedAt: new Date().toISOString(), speedKmh: 0, heading: 0 },
+    });
+    expect(positionResponse.status()).toBe(200);
+
+    const secondRouteResponse = await request.post("/api/backend/Routes", {
+      headers,
+      data: {
+        name: secondRouteName,
+        cargoDescription: "Ruta alterna de selección QA",
+        vehicleId: secondVehicleId,
+        driverId: secondDriverId,
+        points: [
+          { lat: -0.17, lng: -78.45, name: "Origen alterno QA", operation: 0, status: 0 },
+          { lat: -0.21, lng: -78.49, name: "Destino alterno QA", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(secondRouteResponse.status()).toBe(201);
+    secondRouteId = (await secondRouteResponse.json()).id as string;
+
+    // El snapping es una mejora visual opcional; el caso valida el mapa y el tracking de la API.
+    await page.route("https://router.project-osrm.org/**", async (route) => {
+      await route.fulfill({ status: 503, body: "OSRM indisponible durante la prueba" });
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mapa en Tiempo Real", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mapa de rutas" })).toBeVisible();
+    const map = page.locator(".leaflet-container");
+    await expect(map).toBeVisible();
+    const routeList = page.locator("aside").filter({ hasText: "Rutas planificadas" });
+    const alternateRouteButton = routeList.getByRole("button").filter({ hasText: secondRouteName });
+    const trackingRouteButton = routeList.getByRole("button").filter({ hasText: routeName });
+    await expect(alternateRouteButton).toBeVisible();
+    await expect(trackingRouteButton).toBeVisible();
+
+    const emptyPositionsResponse = await request.get(`/api/backend/Routes/${secondRouteId}/positions`, { headers });
+    expect(emptyPositionsResponse.status()).toBe(200);
+    expect(await emptyPositionsResponse.json()).toEqual([]);
+
+    await alternateRouteButton.click();
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(secondRouteName);
+    await expect(page.getByText(
+      "Sin posiciones registradas para esta ruta. Se muestra únicamente la ruta planificada.",
+      { exact: true },
+    )).toBeVisible();
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toHaveCount(0);
+    await expect(page.getByText("Ruta planificada", { exact: true })).toBeVisible();
+    await expect(page.getByText("Recorrido GPS registrado", { exact: true })).toBeVisible();
+
+    const positionsRead = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${firstRouteId}/positions`) &&
+      response.request().method() === "GET",
+    );
+    await trackingRouteButton.click();
+    expect((await positionsRead).status()).toBe(200);
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(routeName);
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toBeVisible();
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
+      .toContainText(routeName);
+    await expect(page.locator(".leaflet-container")).toBeVisible();
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toBeVisible();
+    await expect(trackingRouteButton).toBeVisible();
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.mainContent).toBeLessThanOrEqual(widths.main);
+  } finally {
+    const cleanupIssues: string[] = [];
+    for (const routeId of [secondRouteId, firstRouteId]) {
+      if (!routeId) continue;
+      try {
+        const currentRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers });
+        if (currentRoute.ok()) {
+          const status = (await currentRoute.json()).status;
+          if (status === 1 || status === "InProgress") {
+            const cancel = await request.put(`/api/backend/Routes/${routeId}/status`, { headers, data: { status: 3 } });
+            if (cancel.status() !== 204) cleanupIssues.push(`No se pudo cancelar ruta ${routeId}: HTTP ${cancel.status()}`);
+          }
+          const remove = await request.delete(`/api/backend/Routes/${routeId}`, { headers });
+          if (![200, 204, 404].includes(remove.status())) cleanupIssues.push(`No se pudo retirar ruta ${routeId}: HTTP ${remove.status()}`);
+        } else if (currentRoute.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar ruta ${routeId}: HTTP ${currentRoute.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de ruta ${routeId}: ${String(error)}`);
+      }
+    }
+    for (const [driverId, vehicleId, previousVehicleId] of [
+      [driverIdFixture!, firstVehicleId, originalDriverVehicleId],
+      [secondDriverId, secondVehicleId, null],
+    ] as Array<[string | undefined, string | undefined, string | null]>) {
+      if (!driverId || !vehicleId) continue;
+      try {
+        const driverResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers });
+        if (driverResponse.ok() && (await driverResponse.json()).vehicleId === vehicleId) {
+          const restore = previousVehicleId
+            ? await request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, { headers, data: { vehicleId: previousVehicleId } })
+            : await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers });
+          if (restore.status() !== 204) cleanupIssues.push(`No se pudo restaurar Driver ${driverId}: HTTP ${restore.status()}`);
+        } else if (!driverResponse.ok() && driverResponse.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar Driver ${driverId}: HTTP ${driverResponse.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de Driver ${driverId}: ${String(error)}`);
+      }
+    }
+    for (const vehicleId of [firstVehicleId, secondVehicleId]) {
+      if (!vehicleId) continue;
+      try {
+        const remove = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
+        if (![200, 204, 404].includes(remove.status())) cleanupIssues.push(`No se pudo retirar vehículo ${vehicleId}: HTTP ${remove.status()}`);
+      } catch (error) {
+        cleanupIssues.push(`Falló cleanup de vehículo ${vehicleId}: ${String(error)}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup del mapa debe retirar rutas/vehículos y restaurar asignaciones").toEqual([]);
+  }
+});
+
+test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
+
+  const expectNoHorizontalOverflow = async () => {
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  };
+  const expectDialogFitsViewport = async (dialog: Locator) => {
+    const bounds = await dialog.boundingBox();
+    expect(bounds, "El formulario debe ser visible en el viewport actual").not.toBeNull();
+    const viewportWidth = page.viewportSize()!.width;
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewportWidth + 1);
+  };
+
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const plate = `E2EQA${suffix}`;
+  let vehicleId: string | undefined;
+
+  try {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Agregar Vehículo" }).click();
+    const dialog = page.getByRole("dialog");
+    await expectDialogFitsViewport(dialog);
+    await dialog.getByPlaceholder("ABC-123").fill(plate);
+    await dialog.getByPlaceholder("Toyota").fill("FleetFlow QA");
+    await dialog.getByPlaceholder("Hilux").fill("Browser test");
+    await dialog.locator('input[type="number"]').fill("2025");
+
+    const created = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Vehicles") &&
+      response.request().method() === "POST",
+    );
+    await dialog.getByRole("button", { name: "Agregar", exact: true }).click();
+    const createResponse = await created;
+    expect(createResponse.status()).toBe(201);
+    vehicleId = (await createResponse.json()).id as string;
+
+    const card = page.getByTestId(`vehicle-card-${vehicleId}`);
+    await expect(card).toContainText("FleetFlow QA Browser test");
+
+    await page.getByRole("button", { name: "Agregar Vehículo" }).click();
+    const duplicateDialog = page.getByRole("dialog");
+    await duplicateDialog.getByPlaceholder("ABC-123").fill(plate);
+    await duplicateDialog.getByPlaceholder("Toyota").fill("FleetFlow QA");
+    await duplicateDialog.getByPlaceholder("Hilux").fill("Duplicate test");
+    await duplicateDialog.locator('input[type="number"]').fill("2025");
+    const duplicateResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Vehicles") &&
+      response.request().method() === "POST",
+    );
+    await duplicateDialog.getByRole("button", { name: "Agregar", exact: true }).click();
+    const duplicateResponse = await duplicateResponsePromise;
+    expect(duplicateResponse.status()).toBe(409);
+    await expect(page.getByText(`Ya existe un vehículo con la placa ${plate} en esta empresa.`)).toBeVisible();
+    await expect(duplicateDialog).toBeVisible();
+    await expect(page.getByTestId(`vehicle-card-${vehicleId}`)).toHaveCount(1);
+    await duplicateDialog.getByRole("button", { name: "Cancelar" }).click();
+
+    await card.getByRole("button", { name: "Editar" }).click();
+    const editDialog = page.getByRole("dialog");
+    await editDialog.getByPlaceholder("Toyota").fill("FleetFlow QA Editado");
+    const updated = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) &&
+      response.request().method() === "PUT",
+    );
+    await editDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    expect((await updated).status()).toBe(200);
+    await expect(card).toContainText("FleetFlow QA Editado Browser test");
+
+    await card.getByRole("button", { name: "Editar" }).click();
+    const partialEditDialog = page.getByRole("dialog");
+    await partialEditDialog.getByPlaceholder("Toyota").fill("FleetFlow QA Parcial");
+    await partialEditDialog.locator("select").selectOption("mantenimiento");
+    await page.route(`**/api/backend/Vehicles/${vehicleId}/status`, (route) =>
+      route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ message: "Estado rechazado para prueba" }) }),
+    );
+    const partialDetailsUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}`) &&
+      response.request().method() === "PUT",
+    );
+    const rejectedStatusUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await partialEditDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    expect((await partialDetailsUpdate).status()).toBe(200);
+    expect((await rejectedStatusUpdate).status()).toBe(409);
+    await expect(page.getByText(/Los datos del vehículo se guardaron, pero no se pudo cambiar su estado/)).toBeVisible();
+    await expect(card).toContainText("FleetFlow QA Parcial Browser test");
+    await expect(card).toContainText("Disponible");
+    await page.unroute(`**/api/backend/Vehicles/${vehicleId}/status`);
+    const authHeaders = {
+      Authorization: `Bearer ${await readAccessToken(page)}`,
+    };
+    const partialVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(partialVehicle.status()).toBe(200);
+    expect((await partialVehicle.json()).brand).toBe("FleetFlow QA Parcial");
+    await partialEditDialog.getByRole("button", { name: "Cancelar" }).click();
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expectNoHorizontalOverflow();
+    await card.getByRole("button", { name: "Editar" }).click();
+    const maintenanceDialog = page.getByRole("dialog");
+    await expectDialogFitsViewport(maintenanceDialog);
+    await maintenanceDialog.locator("select").selectOption("mantenimiento");
+    await expect(maintenanceDialog.locator("select")).toHaveValue("mantenimiento");
+    const maintenanceUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await maintenanceDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    const maintenanceResponse = await maintenanceUpdate;
+    expect(maintenanceResponse.status()).toBe(204);
+    expect(maintenanceResponse.request().postDataJSON()).toEqual({ status: 2 });
+    await expect(card).toContainText("Mantenimiento");
+    const maintenanceVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(maintenanceVehicle.status()).toBe(200);
+    expect((await maintenanceVehicle.json()).status).toBe(2);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+    await expect(card).toContainText("Mantenimiento");
+    await card.getByRole("button", { name: "Editar" }).click();
+    const availableDialog = page.getByRole("dialog");
+    await availableDialog.locator("select").selectOption("disponible");
+    await expect(availableDialog.locator("select")).toHaveValue("disponible");
+    const availableUpdate = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${vehicleId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await availableDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+    const availableResponse = await availableUpdate;
+    expect(availableResponse.status()).toBe(204);
+    expect(availableResponse.request().postDataJSON()).toEqual({ status: 0 });
+    const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(availableVehicle.status()).toBe(200);
+    expect((await availableVehicle.json()).status).toBe(0);
+    await expect(card).toContainText("Disponible");
+
+    await card.getByRole("button", { name: `Eliminar vehículo ${plate}` }).click();
+    const confirmation = page.getByRole("alertdialog");
+    await expect(confirmation.getByText("Eliminar Vehículo")).toBeVisible();
+    await confirmation.getByRole("button", { name: "Cancelar" }).click();
+    await expect(card).toBeVisible();
+
+    await card.getByRole("button", { name: `Eliminar vehículo ${plate}` }).click();
+    const deleteConfirmation = page.getByRole("alertdialog");
+    const deleted = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}`) &&
+      response.request().method() === "DELETE",
+    );
+    await deleteConfirmation.getByRole("button", { name: "Sí, eliminar" }).click();
+    expect((await deleted).status()).toBe(204);
+    await expect(card).toHaveCount(0);
+    const deactivatedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(deactivatedVehicle.status()).toBe(200);
+    expect((await deactivatedVehicle.json()).isActive).toBe(false);
+
+    await page.getByRole("button", { name: "Mostrar bajas" }).click();
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+    await page.getByRole("button", { name: "Mostrar bajas" }).click();
+    const inactiveVehicles = page.getByRole("region", { name: "Vehículos dados de baja" });
+    const inactiveCard = inactiveVehicles.locator("div.rounded-lg.border").filter({ hasText: plate });
+    await expect(inactiveCard).toContainText("FleetFlow QA Parcial Browser test");
+    const deactivatedVehicleAfterReload = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: authHeaders });
+    expect(deactivatedVehicleAfterReload.status()).toBe(200);
+    expect((await deactivatedVehicleAfterReload.json()).isActive).toBe(false);
+    const reactivated = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Vehicles/${vehicleId}/reactivate`) &&
+      response.request().method() === "POST",
+    );
+    await inactiveCard.getByRole("button", { name: "Reactivar" }).click();
+    expect((await reactivated).status()).toBe(204);
+    const vehicleAfterReactivation = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, {
+      headers: authHeaders,
+    });
+    expect(vehicleAfterReactivation.status()).toBe(200);
+    expect((await vehicleAfterReactivation.json()).isActive).toBe(true);
+    await expect(card).toContainText("FleetFlow QA Parcial Browser test");
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expectNoHorizontalOverflow();
+  } finally {
+    if (vehicleId) {
+      const token = await readAccessToken(page).catch(() => null);
+      if (token) {
+        await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => undefined);
+      }
+    }
+  }
+});
+
+test("Admin edita una ruta móvil, conserva su operación y la consulta en Historial", async ({ page }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta ${suffix}`;
+  const updatedName = `${routeName} editada`;
+  const mobileUpdatedName = `${updatedName} móvil`;
+  let vehicleId: string | undefined;
+  let alternativeVehicleId: string | undefined;
+  let routeId: string | undefined;
+  let originalDriverVehicleId: string | null = null;
+
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Route test", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+    const alternativeVehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}B`, brand: "FleetFlow QA", model: "Alternate route test", year: 2025 },
+    });
+    expect(alternativeVehicleResponse.status()).toBe(201);
+    alternativeVehicleId = (await alternativeVehicleResponse.json()).id as string;
+    const initialDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(initialDriverResponse.status()).toBe(200);
+    originalDriverVehicleId = (await initialDriverResponse.json()).vehicleId ?? null;
+
+    const routeResponse = await page.request.post("/api/backend/Routes", {
+      headers,
+      data: {
+        name: routeName,
+        cargoDescription: "E2E QA recogida y entrega",
+        vehicleId,
+        driverId: driverIdFixture,
+        plannedStart: "2038-07-21T10:00:00Z",
+        plannedEnd: "2038-07-21T12:00:00Z",
+        points: [
+          { lat: -0.18, lng: -78.46, name: "E2E origen", operation: 0, status: 0 },
+          { lat: -0.19, lng: -78.47, name: "E2E recogida", operation: 1, status: 0 },
+          { lat: -0.195, lng: -78.475, name: "E2E entrega", operation: 2, status: 0 },
+          { lat: -0.2, lng: -78.48, name: "E2E destino", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(routeResponse.status()).toBe(201);
+    routeId = (await routeResponse.json()).id as string;
+
+    await page.reload();
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    const search = page.getByPlaceholder("Nombre de ruta");
+    await search.fill(routeName);
+    const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
+    await expect(routeHeading).toBeVisible();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const routeCard = routeHeading.locator("xpath=../../../..");
+    await routeCard.getByRole("button", { name: "Editar ruta" }).click();
+
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedName);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("delivery");
+    await page.getByTestId("stop-point-1").getByRole("button", { name: "Subir parada" }).click();
+    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("E2E entrega");
+    await expect(page.getByPlaceholder("Parada 2")).toHaveValue("E2E recogida");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(alternativeVehicleId!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(page.getByText(/E2E QA Driver/)).toBeVisible();
+    const tabletUpdateResponsePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) &&
+      response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
+    expect((await tabletUpdateResponsePromise).status()).toBe(200);
+    const tabletPersistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(tabletPersistedResponse.status()).toBe(200);
+    const tabletPersistedRoute = await tabletPersistedResponse.json();
+    expect(tabletPersistedRoute.name).toBe(updatedName);
+    expect(tabletPersistedRoute.vehicleId).toBe(alternativeVehicleId);
+    expect(tabletPersistedRoute.driverId).toBe(driverIdFixture);
+    expect(Date.parse(tabletPersistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
+    expect(Date.parse(tabletPersistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
+    const summarizePersistedPoints = (points: Array<{ name: string; operation: number | string }>) => {
+      const operationNames: Record<number, string> = {
+        0: "None",
+        1: "Pickup",
+        2: "Delivery",
+        3: "PickupAndDelivery",
+      };
+      return points.map((point) => ({
+        name: point.name,
+        operation: typeof point.operation === "number"
+          ? operationNames[point.operation] ?? `Unknown(${point.operation})`
+          : point.operation,
+      }));
+    };
+    const tabletPersistedPoints = tabletPersistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(summarizePersistedPoints(tabletPersistedPoints)).toEqual([
+      { name: "E2E origen", operation: "None" },
+      { name: "E2E entrega", operation: "Delivery" },
+      { name: "E2E recogida", operation: "Delivery" },
+      { name: "E2E destino", operation: "None" },
+    ]);
+    const tabletPersistedDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(tabletPersistedDriver.status()).toBe(200);
+    expect((await tabletPersistedDriver.json()).vehicleId).toBe(alternativeVehicleId);
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const updatedRouteHeading = page.getByRole("heading", { name: updatedName, exact: true });
+    await expect(updatedRouteHeading).toBeVisible();
+    await updatedRouteHeading.locator("xpath=../../../..").getByRole("button", { name: "Editar ruta" }).click();
+
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(mobileUpdatedName);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(page.getByText(/E2E QA Driver/)).toBeVisible();
+    const updateResponsePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) &&
+      response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
+    expect((await updateResponsePromise).status()).toBe(200);
+
+    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(mobileUpdatedName);
+    expect(persistedRoute.vehicleId).toBe(alternativeVehicleId);
+    expect(persistedRoute.driverId).toBe(driverIdFixture);
+    expect(Date.parse(persistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
+    expect(Date.parse(persistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
+    const persistedPoints = persistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(summarizePersistedPoints(persistedPoints)).toEqual([
+      { name: "E2E origen", operation: "None" },
+      { name: "E2E entrega", operation: "Delivery" },
+      { name: "E2E recogida", operation: "Delivery" },
+      { name: "E2E destino", operation: "None" },
+    ]);
+    const mobilePersistedDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(mobilePersistedDriver.status()).toBe(200);
+    expect((await mobilePersistedDriver.json()).vehicleId).toBe(alternativeVehicleId);
+
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await page.getByLabel("Vehículo").selectOption(alternativeVehicleId!);
+    await page.getByLabel("Conductor").selectOption(driverIdFixture!);
+    await expect(page.getByRole("heading", { name: mobileUpdatedName, exact: true })).toBeVisible();
+    await search.fill(`${mobileUpdatedName} sin coincidencia`);
+    await expect(page.getByText("Ninguna ruta coincide con esos filtros.")).toBeVisible();
+    await page.getByRole("button", { name: "Limpiar filtros" }).click();
+    await expect(page.getByRole("heading", { name: mobileUpdatedName, exact: true })).toBeVisible();
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const tabletCancelRouteCard = page.getByRole("heading", { name: mobileUpdatedName, exact: true }).locator("xpath=../../../..");
+    await tabletCancelRouteCard.getByRole("button", { name: `Cancelar ruta ${mobileUpdatedName}` }).click();
+    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    const cancelDialog = page.getByRole("alertdialog");
+    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
+    const tabletDialogDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      dialog: document.querySelector('[role="alertdialog"]')?.getBoundingClientRect().width ?? 0,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(tabletDialogDimensions.dialog).toBeLessThanOrEqual(tabletDialogDimensions.viewport);
+    expect(tabletDialogDimensions.document).toBeLessThanOrEqual(tabletDialogDimensions.viewport);
+    await page.keyboard.press("Escape");
+    await expect(cancelDialog).toBeHidden();
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const mobileCancelRouteCard = page.getByRole("heading", { name: mobileUpdatedName, exact: true }).locator("xpath=../../../..");
+    await mobileCancelRouteCard.getByRole("button", { name: `Cancelar ruta ${mobileUpdatedName}` }).click();
+    await expect(page.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    await expect(cancelDialog).toContainText("La disponibilidad del vehículo depende de su estado operativo y de otras rutas activas.");
+    const mobileDialogDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      dialog: document.querySelector('[role="alertdialog"]')?.getBoundingClientRect().width ?? 0,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(mobileDialogDimensions.dialog).toBeLessThanOrEqual(mobileDialogDimensions.viewport);
+    expect(mobileDialogDimensions.document).toBeLessThanOrEqual(mobileDialogDimensions.viewport);
+    const cancellationPromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+      response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Sí, cancelar ruta" }).click();
+    expect((await cancellationPromise).status()).toBe(204);
+    const cancelledRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(cancelledRouteResponse.status()).toBe(200);
+    expect((await cancelledRouteResponse.json()).status).toBe(3);
+    const mobileCancellationDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(mobileCancellationDimensions.document).toBeLessThanOrEqual(mobileCancellationDimensions.viewport);
+    expect(mobileCancellationDimensions.mainContent).toBeLessThanOrEqual(mobileCancellationDimensions.main);
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Historial de Rutas" })).toBeVisible();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect(page.getByRole("button", { name: "Canceladas", exact: true })).toBeVisible();
+    const historyDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(historyDimensions.document).toBeLessThanOrEqual(historyDimensions.viewport);
+    expect(historyDimensions.mainContent).toBeLessThanOrEqual(historyDimensions.main);
+    await page.setViewportSize({ width: 320, height: 844 });
+    const narrowHistoryDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(narrowHistoryDimensions.document).toBeLessThanOrEqual(narrowHistoryDimensions.viewport);
+    expect(narrowHistoryDimensions.mainContent).toBeLessThanOrEqual(narrowHistoryDimensions.main);
+    await page.getByRole("button", { name: "Canceladas", exact: true }).click();
+    const historyHeading = page.getByRole("heading", { name: mobileUpdatedName, exact: true });
+    await expect(historyHeading).toBeVisible();
+    const historyCard = historyHeading.locator("xpath=../../../..");
+    await expect(historyCard).toContainText("Cancelada");
+    await expect(historyCard).toContainText("E2E QA Driver");
+    await expect(historyCard).toContainText("Inicio planificado:");
+    await expect(historyCard).not.toContainText("Inicio real:");
+    await expect(historyCard).not.toContainText("Creada:");
+    await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
+    const historyDialog = page.getByRole("dialog");
+    await expect(historyDialog.getByRole("heading", { name: "Detalles de la Ruta" })).toBeVisible();
+    await expect(historyDialog).toContainText(mobileUpdatedName);
+    await expect(historyDialog).toContainText("Cancelada");
+    await expect(historyDialog).toContainText("E2E QA Driver");
+    await expect(historyDialog).toContainText("Inicio planificado");
+    await expect(historyDialog).not.toContainText("Fecha Creación");
+    await expect(historyDialog).not.toContainText("Inicio real");
+    const historyDialogBounds = await historyDialog.boundingBox();
+    expect(historyDialogBounds).not.toBeNull();
+    const tabletWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(historyDialogBounds!.width).toBeLessThanOrEqual(tabletWidth);
+    const mobileDialog = await historyDialog.evaluate((dialog) => ({
+      width: dialog.getBoundingClientRect().width,
+      overflowY: getComputedStyle(dialog).overflowY,
+    }));
+    expect(mobileDialog.width).toBeLessThanOrEqual(320);
+    expect(mobileDialog.overflowY).toBe("auto");
+
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  } finally {
+    if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
+    const currentDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+    if (currentDriver?.ok()) {
+      const currentVehicleId = (await currentDriver.json().catch(() => null))?.vehicleId as string | null | undefined;
+      if (currentVehicleId === vehicleId || currentVehicleId === alternativeVehicleId) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers }).catch(() => undefined);
+      }
+      if (originalDriverVehicleId && originalDriverVehicleId !== currentVehicleId) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+          headers,
+          data: { vehicleId: originalDriverVehicleId },
+        }).catch(() => undefined);
+      }
+    }
+    if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
+    if (alternativeVehicleId) await page.request.delete(`/api/backend/Vehicles/${alternativeVehicleId}`, { headers }).catch(() => undefined);
+  }
+});
+
+test("Admin crea una ruta desde el mapa a 320 y 768 px y la elimina con confirmación", async ({ page }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta mapa ${suffix}`;
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Map test", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+
+    let assignmentOptionsIntercepted = false;
+    await page.route("**/api/backend/Routes/assignment-options**", async (route) => {
+      const response = await route.fetch();
+      const options = await response.json();
+      assignmentOptionsIntercepted = true;
+      options.drivers.push({
+        id: "e2e-busy-driver",
+        firstName: "Conductor",
+        lastName: "Ocupado",
+        userId: null,
+        isAvailable: false,
+      });
+      await route.fulfill({ response, json: options });
+    });
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect.poll(() => assignmentOptionsIntercepted).toBe(true);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Recogida y entrega de prueba E2E");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+
+    const map = page.locator(".leaflet-container");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    const origin = page.getByPlaceholder("¿Desde dónde sale?");
+    await origin.fill("Origen E2E desde mapa");
+    await expect(page.getByTestId("origin-point-0")).toContainText("Ubicación pendiente");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await expect(page.getByText("Define un origen y un destino para continuar")).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("origin-point-0")).toContainText("Ubicación fijada");
+    await origin.fill("Origen E2E desde mapa");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    const stopOne = page.getByPlaceholder("Parada 1");
+    await expect(page.getByTestId("stop-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("stop-point-0")).toContainText("Ubicación fijada");
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await stopOne.fill("Recogida E2E");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("pickup");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    const stopTwo = page.getByPlaceholder("Parada 2");
+    await expect(page.getByTestId("stop-point-1")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("stop-point-1")).toContainText("Ubicación fijada");
+    await stopTwo.fill("Entrega y recogida E2E");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 2" }).selectOption("pickup_and_delivery");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    await page.getByTestId("stop-point-2").getByRole("button", { name: "Eliminar parada" }).click();
+    await expect(page.getByTestId("stop-point-2")).toContainText("Seleccionando");
+    await page.getByTestId("stop-point-2").getByRole("button", { name: "Subir parada" }).click();
+    await expect(page.getByTestId("stop-point-1")).toContainText("Seleccionando");
+    await clickMapAwayFromMarkers(map);
+    await expect(page.getByTestId("stop-point-1")).toContainText("Ubicación fijada");
+    await page.getByPlaceholder("Parada 2").fill("Parada seleccionada tras reordenar");
+    await expect(page.getByPlaceholder("Parada 1")).toHaveValue("Recogida E2E");
+    await expect(page.getByPlaceholder("Parada 3")).toHaveValue("Entrega y recogida E2E");
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.fill("Destino E2E desde mapa");
+    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación pendiente");
+    const destinationRow = destination.locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino E2E desde mapa");
+    await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("destination-point-0")).toContainText("Ubicación fijada");
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await expect(page.getByRole("img", { name: "Origen de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Parada 1 de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Parada 2 de la ruta" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Destino de la ruta" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId!);
+    await expect(page.locator('select option[value="e2e-busy-driver"]')).toBeDisabled();
+    await page.locator("select").nth(1).selectOption(driverIdFixture!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(5);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen E2E desde mapa",
+      "Recogida E2E",
+      "Parada seleccionada tras reordenar",
+      "Entrega y recogida E2E",
+      "Destino E2E desde mapa",
+    ]);
+    await expect(routeReview).toContainText("Recogida y entrega");
+    await expect(routeReview).toContainText("Recogida");
+
+    const createRoutePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    const createStartedAt = Date.now();
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createResponse = await createRoutePromise;
+    expect(createResponse.status()).toBe(201);
+    routeId = (await createResponse.json()).id as string;
+
+    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.createdAtUtc).toBeTruthy();
+    expect(Date.parse(persistedRoute.createdAtUtc)).toBeGreaterThanOrEqual(createStartedAt - 5_000);
+    expect(Date.parse(persistedRoute.createdAtUtc)).toBeLessThanOrEqual(Date.now() + 5_000);
+    const persistedPoints = persistedRoute.points as Array<{ name?: string; operation: number | string }>;
+    expect(persistedPoints).toHaveLength(5);
+    const operationNames: Record<number, string> = {
+      0: "None",
+      1: "Pickup",
+      2: "Delivery",
+      3: "PickupAndDelivery",
+    };
+    expect(persistedPoints.map((point) => ({
+      name: point.name,
+      operation: typeof point.operation === "number"
+        ? operationNames[point.operation] ?? `Unknown(${point.operation})`
+        : point.operation,
+    }))).toEqual([
+      { name: "Origen E2E desde mapa", operation: "None" },
+      { name: "Recogida E2E", operation: "Pickup" },
+      { name: "Parada seleccionada tras reordenar", operation: "Delivery" },
+      { name: "Entrega y recogida E2E", operation: "PickupAndDelivery" },
+      { name: "Destino E2E desde mapa", operation: "None" },
+    ]);
+
+    const routeHeading = page.getByRole("heading", { name: routeName, exact: true });
+    await expect(routeHeading).toBeVisible();
+    const routeCard = routeHeading.locator("xpath=../../../..");
+    await expect(routeCard).toContainText("Creada el");
+    await expect(routeCard).not.toContainText("No registrada");
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await routeCard.getByRole("button", { name: `Eliminar ${routeName}` }).click();
+    const confirmation = page.getByRole("alertdialog");
+    await expect(confirmation.getByText("Eliminar ruta")).toBeVisible();
+    const deleteRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) && response.request().method() === "DELETE",
+    );
+    await confirmation.getByRole("button", { name: "Sí, eliminar" }).click();
+    expect([200, 204]).toContain((await deleteRoutePromise).status());
+    await expect(routeCard).toHaveCount(0);
+    const deactivatedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(deactivatedRouteResponse.status()).toBe(200);
+    expect((await deactivatedRouteResponse.json()).isActive).toBe(false);
+    routeId = undefined;
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  } finally {
+    const cleanupIssues: string[] = [];
+    if (routeId) {
+      try {
+        const currentRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+        if (currentRoute.status() === 200) {
+          const route = await currentRoute.json();
+          const status = typeof route.status === "string" ? route.status.toLowerCase() : route.status;
+          if (status === 1 || status === "inprogress" || status === "in_progress") {
+            const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+              headers,
+              data: { status: 3 },
+            });
+            if (cancelRoute.status() !== 204) cleanupIssues.push(`No se pudo cancelar la ruta temporal: HTTP ${cancelRoute.status()}`);
+          }
+          const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+          if (![200, 204, 404].includes(cleanupRoute.status())) cleanupIssues.push(`No se pudo retirar la ruta temporal: HTTP ${cleanupRoute.status()}`);
+        } else if (currentRoute.status() !== 404) {
+          cleanupIssues.push(`No se pudo consultar la ruta temporal: HTTP ${currentRoute.status()}`);
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló el cleanup de la ruta temporal: ${String(error)}`);
+      }
+    }
+    if (vehicleId) {
+      try {
+        const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+        if (currentDriverResponse.status() !== 200) {
+          cleanupIssues.push(`No se pudo leer la asignación del Driver QA: HTTP ${currentDriverResponse.status()}`);
+        } else {
+          const currentDriverVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
+          if (currentDriverVehicleId === vehicleId) {
+            const restoreAssignment = originalDriverVehicleId
+              ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+                  headers,
+                  data: { vehicleId: originalDriverVehicleId },
+                })
+              : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+            if (restoreAssignment.status() !== 204) {
+              cleanupIssues.push(`No se pudo restaurar la asignación previa del Driver: HTTP ${restoreAssignment.status()}`);
+              const releaseTemporaryVehicle = await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+              if (releaseTemporaryVehicle.status() !== 204) cleanupIssues.push(`No se pudo liberar el vehículo temporal del Driver: HTTP ${releaseTemporaryVehicle.status()}`);
+            }
+          }
+        }
+      } catch (error) {
+        cleanupIssues.push(`Falló la restauración de la asignación del Driver: ${String(error)}`);
+      }
+      try {
+        const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers });
+        if (![200, 204, 404].includes(cleanupVehicle.status())) cleanupIssues.push(`No se pudo retirar el vehículo temporal: HTTP ${cleanupVehicle.status()}`);
+      } catch (error) {
+        cleanupIssues.push(`Falló el cleanup del vehículo temporal: ${String(error)}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup debe retirar ruta/vehículo y restaurar el Driver sin ocultar fallos").toEqual([]);
+  }
+});
+
+test("Admin crea un traslado que el Driver inicia y completa desde Mi Ruta", async ({ page }) => {
+  test.skip(
+    !email || !password || !routeDriverEmail || !routeDriverPassword || !routeDriverIdFixture || !allowMutations,
+    "Requiere fixtures Admin/Driver de operación y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+  );
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA traslado ${suffix}`;
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Transfer test", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Traslado directo entre ubicaciones");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+
+    const map = page.locator(".leaflet-container");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen del traslado");
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.locator("xpath=../..").getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles", exact: true })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino del traslado");
+    await expect(page.getByTestId("origin-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByTestId("destination-point-0")).not.toContainText(/Ubicación pendiente|NaN/);
+    await expect(page.getByRole("button", { name: "Agregar parada" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId!);
+    await page.locator("select").nth(1).selectOption(routeDriverIdFixture!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(2);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen del traslado",
+      "Destino del traslado",
+    ]);
+
+    const createRoutePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createResponse = await createRoutePromise;
+    expect(createResponse.status()).toBe(201);
+    routeId = (await createResponse.json()).id as string;
+
+    const persistedResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.points).toHaveLength(2);
+    const operationNames: Record<number, string> = { 0: "none", 1: "pickup", 2: "delivery", 3: "pickupanddelivery" };
+    expect(persistedRoute.points.map((point: { operation: number | string }) =>
+      typeof point.operation === "number" ? operationNames[point.operation] : point.operation.toLowerCase(),
+    )).toEqual(["none", "none"]);
+    await expect(page.getByRole("heading", { name: routeName, exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await page.evaluate(() => localStorage.removeItem("auth_tokens"));
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(routeDriverEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(routeDriverPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.context().grantPermissions(["geolocation"]);
+    await page.context().setGeolocation({ latitude: -0.185, longitude: -78.465, accuracy: 10 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+    await expect(page.getByText(routeName, { exact: true })).toBeVisible();
+    const driverToken = await readAccessToken(page);
+    expect(driverToken).toBeTruthy();
+    const driverHeaders = { Authorization: `Bearer ${driverToken}` };
+    const driverRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: driverHeaders });
+    expect(driverRouteResponse.status()).toBe(200);
+    const driverRoute = await driverRouteResponse.json();
+    expect(driverRoute.points.map((point: { operation: number | string }) =>
+      typeof point.operation === "number" ? operationNames[point.operation] : point.operation.toLowerCase(),
+    )).toEqual(["none", "none"]);
+
+    const startRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Iniciar Ruta" }).click();
+    expect((await startRoutePromise).status()).toBe(204);
+    const startedTransfer = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(startedTransfer.status()).toBe(200);
+    const startedRoute = await startedTransfer.json();
+    expect(startedRoute.status).toBe(1);
+    expect(startedRoute.startedAt).toBeTruthy();
+    expect(startedRoute.points.every((point: { operation: number; status: number }) => point.operation === 0 && point.status === 0)).toBe(true);
+    const onRouteVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers });
+    expect(onRouteVehicle.status()).toBe(200);
+    expect((await onRouteVehicle.json()).status).toBe(1);
+
+    const completeRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Completar", exact: true }).click();
+    expect((await completeRoutePromise).status()).toBe(204);
+    const completedTransfer = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(completedTransfer.status()).toBe(200);
+    const completedRoute = await completedTransfer.json();
+    expect(completedRoute.status).toBe(2);
+    expect(completedRoute.startedAt).toBeTruthy();
+    expect(completedRoute.endedAt).toBeTruthy();
+    expect(completedRoute.points.every((point: { operation: number; status: number; evidence: unknown[] }) =>
+      point.operation === 0 && point.status === 0 && point.evidence.length === 0,
+    )).toBe(true);
+    const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers });
+    expect(availableVehicle.status()).toBe(200);
+    expect((await availableVehicle.json()).status).toBe(0);
+    await expect(page.getByText("Estado de ruta actualizado", { exact: true }).last()).toBeVisible();
+  } finally {
+    const cleanupIssues: string[] = [];
+    if (routeId) {
+      const currentRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (currentRoute?.status() === 200 && (await currentRoute.json()).status === 1) {
+        const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+          headers,
+          data: { status: 3 },
+        }).catch(() => null);
+        if (cancelRoute?.status() !== 204) {
+          cleanupIssues.push(`No se pudo cancelar el traslado temporal antes de limpiarlo: HTTP ${cancelRoute?.status() ?? "sin respuesta"}`);
+        }
+      }
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
+        cleanupIssues.push(`No se pudo retirar la ruta temporal de traslado: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
+      }
+    }
+    if (vehicleId) {
+      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers }).catch(() => null);
+      if (currentDriverResponse?.status() !== 200) {
+        cleanupIssues.push(`No se pudo leer la asignación del Driver QA: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
+      } else if ((await currentDriverResponse.json()).vehicleId === vehicleId) {
+        const restoreAssignment = originalDriverVehicleId
+          ? await page.request.put(`/api/backend/Drivers/${routeDriverIdFixture}/assign-vehicle`, {
+              headers,
+              data: { vehicleId: originalDriverVehicleId },
+            }).catch(() => null)
+          : await page.request.put(`/api/backend/Drivers/${routeDriverIdFixture}/unassign-vehicle`, { headers }).catch(() => null);
+        if (restoreAssignment?.status() !== 204) {
+          cleanupIssues.push(`No se pudo restaurar la asignación previa del Driver: HTTP ${restoreAssignment?.status() ?? "sin respuesta"}`);
+        }
+      }
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (!cleanupVehicle || ![200, 204, 404].includes(cleanupVehicle.status())) {
+        cleanupIssues.push(`No se pudo retirar el vehículo temporal: HTTP ${cleanupVehicle?.status() ?? "sin respuesta"}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup debe retirar los recursos y restaurar la asignación del Driver").toEqual([]);
+  }
+});
+
+test("Admin crea una ruta con parada operativa en tablet sin desbordamiento", async ({ page, request }) => {
+  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta tablet ${suffix}`;
+  let vehicleId: string | undefined;
+  let routeId: string | undefined;
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  expect(driverBeforeResponse.status()).toBe(200);
+  const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+
+  const expectNoHorizontalOverflow = async () => {
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      main: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.mainContent).toBeLessThanOrEqual(widths.main);
+  };
+
+  try {
+    let releaseSlowSearch!: () => void;
+    const slowSearchGate = new Promise<void>((resolve) => {
+      releaseSlowSearch = resolve;
+    });
+    await page.route("https://nominatim.openstreetmap.org/search**", async (route) => {
+      const query = new URL(route.request().url()).searchParams.get("q");
+      if (query === "sin resultados") {
+        await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+        return;
+      }
+      if (query === "error servicio") {
+        await route.abort("failed");
+        return;
+      }
+      if (query === "búsqueda lenta") {
+        await slowSearchGate;
+        try {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([{ lat: "1", lon: "1", display_name: "Resultado tardío" }]),
+          });
+        } catch {
+          // Cambiar el punto cancela la búsqueda antes de liberar esta respuesta.
+        }
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{
+          lat: "-0.20123",
+          lon: "-78.49234",
+          display_name: `Dirección QA ${query}`,
+        }]),
+      });
+    });
+
+    const vehicleResponse = await request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tablet route", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Entrega y recogida QA en tablet");
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    const map = page.locator(".leaflet-container");
+    await page.getByRole("button", { name: "Seleccionando" }).waitFor();
+    await page.getByRole("button", { name: "Ver mapa", exact: true }).click();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("sin resultados");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await expect(page.getByText("No encontramos esa ubicación. Prueba con una dirección más específica.")).toBeVisible();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("error servicio");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await expect(page.getByText("No se pudo buscar la ubicación. También puedes hacer clic directamente en el mapa.")).toBeVisible();
+    const slowSearchRequest = page.waitForRequest((request) =>
+      request.url().includes("nominatim.openstreetmap.org/search") &&
+      new URL(request.url()).searchParams.get("q") === "búsqueda lenta",
+    );
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("búsqueda lenta");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    await slowSearchRequest;
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    const destinationRowForRace = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+    await destinationRowForRace.getByRole("button", { name: "Ubicar" }).click();
+    releaseSlowSearch();
+    await page.waitForTimeout(100);
+    await expect(page.getByRole("button", { name: "Resultado tardío", exact: true })).toHaveCount(0);
+    await expect(page.getByText("Ubicando destino", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Ver paradas y detalles", exact: true }).click();
+    const originRowAfterRace = page.getByPlaceholder("¿Desde dónde sale?").locator("xpath=../..");
+    await originRowAfterRace.getByRole("button", { name: "Ubicar" }).click();
+    await page.getByPlaceholder("Busca una dirección o lugar").fill("Origen de prueba");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
+    const originSearchResult = page.getByRole("button", { name: "Dirección QA Origen de prueba", exact: true });
+    await expect(originSearchResult).toBeVisible();
+    await originSearchResult.click();
+    await page.getByPlaceholder("¿Desde dónde sale?").fill("Origen tablet QA");
+    await expect(page.getByTestId("origin-point-0")).toContainText("-0.20123, -78.49234");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("Parada 1").fill("Recogida y entrega tablet QA");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("pickup_and_delivery");
+    const destinationRow = page.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await page.getByPlaceholder("¿A dónde llega?").fill("Destino tablet QA");
+    await expectNoHorizontalOverflow();
+
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId);
+    await page.locator("select").nth(1).selectOption(driverIdFixture!);
+    await expectNoHorizontalOverflow();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
+    await expect(routeReview.getByRole("listitem")).toHaveCount(3);
+    await expect(routeReview.getByRole("listitem")).toContainText([
+      "Origen tablet QA",
+      "Recogida y entrega tablet QA",
+      "Destino tablet QA",
+    ]);
+    await expect(routeReview).toContainText("Recogida y entrega");
+    await expectNoHorizontalOverflow();
+
+    let failFirstSave = true;
+    await page.route("**/api/backend/Routes", async (route) => {
+      if (route.request().method() === "POST" && failFirstSave) {
+        failFirstSave = false;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Servicio temporalmente no disponible" }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    const failedSavePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    expect((await failedSavePromise).status()).toBe(503);
+    await expect(page.getByText("Servicio temporalmente no disponible")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    await expect(routeReview).toContainText("Recogida y entrega tablet QA");
+
+    const createResponsePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(201);
+    routeId = (await createResponse.json()).id as string;
+
+    const persistedResponse = await request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedResponse.status()).toBe(200);
+    const persistedRoute = await persistedResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    const persistedPoints = persistedRoute.points as Array<{ name: string; operation: number | string }>;
+    expect(persistedPoints.map((point) => point.name)).toEqual([
+      "Origen tablet QA",
+      "Recogida y entrega tablet QA",
+      "Destino tablet QA",
+    ]);
+    expect([3, "PickupAndDelivery"]).toContain(persistedPoints[1].operation);
+    await expectNoHorizontalOverflow();
+  } finally {
+    const cleanupIssues: string[] = [];
+    if (routeId) {
+      const cleanupRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
+        cleanupIssues.push(`No se pudo retirar la ruta tablet temporal: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
+      }
+    }
+    if (vehicleId) {
+      const currentDriverResponse = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      if (currentDriverResponse?.status() === 200) {
+        const currentVehicleId = (await currentDriverResponse.json()).vehicleId as string | null;
+        if (currentVehicleId === vehicleId) {
+          const restoreAssignment = originalDriverVehicleId
+            ? await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers, data: { vehicleId: originalDriverVehicleId } })
+            : await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers });
+          if (restoreAssignment.status() !== 204) cleanupIssues.push(`No se pudo restaurar el vehículo anterior del Driver: HTTP ${restoreAssignment.status()}`);
+        }
+      } else {
+        cleanupIssues.push(`No se pudo verificar la asignación del Driver: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
+      }
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (!cleanupVehicle || ![200, 204, 404].includes(cleanupVehicle.status())) {
+        cleanupIssues.push(`No se pudo retirar el vehículo tablet temporal: HTTP ${cleanupVehicle?.status() ?? "sin respuesta"}`);
+      }
+    }
+    expect(cleanupIssues, "El cleanup tablet debe retirar ruta/vehículo y restaurar el Driver").toEqual([]);
+  }
+});
+
+test("Admin combina filtros de rutas y restablece la lista", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 9);
+  const fixture = {
+    vehicles: [] as string[],
+    drivers: [] as string[],
+    routes: [] as Array<{ id: string; name: string }>,
+  };
+  const routeNames = [`E2E QA ruta filtros A ${suffix}`, `E2E QA ruta filtros B ${suffix}`];
+
+  try {
+    for (let index = 0; index < 2; index++) {
+      const vehicle = await page.request.post("/api/backend/Vehicles", {
+        headers,
+        data: { plate: `E2EQA${suffix}F${index}`, brand: "FleetFlow QA", model: "Route filter", year: 2025 },
+      });
+      expect(vehicle.status()).toBe(201);
+      fixture.vehicles.push((await vehicle.json()).id as string);
+
+      const driver = await page.request.post("/api/backend/Drivers", {
+        headers,
+        data: {
+          firstName: `E2E Filter ${suffix}`,
+          lastName: `Driver ${index}`,
+          documentNumber: `E2EQA${suffix}F${index}`,
+          phoneNumber: "0990000099",
+          userId: null,
+        },
+      });
+      expect(driver.status()).toBe(201);
+      fixture.drivers.push((await driver.json()).id as string);
+
+      const route = await page.request.post("/api/backend/Routes", {
+        headers,
+        data: {
+          name: routeNames[index],
+          cargoDescription: "Fixture E2E filtros combinados",
+          vehicleId: fixture.vehicles[index],
+          driverId: fixture.drivers[index],
+          points: [
+            { lat: -0.18, lng: -78.46, name: `Origen filtro ${index}`, operation: 0 },
+            { lat: -0.2, lng: -78.48, name: `Destino filtro ${index}`, operation: 0 },
+          ],
+        },
+      });
+      expect(route.status()).toBe(201);
+      fixture.routes.push({ id: (await route.json()).id as string, name: routeNames[index] });
+    }
+
+    const cancelSecondRoute = await page.request.put(`/api/backend/Routes/${fixture.routes[1].id}/status`, {
+      headers,
+      data: { status: 3 },
+    });
+    expect(cancelSecondRoute.status()).toBe(204);
+
+    await page.reload();
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[0]);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[0]);
+
+    const firstRouteHeading = page.getByRole("heading", { name: routeNames[0], exact: true });
+    const secondRouteHeading = page.getByRole("heading", { name: routeNames[1], exact: true });
+    await expect(firstRouteHeading).toBeVisible();
+    await expect(secondRouteHeading).toHaveCount(0);
+
+    // Isolate the status filter: same resource filters must expose the cancelled
+    // route only after changing status, proving all selected criteria are applied.
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[1]);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[1]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Estado").selectOption("cancelada");
+    await expect(secondRouteHeading).toBeVisible();
+
+    for (const width of [320, 768]) {
+      await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+      expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.main);
+      await expect(secondRouteHeading).toBeVisible();
+    }
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    const mobileFilterControls = [
+      page.getByLabel("Buscar ruta"),
+      page.getByLabel("Estado"),
+      page.getByLabel("Vehículo"),
+      page.getByLabel("Conductor"),
+    ];
+    for (const control of mobileFilterControls) {
+      await expect(control).toBeVisible();
+      const bounds = await control.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+      expect(bounds!.width).toBeGreaterThan(200);
+    }
+
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Estado").selectOption("cancelada");
+    await expect(secondRouteHeading).toBeVisible();
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[0]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[1]);
+    await expect(secondRouteHeading).toBeVisible();
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[0]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[1]);
+    await expect(secondRouteHeading).toBeVisible();
+    const clearMobileFilters = page.getByRole("button", { name: "Limpiar filtros" });
+    const clearBounds = await clearMobileFilters.boundingBox();
+    expect(clearBounds).not.toBeNull();
+    expect(clearBounds!.x + clearBounds!.width).toBeLessThanOrEqual(320);
+
+    await page.getByRole("button", { name: "Limpiar filtros" }).click();
+    await expect(firstRouteHeading).toBeVisible();
+    await expect(secondRouteHeading).toBeVisible();
+
+    for (const width of [320, 768]) {
+      await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      await expect(firstRouteHeading).toBeVisible();
+      await expect(secondRouteHeading).toBeVisible();
+    }
+  } finally {
+    for (const route of fixture.routes) {
+      const response = await page.request.delete(`/api/backend/Routes/${route.id}`, { headers }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+    for (const driverId of fixture.drivers) {
+      const response = await page.request.put(`/api/backend/Drivers/${driverId}/status`, {
+        headers,
+        data: { isActive: false },
+      }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+    for (const vehicleId of fixture.vehicles) {
+      const response = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => null);
+      if (response) expect([200, 204, 404]).toContain(response.status());
+    }
+  }
+});
+
+test("User no ve operaciones y la API deniega recursos de flota", async ({ page }) => {
+  test.skip(!userEmail || !userPassword, "El runner local crea el usuario QA para verificar permisos.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(userEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText(/Tu cuenta no tiene permisos operativos asignados/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const [vehiclesResponse, routesResponse] = await Promise.all([
+    page.request.get("/api/backend/Vehicles", { headers }),
+    page.request.get("/api/backend/Routes", { headers }),
+  ]);
+  expect(vehiclesResponse.status()).toBe(403);
+  expect(routesResponse.status()).toBe(403);
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz", async ({ page, browser }) => {
+  test.skip(
+    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !managerEmail || !managerPassword || !logisticsEmail || !logisticsPassword || !allowMutations,
+    "Requiere fixtures QA Admin, User, Driver, Logistics, Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+  );
+  test.setTimeout(360_000);
+  page.setDefaultTimeout(8_000);
+
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  type AuthHeaders = { Authorization: string };
+  type MutationCheck = [string, () => Promise<{ status(): number }>];
+
+  const login = async (accountEmail: string, accountPassword: string) => {
+    const response = await page.request.post("/api/backend/Auth/login", {
+      data: { email: accountEmail, password: accountPassword },
+    });
+    expect(response.status(), `login QA para ${accountEmail}`).toBe(200);
+    const body = await response.json();
+    const token = body.token ?? body.accessToken;
+    expect(token, `token QA para ${accountEmail}`).toBeTruthy();
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  const adminHeaders = await login(email!, password!);
+  const vehicleId = randomUUID();
+  const driverId = randomUUID();
+  const routeId = randomUUID();
+  const userId = randomUUID();
+
+  for (const [path, id] of [
+    ["Vehicles", vehicleId],
+    ["Drivers", driverId],
+    ["Routes", routeId],
+  ]) {
+    const response = await page.request.get(`/api/backend/${path}/${id}`, { headers: adminHeaders });
+    expect(response.status(), `el GUID QA ${path}/${id} debe ser inexistente`).toBe(404);
+  }
+  const team = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
+  expect(team.status()).toBe(200);
+  expect((await team.json()).some((member: { id: string }) => member.id === userId)).toBe(false);
+
+  // Si una autorización falla, los POST sólo escriben fixtures con prefijos que
+  // scripts/cleanup-e2e.sql elimina al cerrar el runner de base desechable.
+  const qaVehicle = {
+    plate: `E2EQA${suffix}`,
+    brand: "FleetFlow QA",
+    model: "Role matrix",
+    year: 2025,
+  };
+  const qaDriver = {
+    firstName: "E2E QA",
+    lastName: `Denied ${suffix}`,
+    documentNumber: `E2EQA${suffix}`,
+    phoneNumber: "0990000000",
+  };
+  const qaRoute = {
+    vehicleId: driverIdFixture,
+    driverId: driverIdFixture,
+    name: `E2E QA ruta autorización ${suffix}`,
+    cargoDescription: "Fixture de matriz de permisos",
+    points: [
+      { lat: -0.18, lng: -78.46, name: "Origen QA", operation: 0 },
+      { lat: -0.19, lng: -78.47, name: "Destino QA", operation: 0 },
+    ],
+  };
+  const qaUser = {
+    username: `E2E QA denied ${suffix}`,
+    email: `fletflow.e2e.user.denied.${suffix}@example.test`,
+    password: "QA-only-Password-934!",
+    roleName: "User",
+  };
+
+  const createdVehicle = await page.request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: qaVehicle,
+  });
+  expect(createdVehicle.status()).toBe(201);
+  const qaVehicleId = (await createdVehicle.json()).id as string;
+  qaRoute.vehicleId = qaVehicleId;
+
+  const expectDenied = async (role: string, operations: MutationCheck[]) => {
+    for (const [operation, send] of operations) {
+      const response = await send();
+      expect(response.status(), `${role} debe recibir 403 en ${operation}`).toBe(403);
+    }
+  };
+
+  const vehicleMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Vehicles", () => page.request.post("/api/backend/Vehicles", { headers, data: { ...qaVehicle, plate: `E2EQA${suffix.slice(1)}` } })],
+    [`PUT /Vehicles/${vehicleId}`, () => page.request.put(`/api/backend/Vehicles/${vehicleId}`, { headers, data: qaVehicle })],
+    [`PUT /Vehicles/${vehicleId}/status`, () => page.request.put(`/api/backend/Vehicles/${vehicleId}/status`, { headers, data: { status: 0 } })],
+    [`DELETE /Vehicles/${vehicleId}`, () => page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers })],
+    [`POST /Vehicles/${vehicleId}/reactivate`, () => page.request.post(`/api/backend/Vehicles/${vehicleId}/reactivate`, { headers })],
+  ];
+  const driverMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Drivers", () => page.request.post("/api/backend/Drivers", { headers, data: { ...qaDriver, documentNumber: `E2EQA${suffix.slice(1)}` } })],
+    [`PUT /Drivers/${driverId}`, () => page.request.put(`/api/backend/Drivers/${driverId}`, { headers, data: qaDriver })],
+    [`PUT /Drivers/${driverId}/status`, () => page.request.put(`/api/backend/Drivers/${driverId}/status`, { headers, data: { isActive: false } })],
+    [`PUT /Drivers/${driverId}/assign-vehicle`, () => page.request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, { headers, data: { vehicleId: qaVehicleId } })],
+    [`PUT /Drivers/${driverId}/unassign-vehicle`, () => page.request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers })],
+  ];
+  const userAndRoleMutations = (currentHeaders: AuthHeaders): MutationCheck[] => [
+    ["POST /Users", () => page.request.post("/api/backend/Users", { headers: currentHeaders, data: qaUser })],
+    [`PUT /Users/${userId}/status`, () => page.request.put(`/api/backend/Users/${userId}/status?isActive=false`, { headers: currentHeaders })],
+    [`PUT /Users/${userId}/role`, () => page.request.put(`/api/backend/Users/${userId}/role`, { headers: currentHeaders, data: { roleName: "Manager" } })],
+    [`PUT /Users/${userId}/profile`, () => page.request.put(`/api/backend/Users/${userId}/profile`, { headers: currentHeaders, data: { username: "blocked", firstName: "Blocked", lastName: "Member" } })],
+    [`POST /Users/${userId}/roles/Manager`, () => page.request.post(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
+    [`DELETE /Users/${userId}/roles/Manager`, () => page.request.delete(`/api/backend/Users/${userId}/roles/Manager`, { headers: currentHeaders })],
+    // El rol existente no puede crear datos aunque una autorización se configurara mal.
+    ["POST /Roles", () => page.request.post("/api/backend/Roles", { headers: currentHeaders, data: { name: "User" } })],
+    [`DELETE /Roles/E2E-QA-MISSING-${suffix}`, () => page.request.delete(`/api/backend/Roles/E2E-QA-MISSING-${suffix}`, { headers: currentHeaders })],
+  ];
+  const routeManagementMutations = (headers: AuthHeaders): MutationCheck[] => [
+    ["POST /Routes", () => page.request.post("/api/backend/Routes", { headers, data: qaRoute })],
+    [`PUT /Routes/${routeId}`, () => page.request.put(`/api/backend/Routes/${routeId}`, { headers, data: qaRoute })],
+    [`DELETE /Routes/${routeId}`, () => page.request.delete(`/api/backend/Routes/${routeId}`, { headers })],
+  ];
+
+  const userHeaders = await login(userEmail!, userPassword!);
+  await expectDenied("User", [
+    ...vehicleMutations(userHeaders),
+    ...driverMutations(userHeaders),
+    ...routeManagementMutations(userHeaders),
+    [`PUT /Routes/${routeId}/status`, () => page.request.put(`/api/backend/Routes/${routeId}/status`, { headers: userHeaders, data: { status: 3 } })],
+    [`PUT /Routes/${routeId}/points/0/status`, () => page.request.put(`/api/backend/Routes/${routeId}/points/0/status`, { headers: userHeaders, data: { status: 2 } })],
+    [`POST /Routes/${routeId}/points/0/evidence`, () => page.request.post(`/api/backend/Routes/${routeId}/points/0/evidence`, { headers: userHeaders, data: { type: "note", content: "QA denied", description: "QA" } })],
+    [`POST /Routes/${routeId}/positions`, () => page.request.post(`/api/backend/Routes/${routeId}/positions`, { headers: userHeaders, data: { latitude: -0.18, longitude: -78.46 } })],
+    ...userAndRoleMutations(userHeaders),
+  ]);
+
+  const driverHeaders = await login(driverEmail!, driverPassword!);
+  await expectDenied("Driver", [
+    ...vehicleMutations(driverHeaders),
+    ...driverMutations(driverHeaders),
+    ...routeManagementMutations(driverHeaders),
+    ...userAndRoleMutations(driverHeaders),
+  ]);
+
+  const logisticsHeaders = await login(logisticsEmail!, logisticsPassword!);
+  await expectDenied("Logistics", [
+    ...vehicleMutations(logisticsHeaders),
+    ...driverMutations(logisticsHeaders),
+    ...userAndRoleMutations(logisticsHeaders),
+  ]);
+
+  const managerHeaders = await login(managerEmail!, managerPassword!);
+  await expectDenied("Manager", userAndRoleMutations(managerHeaders));
+  const managerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: managerHeaders });
+  expect(managerTeamResponse.status()).toBe(403);
+  expect(await managerTeamResponse.text()).not.toContain(userEmail!);
+  const managerVehicles = await page.request.get("/api/backend/Vehicles", { headers: managerHeaders });
+  const managerRoutes = await page.request.get("/api/backend/Routes", { headers: managerHeaders });
+  expect(managerVehicles.status()).toBe(200);
+  expect(managerRoutes.status()).toBe(200);
+
+  let managerVehicleId: string | undefined;
+  let managerUiDriverId: string | undefined;
+  let managerBlockerDriverId: string | undefined;
+  try {
+      const managerVehicle = await page.request.post("/api/backend/Vehicles", {
+        headers: managerHeaders,
+        data: { ...qaVehicle, plate: `E2EQAM${suffix}`, brand: "Manager QA" },
+      });
+      expect(managerVehicle.status()).toBe(201);
+      managerVehicleId = (await managerVehicle.json()).id as string;
+
+      const updateManagerVehicle = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}`, {
+        headers: managerHeaders,
+        data: { ...qaVehicle, plate: `E2EQAM${suffix}`, brand: "Manager editado" },
+      });
+      expect(updateManagerVehicle.status()).toBe(200);
+      const changeManagerVehicleStatus = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+        headers: managerHeaders,
+        data: { status: 2 },
+      });
+      expect(changeManagerVehicleStatus.status()).toBe(204);
+
+      const persistedManagerVehicle = await page.request.get(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+      expect(persistedManagerVehicle.status()).toBe(200);
+      expect(await persistedManagerVehicle.json()).toMatchObject({
+        plate: `E2EQAM${suffix}`,
+        brand: "Manager editado",
+        status: 2,
+      });
+
+      const resetManagerVehicleStatus = await page.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+        headers: managerHeaders,
+        data: { status: 0 },
+      });
+      expect(resetManagerVehicleStatus.status()).toBe(204);
+      const deleteManagerVehicle = await page.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+      expect(deleteManagerVehicle.status()).toBe(204);
+      managerVehicleId = undefined;
+    } finally {
+      if (managerVehicleId) {
+        const cleanupManagerVehicle = await page.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerHeaders });
+        expect([200, 204, 404]).toContain(cleanupManagerVehicle.status());
+      }
+    }
+
+    const managerContext = await browser.newContext();
+    const managerPage = await managerContext.newPage();
+    managerVehicleId = undefined;
+    const uiPlate = `E2EQAM${suffix}UI`;
+    try {
+      let managerTeamRequests = 0;
+      managerPage.on("request", (request) => {
+        if (new URL(request.url()).pathname.endsWith("/api/backend/Users/my-team")) {
+          managerTeamRequests += 1;
+        }
+      });
+      await managerPage.setViewportSize({ width: 390, height: 844 });
+      await managerPage.goto("/login");
+      await managerPage.getByLabel("Correo electrónico").fill(managerEmail!);
+      await managerPage.getByRole("textbox", { name: "Contraseña" }).fill(managerPassword!);
+      await managerPage.getByRole("button", { name: "Iniciar sesión" }).click();
+      await expect(managerPage).toHaveURL(/\/dashboard$/);
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toBeVisible();
+      await expect(managerPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+      await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
+
+      const expectManagerNoOverflow = async () => {
+        const dimensions = await managerPage.evaluate(() => ({
+          viewport: document.documentElement.clientWidth,
+          content: document.documentElement.scrollWidth,
+          mainClient: document.querySelector("main")?.clientWidth ?? 0,
+          mainScroll: document.querySelector("main")?.scrollWidth ?? 0,
+        }));
+        expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+        expect(dimensions.mainScroll).toBeLessThanOrEqual(dimensions.mainClient);
+      };
+      await managerPage.setViewportSize({ width: 320, height: 844 });
+      await expectManagerNoOverflow();
+      await managerPage.getByRole("button", { name: "Agregar Vehículo" }).click();
+      let vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.getByPlaceholder("ABC-123").fill(uiPlate);
+      await vehicleDialog.getByPlaceholder("Toyota").fill("Manager UI");
+      await vehicleDialog.getByPlaceholder("Hilux").fill("Responsive vehicle");
+      await vehicleDialog.locator('input[type="number"]').fill("2025");
+      const createManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Vehicles") && response.request().method() === "POST",
+      );
+      await vehicleDialog.getByRole("button", { name: "Agregar", exact: true }).click();
+      const createManagerResponse = await createManagerVehicle;
+      expect(createManagerResponse.status()).toBe(201);
+      managerVehicleId = (await createManagerResponse.json()).id as string;
+      const managerCard = managerPage.locator(".grid > div").filter({ hasText: uiPlate });
+      await expect(managerCard).toContainText("Manager UI Responsive vehicle");
+
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.getByPlaceholder("Toyota").fill("Manager editado");
+      const editManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await editManagerVehicle).status()).toBe(200);
+      await expect(managerCard).toContainText("Manager editado Responsive vehicle");
+
+      await managerPage.setViewportSize({ width: 768, height: 1024 });
+      await expectManagerNoOverflow();
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.locator("select").selectOption("mantenimiento");
+      const setManagerMaintenance = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}/status`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await setManagerMaintenance).status()).toBe(204);
+      const managerAuthHeaders = { Authorization: `Bearer ${await readAccessToken(managerPage)}` };
+      const persistedManagerUiVehicle = await managerPage.request.get(`/api/backend/Vehicles/${managerVehicleId}`, { headers: managerAuthHeaders });
+      expect(persistedManagerUiVehicle.status()).toBe(200);
+      expect(await persistedManagerUiVehicle.json()).toMatchObject({ plate: uiPlate, brand: "Manager editado", status: 2 });
+      await expect(managerCard).toContainText("Mantenimiento");
+
+      await managerCard.getByRole("button", { name: "Editar" }).click();
+      vehicleDialog = managerPage.getByRole("dialog");
+      await vehicleDialog.locator("select").selectOption("disponible");
+      const restoreManagerVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}/status`) && response.request().method() === "PUT",
+      );
+      await vehicleDialog.getByRole("button", { name: "Actualizar", exact: true }).click();
+      expect((await restoreManagerVehicle).status()).toBe(204);
+      await expect(managerCard).toContainText("Disponible");
+
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await managerPage.getByRole("button", { name: "Gestión de Conductores", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Conductores" })).toBeVisible();
+      await managerPage.setViewportSize({ width: 320, height: 844 });
+      await expectManagerNoOverflow();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager ${suffix}`);
+      await managerPage.getByLabel("Apellidos del conductor").fill("Chofer");
+      const managerDriverDocument = `E2EQA${suffix}M`;
+      await managerPage.getByLabel("Documento del conductor").fill(managerDriverDocument);
+      await managerPage.getByLabel("Teléfono del conductor").fill("0990000077");
+      const createManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Drivers") && response.request().method() === "POST",
+      );
+      await managerPage.getByRole("button", { name: "Crear conductor" }).click();
+      const createManagerDriverResponse = await createManagerDriver;
+      expect(createManagerDriverResponse.status()).toBe(201);
+      managerUiDriverId = (await createManagerDriverResponse.json()).id as string;
+      let managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager ${suffix} Chofer`);
+      await expectManagerNoOverflow();
+      const driverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
+      expect(driverCardDimensions.scroll).toBeLessThanOrEqual(driverCardDimensions.client);
+      const managerDriverAuthHeaders = { Authorization: `Bearer ${await readAccessToken(managerPage)}` };
+      const managerDriverRead = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(managerDriverRead.status()).toBe(200);
+      expect(await managerDriverRead.json()).toMatchObject({ documentNumber: managerDriverDocument, userId: null, vehicleId: null });
+
+      await managerDriverCard.getByRole("button", { name: "Editar" }).click();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager editado ${suffix}`);
+      const saveManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}`) && response.request().method() === "PUT",
+      );
+      await managerPage.getByRole("button", { name: "Guardar cambios" }).click();
+      expect((await saveManagerDriver).status()).toBe(200);
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager editado ${suffix}`);
+
+      const blockerDriverDocument = `E2EQA${suffix}B`;
+      const blockerDriverResponse = await managerPage.request.post("/api/backend/Drivers", {
+        headers: managerAuthHeaders,
+        data: {
+          firstName: `E2E QA Manager bloqueador ${suffix}`,
+          lastName: "Chofer",
+          documentNumber: blockerDriverDocument,
+          phoneNumber: "0990000081",
+        },
+      });
+      expect(blockerDriverResponse.status()).toBe(201);
+      managerBlockerDriverId = (await blockerDriverResponse.json()).id as string;
+      const occupyManagerVehicle = await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/assign-vehicle`, {
+        headers: managerAuthHeaders,
+        data: { vehicleId: managerVehicleId },
+      });
+      expect(occupyManagerVehicle.status()).toBe(204);
+
+      await managerDriverCard.getByLabel(`Vehículo para E2E QA Manager editado ${suffix}`).selectOption(managerVehicleId!);
+      const rejectedAssignmentPromise = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) &&
+        response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      const rejectedAssignment = await rejectedAssignmentPromise;
+      expect(rejectedAssignment.status()).toBe(409);
+      const rejectedAssignmentBody = await rejectedAssignment.json();
+      expect(rejectedAssignmentBody.message).toBe("El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.");
+      await expect(managerPage.getByText(rejectedAssignmentBody.message, { exact: true })).toBeVisible();
+      await expect(managerPage.getByText("Vehículo asignado.", { exact: true })).toHaveCount(0);
+      const driverAfterRejectedAssignment = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(driverAfterRejectedAssignment.status()).toBe(200);
+      expect((await driverAfterRejectedAssignment.json()).vehicleId).toBeNull();
+      const blockerAfterRejectedAssignment = await managerPage.request.get(`/api/backend/Drivers/${managerBlockerDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(blockerAfterRejectedAssignment.status()).toBe(200);
+      expect((await blockerAfterRejectedAssignment.json()).vehicleId).toBe(managerVehicleId);
+      const releaseBlockingDriver = await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/unassign-vehicle`, { headers: managerAuthHeaders });
+      expect(releaseBlockingDriver.status()).toBe(204);
+
+      const assignManagerDriverVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      expect((await assignManagerDriverVehicle).status()).toBe(204);
+      const assignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await assignedManagerDriver.json()).vehicleId).toBe(managerVehicleId);
+
+      const secondManagerDriverDocument = `E2EQA${suffix}N`;
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager segundo ${suffix}`);
+      await managerPage.getByLabel("Apellidos del conductor").fill("Chofer");
+      await managerPage.getByLabel("Documento del conductor").fill(secondManagerDriverDocument);
+      await managerPage.getByLabel("Teléfono del conductor").fill("0990000078");
+      const createSecondManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/api/backend/Drivers") && response.request().method() === "POST",
+      );
+      await managerPage.getByRole("button", { name: "Crear conductor" }).click();
+      const secondManagerDriverResponse = await createSecondManagerDriver;
+      expect(secondManagerDriverResponse.status()).toBe(201);
+      const secondManagerDriver = await secondManagerDriverResponse.json();
+      const secondManagerDriverCard = managerPage.getByTestId(`managed-driver-${secondManagerDriver.id}`);
+      await expect(secondManagerDriverCard.getByRole("combobox").locator(`option[value="${managerVehicleId}"]`)).toHaveCount(0);
+
+      const unassignManagerDriverVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Quitar" }).click();
+      expect((await unassignManagerDriverVehicle).status()).toBe(204);
+      const unassignedManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await unassignedManagerDriver.json()).vehicleId).toBeNull();
+      await expect(secondManagerDriverCard.getByRole("combobox").locator(`option[value="${managerVehicleId}"]`)).toHaveCount(1);
+
+      const deactivateManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      await managerPage.getByRole("alertdialog").getByRole("button", { name: "Sí, dar de baja" }).click();
+      expect((await deactivateManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard).toHaveCount(0);
+      await managerPage.getByRole("button", { name: "Mostrar bajas" }).click();
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText("Inactivo");
+      const reactivateManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Reactivar" }).click();
+      expect((await reactivateManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+      expect(managerTeamRequests).toBe(0);
+
+      await managerPage.setViewportSize({ width: 768, height: 1024 });
+      await expectManagerNoOverflow();
+      await expect(managerDriverCard).toBeVisible();
+      await expect(managerDriverCard.getByRole("button", { name: "Editar" })).toBeVisible();
+      await expect(managerDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+      await expect(managerPage.getByLabel("Documento del conductor")).toBeVisible();
+      await expect(managerPage.getByLabel("Teléfono del conductor")).toBeVisible();
+      const tabletDriverCardDimensions = await managerDriverCard.evaluate((card) => ({ client: card.clientWidth, scroll: card.scrollWidth }));
+      expect(tabletDriverCardDimensions.scroll).toBeLessThanOrEqual(tabletDriverCardDimensions.client);
+      await managerDriverCard.getByRole("button", { name: "Editar" }).click();
+      await managerPage.getByLabel("Nombres del conductor").fill(`E2E QA Manager tablet ${suffix}`);
+      const saveTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}`) && response.request().method() === "PUT",
+      );
+      await managerPage.getByRole("button", { name: "Guardar cambios" }).click();
+      expect((await saveTabletManagerDriver).status()).toBe(200);
+      managerDriverCard = managerPage.getByTestId(`managed-driver-${managerUiDriverId}`);
+      await expect(managerDriverCard).toContainText(`E2E QA Manager tablet ${suffix}`);
+      const persistedTabletManagerDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect(await persistedTabletManagerDriver.json()).toMatchObject({ firstName: `E2E QA Manager tablet ${suffix}` });
+      await managerDriverCard.getByRole("combobox").selectOption(managerVehicleId!);
+      const assignTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/assign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Asignar" }).click();
+      expect((await assignTabletManagerDriver).status()).toBe(204);
+      const tabletAssignedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletAssignedDriver.json()).vehicleId).toBe(managerVehicleId);
+
+      const unassignTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Quitar" }).click();
+      expect((await unassignTabletManagerDriver).status()).toBe(204);
+      const tabletUnassignedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletUnassignedDriver.json()).vehicleId).toBeNull();
+
+      const deactivateTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      await managerPage.getByRole("alertdialog").getByRole("button", { name: "Sí, dar de baja" }).click();
+      expect((await deactivateTabletManagerDriver).status()).toBe(204);
+      await expect(managerDriverCard).toContainText("Inactivo");
+      const reactivateTabletManagerDriver = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
+      );
+      await managerDriverCard.getByRole("button", { name: "Reactivar" }).click();
+      expect((await reactivateTabletManagerDriver).status()).toBe(204);
+      const tabletReactivatedDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers: managerDriverAuthHeaders });
+      expect((await tabletReactivatedDriver.json()).isActive).toBe(true);
+      await expectManagerNoOverflow();
+      await managerPage.getByRole("button", { name: "Abrir menú" }).click();
+      await managerPage.getByRole("button", { name: "Gestión de Vehículos", exact: true }).click();
+      await expect(managerPage.getByRole("heading", { name: "Gestión de Vehículos" })).toBeVisible();
+      const managerDeleteDialog = managerPage.getByRole("alertdialog");
+      const deleteManagerUiVehicle = managerPage.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Vehicles/${managerVehicleId}`) && response.request().method() === "DELETE",
+      );
+      await managerCard.getByRole("button").nth(1).click();
+      await managerDeleteDialog.getByRole("button", { name: "Sí, eliminar" }).click();
+      expect((await deleteManagerUiVehicle).status()).toBe(204);
+      managerVehicleId = undefined;
+      await expect(managerCard).toHaveCount(0);
+      await managerPage.setViewportSize({ width: 390, height: 844 });
+      await expectManagerNoOverflow();
+    } finally {
+      if (managerBlockerDriverId) {
+        const token = await readAccessToken(managerPage).catch(() => null);
+        if (token) {
+          const headers = { Authorization: `Bearer ${token}` };
+          const currentBlocker = await managerPage.request.get(`/api/backend/Drivers/${managerBlockerDriverId}`, { headers }).catch(() => null);
+          if (currentBlocker?.ok()) {
+            const blockerData = await currentBlocker.json().catch(() => null);
+            if (blockerData?.vehicleId) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/unassign-vehicle`, { headers }).catch(() => undefined);
+            }
+            if (blockerData?.isActive) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerBlockerDriverId}/status`, { headers, data: { isActive: false } }).catch(() => undefined);
+            }
+          }
+        }
+      }
+      if (managerUiDriverId) {
+        const token = await readAccessToken(managerPage).catch(() => null);
+        if (token) {
+          const headers = { Authorization: `Bearer ${token}` };
+          const currentDriver = await managerPage.request.get(`/api/backend/Drivers/${managerUiDriverId}`, { headers }).catch(() => null);
+          if (currentDriver?.ok()) {
+            const driverData = await currentDriver.json().catch(() => null);
+            if (driverData?.vehicleId) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerUiDriverId}/unassign-vehicle`, { headers }).catch(() => undefined);
+            }
+            if (driverData?.isActive) {
+              await managerPage.request.put(`/api/backend/Drivers/${managerUiDriverId}/status`, { headers, data: { isActive: false } }).catch(() => undefined);
+            }
+          }
+        }
+      }
+      if (managerVehicleId) {
+        const token = await readAccessToken(managerPage).catch(() => null);
+        if (token) {
+          await managerPage.request.put(`/api/backend/Vehicles/${managerVehicleId}/status`, {
+            headers: { Authorization: `Bearer ${token}` },
+            data: { status: 0 },
+          }).catch(() => undefined);
+          await managerPage.request.delete(`/api/backend/Vehicles/${managerVehicleId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => undefined);
+        }
+      }
+      await managerContext.close();
+    }
+});
+
+test("Manager usa el constructor de rutas desde móvil y dashboard responsive", async ({ page }) => {
+  test.skip(!email || !password || !managerEmail || !managerPassword || !allowMutations, "Requiere fixtures QA Admin/Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(60_000);
+  page.setDefaultTimeout(8_000);
+  const managerLogin = await page.request.post("/api/backend/Auth/login", { data: { email: managerEmail, password: managerPassword } });
+  expect(managerLogin.status()).toBe(200);
+  const managerToken = await managerLogin.json();
+  const managerHeaders = { Authorization: `Bearer ${managerToken.token ?? managerToken.accessToken}` };
+  let vehicleId: string | undefined;
+  let routeDriverId: string | undefined;
+  let routeId: string | undefined;
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  let headers: { Authorization: string } | undefined = managerHeaders;
+  try {
+    const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers: managerHeaders,
+      data: { plate: `E2EQAM${suffix}`, brand: "FleetFlow QA", model: "Manager route", year: 2025 },
+    });
+    expect(vehicleResponse.status()).toBe(201);
+    vehicleId = (await vehicleResponse.json()).id as string;
+    const routeDriverResponse = await page.request.post("/api/backend/Drivers", {
+      headers: managerHeaders,
+      data: {
+        firstName: `E2E Manager ${suffix}`,
+        lastName: "Chofer de ruta",
+        documentNumber: `E2EQAM${suffix}`,
+        phoneNumber: "0990000018",
+        userId: null,
+      },
+    });
+    expect(routeDriverResponse.status()).toBe(201);
+    routeDriverId = (await routeDriverResponse.json()).id as string;
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(managerEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(managerPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const managerToken = await readAccessToken(page);
+    expect(managerToken).toBeTruthy();
+    headers = { Authorization: `Bearer ${managerToken}` };
+    const assignmentOptionsResponse = await page.request.get("/api/backend/Routes/assignment-options", { headers });
+    expect(assignmentOptionsResponse.status(), await assignmentOptionsResponse.text()).toBe(200);
+    const assignmentOptions = await assignmentOptionsResponse.json();
+    expect(assignmentOptions.vehicles.some((vehicle: { id: string }) => vehicle.id === vehicleId)).toBe(true);
+    expect(assignmentOptions.drivers.some((driver: { id: string }) => driver.id === routeDriverId)).toBe(true);
+
+    for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+      await page.setViewportSize({ width, height });
+      await expect.poll(() => page.evaluate(() =>
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+      )).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Información de la ruta" })).toBeVisible();
+    const routeName = `E2E QA ruta Manager UI ${suffix}`;
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Ruta Manager con dos operaciones");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+
+    const map = page.locator(".leaflet-container");
+    const origin = page.getByPlaceholder("¿Desde dónde sale?");
+    await origin.fill("Origen Manager QA");
+    await clickMapAwayFromMarkers(map);
+    await origin.fill("Origen Manager QA");
+    await page.getByRole("button", { name: "Agregar parada" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    const stop = page.getByPlaceholder("Parada 1");
+    await stop.fill("Entrega Manager QA");
+    await page.getByRole("combobox", { name: "Tipo de operación de la parada 1" }).selectOption("delivery");
+    const destination = page.getByPlaceholder("¿A dónde llega?");
+    await destination.fill("Destino Manager QA");
+    const destinationRow = destination.locator("xpath=../..");
+    await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+    await expect(page.getByRole("button", { name: "Ver paradas y detalles" })).toBeVisible();
+    await clickMapAwayFromMarkers(map);
+    await destination.fill("Destino Manager QA");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(vehicleId!);
+    await page.locator("select").nth(1).selectOption(routeDriverId!);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const createRoute = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Routes") && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Crear ruta", exact: true }).click();
+    const createdRoute = await createRoute;
+    expect(createdRoute.status()).toBe(201);
+    routeId = (await createdRoute.json()).id as string;
+    const persistedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(persistedRouteResponse.status()).toBe(200);
+    const persistedRoute = await persistedRouteResponse.json();
+    expect(persistedRoute.name).toBe(routeName);
+    expect(persistedRoute.points).toHaveLength(3);
+    expect(persistedRoute.points[1]).toMatchObject({ name: "Entrega Manager QA", operation: 2 });
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const managerRouteHeading = page.getByRole("heading", { name: routeName, exact: true });
+    const managerRouteCard = managerRouteHeading.locator("xpath=../../../..");
+    await managerRouteCard.getByRole("button", { name: "Editar ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Editar ruta" })).toBeVisible();
+    const updatedRouteName = `${routeName} editada`;
+    const updatedRouteDescription = "Instrucciones actualizadas por Manager desde UI";
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedRouteName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill(updatedRouteDescription);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const updateRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+    expect((await updateRoutePromise).status()).toBe(200);
+    const updatedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(updatedRouteResponse.status()).toBe(200);
+    expect(await updatedRouteResponse.json()).toMatchObject({
+      name: updatedRouteName,
+      cargoDescription: updatedRouteDescription,
+      vehicleId,
+      driverId: routeDriverId,
+      status: 0,
+      points: [
+        expect.objectContaining({ name: "Origen Manager QA", operation: 0 }),
+        expect.objectContaining({ name: "Entrega Manager QA", operation: 2 }),
+        expect.objectContaining({ name: "Destino Manager QA", operation: 0 }),
+      ],
+    });
+    await expect(page.getByRole("heading", { name: updatedRouteName, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(`E2E QA ruta tablet ${suffix}`);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Responsive tablet QA");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Cancelar creación" }).click();
+    await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
+
+    const deleteRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+    expect([200, 204]).toContain(deleteRoute.status());
+    routeId = undefined;
+  } finally {
+    if (routeId && headers) {
+      const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers });
+      expect([200, 204, 404]).toContain(cleanupRoute.status());
+    }
+    if (vehicleId) {
+      if (routeDriverId) {
+        const unassign = await page.request.put(`/api/backend/Drivers/${routeDriverId}/unassign-vehicle`, { headers: managerHeaders });
+        expect([204, 404]).toContain(unassign.status());
+        const deactivateDriver = await page.request.put(`/api/backend/Drivers/${routeDriverId}/status`, {
+          headers: managerHeaders,
+          data: { isActive: false },
+        });
+        expect([204, 404]).toContain(deactivateDriver.status());
+      }
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: managerHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
+  }
+});
+
+test("Logistics ve rutas pero no vehículos ni administración de equipo", async ({ page, browser }) => {
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.setTimeout(90_000);
+  page.setDefaultTimeout(8_000);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const adminToken = await readAccessToken(page);
+  expect(adminToken).toBeTruthy();
+  const headers = { Authorization: `Bearer ${adminToken}` };
+  const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamResponse.status()).toBe(200);
+  const team = await teamResponse.json() as Array<{ id: string; driverId?: string }>;
+  const driver = team.find((member) => member.driverId === driverIdFixture);
+  expect(driver).toBeTruthy();
+
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const routeName = `E2E QA ruta Logistics ${suffix}`;
+  const updatedRouteName = `${routeName} editada`;
+  const updatedRouteDescription = "Instrucciones actualizadas por Logistics desde UI";
+  let routeId: string | undefined;
+  const createdVehicle = await page.request.post("/api/backend/Vehicles", {
+    headers,
+    data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Logistics route", year: 2025 },
+  });
+  expect(createdVehicle.status()).toBe(201);
+  const vehicleId = (await createdVehicle.json()).id as string;
+  const createdDriver = await page.request.post("/api/backend/Drivers", {
+    headers,
+    data: {
+      firstName: `E2E Logistics ${suffix}`,
+      lastName: "Chofer",
+      documentNumber: `E2EQA${suffix}L`,
+      phoneNumber: "0990000088",
+      userId: null,
+    },
+  });
+  expect(createdDriver.status()).toBe(201);
+  const routeDriverId = (await createdDriver.json()).id as string;
+
+  const promote = await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
+    headers,
+    data: { roleName: "Logistics" },
+  });
+  expect(promote.status()).toBe(200);
+
+  const logisticsContext = await browser.newContext();
+  const logisticsPage = await logisticsContext.newPage();
+  let forbiddenVehicleListRequests = 0;
+  logisticsPage.on("request", (request) => {
+    if (
+      request.method() === "GET" &&
+      new URL(request.url()).pathname === "/api/backend/Vehicles"
+    ) {
+      forbiddenVehicleListRequests += 1;
+    }
+  });
+  try {
+    await logisticsPage.setViewportSize({ width: 390, height: 844 });
+    await logisticsPage.goto("/login");
+    await logisticsPage.getByLabel("Correo electrónico").fill(driverEmail!);
+    await logisticsPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await logisticsPage.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(logisticsPage).toHaveURL(/\/dashboard$/);
+    const logisticsToken = await readAccessToken(logisticsPage);
+    expect(logisticsToken).toBeTruthy();
+    const logisticsHeaders = { Authorization: `Bearer ${logisticsToken}` };
+    const assignmentOptionsResponse = await logisticsPage.request.get(
+      "/api/backend/Routes/assignment-options",
+      { headers: logisticsHeaders },
+    );
+    expect(assignmentOptionsResponse.status()).toBe(200);
+    const assignmentOptions = await assignmentOptionsResponse.json();
+    const availableVehiclesStat = logisticsPage
+      .getByText("Vehículos Disponibles", { exact: true })
+      .locator("xpath=..");
+    await expect(availableVehiclesStat.locator("p").nth(1)).toHaveText(
+      String(assignmentOptions.vehicles.length),
+    );
+    expect(forbiddenVehicleListRequests).toBe(0);
+
+    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true })).toBeVisible();
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Conductores", exact: true })).toHaveCount(0);
+    await expect(logisticsPage.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+
+    const [routesResponse, vehiclesResponse, driversResponse] = await Promise.all([
+      logisticsPage.request.get("/api/backend/Routes", { headers: logisticsHeaders }),
+      logisticsPage.request.get("/api/backend/Vehicles", { headers: logisticsHeaders }),
+      logisticsPage.request.get("/api/backend/Drivers", { headers: logisticsHeaders }),
+    ]);
+    expect(routesResponse.status()).toBe(200);
+    expect(vehiclesResponse.status()).toBe(403);
+    expect(driversResponse.status()).toBe(403);
+    const logisticsTeamResponse = await logisticsPage.request.get("/api/backend/Users/my-team", { headers: logisticsHeaders });
+    expect(logisticsTeamResponse.status()).toBe(403);
+    expect(await logisticsTeamResponse.text()).not.toContain(driverEmail!);
+    expect(assignmentOptions.vehicles).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: vehicleId, plate: `E2EQA${suffix}` }),
+    ]));
+    expect(assignmentOptions.drivers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: routeDriverId, firstName: `E2E Logistics ${suffix}`, userId: null }),
+    ]));
+    expect(assignmentOptions.drivers.every((item: Record<string, unknown>) =>
+      !("documentNumber" in item) && !("phoneNumber" in item),
+    )).toBe(true);
+
+    await test.step("Logistics crea una ruta desde el constructor", async () => {
+      await logisticsPage.getByRole("button", { name: "Gestión de Rutas", exact: true }).click();
+      await logisticsPage.getByRole("button", { name: "Nueva ruta", exact: true }).click();
+      await logisticsPage.getByPlaceholder("Ej. Entregas zona norte").fill(routeName);
+      await logisticsPage.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill("Creada por Logistics desde UI");
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      const map = logisticsPage.locator(".leaflet-container");
+      await logisticsPage.getByRole("button", { name: "Seleccionando" }).waitFor();
+      await logisticsPage.setViewportSize({ width: 320, height: 844 });
+      const originMapDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(originMapDimensions.document).toBeLessThanOrEqual(originMapDimensions.viewport);
+      expect(originMapDimensions.mainContent).toBeLessThanOrEqual(originMapDimensions.main);
+      await clickMapAwayFromMarkers(map);
+      await logisticsPage.getByPlaceholder("¿Desde dónde sale?").fill("Origen Logistics E2E");
+      const destinationRow = logisticsPage.getByPlaceholder("¿A dónde llega?").locator("xpath=../..");
+      await destinationRow.getByRole("button", { name: "Ubicar" }).click();
+      await logisticsPage.setViewportSize({ width: 768, height: 1024 });
+      const destinationMapDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(destinationMapDimensions.document).toBeLessThanOrEqual(destinationMapDimensions.viewport);
+      expect(destinationMapDimensions.mainContent).toBeLessThanOrEqual(destinationMapDimensions.main);
+      await clickMapAwayFromMarkers(map);
+      await logisticsPage.getByPlaceholder("¿A dónde llega?").fill("Destino Logistics E2E");
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await logisticsPage.getByRole("heading", { name: "Asigna los recursos" }).waitFor();
+      await expect(logisticsPage.locator("select").nth(0).locator(`option[value="${vehicleId}"]`)).toHaveCount(1);
+      await expect(logisticsPage.locator("select").nth(1).locator(`option[value="${routeDriverId}"]`)).toHaveCount(1);
+      await logisticsPage.locator("select").nth(0).selectOption(vehicleId!);
+      await logisticsPage.locator("select").nth(1).selectOption(routeDriverId);
+      for (const width of [320, 768]) {
+        await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+        const dimensions = await logisticsPage.evaluate(() => ({
+          viewport: document.documentElement.clientWidth,
+          content: document.documentElement.scrollWidth,
+        }));
+        expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+        await expect(logisticsPage.locator("select").nth(0)).toHaveValue(vehicleId);
+        await expect(logisticsPage.locator("select").nth(1)).toHaveValue(routeDriverId);
+      }
+      await logisticsPage.setViewportSize({ width: 390, height: 844 });
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await logisticsPage.getByRole("heading", { name: "Revisa y crea" }).waitFor();
+      const createRoutePromise = logisticsPage.waitForResponse((response) =>
+        response.url().includes("/api/backend/Routes") && response.request().method() === "POST",
+      );
+      await logisticsPage.getByRole("button", { name: "Crear ruta", exact: true }).click();
+      const createRouteResponse = await createRoutePromise;
+      expect(createRouteResponse.status()).toBe(201);
+      routeId = (await createRouteResponse.json()).id as string;
+    });
+    const persistedRoute = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
+    expect(persistedRoute.status()).toBe(200);
+    expect(await persistedRoute.json()).toMatchObject({
+      name: routeName,
+      vehicleId,
+      vehiclePlate: `E2EQA${suffix}`,
+      driverId: routeDriverId,
+      status: 0,
+    });
+
+    await test.step("Logistics edita y persiste una ruta desde la UI", async () => {
+      const routeHeading = logisticsPage.getByRole("heading", { name: routeName, exact: true });
+      await expect(routeHeading).toBeVisible();
+      await routeHeading.locator("xpath=../../../..").getByRole("button", { name: "Editar ruta", exact: true }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Editar ruta" })).toBeVisible();
+      await logisticsPage.getByPlaceholder("Ej. Entregas zona norte").fill(updatedRouteName);
+      await logisticsPage.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill(updatedRouteDescription);
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+      await logisticsPage.getByRole("button", { name: "Continuar" }).click();
+      await expect(logisticsPage.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+      const updateRoutePromise = logisticsPage.waitForResponse((response) =>
+        response.url().includes(`/api/backend/Routes/${routeId}`) && response.request().method() === "PUT",
+      );
+      await logisticsPage.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+      expect((await updateRoutePromise).status()).toBe(200);
+
+      const updatedRouteResponse = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
+      expect(updatedRouteResponse.status()).toBe(200);
+      expect(await updatedRouteResponse.json()).toMatchObject({
+        name: updatedRouteName,
+        cargoDescription: updatedRouteDescription,
+        vehicleId,
+        driverId: routeDriverId,
+        status: 0,
+      });
+    });
+
+    const routeCard = logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true }).locator("xpath=../../../..");
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const routeListDimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(routeListDimensions.document).toBeLessThanOrEqual(routeListDimensions.viewport);
+      expect(routeListDimensions.mainContent).toBeLessThanOrEqual(routeListDimensions.main);
+      await expect(logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true })).toBeVisible();
+    }
+    await routeCard.getByRole("button", { name: `Cancelar ruta ${updatedRouteName}` }).click();
+    const cancelDialog = logisticsPage.getByRole("alertdialog");
+    await expect(logisticsPage.getByRole("heading", { name: "Cancelar ruta pendiente" })).toBeVisible();
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      const dialogBounds = await cancelDialog.boundingBox();
+      expect(dialogBounds).toBeTruthy();
+      expect(dialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(dialogBounds!.x + dialogBounds!.width).toBeLessThanOrEqual(width);
+    }
+    const cancelRoutePromise = logisticsPage.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
+    );
+    await logisticsPage.getByRole("button", { name: "Sí, cancelar ruta" }).click();
+    expect((await cancelRoutePromise).status()).toBe(204);
+    const cancelledRoute = await logisticsPage.request.get(`/api/backend/Routes/${routeId}`, { headers: logisticsHeaders });
+    expect((await cancelledRoute.json()).status).toBe(3);
+
+    await logisticsPage.getByRole("button", { name: "Abrir menú" }).click();
+    await logisticsPage.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+    await expect(logisticsPage.getByRole("heading", { name: "Historial de Rutas", exact: true })).toBeVisible();
+    const historyCardHeading = logisticsPage.getByRole("heading", { name: updatedRouteName, exact: true });
+    await expect(historyCardHeading).toBeVisible();
+    const historyCard = historyCardHeading.locator("xpath=../../../..");
+    await expect(historyCard).toContainText(`E2EQA${suffix}`);
+    await expect(
+      logisticsPage.getByRole("alert").filter({ hasText: "No se pudieron cargar las rutas" }),
+    ).toHaveCount(0);
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+        main: document.querySelector("main")?.clientWidth ?? 0,
+        mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.main);
+      await expect(historyCardHeading).toBeVisible();
+    }
+    await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
+    const historyDialog = logisticsPage.getByRole("dialog");
+    await expect(historyDialog).toContainText(`E2EQA${suffix}`);
+    for (const width of [320, 768]) {
+      await logisticsPage.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+      const dimensions = await logisticsPage.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+      const dialogBounds = await historyDialog.boundingBox();
+      expect(dialogBounds).toBeTruthy();
+      expect(dialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(dialogBounds!.x + dialogBounds!.width).toBeLessThanOrEqual(width);
+    }
+    expect(forbiddenVehicleListRequests).toBe(0);
+  } finally {
+    if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
+    if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
+    await logisticsContext.close();
+    const restoreDriverRole = await page.request.put(`/api/backend/Users/${driver!.id}/role`, {
+      headers,
+      data: { roleName: "Driver" },
+    }).catch(() => null);
+    if (restoreDriverRole?.status() === 200) {
+      const restoredDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      if (restoredDriver?.status() === 200 && (await restoredDriver.json()).isActive === false) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/status`, {
+          headers,
+          data: { isActive: true },
+        }).catch(() => undefined);
+      }
+    }
+  }
+});
+
+test("Mi Ruta prioriza una ruta en curso sobre una pendiente más reciente", async ({ page, request }) => {
+  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver y MySQL descartable.");
+
+  const adminLogin = await request.post("/api/backend/Auth/login", { data: { email, password } });
+  expect(adminLogin.status()).toBe(200);
+  const adminTokens = await adminLogin.json();
+  const adminHeaders = { Authorization: `Bearer ${adminTokens.token ?? adminTokens.accessToken}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const inProgressName = `E2E QA ruta en curso primero ${suffix}`;
+  const pendingName = `E2E QA ruta pendiente reciente ${suffix}`;
+  const plate = `E2EQA${suffix}P`;
+  const driverBefore = await request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers: adminHeaders });
+  expect(driverBefore.status()).toBe(200);
+  const originalVehicleId = (await driverBefore.json()).vehicleId as string | null;
+  const vehicleResponse = await request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate, brand: "FleetFlow QA", model: "Driver route priority", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicleId = (await vehicleResponse.json()).id as string;
+  let inProgressRouteId: string | undefined;
+  let pendingRouteId: string | undefined;
+
+  try {
+    const routePayload = (name: string, start: string, end: string) => ({
+      name,
+      vehicleId,
+      driverId: driverIdFixture,
+      plannedStart: start,
+      plannedEnd: end,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen prioridad", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Entrega prioridad", operation: 3 },
+        { lat: -0.2, lng: -78.48, name: "Destino prioridad", operation: 0 },
+      ],
+    });
+    const inProgressRoute = await request.post("/api/backend/Routes", {
+      headers: adminHeaders,
+      data: routePayload(inProgressName, "2040-01-01T08:00:00Z", "2040-01-01T10:00:00Z"),
+    });
+    expect(inProgressRoute.status()).toBe(201);
+    inProgressRouteId = (await inProgressRoute.json()).id as string;
+    const pendingRoute = await request.post("/api/backend/Routes", {
+      headers: adminHeaders,
+      data: routePayload(pendingName, "2041-01-01T08:00:00Z", "2041-01-01T10:00:00Z"),
+    });
+    expect(pendingRoute.status()).toBe(201);
+    pendingRouteId = (await pendingRoute.json()).id as string;
+    const startRoute = await request.put(`/api/backend/Routes/${inProgressRouteId}/status`, {
+      headers: adminHeaders,
+      data: { status: 1 },
+    });
+    expect(startRoute.status()).toBe(204);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(driverEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const dashboardRouteCard = page.getByRole("button", { name: /Ruta Activa/ });
+    await expect(dashboardRouteCard).toContainText(inProgressName);
+    await expect(dashboardRouteCard).not.toContainText(pendingName);
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+    await expect(page.getByText(inProgressName, { exact: true })).toBeVisible();
+    await expect(page.getByText(pendingName, { exact: true })).toHaveCount(0);
+  } finally {
+    if (inProgressRouteId) {
+      await request.put(`/api/backend/Routes/${inProgressRouteId}/status`, { headers: adminHeaders, data: { status: 3 } }).catch(() => undefined);
+    }
+    if (pendingRouteId) {
+      await request.put(`/api/backend/Routes/${pendingRouteId}/status`, { headers: adminHeaders, data: { status: 3 } }).catch(() => undefined);
+    }
+    if (originalVehicleId) {
+      await request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, { headers: adminHeaders, data: { vehicleId: originalVehicleId } }).catch(() => undefined);
+    } else {
+      await request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers: adminHeaders }).catch(() => undefined);
+    }
+    if (pendingRouteId) await request.delete(`/api/backend/Routes/${pendingRouteId}`, { headers: adminHeaders }).catch(() => undefined);
+    if (inProgressRouteId) await request.delete(`/api/backend/Routes/${inProgressRouteId}`, { headers: adminHeaders }).catch(() => undefined);
+    await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders }).catch(() => undefined);
+  }
+});
+
+test("Driver Mi Ruta diferencia error de carga de una lista vacía y permite reintentar", async ({ page }) => {
+  test.skip(!driverEmail || !driverPassword, "Requiere cuenta QA Driver.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  page.setDefaultTimeout(8_000);
+  let keepRouteReadsFailing = true;
+  await page.route("**/api/backend/Routes**", async (route) => {
+    if (route.request().method() === "GET" && keepRouteReadsFailing) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+      return;
+    }
+    await route.fallback();
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(driverEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+  const routeLoadAlert = page.getByRole("alert").filter({ hasText: "No se pudieron cargar tus rutas" });
+  await expect(routeLoadAlert).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toHaveCount(0);
+  keepRouteReadsFailing = false;
+  await routeLoadAlert.getByRole("button", { name: "Reintentar" }).click();
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+});
+
+test("Driver sólo ve su operación, persiste evidencia fotográfica y la API protege recursos administrativos", async ({ page, request, browser }) => {
+  test.skip(!email || !password || !routeDriverEmail || !routeDriverPassword || !routeDriverIdFixture || !allowMutations, "Requiere fixtures Admin/Driver operativo y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.context().grantPermissions(["geolocation"]);
+  await page.context().setGeolocation({ latitude: -0.185, longitude: -78.465, accuracy: 10 });
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const adminLogin = await request.post("/api/backend/Auth/login", {
+    data: { email, password },
+  });
+  expect(adminLogin.status()).toBe(200);
+  const adminToken = await adminLogin.json();
+  const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
+  const plate = `E2EQA${suffix}`;
+  const foreignPlate = `E2EQA${suffix.slice(-5)}F`;
+  let vehicleId: string | undefined;
+  let foreignVehicleId: string | undefined;
+  let foreignDriverId: string | undefined;
+  let routeId: string | undefined;
+  let foreignRouteId: string | undefined;
+  let originalDriverVehicleId: string | null = null;
+  const routeName = `E2E QA ruta conductor ${suffix}`;
+
+  try {
+  const driverBeforeResponse = await request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, {
+    headers: adminHeaders,
+  });
+  expect(driverBeforeResponse.status()).toBe(200);
+  originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
+  const vehicleResponse = await request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate, brand: "FleetFlow QA", model: "Driver route", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  vehicleId = (await vehicleResponse.json()).id as string;
+  const routeResponse = await request.post("/api/backend/Routes", {
+    headers: adminHeaders,
+    data: {
+      name: routeName,
+      cargoDescription: "Prueba operativa Driver",
+      vehicleId,
+      driverId: routeDriverIdFixture,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen E2E", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Entrega E2E", operation: 3 },
+        { lat: -0.195, lng: -78.475, name: "Parada secundaria E2E", operation: 1 },
+        { lat: -0.2, lng: -78.48, name: "Destino E2E", operation: 0 },
+      ],
+    },
+  });
+  if (routeResponse.status() !== 201) {
+    throw new Error(`No se pudo crear la ruta QA: HTTP ${routeResponse.status()} ${await routeResponse.text()}`);
+  }
+  routeId = (await routeResponse.json()).id as string;
+
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(routeDriverEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(routeDriverPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await expect(page.getByRole("button", { name: "Mi Ruta", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestión de Rutas", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Equipo", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gestión de Vehículos", exact: true })).toHaveCount(0);
+
+  const driverToken = await readAccessToken(page);
+  expect(driverToken).toBeTruthy();
+  const headers = { Authorization: `Bearer ${driverToken}` };
+  const vehiclesResponse = await page.request.get("/api/backend/Vehicles", { headers });
+  expect(vehiclesResponse.status()).toBe(403);
+
+  await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+  await expect(page.getByText(routeName, { exact: true })).toBeVisible();
+  await expect(page.getByText("GPS en vivo", { exact: true })).toBeVisible();
+  const assertDriverViewport = async () => {
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+      mainViewport: document.querySelector("main")?.clientWidth ?? 0,
+      mainContent: document.querySelector("main")?.scrollWidth ?? 0,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+    expect(dimensions.mainContent).toBeLessThanOrEqual(dimensions.mainViewport);
+  };
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar Ruta" })).toBeVisible();
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertDriverViewport();
+  const gpsBadge = await page.getByText("GPS en vivo", { exact: true }).locator("xpath=..").boundingBox();
+  const vehicleBadge = await page.locator(".absolute.top-4.right-4").boundingBox();
+  expect(gpsBadge).not.toBeNull();
+  expect(vehicleBadge).not.toBeNull();
+  expect(gpsBadge!.x + gpsBadge!.width).toBeLessThanOrEqual(vehicleBadge!.x);
+  const positionResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${routeId}/positions`) &&
+    response.request().method() === "POST",
+  );
+  const startRoutePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Iniciar Ruta" }).click();
+  expect((await startRoutePromise).status()).toBe(204);
+  const positionResponse = await positionResponsePromise;
+  expect(positionResponse.status()).toBe(200);
+  const positionsResponse = await page.request.get(`/api/backend/Routes/${routeId}/positions`, {
+    headers: adminHeaders,
+  });
+  expect(positionsResponse.status()).toBe(200);
+  const positions = await positionsResponse.json() as Array<{ latitude: number; longitude: number }>;
+  expect(positions).toEqual(expect.arrayContaining([
+    expect.objectContaining({ latitude: -0.185, longitude: -78.465 }),
+  ]));
+
+  const stopCard = page.locator("article").filter({ hasText: "Entrega E2E" });
+  await expect(stopCard).toContainText("Recogida y entrega");
+  await expect(stopCard.getByRole("button", { name: "Omitir" })).toBeDisabled();
+  const startStopPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
+    response.request().method() === "PUT",
+  );
+  await stopCard.getByRole("button", { name: "Iniciar parada" }).click();
+  expect((await startStopPromise).status()).toBe(200);
+
+  const completeStopWithoutEvidence = await page.request.put(`/api/backend/Routes/${routeId}/points/1/status`, {
+    headers,
+    data: { status: 2 },
+  });
+  expect(completeStopWithoutEvidence.status()).toBe(400);
+  const unchangedStop = await page.request.get(`/api/backend/Routes/${routeId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedStop.status()).toBe(200);
+  const unchangedStopState = await unchangedStop.json();
+  expect(unchangedStopState.status).toBe(1);
+  expect(unchangedStopState.points[1].status).toBe(1);
+  expect(unchangedStopState.points[1].evidence).toHaveLength(0);
+
+  const completeWithoutEvidence = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+    headers,
+    data: { status: 2 },
+  });
+  expect(completeWithoutEvidence.status()).toBe(400);
+  const unchangedIncompleteRoute = await page.request.get(`/api/backend/Routes/${routeId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedIncompleteRoute.status()).toBe(200);
+  const incompleteRouteState = await unchangedIncompleteRoute.json();
+  expect(incompleteRouteState.status).toBe(1);
+  expect(incompleteRouteState.points[1].status).toBe(1);
+  expect(incompleteRouteState.points[1].evidence).toHaveLength(0);
+  const unchangedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, {
+    headers: adminHeaders,
+  });
+  expect(unchangedVehicle.status()).toBe(200);
+  expect((await unchangedVehicle.json()).status).toBe(1);
+
+  await stopCard.getByRole("button", { name: "Evidencia" }).click();
+  const evidenceDialog = page.getByRole("dialog");
+  await expect(evidenceDialog).toBeVisible();
+  const evidenceBounds = await evidenceDialog.boundingBox();
+  expect(evidenceBounds).not.toBeNull();
+  expect(evidenceBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(evidenceBounds!.x + evidenceBounds!.width).toBeLessThanOrEqual(320);
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(evidenceDialog.getByRole("button", { name: "Nota" })).toBeVisible();
+  await evidenceDialog.getByRole("button", { name: "Nota" }).click();
+  await expect(evidenceDialog.getByRole("button", { name: "Agregar Nota" })).toBeVisible();
+  const tabletEvidenceBounds = await evidenceDialog.boundingBox();
+  expect(tabletEvidenceBounds).not.toBeNull();
+  expect(tabletEvidenceBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(tabletEvidenceBounds!.x + tabletEvidenceBounds!.width).toBeLessThanOrEqual(768);
+  await assertDriverViewport();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertDriverViewport();
+  await evidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recibido por cliente E2E");
+  const evidencePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&
+    response.request().method() === "POST",
+  );
+  await evidenceDialog.getByRole("button", { name: "Agregar Nota" }).click();
+  expect((await evidencePromise).ok()).toBe(true);
+
+  const photoDescription = `Entrega fotografiada ${routeId}`;
+  await stopCard.getByRole("button", { name: "Evidencia" }).click();
+  const photoDialog = page.getByRole("dialog");
+  await expect(photoDialog.getByRole("button", { name: "Foto", exact: true })).toBeVisible();
+  await photoDialog.getByRole("button", { name: "Foto", exact: true }).click();
+  await photoDialog.getByPlaceholder("Ej: Entrega en puerta principal").fill(photoDescription);
+  const photoEvidencePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/evidence`) &&
+    response.request().method() === "POST",
+  );
+  await photoDialog.locator('input[type="file"]').setInputFiles({
+    name: "evidencia-qa.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pKkAAAAASUVORK5CYII=", "base64"),
+  });
+  expect((await photoEvidencePromise).status()).toBe(200);
+  await expect(stopCard.getByAltText("Evidencia de la parada")).toBeVisible();
+  await expect(stopCard).toContainText(photoDescription);
+  const photoRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+  expect(photoRouteResponse.status()).toBe(200);
+  const photoPoint = (await photoRouteResponse.json()).points[1] as { evidence: Array<{ type: string; content: string; description: string }> };
+  expect(photoPoint.evidence).toEqual(expect.arrayContaining([
+    expect.objectContaining({ type: "image", description: photoDescription }),
+  ]));
+  expect(photoPoint.evidence.find((item) => item.description === photoDescription)?.content).toMatch(/^data:image\/png;base64,/);
+  const routeListResponse = await page.request.get("/api/backend/Routes", { headers: adminHeaders });
+  expect(routeListResponse.status()).toBe(200);
+  const listedRoute = (await routeListResponse.json()).find((route: { id: string }) => route.id === routeId);
+  expect(listedRoute).toBeTruthy();
+  const listedPhoto = listedRoute.points[1].evidence.find((item: { description: string }) => item.description === photoDescription);
+  expect(listedPhoto).toMatchObject({ type: "image", description: photoDescription, content: null });
+
+  const completeStopPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/1/status`) &&
+    response.request().method() === "PUT",
+  );
+  await stopCard.getByRole("button", { name: "Marcar completada" }).click();
+  expect((await completeStopPromise).status()).toBe(200);
+  await expect(stopCard).toContainText("Completada");
+  await expect(stopCard).toContainText("Recibido por cliente E2E");
+  const nextPointBadge = page.locator(".absolute.bottom-4.left-4");
+  await expect(nextPointBadge).toContainText("Parada secundaria E2E");
+
+  const secondaryStop = page.locator("article").filter({ hasText: "Parada secundaria E2E" });
+  const startSecondaryStop = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/status`) && response.request().method() === "PUT",
+  );
+  await secondaryStop.getByRole("button", { name: "Iniciar parada" }).click();
+  expect((await startSecondaryStop).status()).toBe(200);
+  await secondaryStop.getByRole("button", { name: "Evidencia" }).click();
+  const secondaryEvidenceDialog = page.getByRole("dialog");
+  await secondaryEvidenceDialog.getByRole("button", { name: "Nota", exact: true }).click();
+  await secondaryEvidenceDialog.getByPlaceholder("Escribe tu nota aquí...").fill("Recogida secundaria confirmada");
+  const secondaryEvidence = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/evidence`) && response.request().method() === "POST",
+  );
+  await secondaryEvidenceDialog.getByRole("button", { name: "Agregar Nota" }).click();
+  expect((await secondaryEvidence).status()).toBe(200);
+  const completeSecondaryStop = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/points/2/status`) && response.request().method() === "PUT",
+  );
+  await secondaryStop.getByRole("button", { name: "Marcar completada" }).click();
+  expect((await completeSecondaryStop).status()).toBe(200);
+  await expect(nextPointBadge).toContainText("No hay paradas pendientes");
+
+  const completeRoutePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Routes/${routeId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Completar", exact: true }).click();
+  expect((await completeRoutePromise).status()).toBe(204);
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.getByRole("heading", { name: "No tienes rutas asignadas" })).toBeVisible();
+  await assertDriverViewport();
+
+  const persistedRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+  expect(persistedRoute.status()).toBe(200);
+  expect((await persistedRoute.json()).status).toBe(2);
+  const historyPage = await browser.newPage({ viewport: { width: 320, height: 844 } });
+  await historyPage.goto("/login");
+  await historyPage.getByLabel("Correo electrónico").fill(email!);
+  await historyPage.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await historyPage.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(historyPage).toHaveURL(/\/dashboard$/);
+  await historyPage.getByRole("button", { name: "Abrir menú" }).click();
+  await historyPage.getByRole("button", { name: "Historial de Rutas", exact: true }).click();
+  await expect(historyPage.getByRole("heading", { name: "Historial de Rutas" })).toBeVisible();
+  await historyPage.getByRole("button", { name: "Completadas", exact: true }).click();
+  const historyCard = historyPage.getByText(routeName, { exact: true }).locator("xpath=../../../..");
+  await expect(historyCard).toContainText("3 evidencia(s)");
+  await historyCard.getByRole("button", { name: "Ver Detalles" }).click();
+  const historyDialog = historyPage.getByRole("dialog");
+  await expect(historyDialog.getByAltText("Evidencia")).toBeVisible();
+  await expect(historyDialog).toContainText(photoDescription);
+  const historyWidths = await historyPage.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(historyWidths.content).toBeLessThanOrEqual(historyWidths.viewport);
+  await historyPage.setViewportSize({ width: 768, height: 1024 });
+  const tabletHistoryDialog = await historyDialog.boundingBox();
+  expect(tabletHistoryDialog).not.toBeNull();
+  expect(tabletHistoryDialog!.x).toBeGreaterThanOrEqual(0);
+  expect(tabletHistoryDialog!.x + tabletHistoryDialog!.width).toBeLessThanOrEqual(768);
+  await expect(historyDialog.getByAltText("Evidencia")).toBeVisible();
+  await expect(historyDialog).toContainText(photoDescription);
+  const tabletHistoryWidths = await historyPage.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(tabletHistoryWidths.content).toBeLessThanOrEqual(tabletHistoryWidths.viewport);
+  await historyPage.close();
+  const persistedVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+  expect(persistedVehicle.status()).toBe(200);
+  expect((await persistedVehicle.json()).status).toBe(0);
+
+  const deactivateDriver = await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
+    headers: adminHeaders,
+    data: { isActive: false },
+  });
+  expect(deactivateDriver.status()).toBe(204);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}`, { headers })).status()).toBe(403);
+  expect((await page.request.get("/api/backend/Routes", { headers })).status()).toBe(403);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers })).status()).toBe(403);
+  expect((await page.request.post(`/api/backend/Routes/${routeId}/positions`, {
+    headers,
+    data: { latitude: -0.185, longitude: -78.465 },
+  })).status()).toBe(403);
+  const reactivateDriver = await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
+    headers: adminHeaders,
+    data: { isActive: true },
+  });
+  expect(reactivateDriver.status()).toBe(204);
+  expect((await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers })).status()).toBe(200);
+
+  const foreignVehicleResponse = await request.post("/api/backend/Vehicles", {
+    headers: adminHeaders,
+    data: { plate: foreignPlate, brand: "FleetFlow QA", model: "Foreign driver route", year: 2025 },
+  });
+  expect(foreignVehicleResponse.status()).toBe(201);
+  foreignVehicleId = (await foreignVehicleResponse.json()).id as string;
+  const foreignDriverResponse = await request.post("/api/backend/Drivers", {
+    headers: adminHeaders,
+    data: { firstName: "Foreign", lastName: "Driver QA", documentNumber: `E2EQA${suffix}`, phoneNumber: "0990000002" },
+  });
+  expect(foreignDriverResponse.status()).toBe(201);
+  foreignDriverId = (await foreignDriverResponse.json()).id as string;
+  const foreignRouteResponse = await request.post("/api/backend/Routes", {
+    headers: adminHeaders,
+    data: {
+      name: `E2E QA ruta conductor ajeno ${suffix}`,
+      cargoDescription: "Aislamiento Driver",
+      vehicleId: foreignVehicleId,
+      driverId: foreignDriverId,
+      points: [
+        { lat: -0.18, lng: -78.46, name: "Origen ajeno", operation: 0 },
+        { lat: -0.19, lng: -78.47, name: "Parada ajena", operation: 3 },
+        { lat: -0.2, lng: -78.48, name: "Destino ajeno", operation: 0 },
+      ],
+    },
+  });
+  expect(foreignRouteResponse.status()).toBe(201);
+  foreignRouteId = (await foreignRouteResponse.json()).id as string;
+
+  const driverForeignRoute = await page.request.get(`/api/backend/Routes/${foreignRouteId}`, { headers });
+  expect(driverForeignRoute.status()).toBe(403);
+  const driverRouteList = await page.request.get(`/api/backend/Routes?vehicleId=${foreignVehicleId}`, { headers });
+  expect(driverRouteList.status()).toBe(200);
+  const driverVisibleRoutes = await driverRouteList.json() as Array<{ id: string }>;
+  expect(driverVisibleRoutes.some((route) => route.id === foreignRouteId)).toBe(false);
+  expect((await page.request.put(`/api/backend/Routes/${foreignRouteId}/status`, {
+    headers,
+    data: { status: 3 },
+  })).status()).toBe(404);
+  expect((await page.request.put(`/api/backend/Routes/${foreignRouteId}/points/1/status`, {
+    headers,
+    data: { status: 1 },
+  })).status()).toBe(404);
+  expect((await page.request.post(`/api/backend/Routes/${foreignRouteId}/points/1/evidence`, {
+    headers,
+    data: { type: "note", content: "No autorizado", description: "Prueba negativa" },
+  })).status()).toBe(404);
+  expect((await page.request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers })).status()).toBe(403);
+  expect((await page.request.post(`/api/backend/Routes/${foreignRouteId}/positions`, {
+    headers,
+    data: { latitude: -0.185, longitude: -78.465 },
+  })).status()).toBe(403);
+  const unchangedForeignRoute = await request.get(`/api/backend/Routes/${foreignRouteId}`, { headers: adminHeaders });
+  expect(unchangedForeignRoute.status()).toBe(200);
+  const unchangedForeignRouteBody = await unchangedForeignRoute.json();
+  expect(unchangedForeignRouteBody.status).toBe(0);
+  expect(unchangedForeignRouteBody.points[1].status).toBe(0);
+  expect(unchangedForeignRouteBody.points[1].evidence).toEqual([]);
+  expect((await request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers: adminHeaders })).status()).toBe(200);
+  expect(await (await request.get(`/api/backend/Routes/${foreignRouteId}/positions`, { headers: adminHeaders })).json()).toEqual([]);
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  } finally {
+    await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/status`, {
+      headers: adminHeaders,
+      data: { isActive: true },
+    }).catch(() => undefined);
+    if (foreignRouteId) {
+      const removeForeignRoute = await request.delete(`/api/backend/Routes/${foreignRouteId}`, { headers: adminHeaders }).catch(() => null);
+      if (removeForeignRoute && ![204, 404].includes(removeForeignRoute.status())) {
+        throw new Error(`No se pudo limpiar la ruta ajena: HTTP ${removeForeignRoute.status()}`);
+      }
+    }
+    if (foreignDriverId) {
+      const unassignForeignDriver = await request.put(`/api/backend/Drivers/${foreignDriverId}/unassign-vehicle`, {
+        headers: adminHeaders,
+      }).catch(() => null);
+      if (unassignForeignDriver && ![204, 404].includes(unassignForeignDriver.status())) {
+        throw new Error(`No se pudo liberar la asignación del Driver ajeno: HTTP ${unassignForeignDriver.status()}`);
+      }
+      await request.put(`/api/backend/Drivers/${foreignDriverId}/status`, {
+        headers: adminHeaders,
+        data: { isActive: false },
+      }).catch(() => undefined);
+    }
+    if (foreignVehicleId) {
+      const removeForeignVehicle = await request.delete(`/api/backend/Vehicles/${foreignVehicleId}`, { headers: adminHeaders }).catch(() => null);
+      if (removeForeignVehicle && ![204, 404].includes(removeForeignVehicle.status())) {
+        throw new Error(`No se pudo limpiar el vehículo ajeno: HTTP ${removeForeignVehicle.status()}`);
+      }
+    }
+    if (routeId) {
+    const cleanupRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+    if (cleanupRoute.ok()) {
+      const status = (await cleanupRoute.json()).status;
+      if (status === 1 || status === "InProgress") {
+        const cancelRoute = await request.put(`/api/backend/Routes/${routeId}/status`, {
+          headers: adminHeaders,
+          data: { status: 3 },
+        });
+        expect(cancelRoute.status()).toBe(204);
+      }
+      const deleteRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers: adminHeaders });
+      expect(deleteRoute.status()).toBe(204);
+    }
+    }
+    if (vehicleId) {
+      const driverAfterResponse = await request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers: adminHeaders });
+      if (driverAfterResponse.ok()) {
+        const currentVehicleId = (await driverAfterResponse.json()).vehicleId as string | null;
+        if (currentVehicleId === vehicleId) {
+          const restoreAssignment = originalDriverVehicleId
+            ? await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/assign-vehicle`, {
+                headers: adminHeaders,
+                data: { vehicleId: originalDriverVehicleId },
+              })
+            : await request.put(`/api/backend/Drivers/${routeDriverIdFixture}/unassign-vehicle`, { headers: adminHeaders });
+          expect(restoreAssignment.status()).toBe(204);
+        }
+      }
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
+  }
+});
+
+test("un Admin de otra empresa no puede consultar ni modificar recursos de flota ajenos", async ({ page, request }) => {
+  test.skip(!email || !password || !otherTenantEmail || !otherTenantPassword || !allowMutations, "Requiere dos empresas y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const ownerToken = await readAccessToken(page);
+  expect(ownerToken).toBeTruthy();
+  const ownerHeaders = { Authorization: `Bearer ${ownerToken}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  let vehicleId: string | undefined;
+  let inactiveVehicleId: string | undefined;
+  let driverId: string | undefined;
+  let routeId: string | undefined;
+  let userId: string | undefined;
+  try {
+    const createdUser = await page.request.post("/api/backend/Users", {
+      headers: ownerHeaders,
+      data: {
+        username: `tenantqa${suffix}`,
+        email: `fletflow.e2e.user.tenant.${suffix}@example.test`,
+        password: "QA-only-Password-934!",
+        roleName: "User",
+        firstName: "Tenant",
+        lastName: "Isolation User QA",
+      },
+    });
+    expect(createdUser.status()).toBe(200);
+    userId = (await createdUser.json()).id as string;
+
+    const createdDriver = await page.request.post("/api/backend/Drivers", {
+      headers: ownerHeaders,
+      data: { firstName: "Tenant", lastName: "Isolation QA", documentNumber: `E2EQA${suffix}`, phoneNumber: "0990000000" },
+    });
+    expect(createdDriver.status()).toBe(201);
+    driverId = (await createdDriver.json()).id as string;
+    const created = await page.request.post("/api/backend/Vehicles", {
+      headers: ownerHeaders,
+      data: { plate: `E2EQA${suffix}`, brand: "FleetFlow QA", model: "Tenant test", year: 2025 },
+    });
+    expect(created.status()).toBe(201);
+    vehicleId = (await created.json()).id as string;
+
+    const inactiveVehicle = await page.request.post("/api/backend/Vehicles", {
+      headers: ownerHeaders,
+      data: { plate: `E2EIA${suffix}`, brand: "FleetFlow QA", model: "Inactive tenant test", year: 2025 },
+    });
+    expect(inactiveVehicle.status()).toBe(201);
+    inactiveVehicleId = (await inactiveVehicle.json()).id as string;
+    expect((await page.request.delete(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders })).status()).toBe(204);
+
+    const createdRoute = await page.request.post("/api/backend/Routes", {
+      headers: ownerHeaders,
+      data: {
+        name: `E2E QA ruta tenant ${suffix}`,
+        cargoDescription: "Ruta cross tenant QA",
+        vehicleId,
+        driverId,
+        points: [
+          { lat: -0.18, lng: -78.46, name: "Tenant origin", operation: 0, status: 0 },
+          { lat: -0.19, lng: -78.47, name: "Tenant destination", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(createdRoute.status()).toBe(201);
+    routeId = (await createdRoute.json()).id as string;
+    const startRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+      headers: ownerHeaders,
+      data: { status: 1 },
+    });
+    expect(startRoute.status()).toBe(204);
+    const createdPosition = await page.request.post(`/api/backend/Routes/${routeId}/positions`, {
+      headers: ownerHeaders,
+      data: { latitude: -0.185, longitude: -78.465, recordedAt: new Date().toISOString(), speedKmh: 0, heading: 0 },
+    });
+    expect(createdPosition.status()).toBe(200);
+
+    const otherLogin = await page.request.post("/api/backend/Auth/login", {
+      data: { email: otherTenantEmail, password: otherTenantPassword },
+    });
+    expect(otherLogin.status()).toBe(200);
+    const otherLoginResult = await otherLogin.json();
+    const otherToken = (otherLoginResult.token ?? otherLoginResult.accessToken) as string | undefined;
+    expect(otherToken).toBeTruthy();
+    const otherHeaders = { Authorization: `Bearer ${otherToken}` };
+
+    expect((await page.request.put(`/api/backend/Users/${userId}/status?isActive=false`, { headers: otherHeaders })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Users/${userId}/profile`, {
+      headers: otherHeaders,
+      data: { username: `hacked${suffix}`, firstName: "Cross tenant", lastName: "Blocked" },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Users/${userId}/role`, {
+      headers: otherHeaders,
+      data: { roleName: "Manager" },
+    })).status()).toBe(404);
+    const otherTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: otherHeaders });
+    expect(otherTeamResponse.status()).toBe(200);
+    expect((await otherTeamResponse.json() as Array<{ id: string }>).some((member) => member.id === userId)).toBe(false);
+
+    const ownerVehicleBeforeAttacks = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
+    const ownerDriverBeforeAttacks = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+    expect(ownerVehicleBeforeAttacks.status()).toBe(200);
+    expect(ownerDriverBeforeAttacks.status()).toBe(200);
+    const vehicleBeforeAttacks = await ownerVehicleBeforeAttacks.json();
+    const driverBeforeAttacks = await ownerDriverBeforeAttacks.json();
+
+    const otherVehicles = await page.request.get("/api/backend/Vehicles", { headers: otherHeaders });
+    expect(otherVehicles.status()).toBe(200);
+    expect((await otherVehicles.json() as Array<{ id: string }>).some((vehicle) => vehicle.id === vehicleId)).toBe(false);
+
+    const crossTenantGet = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: otherHeaders });
+    expect(crossTenantGet.status()).toBe(404);
+    const crossTenantUpdate = await page.request.put(`/api/backend/Vehicles/${vehicleId}`, {
+      headers: otherHeaders,
+      data: { plate: `HACK${suffix}`, brand: "Changed", model: "Changed", year: 2025 },
+    });
+    expect(crossTenantUpdate.status()).toBe(404);
+    const crossTenantDelete = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: otherHeaders });
+    expect(crossTenantDelete.status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Vehicles/${vehicleId}/status`, {
+      headers: otherHeaders,
+      data: { status: 2 },
+    })).status()).toBe(404);
+    expect((await page.request.post(`/api/backend/Vehicles/${inactiveVehicleId}/reactivate`, { headers: otherHeaders })).status()).toBe(404);
+
+    const otherDrivers = await page.request.get("/api/backend/Drivers", { headers: otherHeaders });
+    expect(otherDrivers.status()).toBe(200);
+    expect((await otherDrivers.json() as Array<{ id: string }>).some((driver) => driver.id === driverId)).toBe(false);
+    expect((await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: otherHeaders })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}`, {
+      headers: otherHeaders,
+      data: { firstName: "Cross tenant", lastName: "Blocked", documentNumber: `HACK${suffix}`, phoneNumber: "0990000000" },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}/status`, {
+      headers: otherHeaders,
+      data: { isActive: false },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}/assign-vehicle`, {
+      headers: otherHeaders,
+      data: { vehicleId },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: otherHeaders })).status()).toBe(404);
+
+    const otherRoutes = await page.request.get("/api/backend/Routes", { headers: otherHeaders });
+    expect(otherRoutes.status()).toBe(200);
+    expect((await otherRoutes.json() as Array<{ id: string }>).some((route) => route.id === routeId)).toBe(false);
+    expect((await page.request.get(`/api/backend/Routes/${routeId}`, { headers: otherHeaders })).status()).toBe(404);
+    const otherRoutePositions = await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers: otherHeaders });
+    expect(otherRoutePositions.status()).toBe(200);
+    expect(await otherRoutePositions.json()).toEqual([]);
+    expect((await page.request.post(`/api/backend/Routes/${routeId}/positions`, {
+      headers: otherHeaders,
+      data: { latitude: -0.186, longitude: -78.466, recordedAt: new Date().toISOString() },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Routes/${routeId}`, {
+      headers: otherHeaders,
+      data: {
+        name: "Cross tenant blocked",
+        cargoDescription: "Blocked",
+        vehicleId,
+        driverId,
+        points: [
+          { lat: -0.18, lng: -78.46, name: "Tenant origin", operation: 0, status: 0 },
+          { lat: -0.19, lng: -78.47, name: "Tenant destination", operation: 0, status: 0 },
+        ],
+      },
+    })).status()).toBe(404);
+    expect((await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+      headers: otherHeaders,
+      data: { status: 3 },
+    })).status()).toBe(404);
+    expect((await page.request.delete(`/api/backend/Routes/${routeId}`, { headers: otherHeaders })).status()).toBe(404);
+
+    const crossTenantCreate = await page.request.post("/api/backend/Routes", {
+      headers: otherHeaders,
+      data: {
+        name: `E2E QA ruta tenant ataque ${suffix}`,
+        cargoDescription: "No debe enlazar recursos ajenos",
+        vehicleId,
+        driverId,
+        points: [
+          { lat: -0.18, lng: -78.46, name: "Tenant origin", operation: 0, status: 0 },
+          { lat: -0.19, lng: -78.47, name: "Tenant destination", operation: 0, status: 0 },
+        ],
+      },
+    });
+    expect(crossTenantCreate.status()).toBe(404);
+
+    const ownerRead = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
+    expect(ownerRead.status()).toBe(200);
+    expect((await ownerRead.json()).plate).toBe(`E2EQA${suffix}`);
+    const ownerVehicleAfterAttacks = await ownerRead.json();
+    expect(ownerVehicleAfterAttacks.status).toBe(vehicleBeforeAttacks.status);
+    const ownerDriverAfterAttacks = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+    expect(ownerDriverAfterAttacks.status()).toBe(200);
+    expect((await ownerDriverAfterAttacks.json()).vehicleId).toBe(driverBeforeAttacks.vehicleId);
+    const inactiveVehicleRead = await page.request.get(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders });
+    expect(inactiveVehicleRead.status()).toBe(200);
+    expect((await inactiveVehicleRead.json()).isActive).toBe(false);
+    expect((await page.request.get(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders })).status()).toBe(200);
+    const ownerPositions = await page.request.get(`/api/backend/Routes/${routeId}/positions`, { headers: ownerHeaders });
+    expect(ownerPositions.status()).toBe(200);
+    expect(await ownerPositions.json()).toHaveLength(1);
+    const ownerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: ownerHeaders });
+    expect(ownerTeamResponse.status()).toBe(200);
+    const ownerTeam = await ownerTeamResponse.json() as Array<{ id: string; username: string; firstName: string; lastName: string; roles: string[]; isActive: boolean }>;
+    expect(ownerTeam.find((member) => member.id === userId)).toMatchObject({
+      id: userId,
+      username: `tenantqa${suffix}`,
+      firstName: "Tenant",
+      lastName: "Isolation User QA",
+      roles: ["User"],
+      isActive: true,
+    });
+  } finally {
+    if (routeId) {
+      const currentRoute = await request.get(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders });
+      if (currentRoute.status() === 200) {
+        const status = (await currentRoute.json()).status;
+        if (status === 1 || status === "InProgress") {
+          const cancelRoute = await request.put(`/api/backend/Routes/${routeId}/status`, {
+            headers: ownerHeaders,
+            data: { status: 3 },
+          });
+          expect(cancelRoute.status()).toBe(204);
+        }
+        const deleteRoute = await request.delete(`/api/backend/Routes/${routeId}`, { headers: ownerHeaders });
+        expect(deleteRoute.status()).toBe(204);
+      } else {
+        expect(currentRoute.status()).toBe(404);
+      }
+    }
+    if (vehicleId) {
+      if (driverId) {
+        const driverAfterResponse = await request.get(`/api/backend/Drivers/${driverId}`, { headers: ownerHeaders });
+        if (driverAfterResponse.ok() && (await driverAfterResponse.json()).vehicleId === vehicleId) {
+          expect((await request.put(`/api/backend/Drivers/${driverId}/unassign-vehicle`, { headers: ownerHeaders })).status()).toBe(204);
+        }
+      }
+      const cleanupVehicle = await request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: ownerHeaders });
+      expect([200, 204, 404]).toContain(cleanupVehicle.status());
+    }
+    if (inactiveVehicleId) {
+      const persistedInactiveVehicle = await request.get(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders });
+      if (persistedInactiveVehicle.status() === 200) {
+        if (!(await persistedInactiveVehicle.json()).isActive) {
+          expect((await request.post(`/api/backend/Vehicles/${inactiveVehicleId}/reactivate`, { headers: ownerHeaders })).status()).toBe(204);
+        }
+        expect([200, 204, 404]).toContain((await request.delete(`/api/backend/Vehicles/${inactiveVehicleId}`, { headers: ownerHeaders })).status());
+      }
+    }
+    if (driverId) {
+      const cleanupDriver = await request.put(`/api/backend/Drivers/${driverId}/status`, { headers: ownerHeaders, data: { isActive: false } });
+      expect([204, 404]).toContain(cleanupDriver.status());
+    }
+  }
+});
+
+test("Admin crea cuentas, cambia roles y promueve a Admin desde Equipo", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  test.setTimeout(60_000);
+  page.setDefaultTimeout(8_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+
+  for (const account of [
+    { roleLabel: "Gestor de flota", roleName: "Manager", emailPrefix: "manager", viewport: 320 },
+    { roleLabel: "Logística", roleName: "Logistics", emailPrefix: "logistics", viewport: 768 },
+  ]) {
+    await page.setViewportSize({ width: account.viewport, height: account.viewport === 320 ? 844 : 1024 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const username = `${account.emailPrefix}${suffix}`;
+    const accountEmail = `fletflow.e2e.user.${account.emailPrefix}.${suffix}@example.test`;
+    await page.getByRole("button", { name: "Crear Usuario" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Después de crear la cuenta, indicaremos aquí si se pudo enviar el correo de activación.");
+    const dialogWidth = await dialog.evaluate((element) => element.getBoundingClientRect().width);
+    expect(dialogWidth).toBeLessThanOrEqual(account.viewport);
+    await dialog.getByPlaceholder("Juan").fill(`E2E ${account.roleName}`);
+    await dialog.getByPlaceholder("Pérez").fill("Cuenta de prueba");
+    await dialog.getByRole("textbox", { name: "jperez", exact: true }).fill(username);
+    await dialog.getByPlaceholder("jperez@empresa.com").fill(accountEmail);
+    await dialog.getByRole("button", { name: new RegExp(account.roleLabel) }).click();
+    await expect(dialog.getByPlaceholder("DNI / ID")).toHaveCount(0);
+
+    const createResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith("/api/backend/Users") && response.request().method() === "POST",
+    );
+    await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(200);
+    const createdAccount = await createResponse.json();
+    expect(createdAccount.role).toBe(account.roleName);
+
+    const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+    expect(teamResponse.status()).toBe(200);
+    const persistedAccount = (await teamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+    expect(persistedAccount).toMatchObject({ email: accountEmail, username, roles: [account.roleName] });
+    await expect(page.getByTestId(`team-user-${createdAccount.id}`)).toBeVisible();
+
+    if (account.roleName === "Manager") {
+      let rolePutRequests = 0;
+      const countRolePut = (request: Request) => {
+        if (request.method() === "PUT" && new URL(request.url()).pathname.endsWith(`/Users/${createdAccount.id}/role`)) {
+          rolePutRequests += 1;
+        }
+      };
+      page.on("request", countRolePut);
+      const memberCard = page.getByTestId(`team-user-${createdAccount.id}`);
+      await memberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const roleDialog = page.getByRole("alertdialog");
+      await expect(roleDialog).toContainText("cambiará de Gestor de flota a Logística");
+      const roleDialogBounds = await roleDialog.boundingBox();
+      expect(roleDialogBounds).not.toBeNull();
+      expect(roleDialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(roleDialogBounds!.x + roleDialogBounds!.width).toBeLessThanOrEqual(account.viewport);
+      await roleDialog.getByRole("button", { name: "Cancelar" }).click();
+      expect(rolePutRequests).toBe(0);
+      await expect(memberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toBeDisabled();
+
+      await memberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const changeRoleResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+      const changeRoleResponse = await changeRoleResponsePromise;
+      expect(changeRoleResponse.status()).toBe(200);
+      expect((await changeRoleResponse.request().postDataJSON()).roleName).toBe("Logistics");
+      expect(rolePutRequests).toBe(1);
+      page.off("request", countRolePut);
+
+      const changedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(changedTeamResponse.status()).toBe(200);
+      const changedMember = (await changedTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(changedMember).toMatchObject({ id: createdAccount.id, roles: ["Logistics"] });
+      await expect(memberCard).toContainText("Logística");
+      await expect(memberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
+
+      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.reload();
+      await page.getByRole("button", { name: "Abrir menú" }).click();
+      await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+      const reloadedMemberCard = page.getByTestId(`team-user-${createdAccount.id}`);
+      await expect(reloadedMemberCard).toContainText("Logística");
+      await expect(reloadedMemberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      await reloadedMemberCard.getByRole("button", { name: "Gerente", exact: true }).click();
+      const rootPromotionDialog = page.getByRole("alertdialog");
+      await expect(rootPromotionDialog).toContainText("cambiará de Logística a Gerente");
+      const promoteResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await rootPromotionDialog.getByRole("button", { name: "Confirmar cambio" }).click();
+      const promoteResponse = await promoteResponsePromise;
+      expect(promoteResponse.status()).toBe(200);
+      expect((await promoteResponse.request().postDataJSON()).roleName).toBe("Admin");
+      const promotedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(promotedTeamResponse.status()).toBe(200);
+      const promotedMember = (await promotedTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(promotedMember).toMatchObject({ id: createdAccount.id, roles: ["Admin"] });
+      await expect(reloadedMemberCard.getByRole("button", { name: "Gerente", exact: true })).toBeDisabled();
+
+      await reloadedMemberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const restoreRoleResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+      const restoreRoleResponse = await restoreRoleResponsePromise;
+      expect(restoreRoleResponse.status()).toBe(200);
+      expect((await restoreRoleResponse.request().postDataJSON()).roleName).toBe("Logistics");
+      const restoredTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(restoredTeamResponse.status()).toBe(200);
+      const restoredMember = (await restoredTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(restoredMember).toMatchObject({ id: createdAccount.id, roles: ["Logistics"] });
+    }
+  }
+
+  const duplicatedEmail = `fletflow.e2e.user.manager.${suffix}@example.test`;
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const duplicateEmailDialog = page.getByRole("dialog");
+  await duplicateEmailDialog.getByPlaceholder("Juan").fill("E2E Correo duplicado");
+  await duplicateEmailDialog.getByPlaceholder("Pérez").fill("Cuenta de prueba");
+  await duplicateEmailDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`duplicate${suffix}`);
+  await duplicateEmailDialog.getByPlaceholder("jperez@empresa.com").fill(duplicatedEmail);
+  await duplicateEmailDialog.getByRole("button", { name: /^Usuario/ }).click();
+
+  const duplicateEmailResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Users") &&
+    response.request().method() === "POST",
+  );
+  await duplicateEmailDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const duplicateEmailResponse = await duplicateEmailResponsePromise;
+  expect(duplicateEmailResponse.status()).toBe(409);
+  const duplicateEmailError = await duplicateEmailResponse.json();
+  expect(duplicateEmailError.message).toBe("El correo ya fue registrado.");
+  await expect(page.getByText(duplicateEmailError.message)).toBeVisible();
+  await expect(duplicateEmailDialog).toBeVisible();
+
+  const teamAfterDuplicateEmail = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamAfterDuplicateEmail.status()).toBe(200);
+  const duplicateEmailMembers = (await teamAfterDuplicateEmail.json() as Array<{ email: string }>).filter(
+    (member) => member.email.toLowerCase() === duplicatedEmail.toLowerCase(),
+  );
+  expect(duplicateEmailMembers).toHaveLength(1);
+});
+
+test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde Equipo", async ({ page }) => {
+  test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const token = await readAccessToken(page);
+  expect(token).toBeTruthy();
+  const headers = { Authorization: `Bearer ${token}` };
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+  const plate = `E2EQA${suffix}`;
+  const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
+    headers,
+    data: { plate, brand: "FleetFlow QA", model: "Driver assignment", year: 2025 },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicleId = (await vehicleResponse.json()).id as string;
+  await page.reload();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+
+  const firstName = `E2E QA ${suffix}`;
+  const lastName = "Chofer UI";
+  const emailAddress = `fletflow.e2e.driver.ui.${suffix}@example.test`;
+  const documentNumber = `E2EQA${suffix}`;
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const dialog = page.getByRole("dialog");
+  const expectUserDialogFits = async () => {
+    const sizes = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      page: document.documentElement.scrollWidth,
+    }));
+    const dialogSizes = await dialog.evaluate((element) => ({
+      width: element.getBoundingClientRect().width,
+      client: element.clientWidth,
+      scroll: element.scrollWidth,
+    }));
+    expect(sizes.page).toBeLessThanOrEqual(sizes.viewport);
+    expect(dialogSizes.width).toBeLessThanOrEqual(sizes.viewport);
+    expect(dialogSizes.scroll).toBeLessThanOrEqual(dialogSizes.client);
+    await expect(dialog.getByRole("button", { name: "Crear Usuario", exact: true })).toBeVisible();
+  };
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expectUserDialogFits();
+  await expect(dialog.getByPlaceholder("Juan")).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByPlaceholder("Pérez")).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByRole("textbox", { name: "jperez", exact: true })).toHaveAttribute("maxlength", "100");
+  await expect(dialog.getByPlaceholder("jperez@empresa.com")).toHaveAttribute("maxlength", "200");
+  await expect(dialog.getByPlaceholder("DNI / ID")).toBeVisible();
+  await expect(dialog.getByPlaceholder("999999999")).toBeVisible();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expectUserDialogFits();
+  await dialog.getByRole("button", { name: /Gestor de flota/ }).click();
+  await expect(dialog.getByPlaceholder("DNI / ID")).toHaveCount(0);
+  await dialog.getByRole("button", { name: /Chofer/ }).click();
+  await expect(dialog.getByPlaceholder("DNI / ID")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await dialog.getByPlaceholder("Juan").fill(firstName);
+  await dialog.getByPlaceholder("Pérez").fill(lastName);
+  await dialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`e2e${suffix}`);
+  await dialog.getByPlaceholder("jperez@empresa.com").fill(emailAddress);
+  await dialog.getByPlaceholder("DNI / ID").fill(documentNumber);
+  await dialog.getByPlaceholder("999999999").fill("0990000000");
+
+    await page.route("**/api/backend/Users", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "El correo ya está registrado" }),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+    await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+    await expect(page.getByText("El correo ya está registrado")).toBeVisible();
+    await expect(page.getByText("El nombre de usuario ya existe")).toHaveCount(0);
+    await page.unroute("**/api/backend/Users");
+
+  const createUserResponsePromise = page.waitForResponse((response) =>
+    response.url().includes("/api/backend/Users") &&
+    response.request().method() === "POST",
+  );
+  await dialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const createUserResponse = await createUserResponsePromise;
+  expect(createUserResponse.status()).toBe(200);
+  const createdUser = await createUserResponse.json();
+  expect(createdUser.role).toBe("Driver");
+  expect(createdUser.invitationSent).toBe(false);
+  expect(createdUser.driverId).toBeTruthy();
+  const driverId = createdUser.driverId as string;
+  await expect(page.getByText("Usuario creado, pero el correo de invitación no se pudo enviar")).toBeVisible();
+
+  const duplicateDocumentEmail = `fletflow.e2e.driver.duplicate.${suffix}@example.test`;
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const duplicateDriverDialog = page.getByRole("dialog");
+  await duplicateDriverDialog.getByPlaceholder("Juan").fill("Duplicado E2E");
+  await duplicateDriverDialog.getByPlaceholder("Pérez").fill("Documento repetido");
+  await duplicateDriverDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`dup${suffix}`);
+  await duplicateDriverDialog.getByPlaceholder("jperez@empresa.com").fill(duplicateDocumentEmail);
+  await duplicateDriverDialog.getByPlaceholder("DNI / ID").fill(documentNumber);
+  await duplicateDriverDialog.getByPlaceholder("999999999").fill("0990000001");
+  const duplicateDriverResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Users") &&
+    response.request().method() === "POST",
+  );
+  await duplicateDriverDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const duplicateDriverResponse = await duplicateDriverResponsePromise;
+  expect(duplicateDriverResponse.status()).toBe(409);
+  const duplicateDriverError = await duplicateDriverResponse.json();
+  expect(duplicateDriverError.message).toBe("Ya existe un conductor con ese documento en la empresa.");
+  await expect(page.getByText(duplicateDriverError.message)).toBeVisible();
+  await expect(duplicateDriverDialog).toBeVisible();
+  const usersAfterDuplicate = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(usersAfterDuplicate.status()).toBe(200);
+  expect((await usersAfterDuplicate.json() as Array<{ email: string }>).some((user) => user.email === duplicateDocumentEmail)).toBe(false);
+  await duplicateDriverDialog.getByRole("button", { name: "Cancelar" }).click();
+
+  await page.getByRole("button", { name: "Gestionar choferes" }).click();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByRole("textbox", { name: "Documento" })).toHaveAttribute("maxlength", "20");
+  await expect(page.getByRole("textbox", { name: "Teléfono" })).toHaveAttribute("maxlength", "20");
+  const unlinkedFirstName = `Chofer libre ${suffix}`;
+  const unlinkedDocument = `E2EQA${suffix}U`;
+  await page.getByRole("combobox", { name: "Usuario vinculado al chofer" }).selectOption("");
+  await page.getByPlaceholder("Nombres").fill(unlinkedFirstName);
+  await page.getByPlaceholder("Apellidos").fill("Sin cuenta");
+  await page.getByRole("textbox", { name: "Documento" }).fill(unlinkedDocument);
+  await page.getByRole("textbox", { name: "Teléfono" }).fill("0990000099");
+  const createUnlinkedDriverPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Drivers") &&
+    response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear Chofer" }).click();
+  const createUnlinkedDriverResponse = await createUnlinkedDriverPromise;
+  expect(createUnlinkedDriverResponse.status()).toBe(201);
+  const unlinkedDriver = await createUnlinkedDriverResponse.json();
+  expect(unlinkedDriver).toMatchObject({
+    firstName: unlinkedFirstName,
+    documentNumber: unlinkedDocument,
+    userId: null,
+    vehicleId: null,
+  });
+  const unlinkedDriverRead = await page.request.get(`/api/backend/Drivers/${unlinkedDriver.id}`, { headers });
+  expect(unlinkedDriverRead.status()).toBe(200);
+  expect((await unlinkedDriverRead.json()).userId).toBeNull();
+  const createdUnlinkedDriverCard = page.getByText(`${unlinkedFirstName} Sin cuenta`, { exact: true }).locator("xpath=../..");
+  await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
+  await expect(createdUnlinkedDriverCard.getByRole("button", { name: "Quitar", exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const driverName = page.getByText(`${firstName} ${lastName}`, { exact: true }).first();
+  await expect(driverName).toBeVisible();
+  const driverCard = driverName.locator("xpath=../..");
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await driverCard.getByRole("combobox").selectOption(vehicleId);
+  const assignVehiclePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/assign-vehicle`) &&
+    response.request().method() === "PUT",
+  );
+  await driverCard.getByRole("button", { name: "Asignar", exact: true }).click();
+  expect((await assignVehiclePromise).status()).toBe(204);
+  const assignedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await assignedDriver.json()).vehicleId).toBe(vehicleId);
+  await expect(driverCard).toContainText(plate);
+  await expect(createdUnlinkedDriverCard.getByRole("combobox").locator("option").filter({ hasText: plate })).toHaveCount(0);
+
+  const unassignVehiclePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/unassign-vehicle`) &&
+    response.request().method() === "PUT",
+  );
+  await driverCard.getByRole("button", { name: "Quitar", exact: true }).click();
+  expect((await unassignVehiclePromise).status()).toBe(204);
+  const unassignedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(unassignedDriver.status()).toBe(200);
+  expect((await unassignedDriver.json()).vehicleId).toBeNull();
+  await expect(driverCard).toContainText("Sin vehículo");
+
+  await driverCard.getByRole("button", { name: "Editar" }).click();
+  const driverEditForm = driverCard.locator("form");
+  expect(await driverEditForm.boundingBox()).not.toBeNull();
+  expect((await driverEditForm.boundingBox())!.width).toBeLessThanOrEqual(320);
+  await expect(driverEditForm.getByLabel("Documento del conductor")).toHaveAttribute("maxlength", "20");
+  await expect(driverEditForm.getByLabel("Teléfono del conductor")).toHaveAttribute("maxlength", "20");
+  let invalidDriverEditRequests = 0;
+  const countInvalidDriverEdit = (request: { url: () => string; method: () => string }) => {
+    if (request.url().includes(`/api/backend/Drivers/${driverId}`) && request.method() === "PUT") invalidDriverEditRequests += 1;
+  };
+  page.on("request", countInvalidDriverEdit);
+  await driverEditForm.getByLabel("Nombres del conductor").fill("   ");
+  await driverCard.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Completa todos los datos del conductor.")).toBeVisible();
+  expect(invalidDriverEditRequests).toBe(0);
+  page.off("request", countInvalidDriverEdit);
+  await driverEditForm.getByLabel("Nombres del conductor").fill(`${firstName} editado`);
+
+  const updateDriverPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}`) &&
+    response.request().method() === "PUT",
+  );
+  await driverCard.getByRole("button", { name: "Guardar cambios" }).click();
+  expect((await updateDriverPromise).status()).toBe(200);
+  const updatedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(updatedDriver.status()).toBe(200);
+  expect((await updatedDriver.json()).firstName).toBe(`${firstName} editado`);
+  const invalidDriverUpdate = await page.request.put(`/api/backend/Drivers/${driverId}`, {
+    headers,
+    data: { firstName: " ", lastName, documentNumber, phoneNumber: "0990000000" },
+  });
+  expect(invalidDriverUpdate.status()).toBe(400);
+  const afterInvalidDriverUpdate = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await afterInvalidDriverUpdate.json()).firstName).toBe(`${firstName} editado`);
+  const usersAfterDriverEdit = await page.request.get("/api/backend/Users/my-team", { headers });
+  const linkedUserAfterDriverEdit = (await usersAfterDriverEdit.json()).find((member: { id: string }) => member.id === createdUser.id);
+  expect(linkedUserAfterDriverEdit).toMatchObject({ firstName: `${firstName} editado`, lastName });
+
+  const updatedDriverCard = page.getByTestId(`team-driver-${driverId}`);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const deactivatePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await updatedDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+  expect((await deactivatePromise).status()).toBe(204);
+  await page.getByRole("button", { name: "Mostrar bajas" }).click();
+  const inactiveDriverCard = page.getByTestId(`team-driver-${driverId}`);
+  await expect(inactiveDriverCard).toContainText("Inactivo");
+  await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
+
+  const reactivatePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await inactiveDriverCard.getByRole("button", { name: "Reactivar" }).click();
+  expect((await reactivatePromise).status()).toBe(204);
+  const reactivatedDriver = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(reactivatedDriver.status()).toBe(200);
+  expect((await reactivatedDriver.json()).isActive).toBe(true);
+
+  const teamMemberCard = page
+    .getByTestId(`team-user-${createdUser.id}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const logisticsRolePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
+    response.request().method() === "PUT",
+  );
+  await teamMemberCard.getByRole("button", { name: "Logística", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
+  const logisticsRoleResponse = await logisticsRolePromise;
+  expect(logisticsRoleResponse.status()).toBe(200);
+  expect((await logisticsRoleResponse.json()).role).toBe("Logistics");
+  const inactiveAfterRoleChange = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await inactiveAfterRoleChange.json()).isActive).toBe(false);
+  await expect(inactiveDriverCard).toContainText("Inactivo");
+
+  const driverRolePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
+    response.request().method() === "PUT",
+  );
+  await teamMemberCard.getByRole("button", { name: "Chofer", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
+  const driverRoleResponse = await driverRolePromise;
+  expect(driverRoleResponse.status()).toBe(200);
+  expect((await driverRoleResponse.json()).role).toBe("Driver");
+  const activeAfterRoleChange = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await activeAfterRoleChange.json()).isActive).toBe(true);
+  await expect(updatedDriverCard.getByRole("button", { name: "Dar de baja" })).toBeVisible();
+
+  await teamMemberCard.getByRole("button", { name: `Editar usuario e2e${suffix}` }).click();
+  const editDriverUserDialog = page.getByRole("dialog");
+  const profileBeforeFailedSave = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(profileBeforeFailedSave.status()).toBe(200);
+  const persistedProfileBeforeFailure = (await profileBeforeFailedSave.json() as Array<{ id: string; firstName: string; lastName: string; username: string }>)
+    .find((member) => member.id === createdUser.id);
+  expect(persistedProfileBeforeFailure).toBeTruthy();
+  await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} no guardado`);
+  await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
+  await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);
+  const profileUpdatePattern = "**/api/backend/Users/*/profile";
+  await page.route(profileUpdatePattern, async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "No se pudo guardar el perfil por mantenimiento" }),
+    });
+  });
+  const failedProfileSave = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/Users/${createdUser.id}/profile`) &&
+    response.request().method() === "PUT" && response.status() === 503,
+  );
+  await editDriverUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  await failedProfileSave;
+  await expect(page.getByText("No se pudo guardar el perfil por mantenimiento")).toBeVisible();
+  await expect(editDriverUserDialog).toBeVisible();
+  await expect(editDriverUserDialog.getByLabel("Nombres")).toHaveValue(`${firstName} no guardado`);
+  const profileAfterFailedSave = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(profileAfterFailedSave.status()).toBe(200);
+  const unchangedMember = (await profileAfterFailedSave.json() as Array<{ id: string; firstName: string; lastName: string; username: string }>)
+    .find((member) => member.id === createdUser.id);
+  expect(unchangedMember).toMatchObject({
+    id: createdUser.id,
+    firstName: persistedProfileBeforeFailure!.firstName,
+    lastName: persistedProfileBeforeFailure!.lastName,
+    username: persistedProfileBeforeFailure!.username,
+  });
+  await page.unroute(profileUpdatePattern);
+
+  await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} desde usuario`);
+  await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
+  await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);
+  const updateDriverUserProfilePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/profile`) &&
+    response.request().method() === "PUT",
+  );
+  await editDriverUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  expect((await updateDriverUserProfilePromise).status()).toBe(200);
+  const driverAfterUserProfileEdit = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await driverAfterUserProfileEdit.json())).toMatchObject({
+    firstName: `${firstName} desde usuario`,
+    lastName,
+  });
+
+  const linkedDriverCard = page.getByTestId(`team-driver-${driverId}`);
+  await expect(linkedDriverCard).toBeVisible();
+  await expect(linkedDriverCard).toContainText(`@e2e${suffix}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await linkedDriverCard.getByRole("button", { name: "Desvincular cuenta" }).click();
+  const unlinkDialog = page.getByRole("alertdialog");
+  await expect(unlinkDialog).toContainText("Se conservarán la cuenta y el perfil, el rol Chofer y el historial");
+  await unlinkDialog.getByRole("button", { name: "Cancelar" }).click();
+  const driverAfterCanceledUnlink = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await driverAfterCanceledUnlink.json()).userId).toBe(createdUser.id);
+
+  await linkedDriverCard.getByRole("button", { name: "Desvincular cuenta" }).click();
+  const unlinkDriverPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${driverId}/unlink-user`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Sí, desvincular" }).click();
+  expect((await unlinkDriverPromise).status()).toBe(204);
+  const unlinkedDriverResponse = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(unlinkedDriverResponse.status()).toBe(200);
+  expect(await unlinkedDriverResponse.json()).toMatchObject({ id: driverId, userId: null, isActive: true });
+  const teamAfterDriverUnlink = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamAfterDriverUnlink.status()).toBe(200);
+  const preservedDriverUser = (await teamAfterDriverUnlink.json()).find((member: { id: string }) => member.id === createdUser.id);
+  expect(preservedDriverUser).toMatchObject({ id: createdUser.id, driverId: null, isActive: true });
+  expect(preservedDriverUser.roles).toContain("Driver");
+  await expect(linkedDriverCard).toContainText("Sin usuario vinculado");
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  const deactivateUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await teamMemberCard.getByRole("button", { name: "Activo", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
+  expect((await deactivateUserPromise).status()).toBe(200);
+  const inactiveUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(inactiveUsers.status()).toBe(200);
+  const persistedInactiveUser = (await inactiveUsers.json()).find((user: { id: string }) => user.id === createdUser.id);
+  expect(persistedInactiveUser?.isActive).toBe(false);
+  await expect(teamMemberCard.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
+  const inactiveMemberAfterReload = page.getByTestId(`team-user-${createdUser.id}`);
+  await expect(inactiveMemberAfterReload.getByRole("button", { name: "Inactivo", exact: true })).toBeVisible();
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const userDialog = page.getByRole("dialog");
+  const longUsername = `user${suffix}${"x".repeat(80)}`;
+  const editedLongUsername = `edited${suffix}${"y".repeat(80)}`;
+  await userDialog.getByPlaceholder("Juan").fill(`Usuario QA ${suffix}`);
+  await userDialog.getByPlaceholder("Pérez").fill("Sin flota");
+  await userDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(longUsername);
+  const regularUserEmail = `fletflow.e2e.user.ui.${suffix}@example.test`;
+  await userDialog.getByPlaceholder("jperez@empresa.com").fill(regularUserEmail);
+  await userDialog.getByRole("button", { name: /^Usuario Consulta/ }).click();
+  const createRegularUserResponsePromise = page.waitForResponse((response) =>
+    response.url().includes("/api/backend/Users") && response.request().method() === "POST",
+  );
+  await userDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const createRegularUserResponse = await createRegularUserResponsePromise;
+  expect(createRegularUserResponse.status()).toBe(200);
+  const createdRegularUser = await createRegularUserResponse.json();
+  expect(createdRegularUser.role).toBe("User");
+  const teamUsersAfterCreate = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamUsersAfterCreate.status()).toBe(200);
+  expect((await teamUsersAfterCreate.json()).some((member: { email: string; roles: string[] }) =>
+    member.email === regularUserEmail && member.roles.includes("User"),
+  )).toBe(true);
+
+  const regularUserCard = page
+    .getByTestId(`team-user-${createdRegularUser.id}`);
+  for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth &&
+      (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+    )).toBe(true);
+    await expect(regularUserCard.getByText(`@${longUsername}`, { exact: true })).toBeVisible();
+  }
+  await page.setViewportSize({ width: 320, height: 844 });
+  await regularUserCard.getByRole("button", { name: `Editar usuario ${longUsername}` }).click();
+  const editUserDialog = page.getByRole("dialog");
+  expect(await editUserDialog.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(320);
+  await editUserDialog.getByLabel("Nombres").fill("Nombre actualizado QA");
+  await editUserDialog.getByLabel("Apellidos").fill("Apellido actualizado");
+  await editUserDialog.getByLabel("Usuario").fill(editedLongUsername);
+  const updateProfilePromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/profile`) &&
+    response.request().method() === "PUT",
+  );
+  await editUserDialog.getByRole("button", { name: "Guardar cambios" }).click();
+  expect((await updateProfilePromise).status()).toBe(200);
+  const persistedEditedUserResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(persistedEditedUserResponse.status()).toBe(200);
+  const persistedEditedUser = (await persistedEditedUserResponse.json()).find((member: { id: string }) => member.id === createdRegularUser.id);
+  expect(persistedEditedUser).toMatchObject({
+    username: editedLongUsername,
+    firstName: "Nombre actualizado QA",
+    lastName: "Apellido actualizado",
+    email: regularUserEmail,
+  });
+
+  const editedRegularUserCard = page
+    .getByTestId(`team-user-${createdRegularUser.id}`);
+  for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth &&
+      (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+    )).toBe(true);
+    await expect(editedRegularUserCard.getByText(`@${editedLongUsername}`, { exact: true })).toBeVisible();
+  }
+  await page.setViewportSize({ width: 320, height: 844 });
+  const deactivateRegularUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await editedRegularUserCard.getByRole("button", { name: "Activo", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
+  expect((await deactivateRegularUserPromise).status()).toBe(200);
+  const inactiveRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect((await inactiveRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(false);
+
+  const reactivateRegularUserPromise = page.waitForResponse((response) =>
+    response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
+    response.request().method() === "PUT",
+  );
+  await editedRegularUserCard.getByRole("button", { name: "Inactivo", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, activar cuenta", exact: true }).click();
+  expect((await reactivateRegularUserPromise).status()).toBe(200);
+  const activeRegularUsers = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect((await activeRegularUsers.json()).find((member: { id: string }) => member.id === createdRegularUser.id)?.isActive).toBe(true);
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", async ({ page, browser }) => {
+  test.skip(!userEmail || !userPassword, "Requiere cuenta QA User con credenciales activas.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const secondContext = await browser.newContext();
+  const secondPage = await secondContext.newPage();
+  try {
+    for (const targetPage of [page, secondPage]) {
+      await targetPage.goto("/login");
+      await targetPage.getByLabel("Correo electrónico").fill(userEmail!);
+      await targetPage.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
+      await targetPage.getByRole("button", { name: "Iniciar sesión" }).click();
+      await expect(targetPage).toHaveURL(/\/dashboard$/);
+    }
+
+    const secondAccessToken = await readAccessToken(secondPage);
+    const secondRefreshCookie = (await secondContext.cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+    expect(secondRefreshCookie?.httpOnly).toBe(true);
+    expect(secondRefreshCookie?.sameSite).toBe("Strict");
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+    await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    const secondRefresh = await secondPage.evaluate(async () => {
+      const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+      return response.status;
+    });
+    expect(secondRefresh).toBe(401);
+    const secondSessionCheck = await secondPage.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${secondAccessToken}` },
+    });
+    expect(secondSessionCheck.status()).toBe(401);
+  } finally {
+    await secondContext.close();
+  }
+});
+
+test("User cambia su contraseña desde Mi Perfil y vuelve a iniciar sesión", async ({ page }) => {
+  test.skip(!userEmail || !userPassword, "El runner local/CI crea el usuario QA para validar autenticación.");
+
+  const newPassword = `PwQA-${randomUUID()}aA1!`;
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(userEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const previousAccessToken = await readAccessToken(page);
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await page.getByRole("button", { name: "Cambiar contraseña", exact: true }).first().click();
+  const passwordForm = page.getByPlaceholder("Contraseña actual").locator("xpath=ancestor::form");
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: width === 320 ? 844 : 1024 });
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+    expect(await passwordForm.boundingBox()).not.toBeNull();
+    await expect(passwordForm.getByRole("button", { name: "Cambiar contraseña", exact: true })).toBeVisible();
+  }
+  await page.getByPlaceholder("Contraseña actual").fill(userPassword!);
+  await page.getByRole("textbox", { name: "Nueva contraseña", exact: true }).fill(newPassword);
+  await page.getByRole("textbox", { name: "Confirmar nueva contraseña", exact: true }).fill(newPassword);
+  const changePasswordResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Auth/change-password") &&
+    response.request().method() === "POST",
+  );
+  await passwordForm.getByRole("button", { name: "Cambiar contraseña", exact: true }).click();
+  expect((await changePasswordResponsePromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+  await page.setViewportSize({ width: 320, height: 844 });
+
+  const refreshAfterPasswordChange = await page.evaluate(async () => {
+    const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+    return response.status;
+  });
+  expect(refreshAfterPasswordChange).toBe(401);
+  const revokedAccess = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${previousAccessToken}` },
+  });
+  expect(revokedAccess.status()).toBe(401);
+  const oldPasswordLogin = await page.request.post("/api/backend/Auth/login", {
+    data: { email: userEmail, password: userPassword },
+  });
+  expect(oldPasswordLogin.status()).toBe(401);
+
+  await page.getByLabel("Correo electrónico").fill(userEmail!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(newPassword);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const newSessionToken = await readAccessToken(page);
+  expect(newSessionToken).toBeTruthy();
+});
+
+test("desactivar un usuario desde Equipo revoca su sesión y refresh token", async ({ page, browser }) => {
+  test.skip(!email || !password || !deactivationUserEmail || !deactivationUserPassword || !allowMutations, "Requiere cuentas QA activas y base descartable.");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const userContext = await browser.newContext();
+  const userPage = await userContext.newPage();
+  try {
+    await userPage.goto("/login");
+    await userPage.getByLabel("Correo electrónico").fill(deactivationUserEmail!);
+    await userPage.getByRole("textbox", { name: "Contraseña" }).fill(deactivationUserPassword!);
+    await userPage.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(userPage).toHaveURL(/\/dashboard$/);
+    const userAccessToken = await readAccessToken(userPage);
+
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(email!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const teamResponse = await page.request.get("/api/backend/Users/my-team", {
+      headers: { Authorization: `Bearer ${await readAccessToken(page)}` },
+    });
+    expect(teamResponse.status()).toBe(200);
+    const member = (await teamResponse.json()).find((candidate: { email: string }) => candidate.email === deactivationUserEmail);
+    expect(member?.id).toBeTruthy();
+
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+    const memberCard = page.getByTestId(`team-user-${member.id}`);
+    const deactivateResponse = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Users/${member.id}/status`) && response.request().method() === "PUT",
+    );
+    await memberCard.getByRole("button", { name: "Activo", exact: true }).click();
+    await page.getByRole("button", { name: "Sí, desactivar cuenta", exact: true }).click();
+    expect((await deactivateResponse).status()).toBe(200);
+
+    const rejectedRefresh = await userPage.evaluate(async () => {
+      const response = await fetch("/api/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+      return response.status;
+    });
+    expect(rejectedRefresh).toBe(401);
+    const rejectedAccess = await page.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${userAccessToken}` },
+    });
+    expect(rejectedAccess.status()).toBe(401);
+  } finally {
+    await userContext.close();
+  }
+});

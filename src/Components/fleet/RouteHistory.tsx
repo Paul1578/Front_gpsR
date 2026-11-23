@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "../../Context/AuthContext";
 import {
   ArrowLeft,
@@ -15,16 +16,32 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
   fetchRoutes,
-  fetchVehicles,
   type RouteApiDto,
-  type VehicleApiDto,
 } from "@/services/fleetApi";
+import type { RouteEvidence } from "@/Context/FleetContext";
 
 interface RouteHistoryProps {
   onBack?: () => void;
 }
 
 type StatusFilter = "all" | number | string;
+type RouteHistoryItem = RouteApiDto & {
+  evidencias?: RouteEvidence[];
+  notas?: string;
+};
+
+const mapRouteHistoryItem = (route: RouteApiDto): RouteHistoryItem => ({
+  ...route,
+  evidencias: (route.points ?? []).flatMap((point, pointIndex) =>
+    (point.evidence ?? point.Evidence ?? []).map((evidence, evidenceIndex) => ({
+      id: `${route.id}-${pointIndex}-${evidenceIndex}-${evidence.createdAtUtc ?? ""}`,
+      type: evidence.type === "image" ? "image" as const : "note" as const,
+      content: evidence.content ?? "",
+      description: evidence.description,
+      timestamp: evidence.createdAtUtc ?? "",
+    })),
+  ),
+});
 
 const mapStatus = (status?: number | string) => {
   if (typeof status === "number") {
@@ -34,7 +51,11 @@ const mapStatus = (status?: number | string) => {
     return "pendiente";
   }
   const key = (status ?? "").toString().toLowerCase();
-  if (key.includes("progress") || key.includes("curso") || key.includes("progreso"))
+  if (
+    key.includes("progress") ||
+    key.includes("curso") ||
+    key.includes("progreso")
+  )
     return "en_progreso";
   if (key.includes("complete") || key.includes("complet")) return "completada";
   if (key.includes("cancel")) return "cancelada";
@@ -44,12 +65,18 @@ const mapStatus = (status?: number | string) => {
 export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
   const { apiFetch, getAllUsers } = useAuth();
 
-  const [routes, setRoutes] = useState<RouteApiDto[]>([]);
-  const [vehicles, setVehicles] = useState<VehicleApiDto[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<RouteApiDto | null>(null);
+  const [routes, setRoutes] = useState<RouteHistoryItem[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<RouteHistoryItem | null>(
+    null,
+  );
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [selectedDetailsLoading, setSelectedDetailsLoading] = useState(false);
+  const [selectedDetailsError, setSelectedDetailsError] = useState(false);
+  const hasLoadedRoutes = useRef(false);
+  const selectedRouteRequestId = useRef<string | null>(null);
 
   const users = getAllUsers();
 
@@ -58,29 +85,25 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
     if (!apiFetch) return;
 
     let cancelled = false;
+    let requestInFlight = false;
 
     const load = async () => {
+      if (requestInFlight) return;
+      requestInFlight = true;
       try {
-        setIsLoading(true);
+        if (!hasLoadedRoutes.current) setIsLoading(true);
         setError(null);
 
-        const [routesRes, vehiclesRes] = await Promise.all([
-          fetchRoutes(apiFetch),
-          fetchVehicles(apiFetch),
-        ]);
-
-        console.log("[RouteHistory] fetch ok", {
-          routes: routesRes?.length ?? 0,
-          vehicles: vehiclesRes?.length ?? 0,
-        });
+        const routesRes = await fetchRoutes(apiFetch);
 
         if (cancelled) return;
-        setRoutes(routesRes);
-        setVehicles(vehiclesRes);
+        hasLoadedRoutes.current = true;
+        setRoutes(routesRes.map(mapRouteHistoryItem));
       } catch (err) {
         console.error("Error cargando historial de rutas", err);
         if (!cancelled) setError("No se pudieron cargar las rutas");
       } finally {
+        requestInFlight = false;
         if (!cancelled) setIsLoading(false);
       }
     };
@@ -108,9 +131,32 @@ export function RouteHistory({ onBack }: RouteHistoryProps = {}) {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [apiFetch]);
+  }, [apiFetch, retryCount]);
 
-const filteredRoutes = useMemo(() => {
+  const openRouteDetails = async (route: RouteHistoryItem) => {
+    selectedRouteRequestId.current = route.id;
+    setSelectedRoute(route);
+    setSelectedDetailsLoading(true);
+    setSelectedDetailsError(false);
+    try {
+      const details = await apiFetch<RouteApiDto>(`/Routes/${route.id}`);
+      if (selectedRouteRequestId.current === route.id)
+        setSelectedRoute(mapRouteHistoryItem(details));
+    } catch {
+      if (selectedRouteRequestId.current === route.id) setSelectedDetailsError(true);
+    } finally {
+      if (selectedRouteRequestId.current === route.id) setSelectedDetailsLoading(false);
+    }
+  };
+
+  const closeRouteDetails = () => {
+    selectedRouteRequestId.current = null;
+    setSelectedRoute(null);
+    setSelectedDetailsLoading(false);
+    setSelectedDetailsError(false);
+  };
+
+  const filteredRoutes = useMemo(() => {
     return routes
       .filter((route) => {
         if (filterStatus === "all") return true;
@@ -120,14 +166,16 @@ const filteredRoutes = useMemo(() => {
       })
       .sort(
         (a, b) =>
-          new Date(b.plannedStart ?? "").getTime() -
-          new Date(a.plannedStart ?? "").getTime()
+          new Date(b.startedAt ?? b.plannedStart ?? "").getTime() -
+          new Date(a.startedAt ?? a.plannedStart ?? "").getTime(),
       );
   }, [routes, filterStatus]);
 
   const getStatusIcon = (status?: number | string) => {
     const key =
-      typeof status === "number" ? status : (status ?? "").toString().toLowerCase();
+      typeof status === "number"
+        ? status
+        : (status ?? "").toString().toLowerCase();
 
     switch (key) {
       case 2:
@@ -148,9 +196,12 @@ const filteredRoutes = useMemo(() => {
   const getStatusBadge = (status?: number | string) => {
     const estado = mapStatus(status);
     const styles = {
-      completada: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
-      en_progreso: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
-      pendiente: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200",
+      completada:
+        "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
+      en_progreso:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
+      pendiente:
+        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200",
       cancelada: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
     };
     const labels = {
@@ -171,7 +222,27 @@ const filteredRoutes = useMemo(() => {
     );
   };
 
-  const formatDate = (dateString?: string) => {
+  const getPointOperationLabel = (operation?: number | string) => {
+    const numeric = typeof operation === "number" ? operation : undefined;
+    const key = typeof operation === "string" ? operation.toLowerCase() : "";
+    if (numeric === 1 || key === "pickup" || key.includes("recog")) return "Recogida";
+    if (numeric === 2 || key === "delivery" || key.includes("entreg")) return "Entrega";
+    if (numeric === 3 || key === "pickupanddelivery" || key.includes("pickupanddelivery")) return "Recogida y entrega";
+    return null;
+  };
+
+  const getPointStatusLabel = (status?: number | string) => {
+    const numeric = typeof status === "number" ? status : undefined;
+    const key = typeof status === "string" ? status.toLowerCase() : "";
+    if (numeric === 0 || key === "pending" || key.includes("pend")) return "Pendiente";
+    if (numeric === 1 || key === "inprogress" || key.includes("progress")) return "En curso";
+    if (numeric === 2 || key === "completed" || key.includes("complet")) return "Completada";
+    if (numeric === 3 || key === "failed" || key.includes("fall")) return "Fallida";
+    if (numeric === 4 || key === "skipped" || key.includes("omit")) return "Omitida";
+    return "Estado desconocido";
+  };
+
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "N/D";
     const date = new Date(dateString);
     return date.toLocaleDateString("es-ES", {
@@ -197,7 +268,9 @@ const filteredRoutes = useMemo(() => {
               </button>
             )}
             <div>
-              <h2 className="text-xl md:text-2xl text-gray-900">Historial de Rutas</h2>
+              <h2 className="text-xl md:text-2xl text-gray-900">
+                Historial de Rutas
+              </h2>
               <p className="text-sm text-gray-500 mt-1">
                 Revisa todas las rutas y sus estados (datos en vivo)
               </p>
@@ -228,19 +301,22 @@ const filteredRoutes = useMemo(() => {
         </div>
 
         <div className="flex-1 overflow-auto p-4 md:p-6">
-          {isLoading && (
+          {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-sm text-gray-500">
               Cargando rutas...
             </div>
-          )}
-
-          {!isLoading && error && (
-            <div className="flex flex-col items-center justify-center py-12 text-sm text-red-500">
-              {error}
+          ) : error ? (
+            <div role="alert" className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-red-600">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => setRetryCount((count) => count + 1)}
+                className="rounded-lg border border-red-200 px-4 py-2 font-medium text-red-700 hover:bg-red-50"
+              >
+                Reintentar
+              </button>
             </div>
-          )}
-
-          {!isLoading && !error && filteredRoutes.length === 0 ? (
+          ) : filteredRoutes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Calendar size={48} className="text-gray-300 mb-3" />
               <p className="text-gray-500 text-sm">No hay rutas para mostrar</p>
@@ -248,8 +324,9 @@ const filteredRoutes = useMemo(() => {
           ) : (
             <div className="space-y-3">
               {filteredRoutes.map((route) => {
-                const vehicle = vehicles.find((v) => v.id === route.vehicleId);
-                const driver = users.find((u) => u.id === route.driverId);
+                const driver = users.find(
+                  (u) => u.driverId === route.driverId || u.id === route.driverId,
+                );
 
                 return (
                   <div
@@ -260,10 +337,12 @@ const filteredRoutes = useMemo(() => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           {getStatusIcon(route.status)}
-                          <h3 className="text-base text-gray-900">{route.name}</h3>
+                          <h3 className="text-base text-gray-900">
+                            {route.name}
+                          </h3>
                         </div>
                         <p className="text-xs text-gray-500">
-                          Creada: {formatDate(route.plannedStart)}
+                          Inicio planificado: {formatDate(route.plannedStart)}
                         </p>
                       </div>
                       {getStatusBadge(route.status)}
@@ -273,14 +352,19 @@ const filteredRoutes = useMemo(() => {
                       <div className="flex items-center gap-2 text-gray-600">
                         <Truck size={14} />
                         <span>
-                          {vehicle?.plate || "N/A"} - {vehicle?.brand} {vehicle?.model}
+                          {route.vehiclePlate || "N/A"}
+                          {route.vehicleBrand || route.vehicleModel
+                            ? ` - ${[route.vehicleBrand, route.vehicleModel].filter(Boolean).join(" ")}`
+                            : ""}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2 text-gray-600">
                         <User size={14} />
                         <span>
-                          {driver ? `${driver.nombres} ${driver.apellidos}` : "N/A"}
+                          {driver
+                            ? `${driver.nombres} ${driver.apellidos}`
+                            : "N/A"}
                         </span>
                       </div>
 
@@ -289,29 +373,34 @@ const filteredRoutes = useMemo(() => {
                         <span>{route.cargoDescription ?? "Sin carga"}</span>
                       </div>
 
-                      {(route as any).evidencias &&
-                        (route as any).evidencias.length > 0 && (
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <ImageIcon size={14} />
-                            <span>{(route as any).evidencias.length} evidencia(s)</span>
-                          </div>
-                        )}
+                      {route.evidencias && route.evidencias.length > 0 && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <ImageIcon size={14} />
+                          <span>{route.evidencias.length} evidencia(s)</span>
+                        </div>
+                      )}
                     </div>
 
-                    {route.plannedStart && (
+                    {route.startedAt && (
                       <div className="text-xs text-gray-500 mb-2">
-                        Iniciada: {formatDate(route.plannedStart)}
+                        Inicio real: {formatDate(route.startedAt)}
                       </div>
                     )}
 
                     {route.plannedEnd && (
                       <div className="text-xs text-gray-500 mb-2">
-                        Finalizada: {formatDate(route.plannedEnd)}
+                        Fin planificado: {formatDate(route.plannedEnd)}
+                      </div>
+                    )}
+
+                    {route.endedAt && (
+                      <div className="text-xs text-gray-500 mb-2">
+                        Cierre real: {formatDate(route.endedAt)}
                       </div>
                     )}
 
                     <button
-                      onClick={() => setSelectedRoute(route)}
+                      onClick={() => void openRouteDetails(route)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
                     >
                       <Eye size={14} />
@@ -325,7 +414,10 @@ const filteredRoutes = useMemo(() => {
         </div>
       </div>
 
-      <Dialog open={!!selectedRoute} onOpenChange={() => setSelectedRoute(null)}>
+      <Dialog
+        open={!!selectedRoute}
+        onOpenChange={closeRouteDetails}
+      >
         <DialogContent
           className="sm:max-w-2xl max-w-[95%] max-h-[90vh] overflow-y-auto"
           aria-describedby={undefined}
@@ -338,6 +430,17 @@ const filteredRoutes = useMemo(() => {
 
           {selectedRoute && (
             <div className="space-y-4 mt-4">
+              {selectedDetailsLoading && (
+                <p role="status" className="text-sm text-gray-500">Cargando detalles y evidencias…</p>
+              )}
+              {selectedDetailsError && (
+                <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                  <span>No se pudieron cargar las evidencias de esta ruta.</span>
+                  <button type="button" className="font-medium underline" onClick={() => void openRouteDetails(selectedRoute)}>
+                    Reintentar
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <h3 className="text-base">{selectedRoute.name}</h3>
                 {getStatusBadge(selectedRoute.status)}
@@ -345,18 +448,26 @@ const filteredRoutes = useMemo(() => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Vehículo</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Vehículo
+                  </label>
                   <p className="text-sm text-gray-900">
-                    {vehicles.find((v) => v.id === selectedRoute.vehicleId)?.plate ||
-                      "N/A"}
+                    {selectedRoute.vehiclePlate || "N/A"}
+                    {selectedRoute.vehicleBrand || selectedRoute.vehicleModel
+                      ? ` - ${[selectedRoute.vehicleBrand, selectedRoute.vehicleModel].filter(Boolean).join(" ")}`
+                      : ""}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Conductor</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Conductor
+                  </label>
                   <p className="text-sm text-gray-900">
                     {(() => {
-                      const driver = users.find((u) => u.id === selectedRoute.driverId);
+                      const driver = users.find(
+                        (u) => u.driverId === selectedRoute.driverId || u.id === selectedRoute.driverId,
+                      );
                       return driver
                         ? `${driver.nombres} ${driver.apellidos}`
                         : "N/A";
@@ -365,7 +476,9 @@ const filteredRoutes = useMemo(() => {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Carga</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Carga
+                  </label>
                   <p className="text-sm text-gray-900">
                     {selectedRoute.cargoDescription ?? "N/A"}
                   </p>
@@ -373,72 +486,110 @@ const filteredRoutes = useMemo(() => {
 
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
-                    Fecha Creación
+                    Inicio planificado
                   </label>
                   <p className="text-sm text-gray-900">
                     {formatDate(selectedRoute.plannedStart)}
                   </p>
                 </div>
 
-                {selectedRoute.plannedStart && (
+                {selectedRoute.startedAt && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">
-                      Fecha Inicio
+                      Inicio real
                     </label>
                     <p className="text-sm text-gray-900">
-                      {formatDate(selectedRoute.plannedStart)}
+                      {formatDate(selectedRoute.startedAt)}
                     </p>
                   </div>
                 )}
 
                 {selectedRoute.plannedEnd && (
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Fecha Fin</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Fin planificado
+                    </label>
                     <p className="text-sm text-gray-900">
                       {formatDate(selectedRoute.plannedEnd)}
                     </p>
                   </div>
                 )}
+
+                {selectedRoute.endedAt && (
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Cierre real
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDate(selectedRoute.endedAt)}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {selectedRoute.points && selectedRoute.points.length > 0 && (
+              {selectedRoute.points && selectedRoute.points.some((point) =>
+                getPointOperationLabel(point.operation ?? point.Operation),
+              ) && (
                 <div>
                   <label className="block text-xs text-gray-500 mb-2">
-                    Puntos de Entrega
+                    Paradas operativas
                   </label>
                   <div className="space-y-2">
-                    {selectedRoute.points.map((punto, index) => (
-                      <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-                        {index + 1}. {punto.name ?? "Punto"}
+                    {selectedRoute.points
+                      .filter((point) => getPointOperationLabel(point.operation ?? point.Operation))
+                      .map((punto, index) => (
+                      <div
+                        key={`${selectedRoute.id}-${index}-${punto.name ?? "parada"}`}
+                        className="flex flex-wrap items-center justify-between gap-2 p-3 bg-gray-50 rounded text-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900">
+                            {index + 1}. {punto.name ?? "Parada"}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {getPointOperationLabel(punto.operation ?? punto.Operation)}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-2 py-1 text-xs text-gray-700">
+                          {getPointStatusLabel(punto.status ?? punto.Status)}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {(selectedRoute as any).notas && (
+              {selectedRoute.notas && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Notas</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Notas
+                  </label>
                   <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded">
-                    {(selectedRoute as any).notas}
+                    {selectedRoute.notas}
                   </p>
                 </div>
               )}
 
-              {(selectedRoute as any).evidencias &&
-                (selectedRoute as any).evidencias.length > 0 && (
+              {!selectedDetailsLoading && !selectedDetailsError && selectedRoute.evidencias &&
+                selectedRoute.evidencias.length > 0 && (
                   <div>
                     <label className="block text-xs text-gray-500 mb-2">
                       Evidencias
                     </label>
                     <div className="space-y-3">
-                      {(selectedRoute as any).evidencias.map((evidencia: any) => (
-                        <div key={evidencia.id} className="p-3 bg-gray-50 rounded">
+                      {selectedRoute.evidencias.map((evidencia) => (
+                        <div
+                          key={evidencia.id}
+                          className="p-3 bg-gray-50 rounded"
+                        >
                           {evidencia.type === "image" ? (
                             <div>
-                              <img
+                              <Image
                                 src={evidencia.content}
                                 alt="Evidencia"
+                                width={960}
+                                height={640}
+                                unoptimized
                                 className="w-full rounded mb-2"
                               />
                               {evidencia.description && (

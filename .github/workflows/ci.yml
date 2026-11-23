@@ -1,0 +1,151 @@
+name: Build Frontend (Next.js)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: fletflow_ci_root
+          MYSQL_DATABASE: fletflow_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pfletflow_ci_root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Checkout backend feature branch for authenticated E2E
+        uses: actions/checkout@v7
+        with:
+          repository: Paul1578/Back_GPS
+          ref: chore/stabilize-fleet-platform
+          path: Back_GPS
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y default-mysql-client
+
+      - name: Restore, build and test backend
+        working-directory: Back_GPS
+        run: |
+          dotnet restore BackEnd_Gps.sln
+          dotnet build BackEnd_Gps.sln --configuration Release --no-restore
+          dotnet test BackEnd_Gps.sln --configuration Release --no-build --no-restore
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          FLETFLOW_API_URL: http://127.0.0.1:5048
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run non-mutating responsive browser check
+        run: npm run test:e2e -- --grep "formulario de inicio de sesión se adapta a móvil"
+
+      - name: Run focused accessibility checks
+        run: npm run test:a11y
+
+      - name: Create one-run API and E2E credentials
+        shell: bash
+        run: |
+          admin_email="fletflow.e2e.admin.ci.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}@example.test"
+          admin_password="$(openssl rand -hex 32)"
+          jwt_key="$(openssl rand -hex 48)"
+          echo "::add-mask::$admin_password"
+          echo "::add-mask::$jwt_key"
+          {
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_NAME=fletflow_ci"
+            echo "DB_USER=root"
+            echo "DB_PASSWORD=fletflow_ci_root"
+            echo "MYSQL_HOST=127.0.0.1"
+            echo "MYSQL_USER=root"
+            echo "MYSQL_PWD=fletflow_ci_root"
+            echo "FLETFLOW_API_URL=http://127.0.0.1:5048"
+            echo "FLETFLOW_AUTH_ALLOWED_ORIGINS=http://127.0.0.1:3000"
+            echo "NEXT_PUBLIC_API_BASE_URL=/api/backend"
+            echo "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000"
+            echo "FLETFLOW_FRONTEND_DIR=$GITHUB_WORKSPACE"
+            echo "FLETFLOW_E2E_ADMIN_EMAIL=$admin_email"
+            echo "FLETFLOW_E2E_ADMIN_PASSWORD=$admin_password"
+            echo "FLETFLOW_BOOTSTRAP_ADMIN_EMAIL=$admin_email"
+            echo "FLETFLOW_BOOTSTRAP_ADMIN_PASSWORD=$admin_password"
+            echo "FLETFLOW_E2E_ALLOW_MUTATIONS=true"
+            echo "FLETFLOW_E2E_DISPOSABLE_DATABASE=true"
+            echo "ASPNETCORE_ENVIRONMENT=Development"
+            echo "ASPNETCORE_URLS=http://127.0.0.1:5048"
+            echo "Jwt__Key=$jwt_key"
+            echo "Jwt__Issuer=fletflow.ci"
+            echo "Jwt__Audience=fletflow.ci"
+          } >> "$GITHUB_ENV"
+
+      - name: Start API against disposable MySQL
+        working-directory: Back_GPS
+        run: |
+          dotnet ./bin/Release/net8.0/BackEnd_Gps.dll > "$RUNNER_TEMP/fletflow-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/fletflow-api.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5048/swagger/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/fletflow-api.log"
+          exit 1
+
+      - name: Run authenticated browser and API/MySQL E2E suite
+        run: bash Back_GPS/scripts/run-e2e-local.sh
+
+      - name: Preserve Playwright traces for failed E2E runs
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-traces-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 5
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/fletflow-api.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/fletflow-api.pid")" 2>/dev/null || true
+          fi

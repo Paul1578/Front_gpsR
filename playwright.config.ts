@@ -1,0 +1,32 @@
+import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+const webServerPort = Number(new URL(baseURL).port || 3000);
+const systemChrome = "/usr/bin/google-chrome";
+const chromePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ??
+  (existsSync(systemChrome) ? systemChrome : undefined);
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: false,
+  // Las pruebas E2E comparten el mismo tenant temporal y algunas cambian asignaciones.
+  // Un worker evita carreras entre fixtures; cada prueba conserva sus asserts API/MySQL.
+  workers: process.env.CI ? 1 : undefined,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? "github" : "list",
+  use: {
+    ...devices["Desktop Chrome"],
+    baseURL,
+    headless: true,
+    launchOptions: chromePath ? { executablePath: chromePath } : undefined,
+    trace: "retain-on-failure",
+  },
+  webServer: {
+    command: `npm run start -- --hostname 127.0.0.1 --port ${webServerPort}`,
+    url: baseURL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
+  },
+});

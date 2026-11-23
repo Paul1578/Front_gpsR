@@ -40,12 +40,12 @@ export default function LoginPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-2xl bg-white/15 p-4 border border-white/20">
-              <p className="text-sm text-white/80">Disponibilidad</p>
-              <p className="text-2xl font-semibold">99.9%</p>
+              <p className="text-sm text-white/80">Operaciones</p>
+              <p className="text-lg font-semibold">Recogidas y entregas</p>
             </div>
             <div className="rounded-2xl bg-white/15 p-4 border border-white/20">
-              <p className="text-sm text-white/80">Usuarios</p>
-              <p className="text-2xl font-semibold">+2k</p>
+              <p className="text-sm text-white/80">Rutas</p>
+              <p className="text-lg font-semibold">Varias paradas</p>
             </div>
           </div>
         </div>

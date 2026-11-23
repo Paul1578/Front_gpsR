@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield } from "lucide-react";
+import { LogOut, Map, Truck, Route, Users, Menu, X, Home, History, UserCircle, Shield, ContactRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MainDashboard } from "./fleet/MainDashboard";
 import { VehiclesManagement } from "./fleet/VehiclesManagement";
 import { RoutesManagement } from "./fleet/RoutesManagement";
 import { TeamManagement } from "./fleet/TeamManagement";
+import { DriversManagement } from "./fleet/DriversManagement";
 import { DriverView } from "./fleet/DriverView";
 import { RouteHistory } from "./fleet/RouteHistory";
 import { ProfileView } from "./fleet/ProfileView";
@@ -27,7 +28,7 @@ const MapView = dynamic(
   }
 );
 
-export type ViewType = "home" | "map" | "vehicles" | "routes" | "team" | "driver" | "history" | "profile" | "superadmin";
+export type ViewType = "home" | "map" | "vehicles" | "drivers" | "routes" | "team" | "driver" | "history" | "profile" | "superadmin";
 
 export function FleetDashboard() {
   const { user, logout } = useAuth();
@@ -47,7 +48,9 @@ export function FleetDashboard() {
       );
     };
 
-    const permissionsApi = (navigator as any).permissions;
+    const permissionsApi = navigator.permissions as Permissions & {
+      query: (permissionDesc: { name: "geolocation" }) => Promise<PermissionStatus>;
+    };
     if (permissionsApi?.query) {
       permissionsApi
         .query({ name: "geolocation" })
@@ -88,12 +91,13 @@ export function FleetDashboard() {
     permission: boolean;
   }[] = [
     { id: "home", label: "Dashboard Principal", icon: Home, permission: true },
-    { id: "superadmin", label: "Super Admin", icon: Shield, permission: user.permissions.canAccessSuperAdmin || false },
+    { id: "superadmin", label: "Administración de la empresa", icon: Shield, permission: user.permissions.canAccessSuperAdmin || false },
     { id: "profile", label: "Mi Perfil", icon: UserCircle, permission: true },
     { id: "map", label: "Mapa en Tiempo Real", icon: Map, permission: user.permissions.canViewMap },
     { id: "routes", label: "Gestión de Rutas", icon: Route, permission: user.permissions.canCreateRoutes },
     { id: "history", label: "Historial de Rutas", icon: History, permission: user.permissions.canViewMap || user.permissions.canCreateRoutes },
     { id: "vehicles", label: "Gestión de Vehículos", icon: Truck, permission: user.permissions.canManageVehicles },
+    { id: "drivers", label: "Gestión de Conductores", icon: ContactRound, permission: user.permissions.canManageDrivers },
     { id: "team", label: "Gestión de Equipo", icon: Users, permission: user.permissions.canManageTeam },
     { id: "driver", label: "Mi Ruta", icon: Route, permission: user.permissions.canViewOwnRoute },
   ].filter((item): item is typeof item & { id: ViewType } => !!item.permission);
@@ -107,6 +111,7 @@ export function FleetDashboard() {
       case "profile": return <ProfileView onBack={handleBack} />;
       case "map": return <MapView onBack={handleBack} />;
       case "vehicles": return <VehiclesManagement onBack={handleBack} />;
+      case "drivers": return <DriversManagement onBack={handleBack} />;
       case "routes": return <RoutesManagement onBack={handleBack} />;
       case "history": return <RouteHistory onBack={handleBack} />;
       case "team": return <TeamManagement onBack={handleBack} />;
@@ -119,8 +124,8 @@ export function FleetDashboard() {
     <>
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-lg z-30 transform transition-transform duration-300 flex flex-col ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -139,7 +144,7 @@ export function FleetDashboard() {
               </div>
             </div>
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setSidebarOpen(false)}
               aria-label="Cerrar menú"
             >
@@ -171,7 +176,7 @@ export function FleetDashboard() {
           <div className="p-4 border-t border-gray-100 mt-auto">
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
             >
               <LogOut className="size-4" />
               Cerrar sesión
@@ -179,11 +184,11 @@ export function FleetDashboard() {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
             <div className="flex items-center gap-3">
               <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Abrir menú"
               >
@@ -203,7 +208,7 @@ export function FleetDashboard() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">
+          <main className="min-w-0 flex-1 overflow-auto">
             {renderView()}
           </main>
         </div>

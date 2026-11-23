@@ -36,6 +36,11 @@ L.Icon.Default.mergeOptions({
 });
 
 type LatLngTuple = [number, number];
+interface OsrmResponse {
+  routes?: Array<{
+    geometry?: { coordinates?: Array<[number, number]> };
+  }>;
+}
 
 interface RoutesMapViewProps {
   routes: RouteForMap[];
@@ -88,12 +93,10 @@ async function fetchSnappedGeometry(
   const url = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?overview=full&geometries=geojson`;
 
   try {
-    const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`OSRM ${res.status}`);
-    const data = (await res.json()) as any;
-    const geometry = data?.routes?.[0]?.geometry?.coordinates as
-      | Array<[number, number]>
-      | undefined;
+    const data = (await res.json()) as OsrmResponse;
+    const geometry = data.routes?.[0]?.geometry?.coordinates;
 
     if (!geometry || geometry.length < 2) {
       throw new Error("OSRM sin geometría");
@@ -139,6 +142,7 @@ export function RoutesMapView({
   const [snappedByRoute, setSnappedByRoute] = useState<
     Record<string, LatLngTuple[]>
   >({});
+  const [geometryState, setGeometryState] = useState<Record<string, "road" | "estimated">>({});
 
   const selectedRoute = useMemo(
     () => routes.find((r) => r.id === selectedRouteId) ?? null,
@@ -197,7 +201,7 @@ export function RoutesMapView({
 
     const routesToSnap = routes.filter((route) => {
       const planned = buildRoutePolyline(route);
-      return planned.length >= 2 && !snappedByRoute[route.id];
+      return planned.length >= 2 && !geometryState[route.id];
     });
 
     if (routesToSnap.length === 0) return;
@@ -206,11 +210,13 @@ export function RoutesMapView({
       for (const route of routesToSnap) {
         const planned = buildRoutePolyline(route);
         const snapped = await fetchSnappedGeometry(planned);
-        if (!cancelled && snapped && snapped.length >= 2) {
-          setSnappedByRoute((prev) => ({
-            ...prev,
-            [route.id]: snapped,
-          }));
+        if (!cancelled) {
+          if (snapped && snapped.length >= 2) {
+            setSnappedByRoute((prev) => ({ ...prev, [route.id]: snapped }));
+            setGeometryState((prev) => ({ ...prev, [route.id]: "road" }));
+          } else {
+            setGeometryState((prev) => ({ ...prev, [route.id]: "estimated" }));
+          }
         }
       }
     };
@@ -220,7 +226,7 @@ export function RoutesMapView({
     return () => {
       cancelled = true;
     };
-  }, [routes, snappedByRoute]);
+  }, [routes, geometryState]);
 
   // Ajustar zoom a la ruta seleccionada (incluyendo tracking si existe)
   useEffect(() => {
@@ -240,16 +246,14 @@ export function RoutesMapView({
 
     if (boundsCoords.length === 0) return;
 
-    const bounds = L.latLngBounds(
-      boundsCoords.map(([lat, lng]) => L.latLng(lat, lng))
-    );
+    const bounds = L.latLngBounds(boundsCoords);
 
     mapRef.current.fitBounds(bounds, { padding: [40, 40] });
     hasFitRef.current = true;
   }, [selectedRoute, snappedByRoute, trackingPositions, trackingLatest, fitSignal]);
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
+    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden shadow-md bg-white">
       <MapContainer
         center={mapInitialCenter}
         zoom={initialZoom}
@@ -368,6 +372,16 @@ export function RoutesMapView({
           );
         })}
       </MapContainer>
+      {selectedRoute && geometryState[selectedRoute.id] === "road" && (
+        <div role="status" className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-lg border border-emerald-200 bg-emerald-50/95 px-3 py-2 text-xs text-emerald-900 shadow">
+          Trayecto por carretera calculado.
+        </div>
+      )}
+      {selectedRoute && geometryState[selectedRoute.id] === "estimated" && (
+        <div role="status" className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs text-amber-900 shadow">
+          Trayecto estimado entre puntos; OSRM no proporcionó geometría vial.
+        </div>
+      )}
     </div>
   );
 }
