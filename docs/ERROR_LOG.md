@@ -1875,3 +1875,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Lint/build, responsive browser check, auditoría y Backend Release/xUnit pasaron; E2E reportó cuatro fallos. Tres eran dependencias de test obsoletas: el mock logout-all apuntaba a `/api/backend/Auth/logout-all` en vez de `/api/auth/logout-all`, Playwright filtraba la cookie `Path=/api/auth` al pedir cookies por la URL raíz, y un test de baja aún leía el access token desde `localStorage`. Se actualizaron endpoint, inspección sin filtro y helper `readAccessToken`.
 - El cuarto fallo esperaba “Abrir menú” en viewport escritorio. El trace confirmó refresh post-reload y `/Auth/me` con HTTP 200, cookie enviada, y dashboard con navegación lateral; el botón probado sólo aparece en layout móvil. El test fija viewport 390×844 antes del login.
 - Prevención: actualizar interceptores y lectores de sesión al mismo tiempo que cambia el contrato de auth; hacer explícito el viewport cuando se afirma un control responsive. Nueva Action integrada pendiente.
+
+## 2026-11-23 — Action 45207209347 expuso una aserción de logout prematura — FIX LOCAL, REVALIDACIÓN PENDIENTE
+
+- La suite pasó 53 E2E y CI reportó 1 flaky: tras confirmar logout, la UI llegaba a `/login` antes de completarse la respuesta POST `/api/auth/logout`; la comprobación inmediata encontró todavía la cookie. El retry pasó, lo que confirma una carrera de sincronización del test, no evidencia de fallo permanente del BFF.
+- Solución: el E2E espera explícitamente la respuesta HTTP 200 del BFF logout antes de comprobar navegación y eliminación de cookie. La Action anterior no se considera estable hasta repetir sin flaky.
+- Prevención: sincronizar assertions de efectos de servidor con la respuesta del endpoint, no sólo con el cambio de vista local. El primer `git diff --check` también detectó saltos extra al final de los cinco documentos; se normalizaron a un newline final antes de validar.

@@ -866,3 +866,7 @@
 - Corregida inspección Playwright de cookie con Path restringido y reemplazado el último acceso de token E2E a localStorage por `readAccessToken`.
 - Test de restauración de sesión fija viewport móvil porque su control de menú no existe en escritorio.
 - Lint/build pasan localmente; Action 45204753979 encontró los casos obsoletos y la validación integrada de los fixes queda pendiente.
+
+## 2026-11-23 — Sincronización E2E del cierre de sesión
+
+- El test de sesión ahora espera la respuesta HTTP 200 de `/api/auth/logout` antes de afirmar eliminación de cookie y navegación. Corrige la carrera que CI reportó como flaky; Action de repetición pendiente.

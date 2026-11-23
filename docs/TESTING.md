@@ -804,3 +804,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Trace: al recargar, el BFF envió cookie al backend; `/api/auth/refresh` y `/api/backend/Auth/me` respondieron 200. No fue un fallo de restauración; el DOM de escritorio no tenía el botón mobile “Abrir menú”.
 - Fixes aplicados: interceptar `/api/auth/logout-all`, usar `context.cookies()` sin URL para la cookie path-scoped, usar `readAccessToken`, y fijar viewport 390×844 para el test responsive de sesión.
 - `npm run lint` y `npm run build` pasan localmente. La nueva Action debe verificar E2E autenticado completo y cleanup.
+
+## Action BFF 45207209347 — estable sólo tras corregir un flaky
+
+- Backend Release/xUnit **158/158**, audit, lint/build, responsive browser check **1/1**, suite E2E **53 passed**; CI marcó **1 flaky** en logout. El test esperaba cookie borrada al llegar a Login, antes de observar la respuesta BFF.
+- El retry pasó; se sincronizó la comprobación con HTTP 200 de `POST /api/auth/logout`. No se considera cerrado hasta ejecutar nuevamente toda la Action sin flaky.

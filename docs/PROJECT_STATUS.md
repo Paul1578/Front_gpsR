@@ -913,3 +913,8 @@ Fecha de actualización: 2026-11-22.
 - Action `45204753979`: lint/build, responsive, auditoría y Backend Release/xUnit pasaron; E2E falló por tres assertions/mocks obsoletos y un locator de menú móvil ejecutado en escritorio.
 - Corregidos localmente; el trace probó que reload sí restaura sesión (refresh y `/Auth/me` HTTP 200). Viewport responsive fijado, llamadas protegidas usan `readAccessToken`, logout-all intercepta la ruta BFF y cookies se consultan sin filtro de URL.
 - Lint/build local pasan. Falta validar E2E integrado en una Action nueva.
+
+## Auth BFF — cobertura E2E en repetición estable (2026-11-23)
+
+- Action `45207209347` completó backend xUnit 158/158, audit/lint/build y responsive; Playwright **53 passed**, pero reportó **1 flaky** por assertion de cookie antes de respuesta del logout BFF.
+- El test ahora espera HTTP 200 del endpoint logout antes de comprobar redirect/cookie. Nueva Action integral sin flaky pendiente; no marcar BFF como validado en CI hasta ese resultado.

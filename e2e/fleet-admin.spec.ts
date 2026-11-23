@@ -62,7 +62,12 @@ test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async
 
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  const logoutResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/auth/logout" && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  const logoutResponse = await logoutResponsePromise;
+  expect(logoutResponse.status()).toBe(200);
   await expect(page).toHaveURL(/\/login$/);
   expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
 });
