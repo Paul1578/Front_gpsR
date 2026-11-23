@@ -730,3 +730,8 @@
 
 - Se agrega una ruta existente con pickup y delivery; la UI cambia operación y orden y el test consulta por GET la secuencia persistida en tablet y móvil.
 - Lint/build/discovery 51/diff-check pasan local; API/MySQL autenticado y cleanup pendientes de Action.
+
+## 2026-11-23 — Edición de operaciones y orden de paradas validada
+
+- Action Front [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) pasó con **51/51 E2E**, responsive 1/1, Release/xUnit, audit, lint/build y cleanup.
+- La ruta multi-parada cambió operación y orden desde la UI; API/MySQL confirmaron persistencia y el guardado móvil conservó la secuencia.

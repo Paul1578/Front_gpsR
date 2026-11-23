@@ -664,3 +664,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - E2E autenticado modifica una ruta multi-parada desde el constructor: cambia recogida a entrega y reordena la siguiente parada.
 - Después del PUT, `GET /Routes/{id}` debe devolver la secuencia origen, entrega, recogida, destino con operaciones persistidas. Un segundo guardado móvil verifica que se conserva.
 - Lint/build, discovery **51** y diff-check pasan local; API/MySQL y cleanup se validarán en Action porque no hay credenciales QA locales.
+
+## Resultado E2E de edición de paradas — CI aprobado
+
+- Front `ee49ce8`, Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y teardown success.
+- API/MySQL confirma el cambio de operación y el orden después de editar; el segundo guardado en móvil preserva la secuencia. Cleanup completado.

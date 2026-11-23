@@ -757,8 +757,14 @@ Fecha de actualización: 2026-11-22.
 - Backend SHA documental `fa4a3a3`, Actions [45154037990](https://github.com/Paul1578/Back_GPS/actions/runs/45154037990) y [45154028662](https://github.com/Paul1578/Back_GPS/actions/runs/45154028662): push y PR success.
 - Misión integral abierta: continuar los criterios CRUD, permisos, responsive y pruebas aún marcados pendientes; SMTP y configuración productiva externa siguen delimitados.
 
-## Edición de paradas en ruta existente — E2E agregado, CI pendiente
+## Edición de paradas en ruta existente — VALIDADO EN CI
 
 - Auditoría independiente detectó que el constructor permitía reordenar y cambiar operaciones al editar, pero E2E sólo probaba crear varias paradas y preservar una existente.
 - El E2E integrado ahora abre una ruta con recogida+entrega, cambia la operación de una parada, reordena ambas y compara la secuencia completa por GET después de guardar en tablet y móvil.
 - Lint, build, discovery de **51 tests** y `git diff --check` pasan localmente. El test necesita API/MySQL y credenciales QA; la Action del commit nuevo debe validar escritura real y cleanup.
+
+## Edición de paradas existente — VALIDADA EN CI — 2026-11-23
+
+- El E2E del commit `ee49ce8` cambia pickup a delivery, reordena las dos paradas y exige el arreglo origen/entrega/recogida/destino por GET tras guardar en tablet y móvil.
+- Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): success; **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y teardown. La escritura usó API real y MySQL descartable; cleanup correcto.
+- La Action anterior [45154834106](https://github.com/Paul1578/Front_gpsR/actions/runs/45154834106) también pasó **51/51**, responsive y cleanup sobre docs `d03f3eb`.

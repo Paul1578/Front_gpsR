@@ -1081,3 +1081,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Auditoría Front independiente sobre `d03f3eb` halló que no se probaba cambiar contenido/orden de paradas de una ruta existente. Se amplió `e2e/fleet-admin.spec.ts`: cambia Recogida→Entrega y mueve la otra parada al primer lugar; GET verifica orden y operaciones tras PUT en tablet y móvil.
 - Lint/build/discovery 51/diff-check pasan local. No hay credenciales QA en el shell; validar en Action autenticada con API/MySQL descartables.
 - El E2E queda sin commit hasta que Action `45154834106` (documentación anterior) termine; después publicar y corregir cualquier fallo hasta verde.
+
+## Resultado E2E de edición de paradas — 2026-11-23
+
+- Código `ee49ce8` validado por Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): 51/51 Playwright API/MySQL, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup exitosos.
+- La prueba edita una ruta multi-parada, cambia operación pickup→delivery, reordena paradas y verifica nombres/operaciones completos por GET; repite guardado en móvil. No quedan fallos conocidos en este cambio.
+- Action [45154834106](https://github.com/Paul1578/Front_gpsR/actions/runs/45154834106) validó el HEAD documental anterior `d03f3eb` con 51/51 y cleanup.
+- Siguiente trabajo: continuar la matriz pendiente de CRUD/roles/responsive de `PROJECT_STATUS.md`; no cerrar la misión integral.
