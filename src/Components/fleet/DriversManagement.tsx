@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, RefreshCw, Truck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useFleet, type Driver } from "../../Context/FleetContext";
+import { ServerPagination } from "../ui/ServerPagination";
 
 interface DriversManagementProps {
   onBack?: () => void;
@@ -20,7 +21,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
     vehicles,
     loadErrors,
     retryFleetData,
-    refreshDrivers,
+    getDriversPage,
     addDriver,
     updateDriver,
     setDriverActive,
@@ -29,7 +30,11 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   } = useFleet();
   const [showInactive, setShowInactive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageData, setPageData] = useState<Awaited<ReturnType<typeof getDriversPage>> | null>(null);
+  const requestSequence = useRef(0);
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [retryingFleetData, setRetryingFleetData] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,32 +42,36 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [vehicleSelections, setVehicleSelections] = useState<Record<string, string>>({});
 
-  const loadDrivers = useCallback(async (includeInactive: boolean) => {
+  const loadDrivers = useCallback(async (includeInactive: boolean, requestedPage = page) => {
+    const sequence = ++requestSequence.current;
     setLoading(true);
     setLoadError(false);
     try {
-      await refreshDrivers(!includeInactive);
+      const result = await getDriversPage({ page: requestedPage, pageSize: 25, search: debouncedSearch, onlyActive: includeInactive ? "" : "true" });
+      if (sequence !== requestSequence.current) return;
+      if (requestedPage > Math.max(result.totalPages, 1)) {
+        setPage(Math.max(result.totalPages, 1));
+        return;
+      }
+      setPageData(result);
     } catch {
+      if (sequence !== requestSequence.current) return;
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.current) setLoading(false);
     }
-  }, [refreshDrivers]);
+  }, [debouncedSearch, getDriversPage, page]);
 
   useEffect(() => {
-    void loadDrivers(false);
-  }, [loadDrivers]);
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
 
-  const visibleDrivers = drivers.filter((driver) => showInactive || driver.isActive !== false);
-  const normalizedQuery = normalizeSearchText(searchQuery.trim());
-  const filteredDrivers = normalizedQuery
-    ? visibleDrivers.filter((driver) => normalizeSearchText([
-      driver.firstName,
-      driver.lastName,
-      driver.documentNumber,
-      driver.phoneNumber,
-    ].join(" ")).includes(normalizedQuery))
-    : visibleDrivers;
+  useEffect(() => { setPage(1); }, [debouncedSearch, showInactive]);
+  useEffect(() => { void loadDrivers(showInactive, page); }, [debouncedSearch, showInactive, page, loadDrivers]);
+
+  const filteredDrivers = pageData?.items ?? [];
+  const normalizedQuery = normalizeSearchText(debouncedSearch);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -194,7 +203,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
         </form>
 
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-semibold text-slate-800">Conductores ({filteredDrivers.length})</h2>
+        <h2 className="text-base font-semibold text-slate-800">Conductores ({pageData?.totalCount ?? 0})</h2>
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="search"
@@ -215,7 +224,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
           </div>
         ) : loading ? (
           <p role="status" className="py-8 text-center text-sm text-slate-500">Cargando conductores…</p>
-        ) : filteredDrivers.length === 0 ? normalizedQuery ? (
+        ) : filteredDrivers.length === 0 ? normalizedQuery || showInactive ? (
           <div className="rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center">
             <UserRound className="mx-auto mb-2 text-slate-400" />
             <p className="text-sm font-medium text-slate-700">No hay conductores que coincidan con la búsqueda.</p>
@@ -269,6 +278,7 @@ export function DriversManagement({ onBack }: DriversManagementProps = {}) {
             })}
           </div>
         )}
+        {!loadError && !loading && pageData && <ServerPagination page={pageData.page} totalPages={pageData.totalPages} pageSize={pageData.pageSize} totalCount={pageData.totalCount} onPageChange={setPage} />}
       </div>
     </section>
   );

@@ -1,3 +1,8 @@
+# 2026-11-23 — Listas paginadas de Equipo y Conductores
+
+- Vistas migradas a endpoints server-side nuevos conservando APIs array heredadas; búsqueda con debounce, filtro rol/estado y controles responsive.
+- Nuevo E2E de paginación que comprueba navegación con 26 filas controladas; 52 pruebas descubiertas, lint/build pasan. Dos tests auth se omiten localmente por no tener credenciales, Action CI pendiente.
+
 # 2026-11-23 — Fix del E2E de desvinculación
 
 - El test ya no intenta abrir por segunda vez la sección Drivers después de una operación que la mantiene abierta; comprueba la tarjeta enlazada existente.

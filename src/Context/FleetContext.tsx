@@ -172,6 +172,7 @@ interface FleetContextType {
   getTeamRoutes: () => Route[];
 
   refreshDrivers: (onlyActive?: boolean) => Promise<void>;
+  getDriversPage: (params: DriverPageParams) => Promise<DriverPageResult>;
   addDriver: (
     driver: Omit<Driver, "id" | "isActive" | "vehicleId">,
   ) => Promise<ActionResult>;
@@ -268,6 +269,21 @@ type ApiDriver = {
   vehicleId?: string;
   userId?: string | null;
 };
+
+export interface DriverPageParams {
+  page: number;
+  pageSize: number;
+  search: string;
+  onlyActive: string;
+}
+
+export interface DriverPageResult {
+  items: Driver[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
 
 type ApiRouteAssignmentOptions = {
   vehicles: Array<{
@@ -933,6 +949,17 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     [apiFetch, apiFetchForOwner, captureOwnerSession, isCurrentOwnerSession, setResourceError, user?.role],
   );
 
+  const getDriversPage = useCallback(async (params: DriverPageParams): Promise<DriverPageResult> => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      pageSize: String(params.pageSize),
+      search: params.search,
+      onlyActive: params.onlyActive,
+    });
+    const result = await apiFetchForOwner<Omit<DriverPageResult, "items"> & { items: ApiDriver[] }>(`/Drivers/page?${query.toString()}`);
+    return { ...result, items: result.items.map(mapApiDriver) };
+  }, [apiFetchForOwner]);
+
   useEffect(() => {
     const loadRoutes = async () => {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
@@ -1389,6 +1416,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         getTeamVehicles,
         getTeamRoutes,
         refreshDrivers,
+        getDriversPage,
         addDriver,
         updateDriver,
         setDriverActive,

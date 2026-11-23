@@ -29,6 +29,22 @@ interface ApiUser {
   driverId?: string;
 }
 
+export interface UserPageParams {
+  page: number;
+  pageSize: number;
+  search: string;
+  role: string;
+  isActive: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 // 👇 ADAPTADO para soportar lo que devuelve tu backend actual
 interface AuthResponseDto {
   user?: ApiUser;
@@ -155,6 +171,7 @@ interface AuthContextType {
     }
   ) => Promise<{ ok: boolean; invitationSent: boolean; message?: string }>;
   refreshTeamUsers: () => Promise<void>;
+  getTeamUsersPage: (params: UserPageParams) => Promise<PagedResult<User>>;
   teamUsersLoading: boolean;
   teamUsersError: string | null;
   logout: () => Promise<void>;
@@ -880,6 +897,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getTeamUsersPage = async (params: UserPageParams): Promise<PagedResult<User>> => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      pageSize: String(params.pageSize),
+      search: params.search,
+      role: params.role,
+      isActive: params.isActive,
+    });
+    const result = await apiFetch<PagedResult<ApiUser>>(`/Users/my-team/page?${query.toString()}`);
+    return { ...result, items: result.items.map((apiUser) => mapApiUser(apiUser)) };
+  };
+
   const getTeamUsers = (): User[] => {
     return teamUsers;
   };
@@ -1015,6 +1044,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getAllUsers,
         getTeamUsers,
         refreshTeamUsers,
+        getTeamUsersPage,
         teamUsersLoading,
         teamUsersError,
         getManagers,

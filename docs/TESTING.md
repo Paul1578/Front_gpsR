@@ -1,3 +1,9 @@
+## Paginación de Equipo/Conductores — frontend local; integración pendiente
+
+- `npm run lint`, `npm run build`, discovery Playwright **52 tests** y `git diff --check` pasan. E2E nuevo controla el endpoint paginado de usuarios con 26 fixtures de respuesta y valida avanzar/retroceder; el test requiere inicio Admin QA.
+- El E2E real de búsqueda/filter en Equipo verifica respuesta paginada API para Users/Drivers, criterios server-side y responsive, pero se omitió en el checkout local sin credenciales. Esperar la Action integrada antes de declarar el flujo probado.
+- Unlink anterior sí quedó validado en Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922): **51/51** y cleanup.
+
 ## Unlink User–Driver — E2E corregido, CI pendiente
 
 - Action Front `45172574266`: **50/51**; feature pasó flujos, falló un locator Playwright porque la sección de Drivers ya estaba abierta y el toggle se llamaba “Ocultar choferes”.

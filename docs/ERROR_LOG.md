@@ -1,3 +1,9 @@
+# 2026-11-23 — Exploración de carpetas usó casing/rutas de otro checkout — RESUELTO
+
+- Dos búsquedas iniciales apuntaron a `src/components`/`src/context` aunque el frontend usa `src/Components`/`src/Context`. Otras lecturas combinaron una ruta Backend con `workdir` Front y viceversa; `rg`/`sed` devolvieron archivo inexistente, sin tocar datos ni código.
+- Solución: usar `rg --files` en la raíz activa y ejecutar cada lectura bajo el checkout dueño.
+- Prevención: respetar mayúsculas del filesystem y separar búsquedas por repositorio/workdir.
+
 # 2026-11-23 — Build rechazó callback request sin tipo explícito — CORREGIDO LOCALMENTE
 
 - `npm run build` detectó TS7006 (`request` implícitamente `any`) en el observador E2E de PUT de rol. Lint y discovery no detectaban el problema.

@@ -1,3 +1,9 @@
+## Paginación server-side en Equipo y Conductores — CI pendiente
+
+- Los endpoints nuevos devuelven páginas acotadas y las vistas consultan búsqueda/rol/estado al servidor; búsqueda con debounce y controles responsive. Rutas array heredadas conservadas.
+- `npm run lint`, `npm run build`, discovery **52 tests** y diff-check pasan localmente. El E2E de navegación prueba 26 filas controladas; las 2 pruebas autenticadas quedaron skipped localmente por falta de credenciales QA. Action integrada de paginación pendiente.
+- Unlink cuenta Driver ya aprobado: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) pasó **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) validó API/MySQL, conflicto Pending y cleanup.
+
 ## Desvinculación User–Driver — fix E2E esperando Action
 
 - Feature frontend/backend: el diálogo confirma el desvínculo, conserva User, perfil y rol Driver, y comunica errores API. El smoke backend `45173035947` pasó sobre `fd6ad1e`; el E2E integrado `45172574266` pasó 50/51 y encontró un locator de toggle incorrecto (panel ya abierto).

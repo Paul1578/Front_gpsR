@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
-import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search, UserRoundX } from "lucide-react";
+import { Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search, UserRoundX } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { toast } from "sonner";
+import { ServerPagination } from "../ui/ServerPagination";
 
 interface TeamManagementProps {
   onBack?: () => void;
@@ -36,8 +37,7 @@ const roleImpact: Record<UserRole, string> = {
 export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const {
     user,
-    getTeamUsers,
-    refreshTeamUsers,
+    getTeamUsersPage,
     updateUserRole,
     updateUserStatus,
     updateUserProfile,
@@ -49,7 +49,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     loadErrors,
     vehiclesLoading,
     retryFleetData,
-    refreshDrivers,
+    getDriversPage,
     addDriver,
     updateDriver,
     setDriverActive,
@@ -63,7 +63,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const [memberConfirmation, setMemberConfirmation] = useState<MemberConfirmation | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [isLoadingTeam, setIsLoadingTeam] = useState(false);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(true);
   const [teamLoadError, setTeamLoadError] = useState(false);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
   const [driversLoadError, setDriversLoadError] = useState(false);
@@ -71,6 +71,16 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const [showInactiveDrivers, setShowInactiveDrivers] = useState(false);
   const [teamSearch, setTeamSearch] = useState("");
   const [driverSearch, setDriverSearch] = useState("");
+  const [teamRoleFilter, setTeamRoleFilter] = useState("");
+  const [teamActiveFilter, setTeamActiveFilter] = useState("");
+  const [teamPage, setTeamPage] = useState(1);
+  const [driverPage, setDriverPage] = useState(1);
+  const [debouncedTeamSearch, setDebouncedTeamSearch] = useState("");
+  const [debouncedDriverSearch, setDebouncedDriverSearch] = useState("");
+  const [teamPageData, setTeamPageData] = useState<Awaited<ReturnType<typeof getTeamUsersPage>> | null>(null);
+  const [driverPageData, setDriverPageData] = useState<Awaited<ReturnType<typeof getDriversPage>> | null>(null);
+  const teamRequestSequence = useRef(0);
+  const driverRequestSequence = useRef(0);
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [driverEditForm, setDriverEditForm] = useState({
     firstName: "",
@@ -79,61 +89,76 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     phoneNumber: "",
   });
 
-  const users = getTeamUsers();
+  const users = teamPageData?.items ?? [];
   const assignableRoles: UserRole[] = ["gerente", "manager", "logistica", "chofer", "usuario"]
     .filter((role): role is UserRole => role !== "gerente" || user?.isRootAccount === true);
   const hasDriverLoadError = driversLoadError || loadErrors.includes("conductores");
   const hasVehicleLoadError = loadErrors.includes("vehículos") || loadErrors.includes("opciones de asignación");
-  const normalizedDriverSearch = driverSearch.trim().toLocaleLowerCase();
-  const visibleDrivers = drivers
-    .filter((driver) => showInactiveDrivers || driver.isActive !== false)
-    .filter((driver) => {
-      if (!normalizedDriverSearch) return true;
-      const linkedUser = users.find((user) => user.id === driver.userId);
-      return [driver.firstName, driver.lastName, driver.documentNumber, driver.phoneNumber, linkedUser?.usuario]
-        .some((value) => value?.toLocaleLowerCase().includes(normalizedDriverSearch));
-    });
-  const normalizedTeamSearch = teamSearch.trim().toLocaleLowerCase();
-  const visibleUsers = users.filter((user) =>
-    [user.nombres, user.apellidos, user.usuario, user.identificacion, user.role]
-      .some((value) => value?.toLocaleLowerCase().includes(normalizedTeamSearch)),
-  );
+  const visibleDrivers = driverPageData?.items ?? [];
+  const visibleUsers = teamPageData?.items ?? [];
 
-  const loadTeamUsers = async () => {
+  const loadTeamUsers = useCallback(async (page = teamPage) => {
+    const requestSequence = ++teamRequestSequence.current;
     setIsLoadingTeam(true);
     setTeamLoadError(false);
     try {
-      await refreshTeamUsers();
+      const result = await getTeamUsersPage({
+        page,
+        pageSize: 25,
+        search: debouncedTeamSearch,
+        role: teamRoleFilter ? ({ gerente: "Admin", manager: "Manager", logistica: "Logistics", chofer: "Driver", usuario: "User" } as Record<string, string>)[teamRoleFilter] ?? "" : "",
+        isActive: teamActiveFilter,
+      });
+      if (requestSequence !== teamRequestSequence.current) return;
+      if (page > Math.max(result.totalPages, 1)) {
+        setTeamPage(Math.max(result.totalPages, 1));
+        return;
+      }
+      setTeamPageData(result);
     } catch (error) {
+      if (requestSequence !== teamRequestSequence.current) return;
       console.error("No se pudo cargar el equipo:", error);
       setTeamLoadError(true);
     } finally {
-      setIsLoadingTeam(false);
+      if (requestSequence === teamRequestSequence.current) setIsLoadingTeam(false);
     }
-  };
+  }, [debouncedTeamSearch, getTeamUsersPage, teamActiveFilter, teamPage, teamRoleFilter]);
 
-  const loadDrivers = async (onlyActive = !showInactiveDrivers) => {
+  const loadDrivers = useCallback(async (onlyActive = !showInactiveDrivers, page = driverPage) => {
+    const requestSequence = ++driverRequestSequence.current;
     setIsLoadingDrivers(true);
     setDriversLoadError(false);
     try {
-      await refreshDrivers(onlyActive);
+      const result = await getDriversPage({ page, pageSize: 25, search: debouncedDriverSearch, onlyActive: onlyActive ? "true" : "" });
+      if (requestSequence !== driverRequestSequence.current) return;
+      if (page > Math.max(result.totalPages, 1)) {
+        setDriverPage(Math.max(result.totalPages, 1));
+        return;
+      }
+      setDriverPageData(result);
     } catch (error) {
+      if (requestSequence !== driverRequestSequence.current) return;
       console.error("No se pudieron cargar los choferes:", error);
       setDriversLoadError(true);
     } finally {
-      setIsLoadingDrivers(false);
+      if (requestSequence === driverRequestSequence.current) setIsLoadingDrivers(false);
     }
-  };
+  }, [debouncedDriverSearch, driverPage, getDriversPage, showInactiveDrivers]);
 
   useEffect(() => {
-    void loadTeamUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = window.setTimeout(() => setDebouncedTeamSearch(teamSearch.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [teamSearch]);
 
   useEffect(() => {
-    void loadDrivers(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = window.setTimeout(() => setDebouncedDriverSearch(driverSearch.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [driverSearch]);
+
+  useEffect(() => { setTeamPage(1); }, [debouncedTeamSearch, teamRoleFilter, teamActiveFilter]);
+  useEffect(() => { setDriverPage(1); }, [debouncedDriverSearch, showInactiveDrivers]);
+  useEffect(() => { void loadTeamUsers(teamPage); }, [loadTeamUsers, teamPage]);
+  useEffect(() => { void loadDrivers(!showInactiveDrivers, driverPage); }, [driverPage, loadDrivers, showInactiveDrivers]);
 
   const [createUserForm, setCreateUserForm] = useState({
     nombres: "",
@@ -164,17 +189,12 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   };
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    const previousRole = users.find((member) => member.id === userId)?.role;
+      const previousRole = users.find((member) => member.id === userId)?.role;
     const result = await updateUserRole(userId, newRole);
     if (result?.ok) {
       toast.success("Rol actualizado exitosamente");
-      if (previousRole === "chofer" || newRole === "chofer") {
-        try {
-          await refreshDrivers(false);
-        } catch {
-          toast.warning("El rol se actualizó, pero no se pudo refrescar la lista de choferes.");
-        }
-      }
+      await loadTeamUsers();
+      if (previousRole === "chofer" || newRole === "chofer") await loadDrivers(false);
     } else {
       toast.error(result?.message ?? "No se pudo actualizar el rol");
     }
@@ -182,7 +202,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
   const handleUserStatusChange = async (userId: string, isActive: boolean) => {
     const result = await updateUserStatus(userId, isActive);
-    if (result.ok) toast.success(`Usuario ${isActive ? "activado" : "desactivado"}`);
+    if (result.ok) {
+      toast.success(`Usuario ${isActive ? "activado" : "desactivado"}`);
+      await loadTeamUsers();
+    }
     else toast.error(result.message ?? "No se pudo actualizar el usuario");
   };
 
@@ -212,7 +235,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     if (result.ok) {
       toast.success("Perfil del usuario actualizado");
       setEditingUser(null);
-      const refreshResults = await Promise.allSettled([refreshTeamUsers(), refreshDrivers(false)]);
+      const refreshResults = await Promise.allSettled([loadTeamUsers(), loadDrivers(false)]);
       if (refreshResults.some((refresh) => refresh.status === "rejected")) {
         toast.warning("El perfil se guardó, pero no se pudo actualizar toda la información visible.");
       }
@@ -272,9 +295,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
         phoneNumber: "",
       });
 
+      setTeamPage(1);
       const refreshResults = await Promise.allSettled([
-        refreshTeamUsers(),
-        ...(createUserForm.role === "chofer" ? [refreshDrivers()] : []),
+        loadTeamUsers(1),
+        ...(createUserForm.role === "chofer" ? [loadDrivers(false)] : []),
       ]);
       if (success.invitationSent) {
         toast.success("Usuario creado y correo de invitación enviado");
@@ -336,7 +360,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const result = await addDriver({ userId: userId || null, firstName, lastName, documentNumber, phoneNumber });
     if (result.ok) {
       toast.success(result.message ?? "Chofer creado");
-      await refreshDrivers();
+      await loadDrivers(!showInactiveDrivers);
       setCreateDriverForm({ userId: "", firstName: "", lastName: "", documentNumber: "", phoneNumber: "" });
     } else {
       toast.error(result.message ?? "No se pudo crear el chofer");
@@ -352,7 +376,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const result = await assignVehicleToDriver(driverId, vehicleId);
     if (result.ok) {
       toast.success(result.message ?? "Vehículo asignado");
-      await refreshDrivers();
+      await loadDrivers(!showInactiveDrivers);
     } else {
       toast.error(result.message ?? "No se pudo asignar el vehículo");
     }
@@ -362,7 +386,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const result = await unassignVehicleFromDriver(driverId);
     if (result.ok) {
       toast.success(result.message ?? "Vehículo desasignado");
-      await refreshDrivers();
+      await loadDrivers(!showInactiveDrivers);
     } else {
       toast.error(result.message ?? "No se pudo desasignar el vehículo");
     }
@@ -373,8 +397,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     if (result.ok) {
       toast.success(result.message ?? "Cuenta desvinculada del conductor");
       try {
-        await refreshTeamUsers();
-        await refreshDrivers();
+        await Promise.all([loadTeamUsers(), loadDrivers(!showInactiveDrivers)]);
       } catch {
         toast.warning("La cuenta se desvinculó, pero no se pudo actualizar la lista. Recarga para sincronizarla.");
       }
@@ -414,6 +437,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     if (result.ok) {
       toast.success(result.message ?? "Conductor actualizado");
       setEditingDriverId(null);
+      await loadDrivers(!showInactiveDrivers);
     } else {
       toast.error(result.message ?? "No se pudo actualizar el conductor");
     }
@@ -421,7 +445,10 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
 
   const handleDriverStatus = async (driverId: string, isActive: boolean) => {
     const result = await setDriverActive(driverId, isActive);
-    if (result.ok) toast.success(result.message ?? "Estado actualizado");
+    if (result.ok) {
+      toast.success(result.message ?? "Estado actualizado");
+      await loadDrivers(!showInactiveDrivers);
+    }
     else toast.error(result.message ?? "No se pudo cambiar el estado del conductor");
   };
 
@@ -596,7 +623,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               ) : isLoadingDrivers ? (
                 <p className="text-sm text-gray-500">Cargando choferes...</p>
               ) : visibleDrivers.length === 0 ? (
-                <p className="text-sm text-gray-500">{drivers.length === 0 ? "No hay choferes registrados" : "No hay choferes que coincidan con la búsqueda"}</p>
+                <p className="text-sm text-gray-500">{driverPageData?.totalCount === 0 && !driverSearch ? "No hay choferes registrados" : "No hay choferes que coincidan con la búsqueda o los filtros"}</p>
               ) : (
                 <div className="space-y-3">
                   {visibleDrivers.map((driver) => {
@@ -623,7 +650,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                             Doc: {driver.documentNumber} · Tel: {driver.phoneNumber}
                           </p>
                           <p className="text-xs text-gray-400">
-                            Usuario: {user ? `@${user.usuario}` : driver.userId ? driver.userId.slice(0, 6) : "Sin usuario vinculado"}
+                            Usuario: {user ? `@${user.usuario}` : driver.userId ? "Cuenta vinculada" : "Sin usuario vinculado"}
                           </p>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -707,6 +734,9 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   })}
                 </div>
               )}
+              {!hasDriverLoadError && !isLoadingDrivers && driverPageData && (
+                <ServerPagination page={driverPageData.page} totalPages={driverPageData.totalPages} pageSize={driverPageData.pageSize} totalCount={driverPageData.totalCount} onPageChange={setDriverPage} />
+              )}
             </div>
           )}
 
@@ -721,13 +751,9 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
               Cargando equipo...
             </div>
-          ) : users.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Users size={48} className="text-gray-300 mb-3" />
-              <p className="text-gray-500 text-sm">No hay otros miembros en el equipo</p>
-            </div>
           ) : (
             <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
               <label className="relative block">
                 <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
@@ -735,12 +761,31 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   aria-label="Buscar miembros del equipo"
                   value={teamSearch}
                   onChange={(event) => setTeamSearch(event.target.value)}
-                  placeholder="Buscar por nombre, usuario, documento o rol"
+                  placeholder="Buscar por nombre, usuario o correo"
                   className="w-full min-w-0 rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm"
                 />
               </label>
+              <select aria-label="Filtrar equipo por rol" value={teamRoleFilter} onChange={(event) => setTeamRoleFilter(event.target.value)} className="min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option value="">Todos los roles</option>
+                <option value="gerente">Gerente</option>
+                <option value="manager">Gestor de flota</option>
+                <option value="logistica">Logística</option>
+                <option value="chofer">Chofer</option>
+                <option value="usuario">Usuario</option>
+              </select>
+              <select aria-label="Filtrar equipo por estado" value={teamActiveFilter} onChange={(event) => setTeamActiveFilter(event.target.value)} className="min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option value="">Todos los estados</option><option value="true">Activos</option><option value="false">Inactivos</option>
+              </select>
+              </div>
+              <p className="text-sm text-gray-500">{teamPageData?.totalCount ?? 0} miembros</p>
               {visibleUsers.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">No hay miembros que coincidan con la búsqueda.</p>
+                <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                  {teamPageData?.totalCount === 0 && !teamSearch && !teamRoleFilter && !teamActiveFilter
+                    ? "No hay otros miembros en el equipo."
+                    : teamRoleFilter || teamActiveFilter
+                      ? "No hay miembros que coincidan con la búsqueda o los filtros."
+                      : "No hay miembros que coincidan con la búsqueda."}
+                </div>
               ) : visibleUsers.map((user) => (
                 <div
                   key={user.id}
@@ -848,6 +893,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                   <p className="text-xs text-gray-500">Los permisos se determinan por el rol y se aplican desde el servidor.</p>
                 </div>
               ))}
+              {teamPageData && <ServerPagination page={teamPageData.page} totalPages={teamPageData.totalPages} pageSize={teamPageData.pageSize} totalCount={teamPageData.totalCount} onPageChange={setTeamPage} />}
             </div>
           )}
         </div>
