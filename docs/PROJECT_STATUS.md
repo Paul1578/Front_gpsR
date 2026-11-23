@@ -796,8 +796,19 @@ Fecha de actualización: 2026-11-22.
 - `refactor/route-builder` HEAD documental `8f2e68a`, Action [45160390591](https://github.com/Paul1578/Front_gpsR/actions/runs/45160390591): success; 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
 - Incluye la cobertura de edición de orden/operaciones de paradas y promoción root-only desde Gestión de Equipo, ambas verificadas contra API/MySQL real.
 
-## Conflicto de asignación en UI usa API real — E2E agregado, CI pendiente
+## Conflicto de asignación en UI contra API real — VALIDADO EN CI
 
 - Auditoría read-only detectó que Manager probaba el HTTP 409 de asignación de vehículo mediante una respuesta Playwright simulada; backend smoke ya ejercita conflictos reales.
 - El E2E ahora crea un Driver bloqueador temporal y le asigna el vehículo por API real, intenta asignarlo desde Gestión de Conductores al segundo Driver, exige 409 y relee ambos registros para confirmar que ninguno mutó. Después libera el vehículo, comprueba la asignación válida y limpia el Driver temporal.
 - Lint/build/discovery 51/diff-check pasan local. Validación UI/API/MySQL y cleanup quedan pendientes de Action.
+
+## Reasignación de vehículo al editar rutas — E2E agregado, CI pendiente
+
+- Auditoría independiente confirmó que UpdateRoute desde UI conserva vehículo/conductor sin probar cambiar recursos.
+- El E2E ahora crea un segundo vehículo disponible, lo selecciona al editar la ruta, comprueba `PUT`/GET de Route y VehicleId del Driver, y verifica que el segundo guardado móvil conserva la reasignación. `finally` restablece el vehículo original del Driver y elimina los dos vehículos QA.
+- Lint/build/discovery 51/diff-check pasan localmente; falta Action API/MySQL y cleanup.
+
+## Conflicto de asignación de vehículo — VALIDADO EN CI
+
+- Front `7b23ac5`, Action [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- La UI recibió 409 del backend al asignar un vehículo ocupado; se comprobó el mensaje real y que Driver objetivo/bloqueador conservaran sus VehicleId; cleanup liberó los fixtures.

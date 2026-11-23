@@ -758,3 +758,12 @@
 
 - E2E Manager reemplaza el mock de HTTP 409 por un Driver bloqueador creado/asignado en API real; verifica error y persistencia inalterada antes de liberar vehículo.
 - Fixture bloqueador se desasigna/desactiva en `finally`. Lint/build/discovery 51 pasan; CI integrado pendiente.
+
+## 2026-11-23 — Reasignación de recurso en edición de ruta
+
+- E2E actualiza el vehículo de una ruta existente desde el constructor y verifica la pareja Route/Driver persistida. El cleanup restaura la asignación original.
+- Lint/build/discovery 51 pasan localmente; Action autenticada pendiente.
+
+## 2026-11-23 — 409 de asignación real validado
+
+- Action Front [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): 51/51 E2E, responsive y cleanup success; la UI/API/MySQL confirmaron conflicto y persistencia intacta.

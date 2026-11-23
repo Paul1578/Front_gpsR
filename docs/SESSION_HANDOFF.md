@@ -1121,3 +1121,14 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Auditoría Front señaló que el caso 409 de asignación de vehículo en UI interceptaba la petición y devolvía JSON simulado. El caso ahora crea un Driver bloqueador, ocupa el vehículo por API real, intenta asignarlo desde la UI Manager y verifica 409 más `vehicleId` intactos en ambos Drivers; luego libera el recurso y continúa con asignación válida.
 - Limpieza del bloqueador quedó añadida al `finally`; fixture usa prefijo `E2EQA` para el SQL de runner.
 - Local lint/build/discovery 51/diff-check pasa. No hay credenciales QA locales; el run autenticado API/MySQL debe validar el cambio.
+
+## Siguiente brecha de edición de recursos de ruta — 2026-11-23
+
+- QA encontró que el constructor habilita cambiar Vehicle/Driver, pero las pruebas sólo persistían nombre/paradas y confirmaban los recursos originales.
+- E2E Admin ahora crea un segundo Vehicle, lo elige al editar, valida PUT+GET `Route.vehicleId` y `Driver.vehicleId`, y comprueba persistencia tras el guardado móvil. `finally` desasigna el recurso de prueba y recupera el vínculo original del fixture.
+- Validación local lint/build/discovery 51/diff-check pasa; falta API/MySQL integrado.
+
+## Conflicto real de asignación — validado — 2026-11-23
+
+- Front `7b23ac5`, Action [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): 51/51 E2E, responsive, backend Release/xUnit, audit/lint/build y cleanup success.
+- El mensaje 409 y las relaciones VehicleId se validaron contra API/MySQL real, sin mock. El Driver bloqueador se desasigna/desactiva y el runner verifica cleanup.

@@ -697,3 +697,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - El E2E ya no intercepta `PUT /Drivers/{id}/assign-vehicle` con un 409 artificial. Crea un Driver temporal y ocupa el vehículo mediante API real antes de operar la tarjeta Manager.
 - Comprueba el 409 del backend y el mensaje real “El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.”; verifica que `vehicleId` siga en el Driver bloqueador y permanezca null en el Driver objetivo. Libera el bloqueador y comprueba la asignación permitida posterior.
 - Lint/build/discovery 51/diff-check pasan local; Action API/MySQL descartable confirmará comportamiento y cleanup.
+
+## Reasignar vehículo al editar ruta — CI pendiente
+
+- El test edita la ruta existente y selecciona un vehículo QA diferente disponible. Tras guardar compara GET de ruta (VehicleId nuevo, mismo Driver y paradas editadas) y GET de Driver (VehicleId actualizado); el guardado en móvil vuelve a comprobar persistencia.
+- Cleanup restaura el vehículo explícito previo del Driver y elimina los vehículos QA. Lint/build/discovery 51/diff-check pasan; queda verificar Action API/MySQL.
+
+## Conflicto 409 de vehículo ocupado — CI aprobado
+
+- Action Front [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023), commit `7b23ac5`: **51/51 E2E**, responsive, backend Release/xUnit, audit/lint/build y cleanup success.
+- API real rechazó el segundo vínculo con el copy exacto de Backend; API GET confirmó el Driver solicitado sin vehículo y el Driver bloqueador aún asignado. Posteriormente se liberó y verificó el flujo exitoso.

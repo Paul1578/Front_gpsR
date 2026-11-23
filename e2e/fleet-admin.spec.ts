@@ -794,7 +794,9 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
   const updatedName = `${routeName} editada`;
   const mobileUpdatedName = `${updatedName} móvil`;
   let vehicleId: string | undefined;
+  let alternativeVehicleId: string | undefined;
   let routeId: string | undefined;
+  let originalDriverVehicleId: string | null = null;
 
   try {
     const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
@@ -803,6 +805,15 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     });
     expect(vehicleResponse.status()).toBe(201);
     vehicleId = (await vehicleResponse.json()).id as string;
+    const alternativeVehicleResponse = await page.request.post("/api/backend/Vehicles", {
+      headers,
+      data: { plate: `E2EQA${suffix}B`, brand: "FleetFlow QA", model: "Alternate route test", year: 2025 },
+    });
+    expect(alternativeVehicleResponse.status()).toBe(201);
+    alternativeVehicleId = (await alternativeVehicleResponse.json()).id as string;
+    const initialDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(initialDriverResponse.status()).toBe(200);
+    originalDriverVehicleId = (await initialDriverResponse.json()).vehicleId ?? null;
 
     const routeResponse = await page.request.post("/api/backend/Routes", {
       headers,
@@ -845,6 +856,7 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     await expect(page.getByPlaceholder("Parada 2")).toHaveValue("E2E recogida");
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.locator("select").nth(0).selectOption(alternativeVehicleId!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
     await expect(page.getByText(/E2E QA Driver/)).toBeVisible();
@@ -858,6 +870,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(tabletPersistedResponse.status()).toBe(200);
     const tabletPersistedRoute = await tabletPersistedResponse.json();
     expect(tabletPersistedRoute.name).toBe(updatedName);
+    expect(tabletPersistedRoute.vehicleId).toBe(alternativeVehicleId);
+    expect(tabletPersistedRoute.driverId).toBe(driverIdFixture);
     expect(Date.parse(tabletPersistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
     expect(Date.parse(tabletPersistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
     const summarizePersistedPoints = (points: Array<{ name: string; operation: number | string }>) => {
@@ -881,6 +895,9 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
       { name: "E2E recogida", operation: "Delivery" },
       { name: "E2E destino", operation: "None" },
     ]);
+    const tabletPersistedDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(tabletPersistedDriver.status()).toBe(200);
+    expect((await tabletPersistedDriver.json()).vehicleId).toBe(alternativeVehicleId);
 
     await page.setViewportSize({ width: 320, height: 844 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -907,6 +924,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(persistedResponse.status()).toBe(200);
     const persistedRoute = await persistedResponse.json();
     expect(persistedRoute.name).toBe(mobileUpdatedName);
+    expect(persistedRoute.vehicleId).toBe(alternativeVehicleId);
+    expect(persistedRoute.driverId).toBe(driverIdFixture);
     expect(Date.parse(persistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
     expect(Date.parse(persistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
     const persistedPoints = persistedRoute.points as Array<{ name: string; operation: number | string }>;
@@ -916,9 +935,12 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
       { name: "E2E recogida", operation: "Delivery" },
       { name: "E2E destino", operation: "None" },
     ]);
+    const mobilePersistedDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+    expect(mobilePersistedDriver.status()).toBe(200);
+    expect((await mobilePersistedDriver.json()).vehicleId).toBe(alternativeVehicleId);
 
     await page.getByLabel("Estado").selectOption("pendiente");
-    await page.getByLabel("Vehículo").selectOption(vehicleId);
+    await page.getByLabel("Vehículo").selectOption(alternativeVehicleId!);
     await page.getByLabel("Conductor").selectOption(driverIdFixture!);
     await expect(page.getByRole("heading", { name: mobileUpdatedName, exact: true })).toBeVisible();
     await search.fill(`${mobileUpdatedName} sin coincidencia`);
@@ -1032,7 +1054,21 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   } finally {
     if (routeId) await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => undefined);
+    const currentDriver = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+    if (currentDriver?.ok()) {
+      const currentVehicleId = (await currentDriver.json().catch(() => null))?.vehicleId as string | null | undefined;
+      if (currentVehicleId === vehicleId || currentVehicleId === alternativeVehicleId) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers }).catch(() => undefined);
+      }
+      if (originalDriverVehicleId && originalDriverVehicleId !== currentVehicleId) {
+        await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+          headers,
+          data: { vehicleId: originalDriverVehicleId },
+        }).catch(() => undefined);
+      }
+    }
     if (vehicleId) await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers }).catch(() => undefined);
+    if (alternativeVehicleId) await page.request.delete(`/api/backend/Vehicles/${alternativeVehicleId}`, { headers }).catch(() => undefined);
   }
 });
 
