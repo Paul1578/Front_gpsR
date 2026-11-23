@@ -747,3 +747,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action [45169238486](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486): **51/51 Playwright E2E**, responsive browser **1/1**, audit de dependencias, lint, build, Backend Release/xUnit y cleanup API/MySQL descartable.
 - Entre los flujos autenticados se ejecutó el error 500 de cambio de rol y su reintento exitoso con persistencia; trazas de fallo se omitieron porque la suite terminó sin errores.
+
+## E2E de desvinculación User–Driver — local
+
+- El caso CRUD de Driver cancela la confirmación y consulta por API que `userId` siga vinculado; luego confirma en UI y verifica HTTP 204, perfil Driver conservado/activo con `userId=null`, cuenta presente, `driverId=null` y rol Driver persistido.
+- Comprueba el flujo a 320 y 768 px. `npm run lint`, `npm run build`, discovery **51** y diff-check pasan. Action Front integrada con API/MySQL/cleanup aún pendiente.

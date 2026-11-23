@@ -182,6 +182,10 @@
 
 ## 2026-11-23
 
+- Gestión de Equipo permite desvincular una cuenta de un perfil Driver con confirmación, sincronización del estado y feedback de errores; E2E verifica cancelación, persistencia API y responsive. Backend API disponible en `c7c198d`; integración CI pendiente.
+
+## 2026-11-23
+
 - Validado el E2E de error de cambio de rol desde Gestión de Equipo: mensaje visible, rol previo intacto ante HTTP 500 y reintento persistido. Action Front `45169238486` pasó 51/51 E2E, responsive, audit/lint/build, Backend Release/xUnit y cleanup.
 
 ## 2026-11-22 — Cobertura responsive de búsqueda en Equipo

@@ -3981,7 +3981,7 @@ test("Admin crea cuentas, cambia roles y promueve a Admin desde Equipo", async (
   expect(duplicateEmailMembers).toHaveLength(1);
 });
 
-test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", async ({ page }) => {
+test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde Equipo", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -4276,6 +4276,37 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
     firstName: `${firstName} desde usuario`,
     lastName,
   });
+
+  await page.getByRole("button", { name: "Gestionar choferes" }).click();
+  const linkedDriverCard = page.getByTestId(`team-driver-${driverId}`);
+  await expect(linkedDriverCard).toContainText(`@e2e${suffix}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await linkedDriverCard.getByRole("button", { name: "Desvincular cuenta" }).click();
+  const unlinkDialog = page.getByRole("alertdialog");
+  await expect(unlinkDialog).toContainText("Se conservarán la cuenta y el perfil, el rol Chofer y el historial");
+  await unlinkDialog.getByRole("button", { name: "Cancelar" }).click();
+  const driverAfterCanceledUnlink = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect((await driverAfterCanceledUnlink.json()).userId).toBe(createdUser.id);
+
+  await linkedDriverCard.getByRole("button", { name: "Desvincular cuenta" }).click();
+  const unlinkDriverPromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${driverId}/unlink-user`) &&
+    response.request().method() === "PUT",
+  );
+  await page.getByRole("button", { name: "Sí, desvincular" }).click();
+  expect((await unlinkDriverPromise).status()).toBe(204);
+  const unlinkedDriverResponse = await page.request.get(`/api/backend/Drivers/${driverId}`, { headers });
+  expect(unlinkedDriverResponse.status()).toBe(200);
+  expect(await unlinkedDriverResponse.json()).toMatchObject({ id: driverId, userId: null, isActive: true });
+  const teamAfterDriverUnlink = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamAfterDriverUnlink.status()).toBe(200);
+  const preservedDriverUser = (await teamAfterDriverUnlink.json()).find((member: { id: string }) => member.id === createdUser.id);
+  expect(preservedDriverUser).toMatchObject({ id: createdUser.id, driverId: null, isActive: true });
+  expect(preservedDriverUser.roles).toContain("Driver");
+  await expect(linkedDriverCard).toContainText("Sin usuario vinculado");
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   const deactivateUserPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdUser.id}/status`) &&

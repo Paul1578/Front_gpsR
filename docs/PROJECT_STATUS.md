@@ -855,3 +855,9 @@ Fecha de actualización: 2026-11-22.
 - HEAD documental `b9bede7`, Action [45169238486](https://github.com/Paul1578/Front_gpsR/actions/runs/45169238486): **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup API/MySQL success.
 - La Action validó el E2E de error al cambiar rol (HTTP 500, mensaje visible y rol sin mutación; reintento exitoso) junto con conflictos de asignación reales, edición de rutas/paradas y persistencia de bajas.
 - La siguiente brecha Backend priorizada es desvincular un Usuario de su perfil Driver; decisión confirmada: conservar rol Driver y bloquear la operación si hay ruta Pending/InProgress. La cuenta y el registro Driver se conservan.
+
+## Desvinculación User–Driver desde Gestión de Equipo — validación integrada pendiente
+
+- Backend `chore/stabilize-fleet-platform` `c7c198d`: añadió `PUT /Drivers/{id}/unlink-user`, conserva User/Driver/rol, bloquea rutas activas e invalida access/refresh tokens. xUnit Release **144/144** pasa localmente; Action backend y smoke HTTP/MySQL en curso.
+- Front añade confirmación explícita, estado inmediato y sincronización de Equipo/Conductores. E2E existente ahora cancela y confirma el unlink a 320/768 px, verifica API que el perfil sigue activo sin `userId` y que la cuenta continúa con rol Driver.
+- `npm run lint`, `npm run build`, descubrimiento **51 E2E** y `git diff --check` pasan localmente. Falta Action Front con API/MySQL y cleanup.

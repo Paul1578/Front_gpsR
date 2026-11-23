@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, UserRole, UserPermissions } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
-import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search } from "lucide-react";
+import { Users, Check, ArrowLeft, Plus, ToggleLeft, ToggleRight, Truck, Pencil, Search, UserRoundX } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { toast } from "sonner";
@@ -12,7 +12,8 @@ interface TeamManagementProps {
 
 type MemberConfirmation =
   | { kind: "role"; userId: string; memberName: string; currentRole: UserRole; nextRole: UserRole }
-  | { kind: "status"; userId: string; memberName: string; nextActive: boolean };
+  | { kind: "status"; userId: string; memberName: string; nextActive: boolean }
+  | { kind: "driver-unlink"; driverId: string; memberName: string };
 
 const roleLabels: Record<UserRole, string> = {
   superadmin: "Super Admin",
@@ -54,6 +55,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     setDriverActive,
     assignVehicleToDriver,
     unassignVehicleFromDriver,
+    unlinkUserFromDriver,
   } = useFleet();
 
   const [showCreateUser, setShowCreateUser] = useState(false);
@@ -190,6 +192,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     setMemberConfirmation(null);
     if (confirmation.kind === "role") {
       void handleRoleChange(confirmation.userId, confirmation.nextRole);
+    } else if (confirmation.kind === "driver-unlink") {
+      void handleUnlinkDriverUser(confirmation.driverId);
     } else {
       void handleUserStatusChange(confirmation.userId, confirmation.nextActive);
     }
@@ -361,6 +365,21 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       await refreshDrivers();
     } else {
       toast.error(result.message ?? "No se pudo desasignar el vehículo");
+    }
+  };
+
+  const handleUnlinkDriverUser = async (driverId: string) => {
+    const result = await unlinkUserFromDriver(driverId);
+    if (result.ok) {
+      toast.success(result.message ?? "Cuenta desvinculada del conductor");
+      try {
+        await refreshTeamUsers();
+        await refreshDrivers();
+      } catch {
+        toast.warning("La cuenta se desvinculó, pero no se pudo actualizar la lista. Recarga para sincronizarla.");
+      }
+    } else {
+      toast.error(result.message ?? "No se pudo desvincular la cuenta");
     }
   };
 
@@ -622,6 +641,20 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                           >
                             {driver.isActive ? "Dar de baja" : "Reactivar"}
                           </button>
+                          {driver.userId && (
+                            <button
+                              type="button"
+                              onClick={() => setMemberConfirmation({
+                                kind: "driver-unlink",
+                                driverId: driver.id,
+                                memberName: user ? `@${user.usuario}` : "la cuenta vinculada",
+                              })}
+                              className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs text-red-700 hover:bg-red-50"
+                            >
+                              <UserRoundX aria-hidden="true" size={14} />
+                              Desvincular cuenta
+                            </button>
+                          )}
                           {driver.isActive && <>
                           <select
                             value={assignSelection[driver.id] ?? ""}
@@ -1007,23 +1040,29 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
         open={memberConfirmation !== null}
         onClose={() => setMemberConfirmation(null)}
         onConfirm={confirmMemberChange}
-        title={memberConfirmation?.kind === "role"
-          ? "Confirmar cambio de rol"
-          : memberConfirmation?.nextActive
+        title={memberConfirmation?.kind === "driver-unlink"
+          ? "Desvincular cuenta de conductor"
+          : memberConfirmation?.kind === "role"
+            ? "Confirmar cambio de rol"
+            : memberConfirmation?.nextActive
             ? "Confirmar activación"
             : "Confirmar desactivación"}
-        description={memberConfirmation?.kind === "role"
-          ? `${memberConfirmation.memberName} cambiará de ${roleLabels[memberConfirmation.currentRole]} a ${roleLabels[memberConfirmation.nextRole]}. Con este rol ${roleImpact[memberConfirmation.nextRole]}`
-          : memberConfirmation?.nextActive
+        description={memberConfirmation?.kind === "driver-unlink"
+          ? `Se desvinculará ${memberConfirmation.memberName} del perfil de conductor. Se conservarán la cuenta y el perfil, el rol Chofer y el historial. La operación se rechazará si hay rutas pendientes o en progreso; sus sesiones actuales se cerrarán.`
+          : memberConfirmation?.kind === "role"
+            ? `${memberConfirmation.memberName} cambiará de ${roleLabels[memberConfirmation.currentRole]} a ${roleLabels[memberConfirmation.nextRole]}. Con este rol ${roleImpact[memberConfirmation.nextRole]}`
+            : memberConfirmation?.nextActive
             ? `Se activará la cuenta de ${memberConfirmation?.memberName}. La persona podrá volver a iniciar sesión y usar FleetFlow según los permisos de su rol.`
             : `Se desactivará la cuenta de ${memberConfirmation?.memberName}. La persona perderá acceso a FleetFlow y sus sesiones activas dejarán de funcionar.`}
-        confirmText={memberConfirmation?.kind === "role"
-          ? "Confirmar cambio"
-          : memberConfirmation?.nextActive
+        confirmText={memberConfirmation?.kind === "driver-unlink"
+          ? "Sí, desvincular"
+          : memberConfirmation?.kind === "role"
+            ? "Confirmar cambio"
+            : memberConfirmation?.nextActive
             ? "Sí, activar cuenta"
             : "Sí, desactivar cuenta"}
         cancelText="Cancelar"
-        variant={memberConfirmation?.kind === "status" && !memberConfirmation.nextActive
+        variant={memberConfirmation?.kind === "driver-unlink" || memberConfirmation?.kind === "status" && !memberConfirmation.nextActive
           ? "destructive"
           : "default"}
       />

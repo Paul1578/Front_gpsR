@@ -185,6 +185,7 @@ interface FleetContextType {
     vehicleId: string,
   ) => Promise<ActionResult>;
   unassignVehicleFromDriver: (driverId: string) => Promise<ActionResult>;
+  unlinkUserFromDriver: (driverId: string) => Promise<ActionResult>;
 }
 
 const FleetContext = createContext<FleetContextType | undefined>(undefined);
@@ -1345,6 +1346,18 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const unlinkUserFromDriver = async (driverId: string): Promise<ActionResult> => {
+    try {
+      await apiFetchForOwner(`/Drivers/${driverId}/unlink-user`, { method: "PUT" });
+      setDrivers((prev) => prev.map((driver) =>
+        driver.id === driverId ? { ...driver, userId: null } : driver,
+      ));
+      return { ok: true, message: "Cuenta desvinculada del conductor" };
+    } catch (error) {
+      return { ok: false, message: resolveApiMessage(error, "No se pudo desvincular la cuenta") };
+    }
+  };
+
   return (
     <FleetContext.Provider
       value={{
@@ -1381,6 +1394,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         setDriverActive,
         assignVehicleToDriver,
         unassignVehicleFromDriver,
+        unlinkUserFromDriver,
       }}
     >
       {children}

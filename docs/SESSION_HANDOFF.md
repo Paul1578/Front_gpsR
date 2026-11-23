@@ -1177,3 +1177,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - La prueba de error de cambio de rol recibió HTTP 500, dejó rol User intacto y permitió reintentar Logistics con persistencia. Estado detallado en `PROJECT_STATUS.md` y `TESTING.md`.
 - Siguiente trabajo acordado Backend: endpoint para desvincular cuenta User del perfil Driver conservando ambos registros y rol Driver; rechazar si existe ruta `Pending` o `InProgress`, usar locks de asignación/cuenta e invalidar sesiones anteriores. Cubrir xUnit y smoke HTTP/MySQL, luego consumidor UI/E2E si aporta flujo operativo.
 - El objetivo global sigue abierto; quedan criterios de CRUD/roles/paginación y responsive por auditar, además de límites externos documentados.
+
+## Trabajo vigente — desvinculación User–Driver
+
+- Backend publicó `c7c198d` con endpoint `PUT /Drivers/{id}/unlink-user`, protección de rutas activas y revocación de sesiones. Local Release **144/144**; Actions backend y smoke API/MySQL pendientes.
+- Front `TeamManagement` confirma la acción, llama por `FleetContext`, actualiza Driver/Equipo y enseña errores de conflicto. E2E amplía CRUD de chofer a cancelación + persistencia de desvinculación y responsive 320/768.
+- Local Front: lint/build, Playwright discovery **51 tests** y diff-check pasan. El commit/Action integrada aún debe ejecutarse; comprobar cleanup y respuestas API/MySQL.
+- La prueba de FE sobre recuento HTTP usa GET de persistencia después de cancelar; el backend smoke prueba unlink real, rol conservado y tokens invalidados.

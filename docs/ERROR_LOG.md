@@ -1767,3 +1767,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Se ejecutaron `npm run lint` y Playwright en paralelo; durante el recorrido de archivos, ESLint falló con `ENOENT` al leer `test-results`, creado/eliminado por el reporter del test. El test focal pasó 1/1 y el build pasó; no era un error de lint del código.
 - Solución: repetir lint sin otro proceso de Playwright tocando los resultados temporales.
 - Prevención: no ejecutar lint en paralelo con Playwright cuando ambos pueden crear o limpiar `test-results`; secuenciar esas verificaciones.
+# 2026-11-23 — Parche UI de desvinculación no coincidió con el handler real — CORREGIDO
+
+- Dos parches agrupados de `TeamManagement.tsx` asumieron un bloque de confirmación distinto y fueron rechazados sin modificar archivos.
+- Solución: releer el `confirmMemberChange` vigente y aplicar en bloques cortos: imports/tipo, handler, bifurcación, botón y copy del diálogo.
+- Prevención: aplicar el contexto exacto de cada función después de leerla; no agrupar cambios de UI separados por varios cientos de líneas en un único parche.
+
+## 2026-11-23 — Diff-check detectó una línea vacía extra al final del log — CORREGIDO
+
+- Al registrar el error del parche de UI, el editor dejó dos saltos de línea al final de `ERROR_LOG.md`; `git diff --check` lo detectó antes del commit.
+- Solución: normalizar el archivo a una sola nueva línea final y repetir diff-check.
+- Prevención: revisar el EOF de los logs después de insertar entradas al inicio o al final.
