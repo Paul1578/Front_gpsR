@@ -3637,7 +3637,7 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
 
   for (const account of [
     { roleLabel: "Gestor de flota", roleName: "Manager", emailPrefix: "manager", viewport: 320 },
-    { roleLabel: "Logistica", roleName: "Logistics", emailPrefix: "logistics", viewport: 768 },
+    { roleLabel: "Logística", roleName: "Logistics", emailPrefix: "logistics", viewport: 768 },
   ]) {
     await page.setViewportSize({ width: account.viewport, height: account.viewport === 320 ? 844 : 1024 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

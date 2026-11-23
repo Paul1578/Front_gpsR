@@ -13,7 +13,7 @@
 ## Cambio de rol desde Equipo — validación local pendiente de CI — 2026-11-23
 
 - Se extiende el E2E real de creación de miembros: cancelación de Manager→Logistics sin mutación, confirmación del PUT, lectura `/Users/my-team` y persistencia visual tras recargar.
-- El modal se mide en 320 px y la lista tras recarga a 768 px. Primera build encontró TS7006 en el callback de observación; corregido importando `Request`. Revalidación local y Action integrada pendientes; no contar como cubierto hasta Action verde.
+- El modal se mide en 320 px y la lista tras recarga a 768 px. Primera build encontró TS7006 (corregido y build local verde). Action `45135338276` localizó una etiqueta sin tilde (`Logistica`) en botones de rol; UI ahora comparte `roleLabels`. Revalidación y Action del fix pendientes; no contar como cubierto hasta verde.
 
 ## Estado actual — 2026-11-23
 

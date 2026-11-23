@@ -7,7 +7,7 @@
 ## E2E de cambio de rol Manager→Logistics desde Equipo — validación pendiente
 
 - El escenario autenticado crea Manager en 320 px, cancela la primera confirmación y comprueba que no salió PUT; confirma el cambio después, verifica HTTP/body y `/Users/my-team`, recarga en 768 px y comprueba el rol renderizado.
-- `npm run lint` y discovery 51 pasaron en el intento inicial; build detectó TS7006 y quedó corregido. Repetir build y luego ejecución integrada con API/MySQL.
+- `npm run lint` y discovery 51 pasaron en el intento inicial; build detectó TS7006 y quedó corregido. Action `45135338276` falló sólo el selector por una tilde ausente en el texto de rol; UI comparte ahora `roleLabels`. Repetir lint/build y el suite integrado API/MySQL.
 
 ## Driver completa una ruta de varias paradas — validado por Actions
 

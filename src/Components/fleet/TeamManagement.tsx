@@ -788,7 +788,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                               : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                           }`}
                         >
-                          {role === "superadmin" ? "Super Admin" : role === "manager" ? "Gestor de flota" : role.charAt(0).toUpperCase() + role.slice(1)}
+                          {roleLabels[role]}
                         </button>
                       ))}
                     </div>
@@ -920,8 +920,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {assignableRoles.map((role) => {
                   const active = createUserForm.role === role;
-                  const roleLabel =
-                    role === "superadmin" ? "Super Admin" : role === "manager" ? "Gestor de flota" : role.charAt(0).toUpperCase() + role.slice(1);
+                  const roleLabel = roleLabels[role];
                   const roleInfo =
                     role === "superadmin"
                       ? "Control total del sistema"

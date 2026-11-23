@@ -3,7 +3,20 @@
 - `npm run build` detectó TS7006 (`request` implícitamente `any`) en el observador E2E de PUT de rol. Lint y discovery no detectaban el problema.
 - Solución: importar el tipo `Request` desde `@playwright/test` y tipar el callback del listener.
 - Prevención: conservar tipos explícitos en callbacks extraídos de eventos Playwright y validar build TypeScript además de lint/discovery.
-- Revalidación local tras el arreglo: pendiente.
+- Revalidación local tras el arreglo: `npm run lint`, `npm run build` (TypeScript y 11 páginas) y discovery Playwright (**51**) pasaron; `git diff --check` limpio. Action integrada del caso sigue pendiente.
+
+## 2026-11-23 — E2E de cambio de rol no encontraba botón por tilde inconsistente — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- Action Front `45135338276` terminó **50/51**. El E2E esperaba `Logística`, pero las opciones de rol de la tarjeta y el alta renderizaban `Logistica` sin tilde, a diferencia del badge/confirmación. El click agotó timeout; no hubo fallo de API ni de persistencia y el teardown descartable se ejecutó.
+- Solución: las opciones de asignación de rol reutilizan `roleLabels`, que ya centraliza la etiqueta acentuada; el E2E de creación espera ahora `Logística` y el cambio Manager→Logistics usa el mismo nombre accesible.
+- Prevención: no duplicar texto de roles en varios componentes; derivar botones, badges y confirmaciones del mismo mapa de etiquetas.
+- Action manual `45135361500` repitió el mismo fallo antes de aplicar la corrección; no se cuenta como validación del fix.
+
+## 2026-11-23 — Consulta de Actions con job ID incorrecto y HTTP 502 transitorio — RESUELTO
+
+- Una consulta `gh run view --job` se envió con un identificador placeholder y recibió HTTP 404; luego `gh run watch` recibió HTTP 502 de GitHub mientras el runner seguía activo. No afectó el workflow ni los tests.
+- Solución: consultar el run ID/job ID real con `gh run view` y `gh api .../actions/runs/{id}/jobs`; se confirmó que Playwright seguía en curso.
+- Prevención: obtener IDs del API antes de consultar logs específicos y tratar errores de watch como errores del cliente hasta corroborar el estado del run por API.
 
 ## 2026-11-23 — Búsqueda del script E2E en el checkout Front — RESUELTO
 

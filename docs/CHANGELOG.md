@@ -15,6 +15,7 @@
 # 2026-11-23 — E2E de cambio de rol en Gestión de Equipo
 
 - El caso de creación de miembros ahora verifica cancelación sin PUT y cambio Manager→Logistics confirmado desde UI, persistencia API tras reload y responsive de diálogo/lista. Validación pendiente.
+- El primer Action falló porque un botón mostraba `Logistica` en lugar de la etiqueta común `Logística`; se centralizó la presentación con `roleLabels`. Fix pendiente de CI.
 
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
