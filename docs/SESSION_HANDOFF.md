@@ -986,3 +986,5 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Cambios locales sin publicar aún: E2E selecciona la ruta real y localiza su polilínea por `stroke-width="6"` antes de exigir segmentos OSRM y genera placa/nombre únicos por intento. Ejecutar lint/build, diff-check, publicar y validar que la Action cubra E2E Admin, mapa, persistencia y cleanup.
 
 - Ajuste de viewport anterior quedó en el bloque simulado equivocado; esto produjo dos fallos adicionales: el simulado necesita sidebar desktop y el real necesita botón móvil. Corregidos ambos viewports por separado; documentado en `ERROR_LOG.md`. La Action del HEAD más nuevo debe confirmarlo.
+
+- El selector del path SVG siguió fallando en Actions porque Leaflet simplifica geometrías; retirar esa comprobación. Cambio local: mostrar estado explícito de éxito “Trayecto por carretera calculado” cuando `geometryState` es road; el E2E espera ese estado después de OSRM mock válido; fallback mantiene su aviso estimado. Causa registrada en `ERROR_LOG.md`. Ejecutar lint/build, publicar y validar Action integrada.

@@ -653,3 +653,7 @@
 - E2E identifica la polilínea seleccionada por `stroke-width="6"` y valida OSRM sobre esa ruta y genera fixture único por intento para prevenir 409 por placa conservada tras baja lógica. Action `45119664116` registró ambos errores; nueva validación integrada pendiente.
 
 - Ajuste de viewport corregido tras Action: test simulado usa sidebar desktop (1280×800), flujo Admin autenticado usa el menú móvil (390×844).
+
+## 2026-11-23 — Estado visible del cálculo OSRM
+
+- El mapa informa “Trayecto por carretera calculado” ante geometría OSRM válida y conserva el mensaje de trayecto estimado cuando se usa fallback. El E2E prueba ese resultado observable en vez de contar segmentos SVG simplificados por Leaflet. Validación integrada pendiente.

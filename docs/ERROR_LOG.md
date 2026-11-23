@@ -1635,3 +1635,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - La edición posterior a `45119404897` aplicó el viewport móvil a la prueba simulada de Administración que usa la barra lateral directamente; esa prueba dejó de abrir la vista porque en móvil requiere abrir el menú. El E2E autenticado real permaneció en 1280 px y siguió fallando en `Abrir menú`.
 - Corrección actual: el test simulado fija 1280×800 para usar la barra lateral; el test autenticado real fija 390×844 para abrir el menú móvil.
 - Prevención: validar el contexto de cada ocurrencia antes de reemplazar selectores repetidos; comprobar el bloque de prueba exacto afectado. Action nueva pendiente.
+
+## 2026-11-23 — SVG simplificado no prueba la geometría recibida — CORREGIDO LOCALMENTE
+
+- Actions `45119664116` y `45120693134` mostraron que el `path d` observado mantenía un único segmento, incluso buscando la ruta seleccionada. Leaflet simplifica SVG según zoom y el DOM no es un contrato estable para verificar la respuesta OSRM.
+- Solución: el mapa muestra “Trayecto por carretera calculado” sólo cuando OSRM entrega geometría válida; conserva “Trayecto estimado” en fallback. El E2E autenticado espera el estado de éxito tras seleccionar la ruta y recibir el fixture OSRM de tres coordenadas.
+- Prevención: verificar resultado de dominio/UI derivado de datos del proveedor, no el número de segmentos SVG que puede cambiar por simplificación cartográfica. Lint/build y Action nueva pendientes.

@@ -676,3 +676,8 @@ Fecha de actualización: 2026-11-22.
 - Corregido localmente con selector de ruta seleccionada, comprobación de geometría OSRM sobre esa entidad y fixture único por intento. Nuevo SHA `3c7d738` está en Action; cambios adicionales de selector/retry requieren su propia Action.
 
 - Corrección documental/proceso: el cambio anterior había aplicado móvil al E2E simulado equivocado; ahora se fija desktop en el simulado y móvil en el autenticado. Ver `ERROR_LOG.md`; pendiente validar nueva Action.
+
+## Confirmación OSRM visible y prueba estabilizada
+
+- El selector por SVG no fue estable: Leaflet simplifica la línea y el DOM entregaba un único segmento incluso con la geometría OSRM mock de tres puntos. Se retiró esa aserción de implementación y se agregó una etiqueta clara de éxito “Trayecto por carretera calculado”; el E2E la comprueba tras seleccionar la ruta real.
+- El fallback sigue mostrando “Trayecto estimado entre puntos”. Validación local y Action integrada del nuevo SHA pendientes.

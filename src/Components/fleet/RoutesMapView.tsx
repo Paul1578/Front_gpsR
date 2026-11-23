@@ -372,6 +372,11 @@ export function RoutesMapView({
           );
         })}
       </MapContainer>
+      {selectedRoute && geometryState[selectedRoute.id] === "road" && (
+        <div role="status" className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-lg border border-emerald-200 bg-emerald-50/95 px-3 py-2 text-xs text-emerald-900 shadow">
+          Trayecto por carretera calculado.
+        </div>
+      )}
       {selectedRoute && geometryState[selectedRoute.id] === "estimated" && (
         <div role="status" className="absolute bottom-3 left-3 z-[1000] max-w-xs rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs text-amber-900 shadow">
           Trayecto estimado entre puntos; OSRM no proporcionó geometría vial.
