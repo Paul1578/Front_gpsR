@@ -1232,3 +1232,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Errores y fixes están en `ERROR_LOG.md`: Origin local 127 vs canonicalización de `localhost`; `route.continue` saltaba fixtures compartidos; registro temporal local respondió 429. No quedaron fixtures QA en MySQL (`fletflow`: 0 prefijos E2E).
 - Verificación actual: lint/build OK; discovery 54; focales 4/4; curl same-origin no-cookie 401 y origen atacante 403. Primera suite local no válida (48 fallos por bugs de integración ahora corregidos); la reejecución completa fue detenida antes de pruebas por el límite de registro local. Se requiere Action completa Front con API/MySQL descartables.
 - Continuar: revisar diff final, añadir resultado/errores de Actions, corregir y repetir hasta verde; actualizar `PROJECT_STATUS.md`, `TESTING.md`, `SECURITY.md`, `ARCHITECTURE.md`, `CHANGELOG.md` y este handoff. No declarar terminada la misión integral.
+
+## Continuación — correcciones de Action BFF 45204753979
+
+- Action 45204753979 pasó backend Release/xUnit, audit, lint/build y responsive, con 4 fallos E2E. Trace confirmó que sesión y cookie se restauran tras reload (refresh y `/Auth/me` 200); el test pedía un botón de menú móvil en viewport desktop. También encontró un mock logout-all antiguo, consulta Playwright filtrada por Path y una extracción residual desde localStorage.
+- Fixes locales aplicados en `e2e/fleet-admin.spec.ts`; viewport 390×844, mock `/api/auth/logout-all`, `context.cookies()` global y `readAccessToken`. Lint/build local pasan.
+- Siguiente: discovery/diff-check, commit y push en `refactor/route-builder`, ejecutar Action completa con API/MySQL temporales; corregir y repetir hasta verde. Documentar resultado en todos los archivos y mantener misión integral abierta.

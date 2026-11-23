@@ -797,3 +797,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `npm run lint`, `npm run build` (Next 16.4.6/TypeScript) y `git diff --check` pasan. Playwright descubre **54 tests**.
 - Playwright focal de mocks y concurrencia: **4/4** (dashboard, reintento de mapa, error Equipo, refresh tardío al cambiar de cuenta). HTTP local de CSRF: mismo origen sin cookie **401**, origen externo **403**.
 - Suite autenticada inicial local no es válida para aceptación: 48 fallos por Origin incorrecto en Next Development y handlers E2E apilados que omitían fixture; ambos están corregidos y los focales pasan. El segundo intento fue detenido antes de Playwright por 429 de registro del API local. Suite/API/MySQL completa pendiente de Actions con proceso y DB descartables.
+
+## Revisión de Action 45204753979 — fixes locales, Action nueva pendiente
+
+- Pasaron audit, lint, build, responsive browser y Backend Release/xUnit. El job E2E tuvo cuatro fallos: endpoint de mock logout-all anterior, consulta de cookie limitada por Path, extracción residual del token desde localStorage, y botón móvil esperado en viewport de escritorio.
+- Trace: al recargar, el BFF envió cookie al backend; `/api/auth/refresh` y `/api/backend/Auth/me` respondieron 200. No fue un fallo de restauración; el DOM de escritorio no tenía el botón mobile “Abrir menú”.
+- Fixes aplicados: interceptar `/api/auth/logout-all`, usar `context.cookies()` sin URL para la cookie path-scoped, usar `readAccessToken`, y fijar viewport 390×844 para el test responsive de sesión.
+- `npm run lint` y `npm run build` pasan localmente. La nueva Action debe verificar E2E autenticado completo y cleanup.

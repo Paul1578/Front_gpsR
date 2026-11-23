@@ -907,3 +907,9 @@ Fecha de actualización: 2026-11-22.
 - Nueva protección BFF: refresh en cookie HttpOnly, access en memoria, Origin same-origin, no-store y migración legacy. Cinco Route Handlers compilan.
 - Validación local: lint/build OK; cuatro E2E focales pasan; el suite completo autenticado queda pendiente por el rate limit de registro del API local tras una corrida fallida de origen ya corregida. Ver `ERROR_LOG.md` y `SESSION_HANDOFF.md`.
 - Pendiente inmediato: publicar Front feature branch y completar Action limpia con MySQL/API temporales antes de dar esta iteración por terminada.
+
+## Sesión HttpOnly — correcciones a CI en curso (2026-11-23)
+
+- Action `45204753979`: lint/build, responsive, auditoría y Backend Release/xUnit pasaron; E2E falló por tres assertions/mocks obsoletos y un locator de menú móvil ejecutado en escritorio.
+- Corregidos localmente; el trace probó que reload sí restaura sesión (refresh y `/Auth/me` HTTP 200). Viewport responsive fijado, llamadas protegidas usan `readAccessToken`, logout-all intercepta la ruta BFF y cookies se consultan sin filtro de URL.
+- Lint/build local pasan. Falta validar E2E integrado en una Action nueva.

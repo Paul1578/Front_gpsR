@@ -859,3 +859,10 @@
 - Se añadió BFF same-origin para login, refresh, migración, logout y logout global. Refresh token ahora usa cookie HttpOnly/SameSite Strict con alcance `/api/auth`; access token queda en memoria.
 - Se conserva el contrato backend Bearer para otras llamadas y clientes móviles futuros. Se añade migración de sesiones legacy, deduplicación de refresh y espera de refresh pendiente antes de logout.
 - Se adaptan E2E para no leer tokens de localStorage y se agrega cobertura de atributos de cookie, CSRF y rotación. Full CI autenticada pendiente.
+
+## 2026-11-23 — Ajustes E2E posteriores a migración HttpOnly
+
+- Actualizado el test de error logout-all para interceptar el endpoint BFF.
+- Corregida inspección Playwright de cookie con Path restringido y reemplazado el último acceso de token E2E a localStorage por `readAccessToken`.
+- Test de restauración de sesión fija viewport móvil porque su control de menú no existe en escritorio.
+- Lint/build pasan localmente; Action 45204753979 encontró los casos obsoletos y la validación integrada de los fixes queda pendiente.

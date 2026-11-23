@@ -1869,3 +1869,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Prevención: revisar `workdir`, resolver archivos con `rg --files` y establecer explícitamente `MYSQL_PWD` desde configuración local sin imprimir su valor.
 
 - Un E2E consultó `context.cookies(origin)` para una cookie con `Path=/api/auth`; Playwright filtra las cookies por la ruta `/dashboard` y devolvió `undefined`. Se cambió la inspección de atributos de seguridad a `context.cookies()` sin URL; el test de carrera de refresh/login pasó 1/1. `git diff --check` también encontró un salto vacío al final de `PROJECT_STATUS.md`; se normalizó a una sola nueva línea.
+
+## 2026-11-23 — Action 45204753979 encontró tests desactualizados tras BFF — CORREGIDO LOCALMENTE
+
+- Lint/build, responsive browser check, auditoría y Backend Release/xUnit pasaron; E2E reportó cuatro fallos. Tres eran dependencias de test obsoletas: el mock logout-all apuntaba a `/api/backend/Auth/logout-all` en vez de `/api/auth/logout-all`, Playwright filtraba la cookie `Path=/api/auth` al pedir cookies por la URL raíz, y un test de baja aún leía el access token desde `localStorage`. Se actualizaron endpoint, inspección sin filtro y helper `readAccessToken`.
+- El cuarto fallo esperaba “Abrir menú” en viewport escritorio. El trace confirmó refresh post-reload y `/Auth/me` con HTTP 200, cookie enviada, y dashboard con navegación lateral; el botón probado sólo aparece en layout móvil. El test fija viewport 390×844 antes del login.
+- Prevención: actualizar interceptores y lectores de sesión al mismo tiempo que cambia el contrato de auth; hacer explícito el viewport cuando se afirma un control responsive. Nueva Action integrada pendiente.

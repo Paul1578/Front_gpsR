@@ -20,6 +20,7 @@ const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
 test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
 
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(email!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
@@ -381,7 +382,7 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.setViewportSize({ width: 768, height: 1024 });
   await assertNoHorizontalOverflow();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route("**/api/backend/Auth/logout-all", async (route) => {
+  await page.route("**/api/auth/logout-all", async (route) => {
     await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
   });
   await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
@@ -808,10 +809,7 @@ test("Admin gestiona vehículos en móvil estrecho y tablet", async ({ page }) =
     await expectNoHorizontalOverflow();
   } finally {
     if (vehicleId) {
-      const token = await page.evaluate(() => {
-        const serialized = localStorage.getItem("auth_tokens");
-        return serialized ? JSON.parse(serialized).accessToken as string : null;
-      }).catch(() => null);
+      const token = await readAccessToken(page).catch(() => null);
       if (token) {
         await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -4444,8 +4442,7 @@ test("logout-all cierra la sesión actual y revoca el refresh de otra sesión", 
     }
 
     const secondAccessToken = await readAccessToken(secondPage);
-    const secondOrigin = new URL(secondPage.url()).origin;
-    const secondRefreshCookie = (await secondContext.cookies(secondOrigin)).find((cookie) => cookie.name === "fletflow_refresh");
+    const secondRefreshCookie = (await secondContext.cookies()).find((cookie) => cookie.name === "fletflow_refresh");
     expect(secondRefreshCookie?.httpOnly).toBe(true);
     expect(secondRefreshCookie?.sameSite).toBe("Strict");
 
@@ -4551,10 +4548,7 @@ test("desactivar un usuario desde Equipo revoca su sesión y refresh token", asy
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     const teamResponse = await page.request.get("/api/backend/Users/my-team", {
-      headers: { Authorization: `Bearer ${await page.evaluate(() => {
-        const serialized = localStorage.getItem("auth_tokens");
-        return serialized ? JSON.parse(serialized).accessToken as string : "";
-      })}` },
+      headers: { Authorization: `Bearer ${await readAccessToken(page)}` },
     });
     expect(teamResponse.status()).toBe(200);
     const member = (await teamResponse.json()).find((candidate: { email: string }) => candidate.email === deactivationUserEmail);
