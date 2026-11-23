@@ -825,3 +825,12 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Se añadieron tres tests directos de Route Handlers: refresh 401 no borra cookie, logout-all 401 conserva cookie, logout 503 la limpia localmente. Resultado local **3/3**.
 - E2E autenticado nuevos: dos pestañas restauran concurrentemente, refresh 503 mantiene cookie y permite recuperación tras recargar, logout individual advierte que revocación no fue confirmada y logout-all 401 permite reintentar.
 - AuthContext coordina mutaciones con Web Locks y cambios de cuenta con el evento `storage`; lint y build pasan localmente; Playwright descubre **63 tests**. E2E browser completo con API/MySQL y revisión de flakiness pendiente.
+
+## Follow-up de seguridad BFF — 2026-11-23
+
+- `npm run build`: pasa con Next.js 16.4.6 y TypeScript.
+- `npm run lint`: pasa.
+- `npx playwright test --list`: descubre 65 pruebas.
+- `npx playwright test e2e/auth-bff-routes.spec.ts`: **3/3** pasan (refresh 401, logout-all 401, logout 503).
+- `npx playwright test e2e/fleet-admin.spec.ts --grep 'falla cerrada si el navegador no ofrece Web Locks'`: **1/1** pasa y confirma que no se envían mutaciones de autenticación.
+- La prueba nueva de logins concurrentes distintos necesita las dos cuentas QA creadas por la Action con MySQL descartable; resultado CI pendiente.

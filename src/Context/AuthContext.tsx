@@ -15,13 +15,17 @@ const API_BASE_URL =
 const TOKEN_STORAGE_KEY = "auth_tokens";
 const CURRENT_USER_STORAGE_KEY = "currentUser";
 const AUTH_COOKIE_MUTATION_LOCK = "fletflow-auth-cookie-mutation";
-
-async function withAuthCookieMutationLock<T>(operation: () => Promise<T>): Promise<T> {
-  if (typeof navigator === "undefined" || !navigator.locks?.request) return operation();
-  return navigator.locks.request(AUTH_COOKIE_MUTATION_LOCK, { mode: "exclusive" }, operation);
-}
+const AUTH_COOKIE_LOCK_ERROR = "Este navegador no admite la coordinación segura de sesiones. Actualiza el navegador.";
 
 class SessionRestoreUnavailableError extends Error {}
+class AuthCookieCoordinationUnavailableError extends Error {}
+
+async function withAuthCookieMutationLock<T>(operation: () => Promise<T>): Promise<T> {
+  if (typeof navigator === "undefined" || !navigator.locks?.request) {
+    throw new AuthCookieCoordinationUnavailableError(AUTH_COOKIE_LOCK_ERROR);
+  }
+  return navigator.locks.request(AUTH_COOKIE_MUTATION_LOCK, { mode: "exclusive" }, operation);
+}
 
 type ApiRole = "Admin" | "Driver" | "Manager" | "User" | "Logistics";
 
@@ -410,6 +414,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         else clearAuthState(sessionVersion);
       } catch (error) {
         if (sessionVersion !== authSessionVersionRef.current) return;
+        if (error instanceof AuthCookieCoordinationUnavailableError) {
+          toast.error(error.message);
+          return;
+        }
         if (error instanceof SessionRestoreUnavailableError) {
           toast.error("No se pudo verificar la sesión por un problema temporal. Intenta recargar.");
           return;
@@ -490,7 +498,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: body ? JSON.stringify(body) : JSON.stringify({}),
         cache: "no-store",
       }));
-    } catch {
+    } catch (error) {
+      if (error instanceof AuthCookieCoordinationUnavailableError) throw error;
       throw new SessionRestoreUnavailableError("No fue posible contactar el servicio de autenticación.");
     }
     if (response.status >= 500 || response.status === 429) {

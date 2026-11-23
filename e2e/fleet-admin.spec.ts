@@ -72,6 +72,25 @@ test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async
   expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
 });
 
+test("la autenticación falla cerrada si el navegador no ofrece Web Locks", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "locks", { configurable: true, value: undefined });
+  });
+  let authMutationRequests = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/auth/") && request.method() === "POST") {
+      authMutationRequests += 1;
+    }
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email ?? "fletflow.e2e.admin@example.test");
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password ?? "invalid-test-password");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page.getByText("Este navegador no admite la coordinación segura de sesiones. Actualiza el navegador.").first()).toBeVisible();
+  expect(authMutationRequests).toBe(0);
+  expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
+});
+
 test("un refresh temporal 503 permite restaurar la sesión al reintentar", async ({ page }) => {
   test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
   await page.setViewportSize({ width: 390, height: 844 });
@@ -133,6 +152,81 @@ test("logout-all 401 conserva la cookie y deja reintentar", async ({ page }) => 
   await expect(page.getByText("Sesión de acceso vencida.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
   expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(cookieBefore?.value);
+});
+
+test("login simultáneo de cuentas distintas converge a la sesión vigente", async ({ page }) => {
+  test.skip(!email || !password || !userEmail || !userPassword, "Requiere cuentas QA Admin/User activas.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const adminToken = await readAccessToken(page);
+  const adminResponse = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  expect(adminResponse.status()).toBe(200);
+  const adminId = (await adminResponse.json() as { id: string }).id;
+  const userResponse = await page.request.get("/api/backend/Users/my-team", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  expect(userResponse.status()).toBe(200);
+  const qaUser = (await userResponse.json() as Array<{ id: string; email: string }>).find((item) => item.email === userEmail);
+  expect(qaUser?.id).toBeTruthy();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  const logoutResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/auth/logout" && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  expect((await logoutResponsePromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login$/);
+
+  const secondPage = await page.context().newPage();
+  await secondPage.setViewportSize({ width: 390, height: 844 });
+  await secondPage.goto("/login");
+  await Promise.all([
+    page.getByLabel("Correo electrónico").fill(email!),
+    secondPage.getByLabel("Correo electrónico").fill(userEmail!),
+  ]);
+  await Promise.all([
+    page.getByRole("textbox", { name: "Contraseña" }).fill(password!),
+    secondPage.getByRole("textbox", { name: "Contraseña" }).fill(userPassword!),
+  ]);
+  const loginStatuses: number[] = [];
+  const recordLogin = (response: import("@playwright/test").Response) => {
+    if (new URL(response.url()).pathname === "/api/auth/login") loginStatuses.push(response.status());
+  };
+  page.on("response", recordLogin);
+  secondPage.on("response", recordLogin);
+  try {
+    await Promise.all([
+      page.getByRole("button", { name: "Iniciar sesión" }).click(),
+      secondPage.getByRole("button", { name: "Iniciar sesión" }).click(),
+    ]);
+    await Promise.all([expect(page).toHaveURL(/\/dashboard$/), expect(secondPage).toHaveURL(/\/dashboard$/)]);
+    expect(loginStatuses).toEqual([200, 200]);
+
+    await Promise.all([page.reload(), secondPage.reload()]);
+    await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    const finalToken = await readAccessToken(page);
+    const finalIdentityResponse = await page.request.get("/api/backend/Auth/me", {
+      headers: { Authorization: `Bearer ${finalToken}` },
+    });
+    expect(finalIdentityResponse.status()).toBe(200);
+    const finalId = (await finalIdentityResponse.json() as { id: string }).id;
+    expect([adminId, qaUser!.id]).toContain(finalId);
+    const storedIdentities = await Promise.all([
+      page.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+      secondPage.evaluate(() => JSON.parse(localStorage.getItem("currentUser") ?? "null")?.id as string | undefined),
+    ]);
+    expect(storedIdentities).toEqual([finalId, finalId]);
+  } finally {
+    await secondPage.close();
+  }
 });
 
 test("dos pestañas restauran la sesión sin competir por el refresh", async ({ page }) => {

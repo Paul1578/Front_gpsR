@@ -885,3 +885,9 @@
 - Web Locks serializa mutaciones de la cookie entre pestañas; cambios de identidad en `localStorage` recargan pestañas con cuenta anterior.
 - Refresh temporal ya no borra sesión activa; refresh/logout-all 401 conservan cookie, y logout muestra advertencia si backend no confirma revocación.
 - Se agregaron tests de handler y E2E autenticado para concurrencia, errores y reintentos. Handler focal 3/3; Action integrada pendiente.
+
+## 2026-11-23 — Cierre seguro ante ausencia de Web Locks y login concurrente
+
+- Se eliminó el fallback sin coordinación: login, refresh, migración y cierres fallan de forma cerrada cuando Web Locks no está disponible.
+- Se añadió E2E que verifica cero solicitudes de mutación sin Web Locks y E2E que inicia dos cuentas distintas simultáneamente, luego recarga ambas pestañas y contrasta identidad con `/Auth/me`.
+- Build, lint, pruebas directas BFF (3/3) y E2E de navegador sin Web Locks (1/1) pasan localmente. La prueba de cuentas y la suite completa quedan para la Action con MySQL descartable.

@@ -1900,3 +1900,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Refresh 5xx/429/red ya no cierra sesión activa. En restauración al inicio se preserva cookie ante error temporal y se muestra mensaje de reintento, sin confiar en usuario cacheado.
 - `logout-all` conserva cookie ante 401/fallo para permitir recuperación y sólo la limpia tras éxito. Logout individual sigue limpiándola localmente si backend falla, pero ahora muestra que revocación remota no se confirmó.
 - Tests directos de handlers: refresh 401 conserva cookie, logout-all 401 conserva cookie, logout 503 limpia cookie local; **3/3 pasan**. E2E browser para dos pestañas, 503, y feedback logout agregados; CI completa pendiente.
+
+## 2026-11-23 — Revisión secundaria: fallback de Web Locks podía mutar cookie sin exclusión — FIX LOCAL, ACTION PENDIENTE
+
+- Una segunda revisión de seguridad observó que los navegadores sin `navigator.locks` ejecutaban el callback directamente. También faltaba un caso E2E con dos cuentas distintas intentando login al mismo tiempo.
+- Solución: la coordinación ahora falla cerradamente con mensaje para actualizar el navegador; prueba Playwright confirma que el login no emite ninguna solicitud POST BFF en ese entorno. Se añadió escenario integrado para dos logins concurrentes y consistencia de identidad después de recargar ambas pestañas.
+- Verificado localmente: build y lint; handlers BFF **3/3**; test browser sin Web Locks **1/1**; discovery **65**. Action integrada para la cuenta de User QA aún pendiente.
+- Limitación residual: si la API está caída al hacer logout individual, el cliente borra su cookie y muestra advertencia, pero no puede revocar en remoto el refresh token copiado. Es necesaria conectividad para confirmar revocación; no presentar ese caso como revocado.
+- Prevención: no ejecutar mutaciones de cookie sin mecanismo de exclusión compartido entre pestañas y cubrir logins simultáneos con identidades distintas, no sólo refresh concurrente.

@@ -935,3 +935,9 @@ Fecha de actualización: 2026-11-22.
 - El Action `45210788234` validó paginación real: 55/55 E2E, backend 158/158, responsive, audit/lint/build y teardown.
 - Revisión de seguridad posterior encontró carrera cross-tab de refresh/login y 401 que limpiaban cookie sin revocación confirmada, además de sign-out ante errores temporales. Aplicados Web Locks, sync por storage, preservación de cookie en refresh/logout-all 401 y tratamiento temporal de refresh 5xx. Logout individual limpia estado local pero advierte que el servidor puede no haber revocado.
 - Tests de handlers 3/3 pasan; suite local descubre 63. Falta Action autenticada de los nuevos E2E; revisar cualquier flaky y mantener misión global abierta.
+
+## Actualización 2026-11-23 — endurecimiento de autenticación entre pestañas
+
+- La segunda revisión encontró un fallback inseguro sin Web Locks y ausencia de prueba para login simultáneo de cuentas distintas. Corregido localmente: autenticación falla cerrada sin Web Locks; se agregaron pruebas para ausencia de API y convergencia de identidad entre dos pestañas tras logins simultáneos.
+- Validación local: build/lint pasan; 65 pruebas Playwright descubiertas; handlers BFF **3/3** y caso sin Web Locks **1/1** pasan. La prueba integrada de cuentas distintas y el conjunto completo esperan Action con API/MySQL efímeros.
+- Limitación conocida: con backend fuera de servicio durante logout individual, el cierre local se completa y se informa que no se confirmó revocación remota.

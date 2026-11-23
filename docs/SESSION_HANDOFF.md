@@ -1263,3 +1263,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - E2E nuevos en `fleet-admin.spec.ts`: restore concurrente en dos pestañas, refresh 503 y recuperación por reload, feedback logout/logout-all. Tests directos nuevos en `e2e/auth-bff-routes.spec.ts` pasan **3/3**. Lint/build y diff-check local; Playwright discovery **63**.
 - La última Action verde de HEAD previo `7d885c0` fue [`45210788234`](https://github.com/Paul1578/Front_gpsR/actions/runs/45210788234): **55/55 E2E**, Release/xUnit 158/158, responsive, audit/lint/build, teardown. Los cambios de seguridad actuales aún no están commit/push ni validados en Action.
 - Próximo paso: revisar tests/diff, actualizar documentación final con límites de Web Locks, commit en `refactor/route-builder`, correr Action completa, corregir flakes/fallos y hacer auditoría de estado Backend/Front restante.
+
+## Continuación de sesión BFF — segunda revisión de seguridad
+
+- Estado de rama: `refactor/route-builder`; cambios locales en `AuthContext.tsx`, `fleet-admin.spec.ts`, `SECURITY.md` y `ARCHITECTURE.md`, más actualizaciones de pruebas/estado/errores/changelog/handoff.
+- Fix: Web Locks ya es requisito para mutaciones de cookie; sin API, se falla cerradamente. Nuevos E2E verifican ausencia de requests y login concurrente Admin/User con sincronización de identidad.
+- Verificación local completada: build, lint, discovery **65**, handlers BFF **3/3**, browser sin Web Locks **1/1**. Falta commit/push y Action completa para comprobar el login concurrente con cuentas y MySQL efímeros; revisar flakes/cleanup y actualizar este handoff con evidencia CI.
+- Riesgo documentado: logout individual con API caída limpia el estado local, pero no se puede confirmar revocación remota; la UI lo advierte.
