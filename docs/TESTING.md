@@ -7,11 +7,11 @@ Las secciones históricas que siguen pueden describir pendientes ya cerrados al 
 - El escenario autenticado crea miembros y vuelve a enviar un correo ya usado por UI; la API real debe responder `409 El correo ya fue registrado.`, conservar el diálogo y dejar una sola cuenta visible en `/Users/my-team`.
 - Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) ejecutó esta versión con **51/51 E2E**, responsive 1/1 y cleanup exitoso. El HEAD documental posterior `2b3b523` volvió a pasar el flujo completo en Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336): 51/51, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 
-## Aislamiento tenant de mutaciones secundarias de flota — validación integrada pendiente
+## Aislamiento tenant de mutaciones secundarias de flota — validado por Action
 
 - QA confirmó que la prueba entre dos empresas ya verificaba GET/PUT/DELETE de vehículos y GET/PUT/status de conductores, pero no los endpoints de estado/reactivación de vehículos ni asignar/desasignar vehículo a Driver por ID ajeno.
 - El escenario ahora intenta `PUT /Vehicles/{id}/status`, `POST /Vehicles/{id}/reactivate`, `PUT /Drivers/{id}/assign-vehicle` y `unassign-vehicle` con Admin de otra empresa; espera 404 y comprueba desde el propietario que estado y asignación siguen iguales. Reactivación prueba un vehículo inactivo real y el `finally` restaura/elimina el fixture.
-- Lint, build, discovery **51 tests** y diff-check pasan localmente. E2E contra API/MySQL descartables queda pendiente de Action.
+- Lint, build, discovery **51 tests** y diff-check pasan localmente. Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive 1/1, API/MySQL descartables, Backend Release/xUnit 139/139 y cleanup. Los cuatro endpoints respondieron 404 y los GET con token propietario confirmaron que vehículo y asignación Driver conservaron sus valores.
 
 # E2E Logistics edita una ruta — validado por Actions — 2026-11-23
 

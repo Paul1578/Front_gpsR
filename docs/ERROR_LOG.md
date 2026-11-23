@@ -1729,3 +1729,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una búsqueda de implementación apuntó a `fletflow/Aplication/Fleet/Commands` con el checkout Front como directorio de trabajo; `rg` informó que el path no existe allí. No se editó ni ejecutó código.
 - Solución: repetir la inspección desde `/home/leonardo/Back_GPS`, que es el repositorio propietario de esos comandos.
 - Prevención: ejecutar búsquedas de frontend y backend en procesos separados con el `workdir` del repositorio correspondiente.
+
+## 2026-11-23 — Consulta de Action Backend desde Front — RESUELTO
+
+- Una consulta `gh run view` usó el checkout Front para leer un Action de Backend y recibió 404. No se afectó ninguna ejecución ni archivo de producto.
+- Solución: consultar el Action desde `/home/leonardo/Back_GPS`.
+- Prevención: validar el repositorio dueño del identificador de Action antes de invocar `gh`.
