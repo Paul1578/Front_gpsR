@@ -14,6 +14,8 @@ const routeDriverPassword = process.env.FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD;
 const routeDriverIdFixture = process.env.FLETFLOW_E2E_ROUTE_DRIVER_ID;
 const managerEmail = process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL;
 const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
+const logisticsEmail = process.env.FLETFLOW_E2E_LOGISTICS_EMAIL;
+const logisticsPassword = process.env.FLETFLOW_E2E_LOGISTICS_PASSWORD;
 const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
@@ -2163,8 +2165,8 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
 
 test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz", async ({ page, browser }) => {
   test.skip(
-    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !managerEmail || !managerPassword || !allowMutations,
-    "Requiere fixtures QA Admin, User, Driver, Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !managerEmail || !managerPassword || !logisticsEmail || !logisticsPassword || !allowMutations,
+    "Requiere fixtures QA Admin, User, Driver, Logistics, Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
   test.setTimeout(180_000);
   page.setDefaultTimeout(8_000);
@@ -2299,17 +2301,7 @@ test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz"
     ...userAndRoleMutations(driverHeaders),
   ]);
 
-  const logisticsEmail = `fletflow.e2e.logistics.matrix.${suffix}@example.test`;
-  const logisticsPassword = `LogisticsQA-${randomUUID()}aA1!`;
-  const createLogistics = await page.request.post("/api/backend/Users", {
-    headers: adminHeaders,
-    data: { username: `E2E QA Logistics ${suffix}`, email: logisticsEmail, password: logisticsPassword, roleName: "Logistics" },
-  });
-  expect(createLogistics.status()).toBe(200);
-  const logisticsUserId = (await createLogistics.json()).id as string;
-  const activateLogistics = await page.request.put(`/api/backend/Users/${logisticsUserId}/status?isActive=true`, { headers: adminHeaders });
-  expect(activateLogistics.status()).toBe(200);
-  const logisticsHeaders = await login(logisticsEmail, logisticsPassword);
+  const logisticsHeaders = await login(logisticsEmail!, logisticsPassword!);
   await expectDenied("Logistics", [
     ...vehicleMutations(logisticsHeaders),
     ...driverMutations(logisticsHeaders),

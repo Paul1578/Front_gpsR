@@ -1,3 +1,10 @@
+## 2026-11-23 — Fixture Logistics intentó iniciar sesión antes de activar la cuenta — CORREGIDO, Action pendiente
+
+- Action Front [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) pasó audit, lint, build y responsive, pero E2E terminó **66/67**. La cuenta temporal se creó por `POST /Users`, cuya invitación deja `MustChangePassword=true`; marcarla activa con `PUT /Users/{id}/status` no completa la activación y el login respondió **401** en ambos intentos.
+- Solución: el runner crea ahora un fixture Logistics aislado con las demás cuentas QA, y lo activa sólo en la base MySQL descartable tras provisionarlo; E2E usa esas credenciales preactivadas. Se conserva el test de denegación de permisos del rol Logistics.
+- Prevención: los tests de autenticación deben seguir el flujo real de invitación/activación o usar fixtures QA habilitados explícitamente por el runner descartable. `IsActive=true` por sí solo no limpia `MustChangePassword`.
+- El fix está en Front `e2e/fleet-admin.spec.ts` y Backend `scripts/run-e2e-local.sh`; lint/build/shell syntax local en curso y Action integrada nueva pendiente. No marcar la matriz como validada hasta obtener el resultado de E2E y cleanup.
+
 ## 2026-11-23 — Listado y polling repetían payloads Base64 — CORREGIDO LOCALMENTE
 
 - GET /Routes incluía fotos completas; Historial vuelve a consultar cada 15 segundos, multiplicando transferencia y memoria por todas las rutas.
