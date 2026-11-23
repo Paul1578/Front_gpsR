@@ -19,6 +19,9 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   });
   expect(token).toBeTruthy();
   const headers = { Authorization: `Bearer ${token}` };
+  const meResponse = await page.request.get("/api/backend/Auth/me", { headers });
+  expect(meResponse.status()).toBe(200);
+  expect(await meResponse.json()).toMatchObject({ isRootAccount: true });
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Administración de la empresa", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Administración de la empresa" })).toBeVisible();
@@ -28,6 +31,7 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 
   await page.getByRole("button", { name: "Crear Usuario", exact: true }).first().click();
   await expect(page.getByRole("heading", { name: "Crear Nuevo Usuario" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gerente", exact: true })).toBeVisible();
   await expect(page.getByLabel("Correo electrónico")).toHaveAttribute("type", "email");
   await page.getByRole("button", { name: "Chofer", exact: true }).click();
   await expect(page.getByLabel("Documento *")).toBeVisible();
@@ -80,6 +84,8 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 
   await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
   await expect(page.getByText(`@${username}`, { exact: false })).toBeVisible();
+  await expect(page.locator('select option[value="superadmin"]').first()).toBeEnabled();
+  await expect(page.locator('select option[value="gerente"]').first()).toBeEnabled();
 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();
@@ -90,6 +96,91 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await page.setViewportSize({ width: 320, height: 844 });
   const dimensions = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+});
+
+test("Admin delegado no puede crear ni promover usuarios al rol Admin en Administración heredada", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "delegated-company-admin-id",
+          email: "delegated-admin@example.test",
+          username: "delegated-admin",
+          firstName: "Admin delegado",
+          roles: ["Admin"],
+          isRootAccount: false,
+          isActive: true,
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{
+          id: "delegated-company-member-id",
+          email: "member@example.test",
+          username: "company-member",
+          firstName: "Miembro",
+          lastName: "Empresa",
+          roles: ["User"],
+          isActive: true,
+        }]),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ vehicles: [], drivers: [] }),
+      });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    const payload = btoa(JSON.stringify({
+      nameid: "delegated-company-admin-id",
+      owner_id: "root-company-account-id",
+      role: "Admin",
+    })).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    localStorage.setItem("auth_tokens", JSON.stringify({
+      accessToken: `e30.${payload}.test-signature`,
+      refreshToken: "company-admin-delegated-test-refresh-token",
+    }));
+  });
+
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Administración de la empresa", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Administración de la empresa" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Crear Nuevo Usuario" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gerente", exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
+  await expect(page.getByText("@company-member", { exact: false })).toBeVisible();
+  const roleSelect = page.getByRole("combobox");
+  await expect(roleSelect).toHaveCount(1);
+  await expect(roleSelect.locator('option[value="superadmin"]')).toHaveCount(0);
+  await expect(roleSelect.locator('option[value="gerente"]')).toHaveCount(0);
 });
 
 test("Administración distingue fallos de carga de una empresa vacía y permite reintentar", async ({ page }) => {

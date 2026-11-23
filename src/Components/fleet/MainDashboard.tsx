@@ -9,7 +9,7 @@ interface MainDashboardProps {
 }
 
 export function MainDashboard({ onNavigate }: MainDashboardProps) {
-  const { vehicles, routes, routeAssignmentVehicles, loadErrors, routesLoading, retryFleetData } = useFleet();
+  const { vehicles, routes, routeAssignmentVehicles, loadErrors, vehiclesLoading, routesLoading, routeAssignmentOptionsLoading, vehiclesLoaded, routesLoaded, routeAssignmentOptionsLoaded, retryFleetData } = useFleet();
   const { user, getAllUsers } = useAuth();
 
   const users = getAllUsers();
@@ -206,28 +206,30 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
   const stats = [
     {
       label: "Rutas Activas",
-      value: loadErrors.includes("rutas") ? "—" : activeRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : activeRoutes.length,
       icon: Activity,
       color: "bg-blue-100 text-blue-600",
       change: "En progreso",
     },
     {
       label: "Vehículos Disponibles",
-      value: loadErrors.includes(isLogistics ? "opciones de asignación" : "vehículos") ? "—" : availableVehicleCount,
+      value: loadErrors.includes(isLogistics ? "opciones de asignación" : "vehículos")
+        ? "—"
+        : (isLogistics ? !routeAssignmentOptionsLoaded || routeAssignmentOptionsLoading : !vehiclesLoaded || vehiclesLoading) ? "Cargando…" : availableVehicleCount,
       icon: Truck,
       color: "bg-green-100 text-green-600",
-      change: loadErrors.includes("rutas") ? "— en ruta" : `${vehiclesInRouteCount} en ruta`,
+      change: loadErrors.includes("rutas") ? "— en ruta" : !routesLoaded || routesLoading ? "Cargando…" : `${vehiclesInRouteCount} en ruta`,
     },
     {
       label: "Rutas Pendientes",
-      value: loadErrors.includes("rutas") ? "—" : pendingRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : pendingRoutes.length,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
       change: "Por iniciar",
     },
     {
       label: "Rutas Completadas",
-      value: loadErrors.includes("rutas") ? "—" : completedRoutes.length,
+      value: loadErrors.includes("rutas") ? "—" : !routesLoaded || routesLoading ? "Cargando…" : completedRoutes.length,
       icon: CheckCircle,
       color: "bg-purple-100 text-purple-600",
       change: "Total registrado",
@@ -412,7 +414,9 @@ export function MainDashboard({ onNavigate }: MainDashboardProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg md:text-xl text-gray-900 mb-4">Actividad Reciente</h2>
             
-            {loadErrors.includes("rutas") ? (
+            {!routesLoaded || routesLoading ? (
+              <div role="status" className="py-8 text-center text-sm text-gray-600">Cargando actividad de rutas…</div>
+            ) : loadErrors.includes("rutas") ? (
               <div role="status" className="py-8 text-center text-sm text-red-700">No se pudo consultar la actividad de rutas.</div>
             ) : routes.length === 0 ? (
               <div className="text-center py-8">

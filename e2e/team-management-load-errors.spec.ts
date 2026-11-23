@@ -1,5 +1,78 @@
 import { expect, test } from "@playwright/test";
 
+test("Gestión de Equipo explica el fallo de vehículos y bloquea la asignación hasta reintentar", async ({ page }) => {
+  let failVehicleRequests = true;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname.endsWith("/Auth/me")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "team-vehicle-load-admin", email: "admin@example.test", username: "admin", firstName: "Admin", roles: ["Admin"], isActive: true }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Vehicles")) {
+      if (failVehicleRequests) {
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio temporalmente no disponible" }) });
+      } else {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "vehicle-team-load-1", plate: "QA-TEAM-01", brand: "Fleet QA", model: "Van", year: 2025, status: 0, isActive: true }]) });
+      }
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Drivers")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{ id: "driver-team-load-1", userId: null, firstName: "Chofer", lastName: "QA", documentNumber: "TEAM-QA-01", phoneNumber: "0990000000", vehicleId: null, isActive: true }]),
+      });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ vehicles: [], drivers: [] }) });
+      return;
+    }
+
+    if (request.method() === "GET" && ["/Users/my-team", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem("auth_tokens", JSON.stringify({ accessToken: "playwright-test-access-token", refreshToken: "playwright-test-refresh-token" }));
+  });
+
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await page.getByRole("button", { name: "Gestionar choferes" }).click();
+
+  const vehicleError = page.getByRole("alert").filter({ hasText: "No se pudieron cargar los vehículos" });
+  await expect(vehicleError).toBeVisible();
+  const assignVehicleSelect = page.getByTestId("team-driver-driver-team-load-1").locator("select");
+  await expect(assignVehicleSelect).toBeDisabled();
+  await expect(vehicleError).toContainText("No es posible verificar cuáles están disponibles para asignación");
+
+  const recoveredVehicles = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname.endsWith("/Vehicles") && response.status() === 200,
+  );
+  failVehicleRequests = false;
+  await vehicleError.getByRole("button", { name: "Reintentar" }).click();
+  await recoveredVehicles;
+  await expect(vehicleError).toHaveCount(0);
+  await expect(page.getByRole("option", { name: /QA-TEAM-01/ })).toBeAttached();
+  await expect(assignVehicleSelect).toBeEnabled();
+});
+
 test("Dashboard de Logistics muestra error de opciones de flota y recupera al reintentar", async ({ page }) => {
   let assignmentOptionsFail = true;
   let forbiddenVehicleListRequests = 0;

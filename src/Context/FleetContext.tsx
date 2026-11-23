@@ -130,6 +130,10 @@ interface FleetContextType {
   loadErrors: string[];
   vehiclesLoading: boolean;
   routesLoading: boolean;
+  routeAssignmentOptionsLoading: boolean;
+  vehiclesLoaded: boolean;
+  routesLoaded: boolean;
+  routeAssignmentOptionsLoaded: boolean;
   retryFleetData: () => Promise<void>;
 
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<ActionResult>;
@@ -596,6 +600,7 @@ const toApiRoutePayload = (route: Partial<Route>) => {
 
 export function FleetProvider({ children }: { children: ReactNode }) {
   const { apiFetch, isAuthenticated, isLoadingUser, user } = useAuth();
+  const userRole = user?.role;
   const ownerIdRef = useRef<string | null>(user?.id ?? null);
   const ownerSessionVersionRef = useRef(0);
   const ownerRequestControllerRef = useRef(new AbortController());
@@ -606,6 +611,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [routeAssignmentDrivers, setRouteAssignmentDrivers] = useState<RouteAssignmentDriver[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [routesLoading, setRoutesLoading] = useState(false);
+  const [routeAssignmentOptionsLoading, setRouteAssignmentOptionsLoading] = useState(false);
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
+  const [routesLoaded, setRoutesLoaded] = useState(false);
+  const [routeAssignmentOptionsLoaded, setRouteAssignmentOptionsLoaded] = useState(false);
   const driversRequestSequence = useRef(0);
   const [fleetOwnerId, setFleetOwnerId] = useState<string | null>(null);
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
@@ -622,7 +631,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     ownerRequestControllerRef.current = new AbortController();
     previousController.abort();
     return () => ownerRequestControllerRef.current.abort();
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const captureOwnerSession = useCallback(() => ({
     ownerId: ownerIdRef.current,
@@ -665,10 +674,14 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setRouteAssignmentVehicles([]);
     setRouteAssignmentDrivers([]);
     setLoadErrors([]);
-    setVehiclesLoading(false);
-    setRoutesLoading(false);
+    setVehiclesLoading(!!userRole && !["chofer", "usuario", "logistica"].includes(userRole));
+    setRoutesLoading(!!userRole && userRole !== "usuario");
+    setRouteAssignmentOptionsLoading(!!userRole && ["gerente", "manager", "logistica"].includes(userRole));
+    setVehiclesLoaded(false);
+    setRoutesLoaded(false);
+    setRouteAssignmentOptionsLoaded(false);
     setFleetOwnerId(user?.id ?? null);
-  }, [user?.id]);
+  }, [user?.id, userRole]);
 
   const isAuthError = useCallback((error: unknown) => {
     if ((error as { name?: string } | null)?.name === "AbortError") return true;
@@ -678,6 +691,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const refreshRouteAssignmentOptions = useCallback(async () => {
     if (!apiFetch || !user || !["gerente", "manager", "logistica"].includes(user.role)) return;
+    setRouteAssignmentOptionsLoading(true);
     try {
       const options = await apiFetchForOwner<ApiRouteAssignmentOptions>("/Routes/assignment-options");
       setRouteAssignmentVehicles(options.vehicles.map((vehicle) => ({
@@ -690,9 +704,15 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       })));
       setRouteAssignmentDrivers(options.drivers);
       setResourceError("opciones de asignación", false);
+      setRouteAssignmentOptionsLoaded(true);
     } catch (error) {
-      if (!isAuthError(error)) setResourceError("opciones de asignación", true);
+      if (!isAuthError(error)) {
+        setResourceError("opciones de asignación", true);
+        setRouteAssignmentOptionsLoaded(true);
+      }
       throw error;
+    } finally {
+      setRouteAssignmentOptionsLoading(false);
     }
   }, [apiFetch, apiFetchForOwner, isAuthError, setResourceError, user]);
 
@@ -709,6 +729,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
       if (["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
         setVehiclesLoading(false);
+        setVehiclesLoaded(true);
         return;
       }
       const ownerSession = captureOwnerSession();
@@ -718,9 +739,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         const active = data.filter((vehicle) => vehicle.isActive !== false);
         setVehicles(active.map(mapApiVehicle));
         setResourceError("vehículos", false);
+        setVehiclesLoaded(true);
       } catch (error) {
         if (isAuthError(error)) return;
         setResourceError("vehículos", true);
+        setVehiclesLoaded(true);
         console.error("Error cargando vehículos desde API", error);
       } finally {
         if (isCurrentOwnerSession(ownerSession)) setVehiclesLoading(false);
@@ -883,6 +906,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
     setRoutes(active.map(mapApiRoute));
     setResourceError("rutas", false);
+    setRoutesLoaded(true);
   }, [apiFetch, apiFetchForOwner, setResourceError]);
 
   const refreshDrivers = useCallback(
@@ -913,6 +937,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       if (!apiFetch || isLoadingUser || !isAuthenticated) return;
       if (user?.role === "usuario") {
         setRoutesLoading(false);
+        setRoutesLoaded(true);
         return;
       }
       const ownerSession = captureOwnerSession();
@@ -922,6 +947,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         if (isAuthError(error)) return;
         setResourceError("rutas", true);
+        setRoutesLoaded(true);
         console.error("Error cargando rutas desde API", error);
       } finally {
         if (isCurrentOwnerSession(ownerSession)) setRoutesLoading(false);
@@ -964,11 +990,13 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
     if (!["chofer", "usuario", "logistica"].includes(user?.role ?? "")) {
       setVehiclesLoading(true);
+      setVehiclesLoaded(false);
       try {
         const data = await apiFetchForOwner<ApiVehicle[]>("/Vehicles");
         setVehicles(data.filter((item) => item.isActive !== false).map(mapApiVehicle));
         setResourceError("vehículos", false);
-      } catch { failures.push("vehículos"); }
+        setVehiclesLoaded(true);
+      } catch { failures.push("vehículos"); setVehiclesLoaded(true); }
       finally { if (isCurrentOwnerSession(ownerSession)) setVehiclesLoading(false); }
       if (!isCurrentOwnerSession(ownerSession)) return;
       try { await refreshDrivers(); } catch { failures.push("conductores"); }
@@ -976,8 +1004,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     }
     if (user?.role !== "usuario") {
       setRoutesLoading(true);
+      setRoutesLoaded(false);
       try { await refreshRoutes(); } catch { failures.push("rutas"); }
-      finally { if (isCurrentOwnerSession(ownerSession)) setRoutesLoading(false); }
+      finally { if (isCurrentOwnerSession(ownerSession)) setRoutesLoaded(true); }
+      if (isCurrentOwnerSession(ownerSession)) setRoutesLoading(false);
       if (!isCurrentOwnerSession(ownerSession)) return;
     }
     if (isCurrentOwnerSession(ownerSession)) setLoadErrors(failures);
@@ -1324,8 +1354,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
         routeAssignmentVehicles: userOwnsLoadedData ? routeAssignmentVehicles : [],
         routeAssignmentDrivers: userOwnsLoadedData ? routeAssignmentDrivers : [],
         loadErrors: userOwnsLoadedData ? loadErrors : [],
-        vehiclesLoading: userOwnsLoadedData && vehiclesLoading,
-        routesLoading: userOwnsLoadedData && routesLoading,
+        vehiclesLoading: userOwnsLoadedData ? vehiclesLoading : !!user && !["chofer", "usuario", "logistica"].includes(user.role),
+        routesLoading: userOwnsLoadedData ? routesLoading : !!user && user.role !== "usuario",
+        routeAssignmentOptionsLoading: userOwnsLoadedData ? routeAssignmentOptionsLoading : !!user && ["gerente", "manager", "logistica"].includes(user.role),
+        vehiclesLoaded: userOwnsLoadedData && vehiclesLoaded,
+        routesLoaded: userOwnsLoadedData && routesLoaded,
+        routeAssignmentOptionsLoaded: userOwnsLoadedData && routeAssignmentOptionsLoaded,
         retryFleetData,
         addVehicle,
         getInactiveVehicles,

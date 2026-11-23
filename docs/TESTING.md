@@ -526,3 +526,9 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Backend Release build/xUnit y smoke HTTP/MySQL tenant/concurrency: success (Action Backend `45103732510`).
 - Front audit, lint/build, responsive browser **1/1** y Playwright API/MySQL **43/43**: success.
 - Cleanup SQL de fixtures QA: success tras ampliar selección a rutas vinculadas por Driver QA; sin FK 1451.
+# Validación local — permisos, tracking y cargas — 2026-11-23
+
+- `npm run lint`: correcto, sin warnings. `npm run build`: Next.js 16.4.6 compila TypeScript y genera diez rutas.
+- Discovery Playwright **45**. Suite focal **3/3**: Team muestra y recupera error 503 Vehicle; Gestión de Rutas diferencia carga/error/vacío y recupera; Admin delegado no crea/promueve Admin.
+- API local `localhost:5048` detenida y faltan credenciales QA; suite API/MySQL completa y test real del mapa quedan para Action. Action previa `45105133505` pasó 43/43 + responsive 1/1 en SHA anterior; nueva Action necesaria para estos cambios.
+- Un E2E aislado de carga del Dashboard fue retirado porque el gate de requests no manejaba los abort/replays del bootstrap bajo Strict Mode. El estado de carga explícito está implementado; añadir verificación determinista integrada.

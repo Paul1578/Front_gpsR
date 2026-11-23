@@ -46,6 +46,8 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     drivers,
     vehicles,
     loadErrors,
+    vehiclesLoading,
+    retryFleetData,
     refreshDrivers,
     addDriver,
     updateDriver,
@@ -79,6 +81,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
   const assignableRoles: UserRole[] = ["gerente", "manager", "logistica", "chofer", "usuario"]
     .filter((role): role is UserRole => role !== "gerente" || user?.isRootAccount === true);
   const hasDriverLoadError = driversLoadError || loadErrors.includes("conductores");
+  const hasVehicleLoadError = loadErrors.includes("vehículos") || loadErrors.includes("opciones de asignación");
   const normalizedDriverSearch = driverSearch.trim().toLocaleLowerCase();
   const visibleDrivers = drivers
     .filter((driver) => showInactiveDrivers || driver.isActive !== false)
@@ -555,6 +558,15 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                 </div>
               </form>
 
+              {hasVehicleLoadError && (
+                <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                  <span>No se pudieron cargar los vehículos. No es posible verificar cuáles están disponibles para asignación.</span>
+                  <button type="button" onClick={() => void retryFleetData()} disabled={vehiclesLoading} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+                    {vehiclesLoading ? "Reintentando…" : "Reintentar"}
+                  </button>
+                </div>
+              )}
+
               {hasDriverLoadError ? (
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                   <span>No se pudieron cargar los choferes. Comprueba tu conexión e inténtalo de nuevo.</span>
@@ -616,6 +628,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                             onChange={(e) =>
                               setAssignSelection((prev) => ({ ...prev, [driver.id]: e.target.value }))
                             }
+                            disabled={hasVehicleLoadError || vehiclesLoading}
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                           >
                             <option value="">Selecciona vehículo</option>
@@ -627,6 +640,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                           </select>
                           <button
                             onClick={() => handleAssignVehicle(driver.id)}
+                            disabled={hasVehicleLoadError || vehiclesLoading}
                             className="px-3 py-2 bg-[#3271a4] text-white rounded-lg text-xs hover:bg-[#2a5f8c]"
                           >
                             Asignar

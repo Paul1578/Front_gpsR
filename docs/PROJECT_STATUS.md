@@ -1,5 +1,9 @@
 ## Estado actual — 2026-11-23
 
+- **Tanda local sin publicar:** Admin delegado ya no crea/promueve Admin en la vista heredada; el mapa distingue GPS vacío de ruta planificada; Gestión de Equipo informa y bloquea asignaciones si no cargan vehículos; el Dashboard muestra carga hasta resolver la lectura inicial de rutas/vehículos/opciones.
+- Front `npm run lint` sin warnings y `npm run build` correctos. Discovery **45 escenarios**; Playwright focal **3/3**: error/reintento de vehículos en Equipo, carga/error/reintento de Rutas y bloqueo de Admin delegado. Pendiente Action integrada para el diff actual.
+- La Action `45105133505` pasó en el estado anterior: **43/43 E2E**, responsive **1/1**, audit/lint/build y cleanup. No incluye esta tanda. El nuevo E2E del mapa se añadió pero requiere backend/fixtures del runner; no se reporta como probado en local.
+- Se retiró un test aislado del Dashboard cuyo gate de red no diferenciaba las solicitudes repetidas/canceladas al inicializar la sesión. El contexto ahora mantiene flags explícitos `Loaded`; se requiere un E2E determinista en la Action integrada para esa carga.
 - Ramas activas, ambas separadas de `main`: Front `refactor/route-builder` (`bc4c5f1`), Backend `chore/stabilize-fleet-platform` (`3db7f03`). Main no fue modificada.
 - Decisiones confirmadas por el usuario: rutas pueden ser traslados sin operaciones; paradas admiten recogida, entrega o ambas; sólo la cuenta raíz puede otorgar/promover Admin; móvil nativo queda para una fase posterior.
 - Front Action [`45104448741`](https://github.com/Paul1578/Front_gpsR/actions/runs/45104448741) pasó: audit/lint/build, responsive **1/1**, E2E API/MySQL **43/43** y cleanup. Incluye traslado, mapa, disponibilidad de conductores y confirmaciones de cambios de equipo.

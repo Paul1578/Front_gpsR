@@ -9,7 +9,7 @@ interface SuperAdminViewProps {
 }
 
 export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
-  const { getAllUsers, updateUserRole, createUser, refreshTeamUsers, teamUsersLoading, teamUsersError } = useAuth();
+  const { user: currentUser, getAllUsers, updateUserRole, createUser, refreshTeamUsers, teamUsersLoading, teamUsersError } = useAuth();
   const { vehicles, routes, loadErrors, vehiclesLoading, routesLoading, retryFleetData } = useFleet();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "create" | "data">("overview");
   const [isCreating, setIsCreating] = useState(false);
@@ -27,6 +27,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const users = getAllUsers();
+  const isRootAccount = currentUser?.isRootAccount === true;
   const routesLoadFailed = loadErrors.includes("rutas");
   const vehiclesLoadFailed = loadErrors.includes("vehículos");
   const exportDisabled = teamUsersLoading || !!teamUsersError || vehiclesLoading || routesLoading || routesLoadFailed || vehiclesLoadFailed;
@@ -427,8 +428,12 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                             onChange={(e) => void handleRoleUpdate(user.id, e.target.value as UserRole)}
                             className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
                           >
-                            <option value="superadmin">Administrador</option>
-                            <option value="gerente">Gerente</option>
+                            {(isRootAccount || user.role === "superadmin") && (
+                              <option value="superadmin" disabled={!isRootAccount}>Administrador</option>
+                            )}
+                            {(isRootAccount || user.role === "gerente") && (
+                              <option value="gerente" disabled={!isRootAccount}>Gerente</option>
+                            )}
                             <option value="manager">Gestor de flota</option>
                             <option value="logistica">Logística</option>
                             <option value="chofer">Chofer</option>
@@ -537,7 +542,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">Rol</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["gerente", "manager", "logistica", "chofer"] as UserRole[]).map((role) => (
+                      {([...(isRootAccount ? ["gerente" as const] : []), "manager", "logistica", "chofer"] as UserRole[]).map((role) => (
                         <button
                           key={role}
                           type="button"

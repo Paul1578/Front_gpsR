@@ -60,6 +60,7 @@ export function MapView({ onBack }: MapViewProps) {
   const [trackingDisplay, setTrackingDisplay] = useState<LatLngTuple[]>([]);
   const [isLoadingTracking, setIsLoadingTracking] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [trackingHasNoPositions, setTrackingHasNoPositions] = useState(false);
   const [trackingRetry, setTrackingRetry] = useState(0);
 
   // --------- CARGA DE RUTAS PLANIFICADAS ---------
@@ -140,6 +141,7 @@ export function MapView({ onBack }: MapViewProps) {
         if (cancelled) return;
         const coords = normalizeTrackingPositions(apiPositions);
         setTrackingPositions(coords);
+        setTrackingHasNoPositions(apiPositions.length === 0);
         setTrackingError(null);
       } catch (err) {
         console.error("Error cargando tracking de la ruta", err);
@@ -194,6 +196,7 @@ export function MapView({ onBack }: MapViewProps) {
     setTrackingPositions([]);
     setTrackingDisplay([]);
     setTrackingError(null);
+    setTrackingHasNoPositions(false);
   }, [selectedRouteId]);
 
   const getStatusMeta = (status?: number) => {
@@ -261,6 +264,12 @@ export function MapView({ onBack }: MapViewProps) {
         </div>
       )}
 
+      {trackingHasNoPositions && selectedRouteId && !trackingError && (
+        <div role="status" className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-xs text-sky-900" aria-live="polite">
+          Sin posiciones registradas para esta ruta. Se muestra únicamente la ruta planificada.
+        </div>
+      )}
+
       {/* CONTENIDO */}
       <div className="flex w-full min-w-0 max-w-full flex-1 flex-col gap-4 p-4 md:p-5 min-h-[440px] bg-slate-50 lg:flex-row">
         {/* MAPA */}
@@ -298,11 +307,11 @@ export function MapView({ onBack }: MapViewProps) {
                 <div className="mt-2 flex items-center gap-3 text-[10px] text-gray-500">
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-3 h-1.5 rounded-full bg-blue-500" />
-                    <span>Planificada</span>
+                    <span>Ruta planificada</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-3 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Tracking real</span>
+                    <span>Recorrido GPS registrado</span>
                   </div>
                 </div>
               </div>

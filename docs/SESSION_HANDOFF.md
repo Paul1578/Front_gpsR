@@ -1,5 +1,8 @@
 # Handoff vigente — 2026-11-23
 
+- **Diff local pendiente de commit/Action:** Front rama `refactor/route-builder`. Cambios en `SuperAdminView` (Admin sólo raíz), `MapView` (GPS vacío versus ruta planificada), `TeamManagement` (error/reintento Vehicles y asignación bloqueada), `MainDashboard`/`FleetContext` (Loaded/Loading iniciales). E2E de Equipo agregado; `company-admin` y `fleet-admin` ampliados por agentes. Revisar diffs completos antes de commit; `main` intacta.
+- Validación local de la tanda: lint sin warnings, build Next.js correcto, discovery 45, focal **3/3** (Team vehículos, Rutas error/reintento, Admin delegado). Action anterior `45105133505` fue **43/43** en SHA previo y no cubre el diff actual. El E2E nuevo del mapa no pudo ejecutarse localmente por API detenida/credenciales ausentes.
+- Un E2E aislado de Dashboard con gate compartido se retiró tras reproducir cargas iniciales abortadas/repetidas bajo Strict Mode. Los flags de carga explícitos ya están implementados; diseñar/confirmar su aserción integrada con el runner en la siguiente Action.
 - Ramas limpias: Front `refactor/route-builder` HEAD `bc4c5f1`; Backend `chore/stabilize-fleet-platform` HEAD `3db7f03`. Ningún cambio en `main`.
 - Estado verificado: Front Action `45104448741` success con audit/lint/build, responsive 1/1, Playwright API/MySQL 43/43 y cleanup. Backend Action `45104450114` success; Backend `45103732510` pasó Release/xUnit y smoke tenant/concurrencia.
 - Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.

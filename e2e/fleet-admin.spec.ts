@@ -473,9 +473,21 @@ test("Admin selecciona una ruta y consulta su tracking en el mapa tablet", async
     const trackingRouteButton = routeList.getByRole("button").filter({ hasText: routeName });
     await expect(alternateRouteButton).toBeVisible();
     await expect(trackingRouteButton).toBeVisible();
+
+    const emptyPositionsResponse = await request.get(`/api/backend/Routes/${secondRouteId}/positions`, { headers });
+    expect(emptyPositionsResponse.status()).toBe(200);
+    expect(await emptyPositionsResponse.json()).toEqual([]);
+
     await alternateRouteButton.click();
     await expect(page.getByText("Ruta seleccionada", { exact: true }).locator(".."))
       .toContainText(secondRouteName);
+    await expect(page.getByText(
+      "Sin posiciones registradas para esta ruta. Se muestra únicamente la ruta planificada.",
+      { exact: true },
+    )).toBeVisible();
+    await expect(page.locator(".leaflet-marker-icon").filter({ hasText: "🚚" })).toHaveCount(0);
+    await expect(page.getByText("Ruta planificada", { exact: true })).toBeVisible();
+    await expect(page.getByText("Recorrido GPS registrado", { exact: true })).toBeVisible();
 
     const positionsRead = page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith(`/api/backend/Routes/${firstRouteId}/positions`) &&

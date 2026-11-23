@@ -1546,3 +1546,18 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Front Action `45103761122` cerró en success: responsive **1/1**, Playwright **43/43**, cleanup MySQL completado; no hubo error 1451.
 - Backend Action `45103732510` pasó build/tests y smoke HTTP/MySQL tenant/concurrencia.
 - Causa, corrección y prevención quedan registradas en este historial; no ejecutar cleanup en la DB local persistente.
+## 2026-11-23 — Gate E2E aislado de Dashboard no distinguía fetches iniciales abortados — TEST RETIRADO; FIX UX EN CÓDIGO
+
+- Un test standalone sostuvo `/Vehicles` y `/Routes` con una promesa global. Al inicializar autenticación/FleetContext, Strict Mode canceló y volvió a emitir solicitudes; el test quedó esperando un indicador que no podía asociar al request vigente. No se cuenta como prueba aprobada.
+- Se añadieron flags explícitos `vehiclesLoaded`, `routesLoaded` y `routeAssignmentOptionsLoaded`; Dashboard mantiene cifras en `Cargando…` y actividad en carga hasta finalizar la primera lectura. Se retiró el gate no determinista; la siguiente Action debe validar el estado integrado con los fixtures de CI.
+- Prevención: pruebas con cambios de sesión deben identificar cada request por recurso/iteración y no conservar un único gate que quede enlazado a solicitudes abortadas.
+
+## 2026-11-23 — Fixture Team fallaba sólo el primer GET de vehículos — CORREGIDO
+
+- El test original respondía 503 sólo al primer `/Vehicles`; montaje de sesión puede iniciar varias lecturas y una respuesta 200 posterior borraba el error antes de mostrar Equipo.
+- Se usa una bandera de fallo que permanece activa hasta pulsar Reintentar. El E2E verifica alerta, selector/botón deshabilitados y recuperación. Playwright focal pasó.
+- Prevención: mantener el fallo simulado hasta la acción de recuperación, nunca depender del ordinal de requests de inicialización.
+
+## 2026-11-23 — ESLint detectó dependencia del rol en el reset de FleetContext — CORREGIDO
+
+- El efecto del cambio de cuenta leía `user.role` pero sólo declaraba el ID. Se extrajo `userRole` primitivo y se incluyó en dependencias; lint final sin warnings.
