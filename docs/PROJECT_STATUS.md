@@ -1,15 +1,12 @@
 ## Estado actual — 2026-11-23
 
-- Decisiones vigentes: rutas de traslado sin paradas operativas permitidas; contraseñas nuevas requieren 12 caracteres. Backend aplica 10 inicios de sesión por minuto/IP sin bloquear cuentas.
-- Front alinea registro, cambio, activación y restablecimiento de contraseña; E2E nuevo comprueba minlength en registro. Action [`45096403768`](https://github.com/Paul1578/Front_gpsR/actions/runs/45096403768) aprobó `a15dffb`: 41/41 E2E, responsive 1/1 y audit/lint/build/backend correctos.
-
-- Política confirmada: sólo la cuenta raíz puede crear o promover a otra cuenta al rol Admin. Backend `be84496` incluye `isRootAccount` en `/Auth/me`; Action backend `45090274537` pasó build, 113/113 xUnit, smoke HTTP/MySQL y concurrencia con limpieza.
-- Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.
-- Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. El selector corregido y assert explícito de `/Auth/me` raíz quedaron validados en la Action siguiente.
-- Front `9d84562` pasó Action [`45091340306`](https://github.com/Paul1578/Front_gpsR/actions/runs/45091340306): backend Release/xUnit, audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **40/40** y cleanup. El E2E ahora verifica `/Auth/me.isRootAccount=true` y localiza el botón con su descripción accesible.
-- Front `992053d` pasó Action [`45092540906`](https://github.com/Paul1578/Front_gpsR/actions/runs/45092540906): backend Release/xUnit, audit, lint/build, responsive **1/1** y E2E API/MySQL **40/40**. Incluye revisión ordenada con operaciones, búsqueda Nominatim vacía/error/tardía, conservación de formulario ante POST 503 y retry persistido.
-- Auditoría independiente encontró un caso de negocio por definir: si se permiten rutas de traslado sin recogida/entrega. El usuario confirmó que sí; Backend cubre el ciclo de ruta de traslado. También queda ampliar evidencia E2E del ciclo de varias paradas hasta finalización.
-- Móvil nativo aplazado por decisión del usuario. Misión integral sigue abierta; no se declara terminada.
+- Ramas activas, ambas separadas de `main`: Front `refactor/route-builder` (`bc4c5f1`), Backend `chore/stabilize-fleet-platform` (`3db7f03`). Main no fue modificada.
+- Decisiones confirmadas por el usuario: rutas pueden ser traslados sin operaciones; paradas admiten recogida, entrega o ambas; sólo la cuenta raíz puede otorgar/promover Admin; móvil nativo queda para una fase posterior.
+- Front Action [`45104448741`](https://github.com/Paul1578/Front_gpsR/actions/runs/45104448741) pasó: audit/lint/build, responsive **1/1**, E2E API/MySQL **43/43** y cleanup. Incluye traslado, mapa, disponibilidad de conductores y confirmaciones de cambios de equipo.
+- Backend Action [`45104450114`](https://github.com/Paul1578/Back_GPS/actions/runs/45104450114) pasó; Backend `45103732510` también pasó la corrección de cleanup. Release xUnit **133/133**; smoke tenant HTTP/MySQL y concurrencia.
+- Backend limita recuperación a 5 solicitudes/10 min/IP; tokens 256 bits, TTL 60 min por defecto (1–1440), URLs Production HTTPS. Login: 10 solicitudes/min/IP. Sin bloqueo por cuenta.
+- Pendientes externos/de producción: SMTP con credenciales vigentes; límites distribuidos e IP confiable detrás de proxy; persistencia del key ring Data Protection.
+- Misión global sigue abierta para completar y reevaluar cobertura funcional/roles/responsive más allá de la matriz E2E existente; no presentar esta fase como cierre de toda la plataforma.
 
 ## Historial de estado — 2026-11-22
 

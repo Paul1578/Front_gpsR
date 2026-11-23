@@ -1,3 +1,14 @@
+# Handoff vigente — 2026-11-23
+
+- Ramas limpias: Front `refactor/route-builder` HEAD `bc4c5f1`; Backend `chore/stabilize-fleet-platform` HEAD `3db7f03`. Ningún cambio en `main`.
+- Estado verificado: Front Action `45104448741` success con audit/lint/build, responsive 1/1, Playwright API/MySQL 43/43 y cleanup. Backend Action `45104450114` success; Backend `45103732510` pasó Release/xUnit y smoke tenant/concurrencia.
+- Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.
+- Decisiones de usuario: raíz solamente otorga Admin; móvil nativo pospuesto; las cuentas pueden ser rutas de traslado.
+- Pendiente global: revisar criterios de cobertura restantes en `PROJECT_STATUS.md`; configuración SMTP, Data Protection persistente, proxy/IP confiable y rate limiter distribuido requieren entorno/secretos de despliegue. No afirmar misión integral completa.
+- Las notas anteriores que siguen son historial de trabajo y pueden describir estados/decisiones ya superados; usar este bloque y el inicio de `PROJECT_STATUS.md` como fuente actual.
+
+---
+
 ## Continuación — 2026-11-22
 
 ## Estado vigente — diagnóstico de asignación y pruebas responsive
