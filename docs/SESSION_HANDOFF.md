@@ -1,10 +1,10 @@
 # Handoff vigente — 2026-11-23
 
-## Siguiente cobertura — username largo en tarjeta Equipo
+## Username largo en tarjeta Equipo — validado
 
 - Auditoría responsive detectó riesgo estático: `@usuario` acepta hasta 100 caracteres sin espacios y carecía de wrapping. No estaba reproducido como defecto.
 - `TeamManagement` ahora permite partir la línea y el E2E integrado crea/edita username de 93/95 caracteres, verifica contenido/overflow a 320 y 768 px y persistencia por API.
-- Validación local lint/build, discovery 51 y diff-check pasan. CI API/MySQL pendiente. No marcar como defecto reproducido ni cobertura completa hasta ejecutar el browser E2E.
+- Validación local lint/build, discovery 51 y diff-check pasan. Action [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) pasó 51/51 con responsive, backend Release/xUnit, audit y cleanup API/MySQL. El límite está cubierto; la revisión fue preventiva y no se había reproducido overflow.
 
 ## Cambio de rol persistido desde Gestión de Equipo — validado
 

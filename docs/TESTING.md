@@ -10,10 +10,10 @@
 - Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend xUnit 136/136, audit/lint/build, responsive y cleanup.
 - Lint/build, discovery 51, diff-check y test enfocado Playwright **1/1** también pasaron localmente.
 
-## E2E de username largo en equipo — responsive límite — validación pendiente
+## E2E de username largo en equipo — responsive límite — validado por Actions
 
 - El flujo real de creación/edición de User usa usernames sin espacios de 93/95 caracteres, verifica la tarjeta y ausencia de overflow a 320/768 px, guarda cambios y confirma por GET `/Users/my-team`.
-- UI aplica `break-words`; lint/build y discovery 51 pasan localmente. Falta validar la corrida API/MySQL en Actions.
+- UI aplica `break-words`; el E2E confirma creación/edición, texto visible y sin overflow a 320/768 px, persistencia GET. Action [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) pasó 51/51 con API/MySQL descartables, responsive, Release/xUnit y cleanup. Lint/build/discovery 51 también pasan local.
 
 ## Driver completa una ruta de varias paradas — validado por Actions
 

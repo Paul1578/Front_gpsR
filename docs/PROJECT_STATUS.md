@@ -17,11 +17,11 @@
 - Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) y [`45138084594`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138084594) pasaron **51/51 E2E** cada una, incluyendo cancelación sin PUT, cambio Manager→Logistics por UI, lectura API y persistencia tras recarga. Release/xUnit 136/136, audit/lint/build, responsive y cleanup también pasaron.
 - Validación local adicional: lint/build, discovery 51, diff-check y test enfocado **1/1**.
 
-## Usuario largo en Gestión de Equipo — responsive límite — CI pendiente — 2026-11-23
+## Usuario largo en Gestión de Equipo — responsive límite — validado por Actions — 2026-11-23
 
 - QA identificó que `@usuario` admite 100 caracteres y no tenía regla para partir una cadena continua. El riesgo aún no se había reproducido en navegador.
 - Se añade `break-words` a la línea de usuario y el E2E real crea/edita nombres de 93/95 caracteres; verifica overflow y visibilidad a 320/768 px más persistencia API.
-- Lint/build, discovery **51 tests** y diff-check pasan localmente. Action integrada API/MySQL pendiente.
+- Lint/build, discovery **51 tests** y diff-check pasan localmente. Action [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) pasó **51/51 E2E**, responsive, Release/xUnit, audit/lint/build y cleanup con API/MySQL descartables. El riesgo no se reprodujo como overflow tras corregirlo.
 
 ## Estado actual — 2026-11-23
 

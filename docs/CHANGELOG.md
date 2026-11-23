@@ -22,7 +22,7 @@
 
 # 2026-11-23 — Username largo en tarjeta responsive de Equipo
 
-- Se permite que la línea `@usuario` parta usernames largos y el E2E real crea/edita valores sin espacios, verificando overflow a 320/768 px y persistencia. Riesgo estático; CI pendiente.
+- Se permite que la línea `@usuario` parta usernames largos y el E2E real crea/edita valores sin espacios, verificando overflow a 320/768 px y persistencia. Action `45139564823` pasó 51/51 con API/MySQL y cleanup; el riesgo estático no se reprodujo tras la corrección.
 
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
