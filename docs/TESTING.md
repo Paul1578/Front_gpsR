@@ -7,7 +7,7 @@
 ## E2E de cambio de rol Manager→Logistics desde Equipo — validación pendiente
 
 - El escenario autenticado crea Manager en 320 px, cancela la primera confirmación y comprueba que no salió PUT; confirma el cambio después, verifica HTTP/body y `/Users/my-team`, recarga en 768 px y comprueba el rol renderizado.
-- Lint, build y discovery 51 pasaron localmente tras TS7006. Actions `45135338276` y `45136332916` revelaron copy de rol inconsistente, una expectativa equivocada sobre opciones visibles y un mock con texto obsoleto; UI comparte `roleLabels` y asserts/mock están corregidos. Repetir lint/build y suite API/MySQL.
+- Lint, build y discovery 51 pasaron localmente tras TS7006. Actions `45135338276` y `45136332916` revelaron copy de rol inconsistente, una expectativa equivocada sobre opciones visibles y un mock con texto obsoleto; preflight encontró otro locator sin tilde antes del E2E y se corrigió. UI comparte `roleLabels`; repetir lint/build y suite API/MySQL.
 
 ## Driver completa una ruta de varias paradas — validado por Actions
 

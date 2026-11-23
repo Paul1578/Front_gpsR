@@ -3977,7 +3977,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
     response.url().includes(`/api/backend/Users/${createdUser.id}/role`) &&
     response.request().method() === "PUT",
   );
-  await teamMemberCard.getByRole("button", { name: "Logistica", exact: true }).click();
+  await teamMemberCard.getByRole("button", { name: "Logística", exact: true }).click();
   await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
   const logisticsRoleResponse = await logisticsRolePromise;
   expect(logisticsRoleResponse.status()).toBe(200);

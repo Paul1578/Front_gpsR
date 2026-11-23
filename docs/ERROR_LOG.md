@@ -18,6 +18,12 @@
 - Solución: comprobar que el botón del rol vigente “Logística” está deshabilitado tras el PUT y tras recargar; actualizar el test simulado para usar esa etiqueta y esperar que esté deshabilitada.
 - Prevención: la grilla mantiene todos los roles posibles; asertar selección con `disabled`, no ausencia de opciones. Al cambiar copy accesible compartido, actualizar escenarios con `page.route`.
 
+## 2026-11-23 — Preflight detectó un selector de Logistics sin tilde en otro E2E — CORREGIDO ANTES DE EJECUTAR
+
+- Una búsqueda completa tras centralizar `roleLabels` encontró que el ciclo integrado Driver/User aún buscaba el botón `Logistica` sin tilde en `fleet-admin.spec.ts`. Las corridas `f46b489` se cancelaron antes de Playwright para no repetir un fallo previsible.
+- Solución: actualizar ese locator a `Logística`, igual que el copy accesible de la UI.
+- Prevención: tras modificar etiquetas compartidas, buscar variantes antiguas en todos los specs E2E, incluso flujos indirectos.
+
 ## 2026-11-23 — Consulta de Actions con job ID incorrecto y HTTP 502 transitorio — RESUELTO
 
 - Una consulta `gh run view --job` se envió con un identificador placeholder y recibió HTTP 404; luego `gh run watch` recibió HTTP 502 de GitHub mientras el runner seguía activo. No afectó el workflow ni los tests.
