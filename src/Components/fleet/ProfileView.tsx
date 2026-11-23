@@ -73,7 +73,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      toast.error("Completa todos los campos de contrasena");
+      toast.error("Completa todos los campos de contraseña");
       return;
     }
     if (newPassword.length < 12) {
@@ -81,11 +81,11 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      toast.error("Las contrasenas no coinciden");
+      toast.error("Las contraseñas no coinciden");
       return;
     }
     if (currentPassword === newPassword) {
-      toast.error("La nueva contrasena no puede ser igual a la actual");
+      toast.error("La nueva contraseña no puede ser igual a la actual");
       return;
     }
     setIsUpdatingPassword(true);
@@ -96,14 +96,14 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
     );
     setIsUpdatingPassword(false);
     if (result.ok) {
-      toast.success("Contrasena actualizada. Cerrando sesion por seguridad...");
+      toast.success("Contraseña actualizada. Cerrando sesión por seguridad...");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
       setShowPasswordForm(false);
       await logout();
     } else {
-      toast.error(result.message ?? "No se pudo cambiar la contrasena");
+      toast.error(result.message ?? "No se pudo cambiar la contraseña");
     }
   };
 
@@ -212,32 +212,50 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
             {showPasswordForm && (
               <form
                 onSubmit={handleChangePassword}
-                className="mt-4 flex flex-col gap-3"
+                className="mt-4 grid grid-cols-1 gap-3"
               >
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Contraseña actual"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={12}
-                  placeholder="Nueva contraseña"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
-                <input
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  minLength={12}
-                  placeholder="Confirmar nueva contraseña"
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
-                />
-                <p className="-mt-2 text-xs text-gray-500">Usa al menos 12 caracteres.</p>
+                <label htmlFor="profile-current-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Contraseña actual
+                  <input
+                    id="profile-current-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Contraseña actual"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <label htmlFor="profile-new-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Nueva contraseña
+                  <input
+                    id="profile-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={12}
+                    placeholder="Nueva contraseña"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <label htmlFor="profile-confirm-password" className="grid gap-1 text-xs font-medium text-gray-700">
+                  Confirmar nueva contraseña
+                  <input
+                    id="profile-confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    minLength={12}
+                    placeholder="Confirmar nueva contraseña"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
+                  />
+                </label>
+                <p className="text-xs text-gray-500">Usa al menos 12 caracteres.</p>
                 <div className="md:col-span-3 flex flex-wrap gap-2">
                   <button
                     type="submit"

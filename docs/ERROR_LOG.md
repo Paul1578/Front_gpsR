@@ -1,8 +1,15 @@
-## 2026-11-23 — Action `45261649009` falló en baseline de perfil obsoleto — CORREGIDO LOCALMENTE; CI PENDIENTE
+## 2026-11-23 — Perfil: formulario de seguridad poco accesible y microcopy sin tildes — CORREGIDO LOCALMENTE
+
+- La inspección responsive encontró que los campos de contraseña dependían sólo del placeholder como nombre visible/accesible; además, cinco mensajes de validación/resultado omitían tildes. El E2E existente del tema no abría ni medía el formulario a 320 px.
+- Solución: etiquetas persistentes asociadas a cada campo, `required`, `autocomplete` correcto, ancho móvil seguro y tildes corregidas. Se amplió el E2E para abrir el formulario a 320 px, verificar bounds del encabezado/campos y seguir cubriendo persistencia del tema.
+- Estado: lint terminó sin errores visibles, discovery mantiene 69 E2E, `git diff --check` pasa. Repetir y registrar build/CI contra el nuevo diff antes de darlo por validado.
+- Prevención: formularios de credenciales deben usar etiquetas asociadas, autocomplete semántico y una prueba en viewport estrecho con contenido expandido.
+
+## 2026-11-23 — Action `45261649009` falló en baseline de perfil obsoleto — CORREGIDO Y VALIDADO
 
 - La Action ejecutó 68/69 E2E. En la edición con respuesta HTTP 503, el test esperaba el nombre original, pero el mismo flujo ya había actualizado correctamente ese perfil al editar el Driver. El GET devolvió el valor previamente editado; el 503 no lo mutó.
 - Solución: leer `/Users/my-team` inmediatamente antes del intento fallido y comparar el estado posterior con ese snapshot persistido. El test verifica además alerta y formulario conservado y luego ejecuta el PUT exitoso.
-- Lint, discovery Playwright 69 y diff-check pasan después del arreglo local; Action integrada del nuevo diff pendiente.
+- Lint, discovery Playwright 69 y diff-check pasan después del arreglo. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) validó el arreglo con **69/69 E2E**, junto a responsive, axe, audit/lint/build, Backend 165/165 y API/MySQL.
 - Prevención: en tests de error, capturar el baseline inmediatamente antes de la operación; no asumir el valor inicial si el caso ya hizo ediciones anteriores.
 
 ## 2026-11-23 — Verificación aislada usó worktree/dispositivo incompatibles — RESUELTO

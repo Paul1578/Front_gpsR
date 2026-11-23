@@ -1,9 +1,10 @@
 ## Continuación activa — cobertura UX/CRUD — 2026-11-23
 
-- Ramas actuales: Front `refactor/route-builder`; el commit publicado `0931f9e` tiene Action `45261649009` en 68/69 por una aserción con baseline obsoleto. Backend docs `5c53dd0`; `main` intacta.
-- Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
-- Action `45261649009` encontró que una edición Driver anterior ya había cambiado el nombre. Fix local captura el GET baseline justo antes del PUT 503; lint/discovery 69 pasan.
-- Diff local adicional prueba filtros de rutas a 320 px con bounds e interacción Estado/Vehículo/Conductor; lint/discovery/diff-check pasan. Siguiente: revisar docs/diff, publicar ambos fixes y correr la Action completa. Después cubrir Equipo/Perfil con contenido largo; auditoría sigue abierta.
+- Ramas actuales: Front `refactor/route-builder` (`0bb20c8` publicado) y Backend `chore/stabilize-fleet-platform` (`5c53dd0` documental); `main` intacta.
+- Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó en `78b7974`: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
+- Action [`45261649009`](https://github.com/Paul1578/Front_gpsR/actions/runs/45261649009) encontró una aserción de perfil con baseline obsoleto (68/69); corregida capturando GET justo antes del PUT simulado 503. `0bb20c8` agrega filtros Estado/Vehículo/Conductor accionables a 320 px y verifica persistencia y bounds. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL y cleanup.
+- Diff de trabajo siguiente: Perfil expande el formulario de seguridad y mide encabezado/campos a 320 px; además añade labels explícitos, `autocomplete` y corrige tildes del feedback. Lint/discovery/build y E2E CI del nuevo diff pendientes.
+- Continuar auditoría del responsive y cobertura funcional; documentar cada hallazgo/fix y su evidencia. SMTP real e infraestructura de producción dependen de configuración externa; la app nativa queda pospuesta.
 
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
 

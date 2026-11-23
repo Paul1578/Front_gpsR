@@ -1,14 +1,11 @@
 ## Continuación de auditoría UX/responsive — 2026-11-23
 
-- Front sigue en `refactor/route-builder`. El commit `78b7974` pasó la Action integrada [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638): 69/69 E2E, responsive, axe 2/2, audit/lint/build, Backend xUnit 165/165 y API/MySQL descartable.
-- Ese commit deja el alta de usuario sin promesa SMTP anticipada, prueba error/reintento al cargar vehículos dados de baja y verifica Dashboard/mapa con interacción real a 320 px.
-- La Action de `0931f9e` [`45261649009`](https://github.com/Paul1578/Front_gpsR/actions/runs/45261649009) terminó 68/69. El único fallo fue un baseline obsoleto en el test nuevo de perfil, no una mutación del API; está documentado en `ERROR_LOG.md`. El fix local captura el perfil antes del 503; falta repetir CI.
-- También hay un diff local para filtros de rutas a 320 px: bounds de controles y cambios de Estado/Vehículo/Conductor sobre rutas reales. Lint y discovery 69 pasan; no está publicado ni ejecutado en CI.
-- Validación local del commit `78b7974`: `npm run lint`, build de producción en worktree aislado, E2E de estados de vehículo 1/1 en Next dev y 1/1 contra Next production, `git diff --check` pasan. El E2E autenticado Dashboard/mapa no se pudo ejecutar localmente porque no hay credenciales QA; el workflow las provisiona en MySQL efímero.
-- Backend docs `5c53dd0` pasó Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285): build/xUnit 165/165, migration smoke y HTTP/MySQL de tenant, concurrencia y rate limit.
-- Brechas restantes: lista de filtros de rutas a 320 px con controles accionables y auditoría visual adicional de equipo/perfil con contenido largo. La matriz E2E actual ya combina Admin delegado real, 403 HTTP en creación/promoción, ausencia de cambios persistidos y restricciones visibles en UI.
-- Auditoría estática Backend confirma que `OwnerUserId=NULL` define cuenta raíz en el modelo actual. El posible Admin delegado heredado con owner nulo ya figura como precondición en `Back_GPS/docs/SECURITY.md`; no se comprobó presencia en los datos actuales ni se cambió código por una hipótesis.
-- Errores nuevos de validación local y sus causas/soluciones están en `ERROR_LOG.md`. Esta fase sigue abierta.
+- Front `refactor/route-builder`: `0bb20c8` publicado. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL descartable y cleanup.
+- `0bb20c8` corrige baseline obsoleto del caso PUT 503 y añade filtros Estado/Vehículo/Conductor accionables a 320 px.
+- Cambio local pendiente de integrar: Perfil ahora expone labels y autocompletado para cambio de clave, corrige tildes del feedback, y su E2E despliega formulario/chequea campos a 320 px. Lint, build y discovery pasan; falta CI de este diff.
+- Backend `chore/stabilize-fleet-platform` pasó Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285): build/xUnit 165/165, migration smoke, aislamiento HTTP/MySQL, concurrencia y rate limit. No se encontró fallo confirmado en roles/rutas/unlink; el riesgo condicional de Admin heredado con owner nulo sigue documentado en `Back_GPS/docs/SECURITY.md`.
+- Búsqueda/filtros reales de Equipo, filtros de ruta y Dashboard/mapa ya tienen interacciones a 320 px. Continúa auditoría responsive de contenido largo/formularios y cobertura CRUD. SMTP real e infraestructura productiva dependen de configuración externa; app nativa pospuesta.
+- La fase sigue abierta; errores, causa, solución y prevención se registran en `ERROR_LOG.md`.
 
 ## Estado vigente — Front `52aa90b`, Backend `4993e3c` — 2026-11-23
 

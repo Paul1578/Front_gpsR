@@ -1,11 +1,17 @@
+## 2026-11-23 — Perfil accesible y pruebas móviles extendidas
+
+- Los campos para cambiar contraseña del perfil tienen etiquetas visibles, autocomplete y validación nativa; se corrigen tildes en mensajes.
+- El E2E de preferencia de tema abre el formulario de seguridad a 320 px y comprueba que encabezado y campos estén dentro del viewport.
+- Lint, build, discovery de 69 pruebas y diff-check pasan localmente. El CI integrado de este diff queda pendiente.
+
 ## 2026-11-23 — Validación móvil y estados de vehículo en gestión
 
 - El formulario de altas aclara que el resultado del correo de activación se informará después de guardar; no afirma que SMTP lo envió antes de tener respuesta.
 - El E2E autenticado verifica en 320 px el Dashboard, las estadísticas y el acceso funcional al mapa; comprueba que el mapa quepa en el viewport.
 - El E2E de estados de carga verifica además error/reintento para la lista de vehículos dados de baja.
 - Lint, build aislado, E2E local de error/reintento 1/1 y diff-check pasan. Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó 69/69 E2E, responsive, axe, build/lint/audit y Backend 165/165.
-- El E2E real de edición de usuario fuerza un 503, verifica diálogo/datos persistidos y luego guarda exitosamente. Action `45261649009` detectó baseline obsoleto por una edición Driver previa; corregido para capturar el perfil antes de la falla. Repetición CI pendiente.
-- Se amplía a 320 px el E2E de filtros de rutas para comprobar controles e interacción con recursos persistidos; CI pendiente.
+- El E2E real de edición de usuario fuerza un 503, verifica diálogo/datos persistidos y luego guarda exitosamente. Action `45261649009` detectó baseline obsoleto por una edición Driver previa; corregido para capturar el perfil antes de la falla.
+- Se amplía a 320 px el E2E de filtros de rutas y comprueba controles/interacción con recursos persistidos. Action integrada [`45263308491`](https://github.com/Paul1578/Front_gpsR/actions/runs/45263308491) pasó **69/69 E2E**, responsive, axe 2/2, audit/lint/build, Backend 165/165, API/MySQL y cleanup.
 
 ## 2026-11-23 — Mapa, accesibilidad y coordinación de sesiones — CI aprobado
 

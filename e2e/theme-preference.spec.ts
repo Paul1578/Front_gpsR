@@ -23,12 +23,40 @@ test("la preferencia de tema se guarda y persiste al recargar", async ({ page })
   await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
 
+  await page.setViewportSize({ width: 320, height: 720 });
+  const profileBounds = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+  }));
+  expect(profileBounds.document).toBeLessThanOrEqual(profileBounds.viewport);
+  const mobileProfile = page.getByRole("heading", { name: "Mi Perfil" });
+  const mobileProfileBounds = await mobileProfile.boundingBox();
+  expect(mobileProfileBounds).not.toBeNull();
+  expect(mobileProfileBounds!.x + mobileProfileBounds!.width).toBeLessThanOrEqual(320);
+
   const themeSwitch = page.getByRole("switch", { name: "Modo oscuro" });
   await expect(themeSwitch).toHaveAttribute("aria-checked", "false");
   await themeSwitch.click();
   await expect(themeSwitch).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("html")).toHaveClass(/dark/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("theme_preference"))).toBe("dark");
+
+  const passwordToggle = page.getByRole("button", { name: "Cambiar contraseña", exact: true });
+  const toggleBounds = await passwordToggle.boundingBox();
+  expect(toggleBounds).not.toBeNull();
+  expect(toggleBounds!.x + toggleBounds!.width).toBeLessThanOrEqual(320);
+  await passwordToggle.click();
+  const passwordForm = page.locator("form").filter({ has: page.getByPlaceholder("Contraseña actual") });
+  await expect(passwordForm).toBeVisible();
+  for (const placeholder of ["Contraseña actual", "Nueva contraseña", "Confirmar nueva contraseña"]) {
+    const field = page.getByPlaceholder(placeholder);
+    await expect(field).toBeVisible();
+    const bounds = await field.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+  }
+  await passwordToggle.click();
 
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/dark/);
