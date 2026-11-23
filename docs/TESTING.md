@@ -833,4 +833,5 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - `npx playwright test --list`: descubre 65 pruebas.
 - `npx playwright test e2e/auth-bff-routes.spec.ts`: **3/3** pasan (refresh 401, logout-all 401, logout 503).
 - `npx playwright test e2e/fleet-admin.spec.ts --grep 'falla cerrada si el navegador no ofrece Web Locks'`: **1/1** pasa y confirma que no se envían mutaciones de autenticación.
-- La prueba nueva de logins concurrentes distintos necesita las dos cuentas QA creadas por la Action con MySQL descartable; resultado CI pendiente.
+- La prueba de logins concurrentes distintos usa las cuentas QA aprovisionadas por el runner sobre MySQL descartable.
+- Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**; backend **158/158 xUnit**; responsive, audit, lint, build y cleanup aprobados. La ejecución de pull request del mismo commit [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también terminó en verde. La Action integrada aprovisiona User QA y usa base MySQL efímera, así que el caso de login concurrente quedó incluido.

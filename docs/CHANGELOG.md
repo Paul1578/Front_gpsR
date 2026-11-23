@@ -891,3 +891,7 @@
 - Se eliminó el fallback sin coordinación: login, refresh, migración y cierres fallan de forma cerrada cuando Web Locks no está disponible.
 - Se añadió E2E que verifica cero solicitudes de mutación sin Web Locks y E2E que inicia dos cuentas distintas simultáneamente, luego recarga ambas pestañas y contrasta identidad con `/Auth/me`.
 - Build, lint, pruebas directas BFF (3/3) y E2E de navegador sin Web Locks (1/1) pasan localmente. La prueba de cuentas y la suite completa quedan para la Action con MySQL descartable.
+
+### Validación CI de seguridad BFF
+
+- Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**, backend **158/158 xUnit**, responsive **1/1**, audit/lint/build y cleanup aprobados; incluye login concurrente de cuentas distintas sobre API/MySQL efímeros.

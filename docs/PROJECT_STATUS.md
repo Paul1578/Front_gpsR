@@ -938,6 +938,6 @@ Fecha de actualización: 2026-11-22.
 
 ## Actualización 2026-11-23 — endurecimiento de autenticación entre pestañas
 
-- La segunda revisión encontró un fallback inseguro sin Web Locks y ausencia de prueba para login simultáneo de cuentas distintas. Corregido localmente: autenticación falla cerrada sin Web Locks; se agregaron pruebas para ausencia de API y convergencia de identidad entre dos pestañas tras logins simultáneos.
-- Validación local: build/lint pasan; 65 pruebas Playwright descubiertas; handlers BFF **3/3** y caso sin Web Locks **1/1** pasan. La prueba integrada de cuentas distintas y el conjunto completo esperan Action con API/MySQL efímeros.
+- La segunda revisión encontró un fallback inseguro sin Web Locks y ausencia de prueba para login simultáneo de cuentas distintas. Corregido: autenticación falla cerrada sin Web Locks; pruebas verifican ausencia de API y convergencia de identidad entre pestañas.
+- Validación: build/lint local; handlers BFF **3/3** y caso sin Web Locks **1/1** local. Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336): **65/65 E2E**, **158/158 xUnit**, responsive, audit/lint/build y cleanup aprobados; pull request del mismo commit [`45216886676`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216886676) también verde.
 - Limitación conocida: con backend fuera de servicio durante logout individual, el cierre local se completa y se informa que no se confirmó revocación remota.
