@@ -1641,3 +1641,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Actions `45119664116` y `45120693134` mostraron que el `path d` observado mantenía un único segmento, incluso buscando la ruta seleccionada. Leaflet simplifica SVG según zoom y el DOM no es un contrato estable para verificar la respuesta OSRM.
 - Solución: el mapa muestra “Trayecto por carretera calculado” sólo cuando OSRM entrega geometría válida; conserva “Trayecto estimado” en fallback. El E2E autenticado espera el estado de éxito tras seleccionar la ruta y recibir el fixture OSRM de tres coordenadas.
 - Prevención: verificar resultado de dominio/UI derivado de datos del proveedor, no el número de segmentos SVG que puede cambiar por simplificación cartográfica. Lint/build y Action nueva pendientes.
+
+## 2026-11-23 — Aserciones reales de Admin delegado y sincronización Driver — CORREGIDAS LOCALMENTE
+
+- Action `45121718866`: la opción `gerente` es visible porque representa el rol propio del Admin delegado, pero debe estar deshabilitada; la expectativa equivocada exigía que desapareciera. El estado OSRM estaba consultándose dentro de `.leaflet-container`, aunque se renderiza como elemento hermano.
+- El E2E responsive de Driver leyó `GET /Drivers` inmediatamente tras el click, antes de esperar el POST de creación; en un retry observó la carrera y no encontró el registro.
+- Correcciones: exigir que `gerente` exista y esté disabled; buscar el estado OSRM en `page`; esperar el POST de Driver y su HTTP 201 antes del GET persistido.
+- Prevención: verificar el contrato real de roles y contención DOM; sincronizar aserciones de persistencia con la respuesta que confirma escritura antes de releer. Nueva Action pendiente.

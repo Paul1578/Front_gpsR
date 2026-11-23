@@ -286,7 +286,9 @@ test("Admin delegado real no ve ni puede crear/promover otro Admin", async ({ pa
 
   await page.getByRole("button", { name: "Usuarios de la empresa", exact: true }).click();
   await expect(page.locator('select option[value="superadmin"]')).toHaveCount(0);
-  await expect(page.locator('select option[value="gerente"]')).toHaveCount(0);
+  const adminRoleOption = page.locator('select option[value="gerente"]');
+  await expect(adminRoleOption).toHaveCount(1);
+  await expect(adminRoleOption).toBeDisabled();
 });
 
 test("Administración distingue fallos de carga de una empresa vacía y permite reintentar", async ({ page }) => {

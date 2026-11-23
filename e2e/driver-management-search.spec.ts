@@ -138,7 +138,12 @@ test("Admin gestiona un conductor desde la pantalla dedicada a 320 y 768 px", as
   expect(mobileFormBounds).not.toBeNull();
   expect(mobileFormBounds!.x).toBeGreaterThanOrEqual(0);
   expect(mobileFormBounds!.x + mobileFormBounds!.width).toBeLessThanOrEqual(320);
+  const createDriverResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "POST" && new URL(response.url()).pathname.endsWith("/Drivers"),
+  );
   await page.getByRole("button", { name: "Crear conductor" }).click();
+  const createDriverResponse = await createDriverResponsePromise;
+  expect(createDriverResponse.status()).toBe(201);
 
   const driversResponse = await page.request.get("/api/backend/Drivers", { headers });
   expect(driversResponse.status()).toBe(200);

@@ -681,3 +681,8 @@ Fecha de actualización: 2026-11-22.
 
 - El selector por SVG no fue estable: Leaflet simplifica la línea y el DOM entregaba un único segmento incluso con la geometría OSRM mock de tres puntos. Se retiró esa aserción de implementación y se agregó una etiqueta clara de éxito “Trayecto por carretera calculado”; el E2E la comprueba tras seleccionar la ruta real.
 - El fallback sigue mostrando “Trayecto estimado entre puntos”. Validación local y Action integrada del nuevo SHA pendientes.
+
+## Correcciones tras Action 45121718866
+
+- **48/51 E2E**. El mapa recibió mock OSRM pero el locator buscaba el estado dentro del elemento Leaflet; se movió al nivel de página. Admin delegado conserva visible su opción de rol propio, deshabilitada; E2E ahora valida `disabled`. El CRUD Driver espera HTTP 201 antes de leer persistencia y corrige una carrera observada en retry.
+- Fixes en branch; lint/build y siguiente Action API/MySQL pendientes.
