@@ -707,3 +707,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Action Front [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023), commit `7b23ac5`: **51/51 E2E**, responsive, backend Release/xUnit, audit/lint/build y cleanup success.
 - API real rechazó el segundo vínculo con el copy exacto de Backend; API GET confirmó el Driver solicitado sin vehículo y el Driver bloqueador aún asignado. Posteriormente se liberó y verificó el flujo exitoso.
+
+## Reasignación de recurso al editar — CI aprobado
+
+- Action Front [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259), `5dd199d`: 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup success.
+- Se asignó otro Vehicle desde la UI y se verificó por GET la relación Route/Driver; segunda actualización móvil conservó el VehicleId. Cleanup restauró fixture y retiró vehículos QA.

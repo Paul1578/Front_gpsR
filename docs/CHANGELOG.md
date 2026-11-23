@@ -767,3 +767,7 @@
 ## 2026-11-23 — 409 de asignación real validado
 
 - Action Front [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): 51/51 E2E, responsive y cleanup success; la UI/API/MySQL confirmaron conflicto y persistencia intacta.
+
+## 2026-11-23 — Reasignación al editar ruta validada
+
+- Action Front [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): 51/51 E2E, responsive y cleanup success; Route/Driver conservan el Vehicle nuevo después de editar y guardar en móvil.

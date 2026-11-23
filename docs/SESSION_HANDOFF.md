@@ -1132,3 +1132,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front `7b23ac5`, Action [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): 51/51 E2E, responsive, backend Release/xUnit, audit/lint/build y cleanup success.
 - El mensaje 409 y las relaciones VehicleId se validaron contra API/MySQL real, sin mock. El Driver bloqueador se desasigna/desactiva y el runner verifica cleanup.
+
+## Reasignación al editar ruta — validada — 2026-11-23
+
+- Front `5dd199d`, Action [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): 51/51 E2E, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup exitosos.
+- UI cambió el Vehicle de una ruta real; GET de Route/Driver confirmó persistencia y el guardado móvil mantuvo la relación. Cleanup devolvió el vínculo original del fixture y eliminó Vehicles temporales.
+- Conflicto 409 de vehículo ocupado ya había pasado en `7b23ac5`/Action `45162583023`.

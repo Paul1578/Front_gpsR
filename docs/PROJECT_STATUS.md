@@ -802,7 +802,7 @@ Fecha de actualización: 2026-11-22.
 - El E2E ahora crea un Driver bloqueador temporal y le asigna el vehículo por API real, intenta asignarlo desde Gestión de Conductores al segundo Driver, exige 409 y relee ambos registros para confirmar que ninguno mutó. Después libera el vehículo, comprueba la asignación válida y limpia el Driver temporal.
 - Lint/build/discovery 51/diff-check pasan local. Validación UI/API/MySQL y cleanup quedan pendientes de Action.
 
-## Reasignación de vehículo al editar rutas — E2E agregado, CI pendiente
+## Reasignación de vehículo al editar rutas — VALIDADO EN CI
 
 - Auditoría independiente confirmó que UpdateRoute desde UI conserva vehículo/conductor sin probar cambiar recursos.
 - El E2E ahora crea un segundo vehículo disponible, lo selecciona al editar la ruta, comprueba `PUT`/GET de Route y VehicleId del Driver, y verifica que el segundo guardado móvil conserva la reasignación. `finally` restablece el vehículo original del Driver y elimina los dos vehículos QA.
@@ -812,3 +812,8 @@ Fecha de actualización: 2026-11-22.
 
 - Front `7b23ac5`, Action [45162583023](https://github.com/Paul1578/Front_gpsR/actions/runs/45162583023): **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
 - La UI recibió 409 del backend al asignar un vehículo ocupado; se comprobó el mensaje real y que Driver objetivo/bloqueador conservaran sus VehicleId; cleanup liberó los fixtures.
+
+## Reasignación de recursos en edición — VALIDADA EN CI — 2026-11-23
+
+- Front `5dd199d`, Action [45163668259](https://github.com/Paul1578/Front_gpsR/actions/runs/45163668259): **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup.
+- El E2E edita la ruta y asigna vehículo distinto; GET confirma Route VehicleId/DriverId y Driver VehicleId, también tras guardar desde móvil. `finally` restablece el vehículo previo y limpia ambos Vehicles QA.
