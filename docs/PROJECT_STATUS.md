@@ -1,5 +1,10 @@
 ## Estado actual — 2026-11-23
 
+- Estado sincronizado tras la última Action: Front HEAD documental `2cc3ee5`, código E2E `f0acce7`. Actions [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413) y [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) pasaron **51/51 E2E**, responsive **1/1**, backend Release/xUnit, dependency audit, lint/build y cleanup.
+- Backend `chore/stabilize-fleet-platform` código `63333bb` pasó Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): build Release, xUnit **136/136**, tenant/concurrencia/login HTTP ampliado y cleanup.
+- Auditoría local de dependencias: `npm audit` reporta **0 vulnerabilidades**; `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` no encontró paquetes vulnerables en Backend ni tests.
+- Decisiones confirmadas: ruta de traslado permitida; paradas pickup/delivery/both; sólo raíz puede otorgar Admin; app nativa móvil pospuesta. SMTP real, rate limit distribuido, IPs de ingress, key ring persistente y despliegue productivo siguen dependiendo de configuración externa. La misión global continúa abierta.
+
 - Front `a510021` agrega el E2E real de Admin delegado contra API/MySQL descartables, asistido por fixture de Backend `c32febe`: bloquea opciones Admin, recibe 403 en creación/promoción y comprueba la persistencia sin cambios. Lint/build y discovery **51** pasan; Action integrada pendiente.
 - Front `refactor/route-builder` HEAD `d0a9342` pasó Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **50/50**, cleanup y teardown. Incluye reset/activación, tema persistente y preservación del horario de ruta.
 - La tanda corrige Admin delegado en la vista heredada, tracking GPS vacío, errores de asignación y estados iniciales de Dashboard. La Action ejecutó los 50 E2E en 3.4 minutos sin fallos; lint/build locales correctos.

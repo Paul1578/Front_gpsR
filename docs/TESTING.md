@@ -1,5 +1,11 @@
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
+## Auditoría actual de dependencias — 2026-11-23
+
+- Frontend: `npm audit` — **0 vulnerabilidades**.
+- Backend: `PATH=/home/leonardo/.dotnet:$PATH dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` — sin paquetes vulnerables en `BackEnd_Gps` ni `BackEnd_Gps.Tests`.
+- La última validación backend integrada es Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): Release build, xUnit **136/136**, smokes HTTP/MySQL y cleanup. Ver Backend `docs/TESTING.md` para forwarded headers.
+
 ## 2026-11-23 — Ciclo UI real de reset y activación — validado
 
 - El runner backend crea usuarios y tokens aleatorios de 256 bits en MySQL desechable; sólo persiste hashes SHA-256 y limpia los registros al terminar.

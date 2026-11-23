@@ -1,5 +1,12 @@
 # Handoff vigente — 2026-11-23
 
+## Sincronización más reciente
+
+- Front `refactor/route-builder` HEAD documental `2cc3ee5`; código probado `f0acce7`; Actions `45123444413` y `45124271067` success con Playwright **51/51**, responsive **1/1**, audit/lint/build y cleanup.
+- Backend `chore/stabilize-fleet-platform` código `63333bb`, Action `45127502896` success con Release/xUnit **136/136**, smokes HTTP/MySQL y cleanup; detalle vigente en Backend `docs/SESSION_HANDOFF.md`.
+- Auditoría actual de paquetes: `npm audit` 0 vulnerabilidades; NuGet no encontró paquetes vulnerables en Backend ni tests.
+- Decisiones: traslados permitidos, paradas pickup/delivery/both, Admin raíz solamente, app nativa móvil pospuesta. Misión amplia sigue abierta; actualizar este handoff y status al completar el siguiente lote.
+
 - Front `a510021` añade E2E integrado de Admin delegado con API/MySQL: login real, `/Auth/me` root=false, 403 para crear/promover Admin, GET confirma que el miembro sigue User, y la UI oculta opciones Admin. Backend `c32febe` prepara el fixture temporal. Lint/build y discovery 51 pasan; Actions integrado aún pendiente de push.
 - Front `refactor/route-builder` HEAD `d0a9342`; Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569) pasó audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL **50/50**, cleanup y teardown. El cambio funcional del horario fue validado previamente en `23e964e` por Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930).
 - Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.
