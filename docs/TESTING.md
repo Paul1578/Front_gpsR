@@ -5,7 +5,8 @@
 - El E2E autenticado de Dashboard/Mapa amplía la pantalla móvil de 390 a 320 px y comprueba límites de métricas, accesos rápidos, navegación al mapa y límites del contenedor Leaflet. La sesión local no dispone de credenciales QA; está pendiente la ejecución en CI, que provisiona credenciales/DB descartables.
 - En el formulario de alta se verifica copy que no garantiza el envío antes de la respuesta; el E2E real comprueba `invitationSent=false` y aviso SMTP posterior.
 - `npm run lint`, `npm run build` con Next 16.4.6/TypeScript en worktree aislado y `git diff --check` pasan. El E2E de error/reintento de vehículos se ejecutó 1/1 en Next dev y production.
-- En trabajo posterior, el E2E real de edición Driver agrega 503 simulado en el PUT y comprueba mensaje, editor/valores conservados y `/Users/my-team` sin cambio; luego ejecuta el guardado real. Lint y discovery de 69 tests pasan; integración CI aún pendiente.
+- El E2E real de edición Driver agrega 503 en el PUT y verifica mensaje, editor conservado y `/Users/my-team` sin cambio antes de intentar el guardado exitoso. Action `45261649009` pasó 68/69 porque se comparaba con el nombre inicial pese a una edición anterior del propio caso; ahora usa un GET baseline inmediato. Nueva integración pendiente.
+- Los filtros de rutas también se prueban localmente a 320 px: tamaño/posición y cambios de Estado/Vehículo/Conductor; lint, discovery 69 y diff-check pasan. CI pendiente.
 
 ## QA automatizada de accesibilidad — 2026-11-23
 

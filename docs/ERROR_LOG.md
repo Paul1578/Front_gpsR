@@ -1,3 +1,10 @@
+## 2026-11-23 — Action `45261649009` falló en baseline de perfil obsoleto — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- La Action ejecutó 68/69 E2E. En la edición con respuesta HTTP 503, el test esperaba el nombre original, pero el mismo flujo ya había actualizado correctamente ese perfil al editar el Driver. El GET devolvió el valor previamente editado; el 503 no lo mutó.
+- Solución: leer `/Users/my-team` inmediatamente antes del intento fallido y comparar el estado posterior con ese snapshot persistido. El test verifica además alerta y formulario conservado y luego ejecuta el PUT exitoso.
+- Lint, discovery Playwright 69 y diff-check pasan después del arreglo local; Action integrada del nuevo diff pendiente.
+- Prevención: en tests de error, capturar el baseline inmediatamente antes de la operación; no asumir el valor inicial si el caso ya hizo ediciones anteriores.
+
 ## 2026-11-23 — Verificación aislada usó worktree/dispositivo incompatibles — RESUELTO
 
 - El primer `apply_patch` agrupado no encontró el contexto literal del E2E de alta; la aplicación fue atómica y no modificó archivos. Se releeyó el bloque real y se aplicaron cambios pequeños.

@@ -1,9 +1,9 @@
 ## Continuación activa — cobertura UX/CRUD — 2026-11-23
 
-- Ramas actuales: Front `refactor/route-builder` con commit publicado `78b7974`; Backend `chore/stabilize-fleet-platform` con docs `5c53dd0`. `main` intacta.
+- Ramas actuales: Front `refactor/route-builder`; el commit publicado `0931f9e` tiene Action `45261649009` en 68/69 por una aserción con baseline obsoleto. Backend docs `5c53dd0`; `main` intacta.
 - Front Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638) pasó: 69/69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL descartable. Backend Action [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285) pasó migración, tenant HTTP/MySQL, concurrencia, rate limit y xUnit 165/165.
-- Diff local posterior amplía E2E de edición Driver: induce 503 en PUT, comprueba alerta, formulario conservado y GET sin mutación, luego completa el guardado real. Lint y discovery 69 pasan; su Action está pendiente.
-- Siguiente: `git diff --check`, publicar y probar el diff de perfil. Después cubrir filtros de rutas a 320 px y contenido largo/controles de Equipo y Perfil. No cerrar auditoría integral aún.
+- Action `45261649009` encontró que una edición Driver anterior ya había cambiado el nombre. Fix local captura el GET baseline justo antes del PUT 503; lint/discovery 69 pasan.
+- Diff local adicional prueba filtros de rutas a 320 px con bounds e interacción Estado/Vehículo/Conductor; lint/discovery/diff-check pasan. Siguiente: revisar docs/diff, publicar ambos fixes y correr la Action completa. Después cubrir Equipo/Perfil con contenido largo; auditoría sigue abierta.
 
 ## Trabajo vigente — mapa y auth multi-pestaña — 2026-11-23
 

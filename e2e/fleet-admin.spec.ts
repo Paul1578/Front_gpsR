@@ -2140,6 +2140,39 @@ test("Admin combina filtros de rutas y restablece la lista", async ({ page }) =>
       await expect(secondRouteHeading).toBeVisible();
     }
 
+    await page.setViewportSize({ width: 320, height: 844 });
+    const mobileFilterControls = [
+      page.getByLabel("Buscar ruta"),
+      page.getByLabel("Estado"),
+      page.getByLabel("Vehículo"),
+      page.getByLabel("Conductor"),
+    ];
+    for (const control of mobileFilterControls) {
+      await expect(control).toBeVisible();
+      const bounds = await control.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+      expect(bounds!.width).toBeGreaterThan(200);
+    }
+
+    await page.getByLabel("Estado").selectOption("pendiente");
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Estado").selectOption("cancelada");
+    await expect(secondRouteHeading).toBeVisible();
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[0]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Vehículo").selectOption(fixture.vehicles[1]);
+    await expect(secondRouteHeading).toBeVisible();
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[0]);
+    await expect(secondRouteHeading).toHaveCount(0);
+    await page.getByLabel("Conductor").selectOption(fixture.drivers[1]);
+    await expect(secondRouteHeading).toBeVisible();
+    const clearMobileFilters = page.getByRole("button", { name: "Limpiar filtros" });
+    const clearBounds = await clearMobileFilters.boundingBox();
+    expect(clearBounds).not.toBeNull();
+    expect(clearBounds!.x + clearBounds!.width).toBeLessThanOrEqual(320);
+
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
     await expect(firstRouteHeading).toBeVisible();
     await expect(secondRouteHeading).toBeVisible();
@@ -4488,6 +4521,11 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
 
   await teamMemberCard.getByRole("button", { name: `Editar usuario e2e${suffix}` }).click();
   const editDriverUserDialog = page.getByRole("dialog");
+  const profileBeforeFailedSave = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(profileBeforeFailedSave.status()).toBe(200);
+  const persistedProfileBeforeFailure = (await profileBeforeFailedSave.json() as Array<{ id: string; firstName: string; lastName: string; username: string }>)
+    .find((member) => member.id === createdUser.id);
+  expect(persistedProfileBeforeFailure).toBeTruthy();
   await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} no guardado`);
   await editDriverUserDialog.getByLabel("Apellidos").fill(lastName);
   await editDriverUserDialog.getByLabel("Usuario").fill(`e2e${suffix}`);
@@ -4512,7 +4550,12 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
   expect(profileAfterFailedSave.status()).toBe(200);
   const unchangedMember = (await profileAfterFailedSave.json() as Array<{ id: string; firstName: string; lastName: string; username: string }>)
     .find((member) => member.id === createdUser.id);
-  expect(unchangedMember).toMatchObject({ id: createdUser.id, firstName, lastName, username: `e2e${suffix}` });
+  expect(unchangedMember).toMatchObject({
+    id: createdUser.id,
+    firstName: persistedProfileBeforeFailure!.firstName,
+    lastName: persistedProfileBeforeFailure!.lastName,
+    username: persistedProfileBeforeFailure!.username,
+  });
   await page.unroute(profileUpdatePattern);
 
   await editDriverUserDialog.getByLabel("Nombres").fill(`${firstName} desde usuario`);

@@ -4,7 +4,7 @@
 
 - Front `78b7974` pasó Action [`45259999638`](https://github.com/Paul1578/Front_gpsR/actions/runs/45259999638): 69 E2E, axe 2/2, responsive, audit/lint/build, backend 165 xUnit y API/MySQL. Backend docs HEAD `5c53dd0` pasó [`45259991285`](https://github.com/Paul1578/Back_GPS/actions/runs/45259991285).
 - Se ampliaron las aserciones Dashboard/Mapa a viewport 320 px, se probó el error de carga de vehículos inactivos y se eliminó una promesa anticipada de correo de invitación.
-- El flujo de Admin delegado real ya combina UI restringida, 403 API en creación/promoción y verificación de que no haya cambios persistidos. El diff local agrega error de guardado de perfil con formulario/persistencia preservados; Action pendiente. Otras brechas siguientes: interacción de filtros de rutas en 320 px y estados/controles de Equipo y Perfil con contenido extremo.
+- Admin delegado real combina UI restringida, 403 de creación/promoción y persistencia sin cambios. Action `45261649009` fue 68/69 por baseline viejo del E2E de perfil; fix captura el estado justo antes del fallo, CI pendiente. Los filtros interactivos de rutas en 320 px están en diff local con lint/discovery correctos. Luego queda responsive de Equipo/Perfil con contenido extremo.
 - Auditoría backend read-only revisó controladores y regla unlink. El owner nulo se interpreta como cuenta raíz; un Admin delegado heredado con owner nulo es una precondición condicional ya documentada en backend `docs/SECURITY.md`, no un caso confirmado en los datos actuales.
 - Mantener abierta la misión; después de probar este lote en CI continuar con los casos anteriores y actualizar el corte, changelog, handoff y registro de errores.
 
