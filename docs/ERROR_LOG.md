@@ -12,6 +12,12 @@
 - Prevención: no duplicar texto de roles en varios componentes; derivar botones, badges y confirmaciones del mismo mapa de etiquetas.
 - Action manual `45135361500` repitió el mismo fallo antes de aplicar la corrección; no se cuenta como validación del fix.
 
+## 2026-11-23 — Segunda Action encontró aserción de rol seleccionado incorrecta y mock desactualizado — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- Actions Front `45136332916` y `45136343083` ejecutaron la ruta Manager→Logistics pero fallaron en dos aserciones: la opción “Gestor de flota” sigue visible porque es un rol asignable (no debe esperarse `count=0`); y el test simulado de confirmación aún localizaba “Logistica” sin tilde tras centralizar el texto UI.
+- Solución: comprobar que el botón del rol vigente “Logística” está deshabilitado tras el PUT y tras recargar; actualizar el test simulado para usar esa etiqueta y esperar que esté deshabilitada.
+- Prevención: la grilla mantiene todos los roles posibles; asertar selección con `disabled`, no ausencia de opciones. Al cambiar copy accesible compartido, actualizar escenarios con `page.route`.
+
 ## 2026-11-23 — Consulta de Actions con job ID incorrecto y HTTP 502 transitorio — RESUELTO
 
 - Una consulta `gh run view --job` se envió con un identificador placeholder y recibió HTTP 404; luego `gh run watch` recibió HTTP 502 de GitHub mientras el runner seguía activo. No afectó el workflow ni los tests.

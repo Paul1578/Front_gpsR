@@ -3706,7 +3706,7 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
       const changedMember = (await changedTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
       expect(changedMember).toMatchObject({ id: createdAccount.id, roles: ["Logistics"] });
       await expect(memberCard).toContainText("Logística");
-      await expect(memberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toHaveCount(0);
+      await expect(memberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
 
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.reload();
@@ -3714,7 +3714,7 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
       await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
       const reloadedMemberCard = page.getByTestId(`team-user-${createdAccount.id}`);
       await expect(reloadedMemberCard).toContainText("Logística");
-      await expect(reloadedMemberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toHaveCount(0);
+      await expect(reloadedMemberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   }

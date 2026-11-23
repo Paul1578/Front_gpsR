@@ -1098,7 +1098,7 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
   expect(statusRequests).toBe(2);
   expect(persistedMember.isActive).toBe(true);
 
-  const logisticsRole = memberCard.getByRole("button", { name: "Logistica", exact: true });
+  const logisticsRole = memberCard.getByRole("button", { name: "Logística", exact: true });
   await logisticsRole.click();
   const roleDialog = page.getByRole("alertdialog");
   await expect(roleDialog).toContainText(`${persistedMember.firstName} ${persistedMember.lastName} cambiará de Usuario a Logística`);
@@ -1114,14 +1114,14 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
   );
   await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
   expect((await confirmRoleChange).status()).toBe(200);
-  await expect(memberCard.getByRole("button", { name: "Logistica", exact: true })).toBeVisible();
+  await expect(memberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
   expect(persistedMember.roles).toEqual(["Logistics"]);
 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.reload();
   await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
   const persistedCard = page.getByTestId(`team-user-${persistedMember.id}`);
-  await expect(persistedCard.getByRole("button", { name: "Logistica", exact: true })).toBeVisible();
+  await expect(persistedCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
   await expect(persistedCard.getByRole("button", { name: "Activo", exact: true })).toBeVisible();
   expect(roleRequests).toBe(1);
   expect(statusRequests).toBe(2);

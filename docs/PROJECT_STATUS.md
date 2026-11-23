@@ -13,7 +13,7 @@
 ## Cambio de rol desde Equipo — validación local pendiente de CI — 2026-11-23
 
 - Se extiende el E2E real de creación de miembros: cancelación de Manager→Logistics sin mutación, confirmación del PUT, lectura `/Users/my-team` y persistencia visual tras recargar.
-- El modal se mide en 320 px y la lista tras recarga a 768 px. Primera build encontró TS7006 (corregido y build local verde). Action `45135338276` localizó una etiqueta sin tilde (`Logistica`) en botones de rol; UI ahora comparte `roleLabels`. Revalidación y Action del fix pendientes; no contar como cubierto hasta verde.
+- El modal se mide en 320 px y la lista tras recarga a 768 px. El primer build encontró TS7006 (corregido, build verde); Actions luego detectaron copy sin tilde y dos expectativas incorrectas/de mock desactualizado. UI usa `roleLabels`; pruebas verifican rol vigente deshabilitado y copy común. Revalidación y Action final pendientes.
 
 ## Estado actual — 2026-11-23
 
