@@ -124,7 +124,9 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 });
 
 test("Admin delegado no puede crear ni promover usuarios al rol Admin en Administración heredada", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
+  // Usa el menú de navegación móvil de forma explícita; el botón "Abrir menú"
+  // no existe en escritorio, donde la barra lateral permanece visible.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());

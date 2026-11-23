@@ -1611,3 +1611,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Corrección: respuesta controlada con tres coordenadas y comprobación del SVG con dos segmentos; permanece independiente de servicios externos.
 - Prevención: cubrir éxito y fallback de proveedores geográficos en escenarios deterministas separados; no inferir renderizado a partir de la mera respuesta HTTP.
 - Lint/build/discovery/diff-check pasan localmente. La confirmación E2E integrada queda pendiente de la Action del commit nuevo.
+
+## 2026-11-23 — E2E Admin delegado esperaba menú móvil en escritorio — CORREGIDO LOCALMENTE
+
+- Action `45119404897` confirmó las llamadas API reales (403 al crear/promover Admin y persistencia del miembro), pero falló al buscar `Abrir menú` con viewport 1280 px; ese control sólo existe debajo del breakpoint móvil.
+- Corrección: fijar el viewport a 390×844 antes del login para que la navegación E2E coincida con el menú que está interactuando.
+- Prevención: mantener viewport E2E explícito y usar selectores del modo de navegación activo. Repetir Action completa; el cambio no se considera validado hasta que pase el flujo API/MySQL y cleanup.

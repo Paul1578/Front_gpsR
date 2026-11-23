@@ -643,3 +643,7 @@
 
 - El escenario real de mapa Manager valida ahora una respuesta OSRM exitosa y que sus tres coordenadas se reflejan en la línea SVG dibujada. La prueba no accede al proveedor externo y es estable en CI.
 - Lint, build, discovery y diff-check pasan localmente; Action integrada pendiente.
+
+## 2026-11-23 — Alineación de viewport en E2E Admin delegado
+
+- Tras Action `45119404897` (50/51), el spec ahora usa viewport móvil para abrir el menú móvil; documentación del error y prevención en `ERROR_LOG.md`. Validación integrada pendiente.

@@ -973,3 +973,9 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action Front `45119404897` (HEAD anterior `43d20fb`) sigue en progreso y valida el E2E real de Admin delegado; revisar conclusión.
 - Backend Action `45119396803` (HEAD `341161d`) sigue en progreso desde el repo Back_GPS; verificar antes de declarar cerrado el lote.
 - Después de publicar el cambio OSRM, verificar que Actions ejecutan el caso real de mapa, Admin delegado, backend Release/xUnit, API/MySQL y cleanup; actualizar los documentos con SHA y evidencia. La misión integral permanece abierta.
+
+## Hallazgo de Action y corrección pendiente de validación
+
+- Action `45119404897` falló sólo en `company-admin.spec.ts`: el E2E de Admin delegado buscaba `Abrir menú` a 1280 px, donde la navegación es la barra lateral desktop. API 403, persistencia de rol y 50 pruebas adicionales pasaron.
+- Fix local en `company-admin.spec.ts`: viewport 390×844 antes del login para habilitar el menú móvil. Causa/solución/previsión en `ERROR_LOG.md`. Ejecutar lint/build/discovery, publicar y comprobar Action completa + cleanup.
+- Action Front `45119664116` para el E2E OSRM está en progreso; recoger el resultado antes de terminar.

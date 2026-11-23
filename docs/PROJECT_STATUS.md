@@ -664,3 +664,8 @@ Fecha de actualización: 2026-11-22.
 - El E2E Manager mapa ahora intercepta OSRM con una geometría determinista de tres coordenadas y comprueba que el SVG dibuja el punto intermedio recibido; deja de forzar el error 503 en ese flujo. La fixture externa no depende de Internet.
 - Validación local posterior al cambio: lint y build Next 16.4.6 pasan, `git diff --check` pasa y Playwright descubre 51 tests. La Action del SHA actualizado sigue pendiente.
 - También está pendiente la Action que integra el fixture HTTP/MySQL real de Admin delegado; no afirmar cierre hasta verificar ejecución y limpieza.
+
+## Corrección del E2E Admin delegado — nueva Action pendiente
+
+- Action Front `45119404897`: backend, audit, lint/build y responsive pasaron; Playwright **50/51**. El único fallo fue el locator `Abrir menú` en viewport desktop, después de que la API real ya confirmara 403 a creación/promoción Admin.
+- Corregido el test para usar explícitamente 390×844, donde se muestra ese botón. Esperar Action del nuevo SHA para confirmar Admin delegado y limpieza.
