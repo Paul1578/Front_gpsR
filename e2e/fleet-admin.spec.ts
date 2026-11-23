@@ -3725,7 +3725,7 @@ test("un Admin de otra empresa no puede consultar ni modificar recursos de flota
   }
 });
 
-test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => {
+test("Admin crea cuentas, cambia roles y promueve a Admin desde Equipo", async ({ page }) => {
   test.skip(!email || !password || !allowMutations, "Requiere cuenta QA Admin y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   test.setTimeout(60_000);
@@ -3829,6 +3829,37 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
       await expect(reloadedMemberCard).toContainText("Logística");
       await expect(reloadedMemberCard.getByRole("button", { name: "Logística", exact: true })).toBeDisabled();
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      await reloadedMemberCard.getByRole("button", { name: "Gerente", exact: true }).click();
+      const rootPromotionDialog = page.getByRole("alertdialog");
+      await expect(rootPromotionDialog).toContainText("cambiará de Logística a Gerente");
+      const promoteResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await rootPromotionDialog.getByRole("button", { name: "Confirmar cambio" }).click();
+      const promoteResponse = await promoteResponsePromise;
+      expect(promoteResponse.status()).toBe(200);
+      expect((await promoteResponse.request().postDataJSON()).roleName).toBe("Admin");
+      const promotedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(promotedTeamResponse.status()).toBe(200);
+      const promotedMember = (await promotedTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(promotedMember).toMatchObject({ id: createdAccount.id, roles: ["Admin"] });
+      await expect(reloadedMemberCard.getByRole("button", { name: "Gerente", exact: true })).toBeDisabled();
+
+      await reloadedMemberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const restoreRoleResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+      const restoreRoleResponse = await restoreRoleResponsePromise;
+      expect(restoreRoleResponse.status()).toBe(200);
+      expect((await restoreRoleResponse.request().postDataJSON()).roleName).toBe("Logistics");
+      const restoredTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(restoredTeamResponse.status()).toBe(200);
+      const restoredMember = (await restoredTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(restoredMember).toMatchObject({ id: createdAccount.id, roles: ["Logistics"] });
     }
   }
 

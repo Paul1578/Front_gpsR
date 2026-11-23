@@ -669,3 +669,14 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - Front `ee49ce8`, Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y teardown success.
 - API/MySQL confirma el cambio de operación y el orden después de editar; el segundo guardado en móvil preserva la secuencia. Cleanup completado.
+
+## Promoción root-only desde Gestión de Equipo — CI pendiente
+
+- El flujo autenticado de creación de Manager ahora, desde Gestión de Equipo, promueve ese miembro a Admin con confirmación, valida el cuerpo del PUT y la lectura de `/Users/my-team`, luego restaura Logistics y comprueba estado final.
+- El test utiliza la sesión root y el fixture temporal del workflow. Lint/build/discovery 51/diff-check pasan local; validación HTTP/MySQL y teardown pendientes de Action.
+
+## CI de edición de paradas y HEAD documental previo
+
+- Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) en `ee49ce8`: 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success; API/MySQL verificó operaciones y orden editados.
+- Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) para `3a131a8`: 51/51, responsive, backend Release/xUnit y cleanup success.
+- La nueva promoción root-only desde `TeamManagement` aún requiere CI integrado.

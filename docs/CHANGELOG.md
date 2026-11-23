@@ -735,3 +735,12 @@
 
 - Action Front [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) pasó con **51/51 E2E**, responsive 1/1, Release/xUnit, audit, lint/build y cleanup.
 - La ruta multi-parada cambió operación y orden desde la UI; API/MySQL confirmaron persistencia y el guardado móvil conservó la secuencia.
+
+## 2026-11-23 — Promoción root-only desde Gestión de Equipo
+
+- E2E ahora verifica elevar Manager a Admin desde la UI principal con confirmación, consultar persistencia por API y restaurar Logistics. Lint/build/discovery 51 pasan; Action integrada pendiente.
+
+## 2026-11-23 — Validación adicional de Front
+
+- Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) pasó HEAD `3a131a8`: 51/51 E2E, responsive, backend Release/xUnit, audit/lint/build y cleanup.
+- Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) confirmó persistencia de operación y orden de paradas editadas mediante API/MySQL real.

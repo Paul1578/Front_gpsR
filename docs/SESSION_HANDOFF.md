@@ -1088,3 +1088,14 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - La prueba edita una ruta multi-parada, cambia operación pickup→delivery, reordena paradas y verifica nombres/operaciones completos por GET; repite guardado en móvil. No quedan fallos conocidos en este cambio.
 - Action [45154834106](https://github.com/Paul1578/Front_gpsR/actions/runs/45154834106) validó el HEAD documental anterior `d03f3eb` con 51/51 y cleanup.
 - Siguiente trabajo: continuar la matriz pendiente de CRUD/roles/responsive de `PROJECT_STATUS.md`; no cerrar la misión integral.
+
+## Siguiente cobertura de roles — root promotion en Equipo — 2026-11-23
+
+- E2E de `Gestión de Equipo` ampliado: promueve un miembro a Admin desde la UI raíz, confirma el PUT/`roleName=Admin`, relee el equipo, restaura Logistics y vuelve a comprobar persistencia.
+- Lint/build y discovery 51 pasan local. Pendiente publicar tras cerrar Action documental `45157412228` y confirmar en API/MySQL/cleanup.
+
+## Validación anterior y nueva cobertura de promoción — 2026-11-23
+
+- Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) validó el HEAD `3a131a8`: 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup.
+- La edición UI de paradas multi-entrega validó el commit `ee49ce8`, Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687), con los mismos gates en verde.
+- Nuevo test root-only desde Gestión de Equipo añadido después; local lint/build/discovery pasan. Falta su Action autenticada de API/MySQL tras publicar.

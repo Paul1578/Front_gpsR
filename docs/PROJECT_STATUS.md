@@ -768,3 +768,15 @@ Fecha de actualización: 2026-11-22.
 - El E2E del commit `ee49ce8` cambia pickup a delivery, reordena las dos paradas y exige el arreglo origen/entrega/recogida/destino por GET tras guardar en tablet y móvil.
 - Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): success; **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y teardown. La escritura usó API real y MySQL descartable; cleanup correcto.
 - La Action anterior [45154834106](https://github.com/Paul1578/Front_gpsR/actions/runs/45154834106) también pasó **51/51**, responsive y cleanup sobre docs `d03f3eb`.
+
+## Promoción root-only en Gestión de Equipo — E2E agregado, CI anterior aprobado; nuevo caso pendiente
+
+- Auditoría Front identificó que la promoción root-only desde la UI estaba cubierta en Administración heredada, mientras Gestión de Equipo sólo probaba Manager→Logistics.
+- El E2E principal ahora promueve por confirmación un Manager→Admin desde la tarjeta de Equipo, consulta `GET /Users/my-team`, verifica `roles=[Admin]`, restaura Logistics y confirma la restauración. El fixture se ejecuta con sesión raíz.
+- Lint/build/discovery 51 y diff-check pasan local; falta ejecutar API/MySQL E2E y cleanup en CI.
+
+## Validación documental Front `3a131a8` — 2026-11-23
+
+- Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) success: backend Release/xUnit **139/139**, audit/lint/build, responsive **1/1**, E2E **51/51** y cleanup.
+- También queda confirmada la edición de paradas publicada en `ee49ce8`, Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687): **51/51**, responsive y cleanup.
+- La promoción desde Gestión de Equipo raíz está añadida localmente; esperar la nueva Action después del push.
