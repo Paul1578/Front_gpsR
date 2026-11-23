@@ -2168,7 +2168,7 @@ test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz"
     !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !managerEmail || !managerPassword || !logisticsEmail || !logisticsPassword || !allowMutations,
     "Requiere fixtures QA Admin, User, Driver, Logistics, Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
-  test.setTimeout(180_000);
+  test.setTimeout(360_000);
   page.setDefaultTimeout(8_000);
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -2564,6 +2564,7 @@ test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz"
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
       );
       await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      await managerPage.getByRole("alertdialog").getByRole("button", { name: "Sí, dar de baja" }).click();
       expect((await deactivateManagerDriver).status()).toBe(204);
       await expect(managerDriverCard).toHaveCount(0);
       await managerPage.getByRole("button", { name: "Mostrar bajas" }).click();
@@ -2618,6 +2619,7 @@ test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz"
         new URL(response.url()).pathname.endsWith(`/api/backend/Drivers/${managerUiDriverId}/status`) && response.request().method() === "PUT",
       );
       await managerDriverCard.getByRole("button", { name: "Dar de baja" }).click();
+      await managerPage.getByRole("alertdialog").getByRole("button", { name: "Sí, dar de baja" }).click();
       expect((await deactivateTabletManagerDriver).status()).toBe(204);
       await expect(managerDriverCard).toContainText("Inactivo");
       const reactivateTabletManagerDriver = managerPage.waitForResponse((response) =>

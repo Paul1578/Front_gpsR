@@ -4,6 +4,7 @@
 - Solución: el runner crea ahora un fixture Logistics aislado con las demás cuentas QA, y lo activa sólo en la base MySQL descartable tras provisionarlo; E2E usa esas credenciales preactivadas. Se conserva el test de denegación de permisos del rol Logistics.
 - Prevención: los tests de autenticación deben seguir el flujo real de invitación/activación o usar fixtures QA habilitados explícitamente por el runner descartable. `IsActive=true` por sí solo no limpia `MustChangePassword`.
 - El fix está en Front `e2e/fleet-admin.spec.ts` y Backend `scripts/run-e2e-local.sh`; lint/build/shell syntax local en curso y Action integrada nueva pendiente. No marcar la matriz como validada hasta obtener el resultado de E2E y cleanup.
+- La Action integrada siguiente [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) permitió el login y ejecutó **66/67**, pero el único test agotó 180 s al intentar dar de baja un Driver desde Gestión de Conductores. La UI pide confirmación y la prueba no la aceptaba; la segunda baja de tablet tenía el mismo hueco. Solución: aceptar `Sí, dar de baja` en ambos puntos y ampliar a 360 s este flujo CRUD completo. Action de la corrección actual pendiente.
 
 ## 2026-11-23 — Listado y polling repetían payloads Base64 — CORREGIDO LOCALMENTE
 
