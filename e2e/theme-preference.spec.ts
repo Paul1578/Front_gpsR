@@ -49,7 +49,7 @@ test("la preferencia de tema se guarda y persiste al recargar", async ({ page })
   const passwordForm = page.locator("form").filter({ has: page.getByPlaceholder("Contraseña actual") });
   await expect(passwordForm).toBeVisible();
   for (const placeholder of ["Contraseña actual", "Nueva contraseña", "Confirmar nueva contraseña"]) {
-    const field = page.getByPlaceholder(placeholder);
+    const field = page.getByRole("textbox", { name: placeholder, exact: true });
     await expect(field).toBeVisible();
     const bounds = await field.boundingBox();
     expect(bounds).not.toBeNull();

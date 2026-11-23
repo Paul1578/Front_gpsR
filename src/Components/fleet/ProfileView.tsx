@@ -127,6 +127,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
             <button
               onClick={onBack}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Volver"
             >
               <ArrowLeft size={20} />
             </button>
@@ -277,7 +278,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                 type="button"
                 onClick={handleLogoutAll}
                 disabled={isLoggingOutAll}
-                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 disabled:opacity-60 flex items-center gap-2"
+                className="px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm hover:bg-red-100 disabled:opacity-60 flex items-center gap-2"
               >
                 <LogOut size={16} />
                 {isLoggingOutAll ? "Cerrando sesiones..." : "Cerrar sesión en todos los dispositivos"}

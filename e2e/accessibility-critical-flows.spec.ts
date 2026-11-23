@@ -73,7 +73,13 @@ test("navegación autenticada y diálogo de creación de usuario cumplen axe", a
   await expectAccessible(page, "diálogo de creación de usuario");
 
   await dialog.getByRole("button", { name: "Cancelar" }).click();
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  await expectAccessible(page, "Mi Perfil");
+  await page.getByRole("button", { name: "Cambiar contraseña", exact: true }).click();
+  await expectAccessible(page, "formulario de cambio de contraseña en Mi Perfil");
+
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await expectAccessible(page, "confirmación de cierre de sesión");
 });

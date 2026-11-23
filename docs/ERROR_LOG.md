@@ -1,3 +1,17 @@
+## 2026-11-23 — Action `45265266802` falló por selector Playwright parcial — CORREGIDO LOCALMENTE
+
+- La Action completó build/lint/audit/responsive/axe y 68/69 E2E. El nuevo caso móvil del Perfil consultó `getByPlaceholder("Nueva contraseña")`, que también coincide parcialmente con «Confirmar nueva contraseña» y produjo una violación strict-mode.
+- No fue un error del producto. Se sustituyó por `getByRole("textbox", { name, exact: true })`, usando los nombres accesibles que ahora proveen las etiquetas explícitas.
+- Prevención: los placeholders/nombres con prefijos solapados requieren selector exacto; cuando exista label visible, priorizar rol + nombre exacto.
+- El resto de 68 E2E pasó, incluidos checks reales de API/MySQL. Repetición CI del fix pendiente.
+
+## 2026-11-23 — axe en Mi Perfil encontró botón sin nombre/contraste bajo; rerun usó build obsoleto — CORREGIDO LOCALMENTE
+
+- Al extender axe a Perfil aparecieron dos fallos WCAG reales: el botón iconográfico «Volver» carecía de nombre accesible y el botón de revocar sesiones tenía contraste 4.36:1 (mínimo 4.5:1). Se añadió `aria-label="Volver"` y se cambió el texto de rojo 600 a rojo 700.
+- La primera repetición local servía el `.next` anterior porque `test:a11y` ejecuta Next de producción. Se reconstruyó el bundle; axe pasó en Perfil y el formulario de contraseña. El test llegó después al logout y falló sólo por selector ambiguo al coexistir «Cerrar sesión» con «Cerrar sesión en todos los dispositivos»; el locator se acotó a nombre exacto.
+- Prevención: tras cambios UI reconstruir antes del runner de producción; preferir nombres accesibles exactos para botones con etiquetas que comparten prefijo; incluir Perfil en auditoría automatizada.
+- Con el locator exacto, `npm run test:a11y` pasó localmente **2/2 casos** e inspeccionó también Perfil y el formulario de cambio de contraseña. La Action integrada de estos cambios sigue pendiente.
+
 ## 2026-11-23 — Perfil: formulario de seguridad poco accesible y microcopy sin tildes — CORREGIDO LOCALMENTE
 
 - La inspección responsive encontró que los campos de contraseña dependían sólo del placeholder como nombre visible/accesible; además, cinco mensajes de validación/resultado omitían tildes. El E2E existente del tema no abría ni medía el formulario a 320 px.
