@@ -1668,3 +1668,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Búsquedas/lecturas de auditoría apuntaron a `scripts/smoke-tenant-http.sh` y `fletflow/Api/Controllers/RoutesController.cs` usando `/home/leonardo/Front_gpsR` como cwd. Esos paths pertenecen a Backend; `rg` informó paths ausentes y no alteró archivos.
 - Solución: repetir la lectura desde `/home/leonardo/Back_GPS`. Prevención: al agrupar búsquedas entre repositorios, definir `workdir` por cada comando y validar que las rutas sean relativas al checkout correcto.
+
+## 2026-11-23 — E2E esperaba el toast de fallback y no el mensaje real — CORREGIDO
+
+- Action `45129570384` ejecutó el ciclo Driver de traslado y comprobó API/ruta `Completed`, timestamps y vehículo `Available`, pero falló al esperar “Ruta completada exitosamente”. `FleetContext.updateRoute` devuelve el mensaje de éxito real “Estado de ruta actualizado”, que `DriverView` muestra; el texto esperado era el fallback, no el contrato actual.
+- Solución: la aserción ahora usa el mensaje retornado por `updateRoute`. Prevención: derivar expectativas de feedback del flujo de datos real (contexto/API) antes de asumir el texto fallback de un handler.

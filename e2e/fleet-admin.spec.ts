@@ -1396,7 +1396,7 @@ test("Admin crea un traslado que el Driver inicia y completa desde Mi Ruta", asy
     const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers });
     expect(availableVehicle.status()).toBe(200);
     expect((await availableVehicle.json()).status).toBe(0);
-    await expect(page.getByText("Ruta completada exitosamente")).toBeVisible();
+    await expect(page.getByText("Estado de ruta actualizado")).toBeVisible();
   } finally {
     const cleanupIssues: string[] = [];
     if (routeId) {
