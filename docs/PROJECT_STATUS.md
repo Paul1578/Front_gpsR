@@ -4,6 +4,7 @@
 - Historial solicita el detalle al abrir una ruta; Mi Ruta consulta el detalle activo y vuelve a pedirlo si aumenta el número de evidencias. Se muestran carga, error y reintento.
 - E2E Driver comprueba por API que la lista trae contenido nulo y que el detalle conserva la imagen; su flujo visual consulta Historial y abre la evidencia.
 - npm run lint, npm run build, discovery de 53 tests, diff-check y Playwright focal de carga/historial 13/13 y suite local completa 19 passed / 34 skipped pasaron. Los 34 requieren credenciales o fixtures QA. Action [45190816162](https://github.com/Paul1578/Front_gpsR/actions/runs/45190816162) en d37d765 pasó **53/53 E2E**, responsive 1/1, audit/lint/build, backend Release/xUnit 158/158, smokes HTTP/MySQL y cleanup.
+- Contrato TypeScript actualizado para representar `content=null` en fotos listadas. Lint/build pasan localmente; el cambio de tipos espera commit y Action integrada.
 
 ## Mapa, asignaciones y limpieza de componentes obsoletos — CI aprobado
 

@@ -8,6 +8,8 @@
 - La primera suite Playwright completa ejecutó 18 tests y omitió 34 por falta de credenciales/fixtures; falló la aserción de login porque el texto del toast también aparecía en el overlay de Next. Se cambió el locator a texto exacto. Repetición completa: 19 passed, 34 skipped; login focal pasó 1/1.
 - Un script documental duplicó el segmento docs en la ruta base y falló antes de editar archivos. El segundo reemplazo ya había actualizado status/handoff, pero paró al no encontrar una línea exacta en TESTING; se leyó el texto actual y se corrigió con el path real.
 - Prevención: comprobar ruta de instalación y host de herramientas antes de concluir que no están instaladas; validar comandos compuestos.
+- El DTO TypeScript declaraba contenido siempre string, aunque el resumen de Backend devuelve null para fotos. Solución: permitir `string | null` en ambos alias de evidencia y mantener el normalizador explícito; lint/build pasan. Prevención: reflejar nulabilidad del contrato JSON en tipos crudos.
+- Consulta de Action equivocada: se solicitó `45192161720` (Back_GPS) usando gh desde Front y respondió 404; repetida desde el repo Backend confirmó success. Prevención: ejecutar consultas de Actions en el checkout propietario.
 
 ## 2026-11-23 — Componentes huérfanos mostraban acciones ficticias — CORREGIDO LOCALMENTE
 

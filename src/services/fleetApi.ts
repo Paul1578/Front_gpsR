@@ -190,13 +190,13 @@ interface RawRoutePoint {
   Status?: number | string;
   evidence?: Array<{
     type?: string;
-    content?: string;
+    content?: string | null;
     description?: string;
     createdAtUtc?: string;
   }>;
   Evidence?: Array<{
     type?: string;
-    content?: string;
+    content?: string | null;
     description?: string;
     createdAtUtc?: string;
   }>;

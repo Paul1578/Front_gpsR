@@ -1,3 +1,8 @@
+## 2026-11-23 — DTO frontend refleja contenido opcional de imagen
+
+- El contrato de evidencia tipa `content` como `string | null` porque la lista omite Base64 de imágenes; notas y GET de detalle conservan texto o imagen completa.
+- Lint/build pasan localmente; la Action del ajuste de tipos queda pendiente.
+
 ## 2026-11-23 — Carga bajo demanda de fotos de ruta
 
 - Front solicita bytes de evidencia al abrir el detalle y resincroniza fotos activas tras nueva evidencia; listas periódicas mantienen metadata de imágenes.

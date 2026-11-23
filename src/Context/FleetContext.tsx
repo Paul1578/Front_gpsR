@@ -216,7 +216,7 @@ type ApiRoutePoint = {
 
 type ApiPointEvidence = {
   type?: string;
-  content?: string;
+  content?: string | null;
   description?: string;
   createdAtUtc?: string;
   CreatedAtUtc?: string;
