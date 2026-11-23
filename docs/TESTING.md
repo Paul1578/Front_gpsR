@@ -1,8 +1,8 @@
-# E2E Logistics edita una ruta — validación integrada pendiente — 2026-11-23
+# E2E Logistics edita una ruta — validado por Actions — 2026-11-23
 
 - El escenario autenticado crea un traslado desde la UI, cambia nombre y descripción en “Editar ruta”, espera `PUT /Routes/{id}` HTTP 200 y confirma por GET la persistencia junto al conductor/vehículo originales y estado Pending.
 - Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
-- Local: lint/build correctos; discovery enumera 51 pruebas. Pendiente ejecutar con API y MySQL descartables; no cuenta como verificado hasta pasar sin skip.
+- CI: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend Release/xUnit, audit/lint/build, responsive y cleanup también pasaron.
 
 ## E2E Manager edita una ruta — validación local, CI pendiente — 2026-11-23
 

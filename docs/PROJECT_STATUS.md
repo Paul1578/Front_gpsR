@@ -1,8 +1,8 @@
-## Estado actual — 2026-11-23 (edición Logistics pendiente de CI)
+## Estado actual — 2026-11-23 (edición Logistics validada)
 
 - Añadida cobertura E2E autenticada para editar desde el constructor una ruta de Logistics, validar `PUT /Routes/{id}` y consultar el GET persistido; luego el flujo verifica cancelación e historial.
 - Validación local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) y `git diff --check` pasan.
-- Pendiente: ejecución integrada con API/MySQL efímeros. No contar como cubierto hasta Action verde sin skip del escenario.
+- Validado por Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752): **51/51 E2E** en cada corrida, backend Release/xUnit, audit/lint/build, responsive y limpieza de API/MySQL efímeros.
 
 ## Manager edita rutas desde UI — validación local, CI pendiente — 2026-11-23
 

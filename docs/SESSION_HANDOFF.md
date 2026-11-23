@@ -5,8 +5,8 @@
 - El test `Logistics ve rutas pero no vehículos ni administración de equipo` ya cubría alta en constructor, cancelación, historial y denegación de flota, pero no edición desde UI.
 - Se añadió edición de nombre y descripción del traslado, aserción de `PUT /Routes/{id}` HTTP 200 y lectura autenticada posterior que confirma persistencia sin cambiar conductor, vehículo ni estado.
 - El flujo continúa con cancelación e historial usando el nuevo nombre. No hubo errores durante lint/build/discovery; no se añade incidente a `ERROR_LOG.md`.
-- Validación local: lint, build y Playwright discovery **51 tests** pasan; Action integrado pendiente.
-- Siguiente paso: publicar en `refactor/route-builder`, ejecutar el workflow con MySQL desechable y registrar resultado; documentar cualquier fallo y su prevención en `ERROR_LOG.md`.
+- Validación local: lint, build y Playwright discovery **51 tests** pasan. CI integrado pasó en Front `761ffab`: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y PR [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752), **51/51 E2E** cada una, build/xUnit, audit/lint, responsive y cleanup.
+- No hubo error nuevo en estas corridas; no se agrega incidente. Próximo foco: validar edición Manager en `87da4aa`.
 
 ## Cobertura siguiente — edición de rutas por Manager
 
