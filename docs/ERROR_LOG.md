@@ -1778,3 +1778,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Al registrar el error del parche de UI, el editor dejó dos saltos de línea al final de `ERROR_LOG.md`; `git diff --check` lo detectó antes del commit.
 - Solución: normalizar el archivo a una sola nueva línea final y repetir diff-check.
 - Prevención: revisar el EOF de los logs después de insertar entradas al inicio o al final.
+# 2026-11-23 — E2E de unlink buscó el botón de toggle con el nombre equivocado — CORREGIDO
+
+- Front Action `45172574266` pasó 50/51 E2E y falló el nuevo escenario al buscar `Gestionar choferes`. La sección de conductores seguía abierta; el botón cambiaba su nombre accesible a `Ocultar choferes`.
+- Solución: reutilizar la tarjeta `team-driver-{id}` ya visible y afirmar que aparece, sin volver a alternar la sección.
+- Prevención: después de una operación UI que mantiene estado abierto, comprobar el estado actual antes de volver a pulsar su toggle.
+- Una consulta del Action Backend `45173035947` se hizo desde el checkout Front y respondió 404; repetida desde `/home/leonardo/Back_GPS`, donde la Action concluyó success.
