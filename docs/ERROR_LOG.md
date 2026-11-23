@@ -1658,3 +1658,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Action [`45123444413`](https://github.com/Paul1578/Front_gpsR/actions/runs/45123444413), SHA `f0acce7`: **51/51 E2E** y responsive **1/1**, backend Release/xUnit, audit/lint/build y teardown exitosos.
 - Confirmó los fixes registrados en las entradas anteriores: viewport separado por escenario; rol Gerente del Admin delegado presente pero deshabilitado; estado OSRM localizado por copy exacto; Driver GET posterior al POST 201; fixtures únicos en retries. Cleanup terminó correctamente.
+
+## 2026-11-23 — Contexto de parches documentales no coincidía — RESUELTO
+
+- Dos intentos de actualización por bloque fallaron porque el texto esperado no coincidía exactamente con el documento vigente; `apply_patch` abortó sin modificar archivos.
+- Solución: releer las líneas actuales y aplicar cambios pequeños sobre frases exactas. Prevención: comprobar el contexto antes de preparar un parche amplio y revisar `git diff` después de ediciones documentales.
