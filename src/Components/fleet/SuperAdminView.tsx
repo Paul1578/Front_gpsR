@@ -3,6 +3,7 @@ import { ArrowLeft, Shield, Users, Database, Download, BarChart3, Eye, EyeOff } 
 import { useAuth, UserRole } from "../../Context/AuthContext";
 import { useFleet } from "../../Context/FleetContext";
 import { toast } from "sonner";
+import { ConfirmDialog } from "../ConfirmDialog";
 
 interface SuperAdminViewProps {
   onBack?: () => void;
@@ -13,6 +14,7 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
   const { vehicles, routes, loadErrors, vehiclesLoading, routesLoading, retryFleetData } = useFleet();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "create" | "data">("overview");
   const [isCreating, setIsCreating] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string; memberName: string; role: UserRole } | null>(null);
 
   const [createUserForm, setCreateUserForm] = useState({
     nombres: "",
@@ -110,7 +112,20 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
     }
   };
 
-  const handleRoleUpdate = async (userId: string, role: UserRole) => {
+  const requestRoleUpdate = (userId: string, role: UserRole) => {
+    const member = users.find((user) => user.id === userId);
+    if (!member || member.role === role) return;
+    setPendingRoleChange({
+      userId,
+      memberName: `${member.nombres} ${member.apellidos}`.trim(),
+      role,
+    });
+  };
+
+  const confirmRoleUpdate = async () => {
+    if (!pendingRoleChange) return;
+    const { userId, role } = pendingRoleChange;
+    setPendingRoleChange(null);
     const result = await updateUserRole(userId, role);
     if (result.ok) {
       toast.success("Rol actualizado correctamente");
@@ -426,7 +441,8 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
                         <div className="flex items-center gap-2">
                           <select
                             value={user.role}
-                            onChange={(e) => void handleRoleUpdate(user.id, e.target.value as UserRole)}
+                            aria-label={`Rol de ${user.nombres} ${user.apellidos}`}
+                            onChange={(e) => requestRoleUpdate(user.id, e.target.value as UserRole)}
                             className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
                           >
                             {(isRootAccount || user.role === "superadmin") && (
@@ -647,6 +663,17 @@ export function SuperAdminView({ onBack }: SuperAdminViewProps = {}) {
 
         </div>
       </div>
+      <ConfirmDialog
+        open={pendingRoleChange !== null}
+        onClose={() => setPendingRoleChange(null)}
+        onConfirm={() => void confirmRoleUpdate()}
+        title="Confirmar cambio de rol"
+        description={pendingRoleChange?.role === "superadmin"
+          ? `${pendingRoleChange.memberName} recibirá permisos de Administrador para gestionar la empresa y su flota.`
+          : `¿Confirmas cambiar el rol de ${pendingRoleChange?.memberName} a ${pendingRoleChange ? getRoleLabel(pendingRoleChange.role) : ""}?`}
+        confirmText="Confirmar cambio"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }

@@ -715,3 +715,7 @@
 - El E2E de rutas comprueba el `isActive=false` guardado después de baja lógica.
 - Añadido testid a la fila de usuario de administración para anclar el selector por ID.
 - CI integrada pendiente; no declarar validación E2E completada hasta confirmar Action.
+# 2026-11-23 — Confirmación de cambios de rol en Administración
+
+- La lista de usuarios en `SuperAdminView` pide confirmación accesible antes de persistir un rol; cancelar no modifica estado. Se añade nombre accesible al selector.
+- E2E raíz cubre cancelar/confirmar Admin, lectura persistida y restauración a Driver; viewport 320/768. Lint/build/discovery local pasan; Action pendiente.

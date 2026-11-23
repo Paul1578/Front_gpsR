@@ -5,10 +5,11 @@
 - QA de rutas/usuarios encontró (1) falta de aislamiento cross-tenant E2E en `/Users/{id}/status`, `/profile` y `/role`; (2) Admin raíz sólo tenía prueba de opción habilitada, sin promoción persistida; (3) eliminación de ruta comprobaba desaparición visual/HTTP pero no `isActive=false` persistido.
 - Se amplió el E2E multiempresa con una cuenta User temporal y ataques a los tres endpoints: todos deben devolver 404, el usuario no aparece en el equipo ajeno y el dueño confirma perfil/rol/estado sin cambios.
 - La prueba de Administración ahora promueve por UI a un Driver temporal a Admin desde la cuenta raíz, valida HTTP/body y `GET /Users/my-team`, y restaura Driver. Se agregó testid estable a la fila de usuario.
+- Revisión adicional encontró que el selector de Administración aplicaba roles sin confirmación. Ahora usa diálogo para confirmar/cancelar; el E2E de raíz comprueba cancelar sin PUT, confirmar promoción y restaurar el rol. También mide la lista/select a 320 y 768 px.
 - El flujo de ruta de mapa consulta el ID después de DELETE y exige `isActive=false`.
-- Validación local: lint, build Next 16/TS, discovery **51 tests** y `git diff --check` pasan. CI integrado aún pendiente; no marcar estos escenarios como probados en MySQL hasta recibir Action.
+- Validación local del primer lote `bd38edd`: lint, build Next 16/TS, discovery **51 tests**, `git diff --check` pasan. Action [`45151010627`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151010627) sigue en curso con checkout/MySQL descartable. El diálogo/responsive del follow-up aún requiere su propia Action.
 - Incidentes de la iteración (contexto de parche no coincidente y paths de controlador equivocados) quedan registrados en `ERROR_LOG.md` del checkout propietario.
-- Siguiente: commit/push en `refactor/route-builder`, observar Action completa, corregir cualquier fallo y actualizar esta sección y `PROJECT_STATUS.md` con evidencia exacta.
+- Commit `bd38edd` está publicado; el follow-up de confirmación requiere commit y otra validación integrada después de que compile localmente.
 
 ## E2E de correo duplicado en Equipo
 

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -93,11 +93,38 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
   await expect(page.locator('select option[value="gerente"]').first()).toBeEnabled();
 
   const companyUserRow = page.getByTestId(`company-user-${createdUser.id}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  const usersAt320 = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(usersAt320.content).toBeLessThanOrEqual(usersAt320.viewport);
+  await expect(companyUserRow.getByRole("combobox", { name: "Rol de Chofer QA Responsive" })).toBeVisible();
+  let rolePutRequests = 0;
+  const countRolePuts = (request: Request) => {
+    if (request.method() === "PUT" && new URL(request.url()).pathname.endsWith(`/Users/${createdUser.id}/role`)) {
+      rolePutRequests += 1;
+    }
+  };
+  page.on("request", countRolePuts);
+  await companyUserRow.getByRole("combobox").selectOption("superadmin");
+  const promotionConfirmation = page.getByRole("alertdialog");
+  await expect(promotionConfirmation).toContainText("recibirá permisos de Administrador");
+  await promotionConfirmation.getByRole("button", { name: "Cancelar" }).click();
+  expect(rolePutRequests).toBe(0);
+  const unchangedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(unchangedTeamResponse.status()).toBe(200);
+  expect((await unchangedTeamResponse.json() as Array<{ id: string; roles: string[] }>)
+    .find((member) => member.id === createdUser.id)?.roles).toEqual(["Driver"]);
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  const usersAt768 = await page.evaluate(() => ({ viewport: innerWidth, content: document.documentElement.scrollWidth }));
+  expect(usersAt768.content).toBeLessThanOrEqual(usersAt768.viewport);
+  await expect(companyUserRow.getByRole("combobox", { name: "Rol de Chofer QA Responsive" })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 844 });
   const adminPromotion = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdUser.id}/role`) &&
     response.request().method() === "PUT",
   );
   await companyUserRow.getByRole("combobox").selectOption("superadmin");
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
   const adminPromotionResponse = await adminPromotion;
   expect(adminPromotionResponse.status()).toBe(200);
   expect((await adminPromotionResponse.request().postDataJSON()).roleName).toBe("Admin");
@@ -111,11 +138,14 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
     response.request().method() === "PUT",
   );
   await companyUserRow.getByRole("combobox").selectOption("chofer");
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
   expect((await roleRestore).status()).toBe(200);
   const restoredTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
   expect(restoredTeamResponse.status()).toBe(200);
   expect((await restoredTeamResponse.json() as Array<{ id: string; roles: string[] }>)
     .find((member) => member.id === createdUser.id)?.roles).toEqual(["Driver"]);
+  expect(rolePutRequests).toBe(2);
+  page.off("request", countRolePuts);
 
   await page.getByRole("button", { name: "Gestión de Datos", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Exportar Datos" })).toBeVisible();

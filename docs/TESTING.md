@@ -647,3 +647,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Caso de Administración real eleva por interfaz un Driver de prueba al rol Admin como cuenta raíz; comprueba el `PUT` y la lectura autenticada de equipo, luego restaura Driver para no contaminar otras pruebas.
 - Caso de creación/eliminación de ruta verifica `isActive=false` consultando el recurso después del DELETE.
 - Local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51**) y `git diff --check` pasan. Prueba integrada con API/MySQL y cleanup: pendiente de Action.
+# Confirmación de rol y Administración responsive — 2026-11-23
+
+- La vista Administración raíz requiere confirmar los cambios de rol. Su E2E selecciona Admin, cancela y comprueba cero PUT y rol Driver intacto; luego confirma, verifica persistencia, restaura Driver y verifica la respuesta.
+- El mismo listado/selector se valida sin overflow ni ocultamiento a 320×844 y 768×1024.
+- Lint/build/discovery 51 pasan localmente. Integración API/MySQL pendiente.
