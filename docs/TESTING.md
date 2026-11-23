@@ -680,3 +680,8 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) en `ee49ce8`: 51/51 E2E, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success; API/MySQL verificó operaciones y orden editados.
 - Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) para `3a131a8`: 51/51, responsive, backend Release/xUnit y cleanup success.
 - La nueva promoción root-only desde `TeamManagement` aún requiere CI integrado.
+
+## Promoción root-only desde Gestión de Equipo — CI aprobado
+
+- Action Front [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214), commit `29e320b`: **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup success.
+- Usuario Manager se promueve a Admin desde la pantalla principal con sesión root. Se validan body de PUT, respuesta, lectura `/Users/my-team` y restauración a Logistics; el runner limpia el fixture.

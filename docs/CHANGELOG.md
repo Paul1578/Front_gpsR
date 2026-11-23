@@ -744,3 +744,8 @@
 
 - Action [45157412228](https://github.com/Paul1578/Front_gpsR/actions/runs/45157412228) pasó HEAD `3a131a8`: 51/51 E2E, responsive, backend Release/xUnit, audit/lint/build y cleanup.
 - Action [45155814687](https://github.com/Paul1578/Front_gpsR/actions/runs/45155814687) confirmó persistencia de operación y orden de paradas editadas mediante API/MySQL real.
+
+## 2026-11-23 — Promoción root-only desde Gestión de Equipo validada
+
+- Action [45158497214](https://github.com/Paul1578/Front_gpsR/actions/runs/45158497214) pasó: 51/51 E2E, responsive, Backend Release/xUnit, audit/lint/build y cleanup.
+- E2E promueve Manager→Admin desde TeamManagement con root, comprueba persistencia y restaura Logistics.
