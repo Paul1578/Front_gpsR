@@ -19,3 +19,9 @@ El flujo de ruta debe representar `origin`, `stops[]` y `destination` sin duplic
 ## Edición de miembros de equipo — 2026-11-22
 
 AuthContext.updateUserProfile envía nombre, apellido y username a PUT /Users/{id}/profile. Email es inmutable desde Gestión de Equipo. Tras éxito, equipo y Drivers se refrescan independientemente; un fallo de refresco se informa como sincronización incompleta y no oculta que el guardado ocurrió.
+
+### Concurrencia de sesión entre pestañas
+
+- `AuthContext` usa la Web Locks API para serializar mutaciones de la cookie de sesión en el mismo origen y comparte cambios de identidad mediante el evento `storage`; cada pestaña vuelve a validar el usuario con `/Auth/me`.
+- Un 401 de refresh no elimina cookie desde el BFF porque puede ser una respuesta tardía de una rotación concurrente. `logout-all` elimina cookie sólo tras respuesta 2xx; logout individual limpia el navegador siempre y muestra advertencia si el backend no confirma revocación.
+- Ante refresh temporal 5xx/429/conectividad, una sesión activa se conserva para reintentar. Una restauración inicial no autentica desde datos cacheados; conserva cookie y orienta a recargar.

@@ -1892,3 +1892,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 ## Verificación posterior al flaky de logout — RESUELTO EN CI — 2026-11-23
 
 - Front `057c1cc` esperó el HTTP 200 de logout antes de revisar redirect/cookie. Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147) pasó 54/54 E2E **sin flaky**, responsive 1/1, Backend Release/xUnit 158/158, audit/lint/build y cleanup.
+
+## 2026-11-23 — Auditoría BFF detectó carreras entre pestañas y manejo ambiguo de fallos — CORREGIDO LOCALMENTE
+
+- QA de seguridad confirmó que un refresh concurrente podía rotar la cookie en una pestaña y que el 401 tardío de otra la borrara; login concurrente también podía desincronizar identidad/cookie.
+- Solución: serializar login/migrate/refresh/logout/logout-all con Web Locks; compartir cambio de identidad por `storage` y recargar la pestaña desactualizada; refresh 401 no borra cookie.
+- Refresh 5xx/429/red ya no cierra sesión activa. En restauración al inicio se preserva cookie ante error temporal y se muestra mensaje de reintento, sin confiar en usuario cacheado.
+- `logout-all` conserva cookie ante 401/fallo para permitir recuperación y sólo la limpia tras éxito. Logout individual sigue limpiándola localmente si backend falla, pero ahora muestra que revocación remota no se confirmó.
+- Tests directos de handlers: refresh 401 conserva cookie, logout-all 401 conserva cookie, logout 503 limpia cookie local; **3/3 pasan**. E2E browser para dos pestañas, 503, y feedback logout agregados; CI completa pendiente.

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!accessToken) return jsonResponse({ message: "Token de acceso requerido." }, 401);
 
   const result = await callBackend("logout-all", { accessToken, body: {} });
-  if (result.response.ok || result.response.status === 401) {
+  if (result.response.ok) {
     clearRefreshCookie(result.response);
   }
   return result.response;

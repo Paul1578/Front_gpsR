@@ -16,4 +16,12 @@
 - Rotar en ambientes remotos cualquier credencial que haya aparecido en el historial Git. El JWT y MySQL locales fueron rotados en esta sesión.
 - Usar HTTPS y revisar los orígenes CORS permitidos al desplegar.
 - El access token se mantiene sólo en memoria; un XSS activo aún podría ejecutar acciones con la sesión abierta, aunque la auditoría estática no encontró un vector XSS explotable. La cookie HttpOnly reduce la exfiltración del refresh token.
-- E2E integrado de cookie/rotación/logout agregado; pendiente Action autenticada y MySQL temporal para verificar sus atributos en Production.
+- Action `45207209347` verificó cookie Secure/HttpOnly/SameSite/Path/expiración en navegador real con API/MySQL efímeros; el follow-up de concurrencia y errores temporales está en validación.
+
+## Revisión de concurrencia y fallos de autenticación — CORRECCIONES LOCALES, CI PENDIENTE
+
+- Hallazgo alto: refresh rotado concurrentemente entre pestañas podía recibir un 401 tardío y borrar la cookie vigente. El cliente serializa login/migración/refresh/logout/logout-all con Web Locks; el handler refresh ya no borra cookie al recibir 401, y las pestañas detectan cambios de identidad por `currentUser` en `storage` para recargar la sesión verificada por `/Auth/me`.
+- Errores de refresh HTTP 5xx/429/red ya no borran sesión activa ni cookie; se informa fallo temporal. En restauración al cargar, el estado cacheado no se autentica: se conserva la cookie y se muestra opción de reintento/recarga.
+- `logout-all` sólo borra cookie si backend confirma éxito; 401 y fallos temporales preservan la sesión local para que pueda renovarse/reintentarse. Logout individual siempre limpia cookie local y ahora informa si el servidor no confirmó revocación.
+- Playwright añade prueba de restauración concurrente en dos páginas, recuperación tras refresh 503, feedback de error logout/logout-all y pruebas directas de handlers para refresh 401, logout-all 401 y logout backend 503. Las tres pruebas directas pasan localmente; E2E autenticado de estos cambios pendiente de Action.
+- Limitación de entorno: la exclusión entre pestañas usa Web Locks API de navegadores modernos; navegadores sin esa API usan el fallback sin coordinación. Mantener navegadores soportados en HTTPS para disponer de Web Locks.

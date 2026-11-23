@@ -1,6 +1,5 @@
 import {
   callBackend,
-  clearRefreshCookie,
   getCookieValue,
   invalidOriginResponse,
   jsonResponse,
@@ -15,10 +14,7 @@ export async function POST(request: Request) {
   if (!refreshToken) return jsonResponse({ message: "La sesión de renovación no está disponible." }, 401);
 
   const result = await callBackend("refresh", { body: { refreshToken } });
-  if (!result.ok) {
-    if (result.response.status === 401) clearRefreshCookie(result.response);
-    return result.response;
-  }
+  if (!result.ok) return result.response;
 
   const response = jsonResponse(result.access);
   if (!result.refreshToken || !result.refreshExpiration || !setRefreshCookie(response, result.refreshToken, result.refreshExpiration)) {

@@ -1256,3 +1256,10 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 
 - Front `057c1cc`, Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): **54/54 E2E sin flaky**, responsive 1/1, Release/xUnit **158/158**, audit/lint/build y cleanup. La race de logout quedó resuelta al esperar HTTP 200 de `/api/auth/logout`.
 - El siguiente cambio local incorpora E2E real de paginación de Equipo en API/MySQL efímero y workflow guard `FLETFLOW_E2E_DISPOSABLE_DATABASE`. En el checkout actual: lint/build, discovery 55 y diff-check pasan; falta integrar y validar Action.
+
+## Auditoría de seguridad BFF — follow-up abierto
+
+- QA de seguridad reportó cinco bordes: refresh concurrente en pestañas, logout con backend no disponible, refresh temporal 5xx, login concurrente y logout-all 401. Se abordaron con Web Locks para mutaciones de cookie, sync de identidad por `storage`/reload, 401 de refresh y logout-all que no borran cookie, tratamiento temporal de refresh y warning de logout individual cuando revocación no se confirma.
+- E2E nuevos en `fleet-admin.spec.ts`: restore concurrente en dos pestañas, refresh 503 y recuperación por reload, feedback logout/logout-all. Tests directos nuevos en `e2e/auth-bff-routes.spec.ts` pasan **3/3**. Lint/build y diff-check local; Playwright discovery **63**.
+- La última Action verde de HEAD previo `7d885c0` fue [`45210788234`](https://github.com/Paul1578/Front_gpsR/actions/runs/45210788234): **55/55 E2E**, Release/xUnit 158/158, responsive, audit/lint/build, teardown. Los cambios de seguridad actuales aún no están commit/push ni validados en Action.
+- Próximo paso: revisar tests/diff, actualizar documentación final con límites de Web Locks, commit en `refactor/route-builder`, correr Action completa, corregir flakes/fallos y hacer auditoría de estado Backend/Front restante.

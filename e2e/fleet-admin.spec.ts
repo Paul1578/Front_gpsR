@@ -72,6 +72,124 @@ test("la sesión guarda refresh sólo en cookie HttpOnly y valida origen", async
   expect((await page.context().cookies()).some((cookie) => cookie.name === "fletflow_refresh")).toBe(false);
 });
 
+test("un refresh temporal 503 permite restaurar la sesión al reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const refreshCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(refreshCookie?.value).toBeTruthy();
+
+  await page.route("**/api/auth/refresh", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API temporalmente no disponible" }) });
+  });
+  await page.reload();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("No se pudo verificar la sesión por un problema temporal. Intenta recargar.")).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(refreshCookie?.value);
+
+  await page.unroute("**/api/auth/refresh");
+  await page.reload();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+});
+
+test("logout informa si el servidor no confirma la revocación", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.route("**/api/auth/logout", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API no disponible" }) });
+  });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+  await page.getByRole("button", { name: "Sí, cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("La sesión local se cerró, pero el servidor no confirmó la revocación.")).toBeVisible();
+});
+
+test("logout-all 401 conserva la cookie y deja reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const cookieBefore = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  await page.route("**/api/auth/logout-all", async (route) => {
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Sesión de acceso vencida." }) });
+  });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Mi Perfil", exact: true }).click();
+  await page.getByRole("button", { name: "Cerrar sesión en todos los dispositivos" }).click();
+  await expect(page.getByText("Sesión de acceso vencida.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mi Perfil" })).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(cookieBefore?.value);
+});
+
+test("dos pestañas restauran la sesión sin competir por el refresh", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const secondPage = await page.context().newPage();
+  await secondPage.setViewportSize({ width: 390, height: 844 });
+  const refreshStatuses: number[] = [];
+  const recordRefresh = (response: import("@playwright/test").Response) => {
+    if (new URL(response.url()).pathname === "/api/auth/refresh") refreshStatuses.push(response.status());
+  };
+  page.on("response", recordRefresh);
+  secondPage.on("response", recordRefresh);
+  try {
+    await Promise.all([page.reload(), secondPage.goto("/dashboard")]);
+    await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    await expect(secondPage.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+    expect(refreshStatuses.filter((status) => status === 200).length).toBeGreaterThanOrEqual(2);
+    expect(refreshStatuses).not.toContain(401);
+    const sharedCookie = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+    expect(sharedCookie?.httpOnly).toBe(true);
+    expect(sharedCookie?.expires).toBeGreaterThan(Date.now() / 1000);
+  } finally {
+    await secondPage.close();
+  }
+});
+
+test("un refresh 503 conserva la sesión local y la cookie para reintentar", async ({ page }) => {
+  test.skip(!email || !password, "Requiere cuenta QA Admin activa.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/auth/refresh", async (route) => {
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "API temporalmente no disponible" }) });
+  });
+  await page.route("**/api/backend/Users/my-team/page**", async (route) => {
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "Prueba de expiración de acceso" }) });
+  });
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").fill(email!);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const cookieBefore = (await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh");
+  expect(cookieBefore?.value).toBeTruthy();
+
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+  await expect(page.getByText("No se pudo renovar la sesión por un problema temporal. Intenta de nuevo.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toBeVisible();
+  expect((await page.context().cookies()).find((cookie) => cookie.name === "fletflow_refresh")?.value).toBe(cookieBefore?.value);
+});
+
 async function clickMapAwayFromMarkers(map: Locator) {
   const page = map.page();
   const mapToggle = page.getByRole("button", { name: "Ver mapa", exact: true });

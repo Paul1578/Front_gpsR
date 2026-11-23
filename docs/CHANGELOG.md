@@ -879,3 +879,9 @@
 ## 2026-11-23 — Verificación estable del BFF de autenticación
 
 - Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147) pasó **54/54 E2E sin flaky**, responsive, Release/xUnit 158/158, audit/lint/build y cleanup; queda validada la sincronización del logout con el BFF.
+
+## 2026-11-23 — Concurrencia y recuperación de sesión BFF
+
+- Web Locks serializa mutaciones de la cookie entre pestañas; cambios de identidad en `localStorage` recargan pestañas con cuenta anterior.
+- Refresh temporal ya no borra sesión activa; refresh/logout-all 401 conservan cookie, y logout muestra advertencia si backend no confirma revocación.
+- Se agregaron tests de handler y E2E autenticado para concurrencia, errores y reintentos. Handler focal 3/3; Action integrada pendiente.

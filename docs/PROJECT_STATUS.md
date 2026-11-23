@@ -929,3 +929,9 @@ Fecha de actualización: 2026-11-22.
 
 - Front `057c1cc` está validado por Action [`45209292147`](https://github.com/Paul1578/Front_gpsR/actions/runs/45209292147): 54/54 E2E sin flaky, responsive 1/1, backend 158/158, audit/lint/build y cleanup. La assertion de logout espera el HTTP 200 BFF.
 - La ampliación E2E de paginación real queda en el árbol de trabajo y requiere Action con 55 pruebas.
+
+## Auditoría BFF entre pestañas y fallos transitorios — en validación
+
+- El Action `45210788234` validó paginación real: 55/55 E2E, backend 158/158, responsive, audit/lint/build y teardown.
+- Revisión de seguridad posterior encontró carrera cross-tab de refresh/login y 401 que limpiaban cookie sin revocación confirmada, además de sign-out ante errores temporales. Aplicados Web Locks, sync por storage, preservación de cookie en refresh/logout-all 401 y tratamiento temporal de refresh 5xx. Logout individual limpia estado local pero advierte que el servidor puede no haber revocado.
+- Tests de handlers 3/3 pasan; suite local descubre 63. Falta Action autenticada de los nuevos E2E; revisar cualquier flaky y mantener misión global abierta.
