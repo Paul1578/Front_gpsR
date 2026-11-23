@@ -1663,3 +1663,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 - Dos intentos de actualización por bloque fallaron porque el texto esperado no coincidía exactamente con el documento vigente; `apply_patch` abortó sin modificar archivos.
 - Solución: releer las líneas actuales y aplicar cambios pequeños sobre frases exactas. Prevención: comprobar el contexto antes de preparar un parche amplio y revisar `git diff` después de ediciones documentales.
+
+## 2026-11-23 — Búsqueda de smoke backend ejecutada desde el checkout Front — RESUELTO
+
+- Búsquedas/lecturas de auditoría apuntaron a `scripts/smoke-tenant-http.sh` y `fletflow/Api/Controllers/RoutesController.cs` usando `/home/leonardo/Front_gpsR` como cwd. Esos paths pertenecen a Backend; `rg` informó paths ausentes y no alteró archivos.
+- Solución: repetir la lectura desde `/home/leonardo/Back_GPS`. Prevención: al agrupar búsquedas entre repositorios, definir `workdir` por cada comando y validar que las rutas sean relativas al checkout correcto.

@@ -1246,8 +1246,11 @@ test("Admin crea una ruta desde el mapa a 320 px y la elimina con confirmación"
   }
 });
 
-test("Admin crea una ruta de traslado sin paradas operativas en tablet", async ({ page }) => {
-  test.skip(!email || !password || !driverIdFixture || !allowMutations, "Requiere Admin/Driver QA y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+test("Admin crea un traslado que el Driver inicia y completa desde Mi Ruta", async ({ page }) => {
+  test.skip(
+    !email || !password || !routeDriverEmail || !routeDriverPassword || !routeDriverIdFixture || !allowMutations,
+    "Requiere fixtures Admin/Driver de operación y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+  );
   test.setTimeout(90_000);
   page.setDefaultTimeout(8_000);
   await page.setViewportSize({ width: 768, height: 1024 });
@@ -1267,7 +1270,7 @@ test("Admin crea una ruta de traslado sin paradas operativas en tablet", async (
   const routeName = `E2E QA traslado ${suffix}`;
   let vehicleId: string | undefined;
   let routeId: string | undefined;
-  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers });
+  const driverBeforeResponse = await page.request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers });
   expect(driverBeforeResponse.status()).toBe(200);
   const originalDriverVehicleId = (await driverBeforeResponse.json()).vehicleId as string | null;
 
@@ -1305,7 +1308,7 @@ test("Admin crea una ruta de traslado sin paradas operativas en tablet", async (
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
     await page.locator("select").nth(0).selectOption(vehicleId!);
-    await page.locator("select").nth(1).selectOption(driverIdFixture!);
+    await page.locator("select").nth(1).selectOption(routeDriverIdFixture!);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
     const routeReview = page.getByRole("list", { name: "Orden de las paradas de la ruta" });
@@ -1334,25 +1337,95 @@ test("Admin crea una ruta de traslado sin paradas operativas en tablet", async (
     )).toEqual(["none", "none"]);
     await expect(page.getByRole("heading", { name: routeName, exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await page.evaluate(() => localStorage.removeItem("auth_tokens"));
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(routeDriverEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(routeDriverPassword!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.context().grantPermissions(["geolocation"]);
+    await page.context().setGeolocation({ latitude: -0.185, longitude: -78.465, accuracy: 10 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page.getByRole("button", { name: "Mi Ruta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Mi Ruta Activa" })).toBeVisible();
+    await expect(page.getByText(routeName, { exact: true })).toBeVisible();
+    const driverToken = await page.evaluate(() => {
+      const serialized = localStorage.getItem("auth_tokens");
+      return serialized ? JSON.parse(serialized).accessToken as string : null;
+    });
+    expect(driverToken).toBeTruthy();
+    const driverHeaders = { Authorization: `Bearer ${driverToken}` };
+    const driverRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers: driverHeaders });
+    expect(driverRouteResponse.status()).toBe(200);
+    const driverRoute = await driverRouteResponse.json();
+    expect(driverRoute.points.map((point: { operation: number | string }) =>
+      typeof point.operation === "number" ? operationNames[point.operation] : point.operation.toLowerCase(),
+    )).toEqual(["none", "none"]);
+
+    const startRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Iniciar Ruta" }).click();
+    expect((await startRoutePromise).status()).toBe(204);
+    const startedTransfer = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(startedTransfer.status()).toBe(200);
+    const startedRoute = await startedTransfer.json();
+    expect(startedRoute.status).toBe(1);
+    expect(startedRoute.startedAt).toBeTruthy();
+    expect(startedRoute.points.every((point: { operation: number; status: number }) => point.operation === 0 && point.status === 0)).toBe(true);
+    const onRouteVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers });
+    expect(onRouteVehicle.status()).toBe(200);
+    expect((await onRouteVehicle.json()).status).toBe(1);
+
+    const completeRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}/status`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Completar", exact: true }).click();
+    expect((await completeRoutePromise).status()).toBe(204);
+    const completedTransfer = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(completedTransfer.status()).toBe(200);
+    const completedRoute = await completedTransfer.json();
+    expect(completedRoute.status).toBe(2);
+    expect(completedRoute.startedAt).toBeTruthy();
+    expect(completedRoute.endedAt).toBeTruthy();
+    expect(completedRoute.points.every((point: { operation: number; status: number; evidence: unknown[] }) =>
+      point.operation === 0 && point.status === 0 && point.evidence.length === 0,
+    )).toBe(true);
+    const availableVehicle = await page.request.get(`/api/backend/Vehicles/${vehicleId}`, { headers });
+    expect(availableVehicle.status()).toBe(200);
+    expect((await availableVehicle.json()).status).toBe(0);
+    await expect(page.getByText("Ruta completada exitosamente")).toBeVisible();
   } finally {
     const cleanupIssues: string[] = [];
     if (routeId) {
+      const currentRoute = await page.request.get(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
+      if (currentRoute?.status() === 200 && (await currentRoute.json()).status === 1) {
+        const cancelRoute = await page.request.put(`/api/backend/Routes/${routeId}/status`, {
+          headers,
+          data: { status: 3 },
+        }).catch(() => null);
+        if (cancelRoute?.status() !== 204) {
+          cleanupIssues.push(`No se pudo cancelar el traslado temporal antes de limpiarlo: HTTP ${cancelRoute?.status() ?? "sin respuesta"}`);
+        }
+      }
       const cleanupRoute = await page.request.delete(`/api/backend/Routes/${routeId}`, { headers }).catch(() => null);
       if (!cleanupRoute || ![200, 204, 404].includes(cleanupRoute.status())) {
         cleanupIssues.push(`No se pudo retirar la ruta temporal de traslado: HTTP ${cleanupRoute?.status() ?? "sin respuesta"}`);
       }
     }
     if (vehicleId) {
-      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${driverIdFixture}`, { headers }).catch(() => null);
+      const currentDriverResponse = await page.request.get(`/api/backend/Drivers/${routeDriverIdFixture}`, { headers }).catch(() => null);
       if (currentDriverResponse?.status() !== 200) {
         cleanupIssues.push(`No se pudo leer la asignación del Driver QA: HTTP ${currentDriverResponse?.status() ?? "sin respuesta"}`);
       } else if ((await currentDriverResponse.json()).vehicleId === vehicleId) {
         const restoreAssignment = originalDriverVehicleId
-          ? await page.request.put(`/api/backend/Drivers/${driverIdFixture}/assign-vehicle`, {
+          ? await page.request.put(`/api/backend/Drivers/${routeDriverIdFixture}/assign-vehicle`, {
               headers,
               data: { vehicleId: originalDriverVehicleId },
             }).catch(() => null)
-          : await page.request.put(`/api/backend/Drivers/${driverIdFixture}/unassign-vehicle`, { headers }).catch(() => null);
+          : await page.request.put(`/api/backend/Drivers/${routeDriverIdFixture}/unassign-vehicle`, { headers }).catch(() => null);
         if (restoreAssignment?.status() !== 204) {
           cleanupIssues.push(`No se pudo restaurar la asignación previa del Driver: HTTP ${restoreAssignment?.status() ?? "sin respuesta"}`);
         }
