@@ -1447,3 +1447,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** backend añade `isRootAccount` a `/Auth/me` a partir de `OwnerUserId` (nulo o igual al ID); Front prioriza el dato del endpoint. Smoke backend comprueba root true/delegado false y E2E delegado cubre ausencia de opción.
 - **Prevención:** atributos de identidad/autorización para UX deben exponerse como campos explícitos desde el contrato autenticado y probarse mediante sesión integrada, además de las pruebas simuladas.
 - **Verificación:** CI del SHA con el contrato nuevo pendiente; la corrida fallida reportó 38 passed y 1 failed, cleanup correcto.
+
+# 2026-11-23 — Locator E2E rechazaba la etiqueta descriptiva del rol Gerente — CORREGIDO LOCALMENTE
+
+- **Síntoma:** Action `45090273209` terminó 39/40. El E2E esperaba un botón cuyo nombre accesible fuera exactamente “Gerente”.
+- **Causa:** el botón agrega una descripción accesible y Playwright lo expone como “Gerente Administra equipos y rutas”; la opción estaba presente y visible. La traza contradice la hipótesis inicial de que `/Auth/me` siguiera clasificando la raíz como cuenta delegada.
+- **Solución:** el locator ahora acepta el prefijo `Gerente` y el E2E comprueba antes que `/Auth/me` responda `isRootAccount: true` y rol `Admin`.
+- **Prevención:** inspeccionar snapshot/trace y el nombre accesible real antes de atribuir un fallo de selector a lógica de autorización. No usar `exact: true` si el control expone descripción accesible.
+- **Verificación:** lint y build pasan; Playwright descubre 40 pruebas y `team-management-load-errors.spec.ts` pasa 10/10. Suite integrada en Action pendiente para el nuevo SHA.

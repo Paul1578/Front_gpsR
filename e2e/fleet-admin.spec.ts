@@ -283,6 +283,17 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
+  const token = await page.evaluate(() => {
+    const serialized = localStorage.getItem("auth_tokens");
+    return serialized ? JSON.parse(serialized).accessToken as string : null;
+  });
+  expect(token).toBeTruthy();
+  const meResponse = await page.request.get("/api/backend/Auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(meResponse.status()).toBe(200);
+  expect(await meResponse.json()).toMatchObject({ isRootAccount: true, roles: ["Admin"] });
+
   const assertNoHorizontalOverflow = async () => {
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -298,7 +309,7 @@ test("Admin usa Equipo y mapa en móvil y tablet sin desbordamiento", async ({ p
   await expect(page.getByRole("heading", { name: "Gestión de Equipo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Crear Usuario" })).toBeVisible();
   await page.getByRole("button", { name: "Crear Usuario" }).click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: "Gerente", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^Gerente\b/ })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
   await assertNoHorizontalOverflow();
 

@@ -844,3 +844,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45088879212` valida el commit `5784b36` y continúa en ejecución, antes del E2E delegado nuevo. Publicar el SHA actual y validar la suite integrada.
 - Continuar auditoría de roles/CRUD y responsive. Misión abierta; móvil nativo aplazado.
 - La Action `45088879212` terminó 38/39: root autenticado no vio “Gerente”. Backend añadió `isRootAccount` a `/Auth/me` y Front lo consume; smoke/API y Action integrada del fix quedan pendientes.
+
+## Continuación — diagnosticar locator de Admin raíz — 2026-11-23
+
+- Estado más reciente: Front `e262180`, backend `be84496` de funcionalidad (el branch backend avanzó después con documentación `df88238`). Branches de trabajo separadas de `main`.
+- Action Front `45090273209` terminó **39/40**; responsive 1/1, audit, lint y build aprobaron. Descargué e inspeccioné las dos trazas Playwright del fallo: el diálogo sí renderizaba el botón; su nombre accesible real incluía descripción (“Gerente Administra equipos y rutas”), y el test lo buscaba con `exact: true`.
+- Fix E2E local: usa `/^Gerente\\b/` y afirma `/Auth/me` con `{ isRootAccount: true, roles: ["Admin"] }` antes de comprobar UI. No cambiar política ni lógica de permisos por ese fallo del locator.
+- Backend Action `45090274537`: Release build, xUnit 113/113, smoke HTTP/MySQL tenant/roles y concurrencia pasaron con cleanup.
+- Documentación Front/Backend actualizada para decisión raíz; `ERROR_LOG.md` registra hipótesis incorrecta inicial y causa confirmada por trace.
+- Validación local tras el fix: lint y build pasaron; Playwright discovery **40 pruebas**; `team-management-load-errors.spec.ts` **10/10**; `git diff --check` limpio. Suite E2E integrada del nuevo SHA pendiente; registrar su Action en `PROJECT_STATUS.md`, `TESTING.md` y este handoff. Luego continuar criterios funcionales; misión sigue abierta.

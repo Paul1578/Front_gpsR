@@ -459,3 +459,10 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Lint, build, discovery de 40 E2E y diff-check pasan. Action `45088879212` cubre SHA anterior `5784b36`; queda publicar y ejecutar Action para este SHA con test delegado.
 - Action `45088879212` terminó **38 passed, 1 failed**: root-only opción falló porque el flag inferido del JWT no coincidió con el contexto integrado. Backend añadió `isRootAccount` a `/Auth/me`; validar build, smoke root/delegado y E2E completo en Actions del nuevo SHA.
 - Tras integrar el flag: lint/build y discovery Playwright 40 pasan; `team-management-load-errors.spec.ts` pasa **10/10** local. Backend Release xUnit **113/113**, build 0 warnings/0 errores y `bash -n`/diff-check correctos. HTTP/MySQL y suite browser integrada del SHA nuevo quedan pendientes.
+
+## Revisión del selector de rol raíz — 2026-11-23
+
+- Action `45090273209`: responsive browser 1/1, audit, lint y build correctos; suite integrada **39/40**. El fallo fue locator con nombre exacto, no autorización: la traza mostraba el botón “Gerente” con su descripción accesible.
+- El trace/error-context se descargó y revisó. Fix local afirma primero `/Auth/me.isRootAccount === true` y usa locator por prefijo del nombre accesible.
+- Backend Action `45090274537`: Release build correcto, xUnit **113/113**, smoke HTTP/MySQL y concurrencia con limpieza.
+- Local: `npm run lint`, `npm run build`, discovery **40** y `npx playwright test e2e/team-management-load-errors.spec.ts` **10/10**. Nueva Action Front integrada del fix actual pendiente; no reportar la regla E2E positiva integrada como aprobada hasta obtener esa evidencia.

@@ -2,6 +2,13 @@
 
 Estado: en curso; funcionalidades principales implementadas y verificadas con tareas de aceptación enumeradas al final.
 
+## Corte vigente — 2026-11-23
+
+- El usuario confirmó que sólo la cuenta raíz puede crear/promover al rol Admin. Backend `be84496` expone `isRootAccount` en `/Auth/me`; Action `45090274537` pasó pruebas Release 113/113 y smoke HTTP/MySQL.
+- Front `e262180` aplica la visibilidad de “Gerente” con ese campo. Action `45090273209` falló **39/40** sólo por locator E2E exacto: la traza muestra la opción visible con nombre accesible compuesto. Selector corregido para aceptar descripción y assert de identidad raíz añadido; nueva suite integrada pendiente.
+- La aplicación móvil nativa queda para después; esta fase requiere web responsive. SMTP real depende de credenciales externas actualizadas.
+- La auditoría y los criterios funcionales siguen abiertos. Este corte reemplaza las notas antiguas que indicaban que la política Admin delegado esperaba decisión.
+
 ## Alcance
 
 Se auditan dos repositorios relacionados:
@@ -54,7 +61,7 @@ El usuario aclaró que la app móvil nativa queda para después. Esta fase requi
 - Cerrados este pase: Manager crea desde UI una ruta multi-punto con Delivery y la persiste; constructor móvil 320/tablet 768; alta Manager/Logistics responsive; edición/estado User a 320; logout no revoca refresh ajeno.
 - Continúan abiertos otros recorridos CRUD/roles/responsive, Super Admin y privilegio de Admin delegado sin política acordada, y preparación de despliegue. No declarar completa la misión.
 
-## Misión completa
+## Resumen de la misión
 
 El texto completo quedó disponible el 2026-11-21. Incluye arquitectura, seguridad, aislamiento tenant, CRUD, responsive, E2E y documentación. SMTP real es la limitación funcional externa acordada; las tareas de pruebas y preparación para producción pendientes quedan listadas abajo.
 

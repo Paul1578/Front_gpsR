@@ -1,4 +1,11 @@
-## Estado actual — 2026-11-22
+## Estado actual — 2026-11-23
+
+- Política confirmada: sólo la cuenta raíz puede crear o promover a otra cuenta al rol Admin. Backend `be84496` incluye `isRootAccount` en `/Auth/me`; Action backend `45090274537` pasó build, 113/113 xUnit, smoke HTTP/MySQL y concurrencia con limpieza.
+- Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.
+- Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. Corregido el selector y agregado assert explícito de `/Auth/me` raíz; validación integrada nueva pendiente.
+- Móvil nativo aplazado por decisión del usuario. Misión integral sigue abierta; no se declara terminada.
+
+## Historial de estado — 2026-11-22
 
 - Front `d652652` pasó Action `45085920993`: audit/lint/build, responsive browser **1/1** y **39/39 E2E** sin skips. Backend `1ce4d45` pasó Action `45085910280` con Release/xUnit, aislamiento tenant HTTP/MySQL y concurrencia. La corrección posterior para que el sufijo sobreviva reinicios de worker está en local y requiere repetir Action.
 - Front `104723a` pasó Action `45086519736`: **39/39 E2E** incluyendo Manager mapa con `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` estable, responsive browser **1/1**, audit/lint/build y cleanup.
