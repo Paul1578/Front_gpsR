@@ -1910,13 +1910,13 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Prevención: no ejecutar mutaciones de cookie sin mecanismo de exclusión compartido entre pestañas y cubrir logins simultáneos con identidades distintas, no sólo refresh concurrente.
 - Revalidación: Action [`45216891336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45216891336) pasó **65/65 E2E** (incluidos los escenarios nuevos), backend **158/158**, responsive, audit/lint/build y cleanup. Sin flaky reportado.
 
-## 2026-11-23 — Retry E2E heredó rol Manager tras agotar timeout — CORREGIDO LOCALMENTE, ACTION PENDIENTE
+## 2026-11-23 — Cambio de rol del fixture Driver colgaba en E2E — CORREGIDO LOCALMENTE, ACTION PENDIENTE
 
-- Action Front `45227072219` pasó 66 de 67 pruebas. El escenario “API deniega mutaciones y Manager gestiona flota desde la interfaz” superó 120 s durante su recorrido UI; el error primario fue timeout en el PUT que restauraba el rol al final. El retry reutilizó el fixture todavía en Manager y recibió 201 al verificar una operación como Driver.
-- Diagnóstico: el 201 del retry no demostró que un Driver pudiera crear vehículos; la cuenta conservaba Manager porque el primer intento expiró antes de completar `finally`. Los casos anteriores de la misma corrida pasaron; backend xUnit/smokes y cleanup también pasaron.
-- Solución local: timeout 240 s para el escenario de matriz + CRUD de UI; fijar el rol Driver en el estado inicial antes de login/denegaciones, y mantener la restauración final Driver.
-- Prevención: cada retry debe restablecer estado mutable antes de hacer aserciones de autorización; un timeout de limpieza no debe contaminar el rol del intento siguiente. Separar API matrix y recorrido UI si el caso sigue superando cuatro minutos.
-- Verificación local de lint/build y nueva Action integrada pendiente al registrar esta nota. La descarga de traces recibió HTTP 503 por límite de egress; logs de Action disponibles identificaron ambos síntomas.
+- Action `45227072219` ejecutó 66/67: la llamada para restaurar rol Driver expiró a 120 s; en retry el usuario aún era Manager y la aserción Driver recibió 201. El 201 no demuestra bypass, pues el rol de la cuenta seguía siendo Manager.
+- Primer arreglo `3fd12c5` subió el timeout a 240 s y normalizó Driver. Action `45229598514` mostró que el PUT de cambio de rol del fixture Driver tampoco respondió durante 240 s, tanto al inicio como en retry. Otros checks y cleanup general pasaron; descargar trace dio HTTP 503.
+- Solución actual: no mutar la cuenta Driver en la matriz general. Usar Driver para denegaciones, crear Logistics temporal con prefijo de email limpiable y usar Manager preprovisionado para denegaciones/CRUD. El E2E de constructor responsive también deja de cambiar el rol Driver. `cleanup-e2e.sql` incorpora Logistics.
+- Prevención: fixture separado por rol; no mezclar cambios de rol con un perfil Driver que participa en escenarios operativos; reservar cambios de rol para E2E focales con precondiciones y cleanup propios.
+- lint/build/discovery local pasan tras el fix actual; la Action integrada con este HEAD aún debe validar resultado funcional.
 
 ## 2026-11-23 — TypeScript rechazó asignación directa a NODE_ENV en prueba BFF — CORREGIDO
 

@@ -1,11 +1,11 @@
-## Handoff vigente — timeout E2E de matriz Driver/Manager
+## Handoff vigente — cambio de rol del fixture E2E — 2026-11-23
 
 - Front branch `refactor/route-builder`, code HEAD `36a453b`; Backend `ac14373`; `main` intacta.
-- Action integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): audit/lint/build/responsive y Backend 165/165 pasaron; E2E **66/67**, cleanup posterior correcto.
-- El único test (`e2e/fleet-admin.spec.ts`, “API deniega mutaciones y Manager gestiona flota desde la interfaz”) excedió timeout de 120 s durante la restauración del rol al final del recorrido Manager. En retry el fixture quedó como Manager, así la matriz que esperaba Driver obtuvo 201. Evidencia: Action logs; descarga de traces respondió HTTP 503 de almacenamiento de Actions.
-- Fix local: timeout ampliado a 240 s, normalización explícita del fixture a Driver antes de las denegaciones y mensajes de rol explícitos. Ejecutar lint/build, discovery, diff-check; publicar Front y esperar E2E integrada. Si vuelve a exceder el tiempo, dividir la matriz HTTP del recorrido UI y mantener fixtures distintos.
+- Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): E2E 66/67. El timeout primario fue al restaurar rol; retry heredó Manager y obtuvo 201 en una comprobación como Driver. La descarga de trace devolvió HTTP 503.
+- Primer arreglo `3fd12c5`, Action [`45229598514`](https://github.com/Paul1578/Front_gpsR/actions/runs/45229598514): el PUT de cambio de rol del Driver no respondió durante 240 s, al inicio y en retry. Teardown general pasó.
+- Fix local: roles Driver/Logistics/Manager con cuentas separadas; Driver no se muta en la matriz ni en el E2E del constructor responsive. Logistics se crea con email limpiable; Manager usa fixture preprovisionado por el runner. `cleanup-e2e.sql` ahora incluye Logistics. Lint/build/discovery y diff-check local pasan; Action integrada pendiente.
 - Backend JWT unificado validado por Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042), 165/165, smokes y cleanup; doc commit `45c7288` tiene workflows en curso.
-- Limitación de consulta: descarga de traces de Front falló con HTTP 503 por límite de egress de GitHub; los logs normales identifican el timeout y el retry, por lo que el fix se basa en evidencia disponible.
+- Backend docs `45c7288` pasó Actions [`45228879085`](https://github.com/Paul1578/Back_GPS/actions/runs/45228879085) y [`45228866833`](https://github.com/Paul1578/Back_GPS/actions/runs/45228866833), con 165/165 xUnit, smokes y cleanup.
 
 ## Handoff vigente — evidencia fotográfica bajo demanda
 

@@ -30,11 +30,12 @@
 - Action Front `45172574266`: **50/51**; feature pasó flujos, falló un locator Playwright porque la sección de Drivers ya estaba abierta y el toggle se llamaba “Ocultar choferes”.
 - Fix local usa la tarjeta ya visible `team-driver-{id}` y espera su render. `npm run lint`, `npm run build`, discovery Playwright **51/51** y diff-check pasan; la nueva Action con API/MySQL descartable queda pendiente.
 
-## Corrida integrada vigente — Action `45227072219`
+## Corridas integradas de matriz de roles — 2026-11-23
 
 - Passed: auditoría npm, lint, build, responsive **1/1**, Backend Release/xUnit **165/165**, smoke API/MySQL y cleanup.
-- Playwright E2E: **66 passed, 1 failed** (`API deniega mutaciones y Manager gestiona flota desde la interfaz`). Timeout 120 s en la restauración final del rol durante una matriz extensa y CRUD Manager. El retry encontró el fixture aún en Manager y obtuvo 201 en una aserción que esperaba Driver; no es evidencia de bypass de roles.
-- Se amplía el timeout a 240 s y el test fuerza rol Driver antes de comprobar las denegaciones. Falta validar lint/build y repetir Actions integradas con el fix.
+- Action [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219): **66 passed / 1 failed**. Timeout 120 s al restaurar rol; retry encontró Manager y obtuvo 201 en una aserción Driver.
+- Primer fix `3fd12c5`, Action [`45229598514`](https://github.com/Paul1578/Front_gpsR/actions/runs/45229598514): el PUT de cambio de rol del fixture Driver agotó 240 s en ambos intentos. Backend 165/165, audit/lint/build/responsive y cleanup pasaron.
+- Fix local pendiente de Action: no cambiar rol Driver; Logistics temporal limpiable y Manager provisionado se usan como identidades propias en matriz y CRUD responsive.
 
 # Estado vigente — 2026-11-23
 

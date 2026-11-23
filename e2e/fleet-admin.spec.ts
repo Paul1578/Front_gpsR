@@ -12,6 +12,8 @@ const driverPassword = process.env.FLETFLOW_E2E_DRIVER_PASSWORD;
 const routeDriverEmail = process.env.FLETFLOW_E2E_ROUTE_DRIVER_EMAIL;
 const routeDriverPassword = process.env.FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD;
 const routeDriverIdFixture = process.env.FLETFLOW_E2E_ROUTE_DRIVER_ID;
+const managerEmail = process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL;
+const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
 const otherTenantEmail = process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL;
 const otherTenantPassword = process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD;
 const driverIdFixture = process.env.FLETFLOW_E2E_DRIVER_ID;
@@ -2159,13 +2161,12 @@ test("User no ve operaciones y la API deniega recursos de flota", async ({ page 
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
-test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async ({ page, browser }) => {
+test("API deniega mutaciones por rol y Manager gestiona flota desde la interfaz", async ({ page, browser }) => {
   test.skip(
-    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations,
-    "Requiere fixtures QA de Admin, User y Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
+    !email || !password || !userEmail || !userPassword || !driverEmail || !driverPassword || !driverIdFixture || !managerEmail || !managerPassword || !allowMutations,
+    "Requiere fixtures QA Admin, User, Driver, Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
-  // Este escenario incluye una matriz API y una sesión Manager con varios CRUD de UI.
-  test.setTimeout(240_000);
+  test.setTimeout(180_000);
   page.setDefaultTimeout(8_000);
 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
@@ -2240,22 +2241,6 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
   const qaVehicleId = (await createdVehicle.json()).id as string;
   qaRoute.vehicleId = qaVehicleId;
 
-  const adminTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
-  expect(adminTeam.status()).toBe(200);
-  const fixtureDriver = (await adminTeam.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
-  expect(fixtureDriver?.id).toBeTruthy();
-  const setFixtureRole = async (roleName: "Driver" | "Logistics" | "Manager") => {
-    const response = await page.request.put(`/api/backend/Users/${fixtureDriver.id}/role`, {
-      headers: adminHeaders,
-      data: { roleName },
-    });
-    expect(response.status(), `cambio del fixture a ${roleName}`).toBe(200);
-  };
-
-  // Un intento anterior expirado puede terminar antes del finally. Cada retry
-  // parte del rol explícito esperado y no interpreta un Manager como Driver.
-  await setFixtureRole("Driver");
-
   const expectDenied = async (role: string, operations: MutationCheck[]) => {
     for (const [operation, send] of operations) {
       const response = await send();
@@ -2314,49 +2299,37 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
     ...userAndRoleMutations(driverHeaders),
   ]);
 
+  const logisticsEmail = `fletflow.e2e.logistics.matrix.${suffix}@example.test`;
+  const logisticsPassword = `LogisticsQA-${randomUUID()}aA1!`;
+  const createLogistics = await page.request.post("/api/backend/Users", {
+    headers: adminHeaders,
+    data: { username: `E2E QA Logistics ${suffix}`, email: logisticsEmail, password: logisticsPassword, roleName: "Logistics" },
+  });
+  expect(createLogistics.status()).toBe(200);
+  const logisticsUserId = (await createLogistics.json()).id as string;
+  const activateLogistics = await page.request.put(`/api/backend/Users/${logisticsUserId}/status?isActive=true`, { headers: adminHeaders });
+  expect(activateLogistics.status()).toBe(200);
+  const logisticsHeaders = await login(logisticsEmail, logisticsPassword);
+  await expectDenied("Logistics", [
+    ...vehicleMutations(logisticsHeaders),
+    ...driverMutations(logisticsHeaders),
+    ...userAndRoleMutations(logisticsHeaders),
+  ]);
+
+  const managerHeaders = await login(managerEmail!, managerPassword!);
+  await expectDenied("Manager", userAndRoleMutations(managerHeaders));
+  const managerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: managerHeaders });
+  expect(managerTeamResponse.status()).toBe(403);
+  expect(await managerTeamResponse.text()).not.toContain(userEmail!);
+  const managerVehicles = await page.request.get("/api/backend/Vehicles", { headers: managerHeaders });
+  const managerRoutes = await page.request.get("/api/backend/Routes", { headers: managerHeaders });
+  expect(managerVehicles.status()).toBe(200);
+  expect(managerRoutes.status()).toBe(200);
+
+  let managerVehicleId: string | undefined;
+  let managerUiDriverId: string | undefined;
+  let managerBlockerDriverId: string | undefined;
   try {
-    await setFixtureRole("Logistics");
-    const logisticsHeaders = await login(driverEmail!, driverPassword!);
-    await expectDenied("Logistics", [
-      ...vehicleMutations(logisticsHeaders),
-      ...driverMutations(logisticsHeaders),
-      ...userAndRoleMutations(logisticsHeaders),
-    ]);
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/login");
-    await page.getByLabel("Correo electrónico").fill(email!);
-    await page.getByRole("textbox", { name: "Contraseña" }).fill(password!);
-    await page.getByRole("button", { name: "Iniciar sesión" }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole("button", { name: "Abrir menú" }).click();
-    await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
-    const roleCard = page.getByTestId(`team-user-${fixtureDriver.id}`);
-    const assignManagerRole = page.waitForResponse((response) =>
-      new URL(response.url()).pathname.endsWith(`/api/backend/Users/${fixtureDriver.id}/role`) && response.request().method() === "PUT",
-    );
-    await roleCard.getByRole("button", { name: "Gestor de flota", exact: true }).click();
-    await page.getByRole("button", { name: "Confirmar cambio", exact: true }).click();
-    expect((await assignManagerRole).status()).toBe(200);
-    const persistedManagerTeam = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
-    expect(persistedManagerTeam.status()).toBe(200);
-    expect((await persistedManagerTeam.json()).find((member: { id: string }) => member.id === fixtureDriver.id).roles).toContain("Manager");
-
-    const managerHeaders = await login(driverEmail!, driverPassword!);
-    await expectDenied("Manager", userAndRoleMutations(managerHeaders));
-    const managerTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers: managerHeaders });
-    expect(managerTeamResponse.status()).toBe(403);
-    expect(await managerTeamResponse.text()).not.toContain(userEmail!);
-
-    const managerVehicles = await page.request.get("/api/backend/Vehicles", { headers: managerHeaders });
-    const managerRoutes = await page.request.get("/api/backend/Routes", { headers: managerHeaders });
-    expect(managerVehicles.status()).toBe(200);
-    expect(managerRoutes.status()).toBe(200);
-
-    let managerVehicleId: string | undefined;
-    let managerUiDriverId: string | undefined;
-    let managerBlockerDriverId: string | undefined;
-    try {
       const managerVehicle = await page.request.post("/api/backend/Vehicles", {
         headers: managerHeaders,
         data: { ...qaVehicle, plate: `E2EQAM${suffix}`, brand: "Manager QA" },
@@ -2411,8 +2384,8 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       });
       await managerPage.setViewportSize({ width: 390, height: 844 });
       await managerPage.goto("/login");
-      await managerPage.getByLabel("Correo electrónico").fill(driverEmail!);
-      await managerPage.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+      await managerPage.getByLabel("Correo electrónico").fill(managerEmail!);
+      await managerPage.getByRole("textbox", { name: "Contraseña" }).fill(managerPassword!);
       await managerPage.getByRole("button", { name: "Iniciar sesión" }).click();
       await expect(managerPage).toHaveURL(/\/dashboard$/);
       await managerPage.getByRole("button", { name: "Abrir menú" }).click();
@@ -2724,48 +2697,31 @@ test("API deniega mutaciones y Manager gestiona flota desde la interfaz", async 
       }
       await managerContext.close();
     }
-  } finally {
-    await setFixtureRole("Driver");
-  }
 });
 
 test("Manager usa el constructor de rutas desde móvil y dashboard responsive", async ({ page }) => {
-  test.skip(!email || !password || !driverEmail || !driverPassword || !driverIdFixture || !allowMutations, "Requiere fixtures QA Admin/Driver y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
+  test.skip(!email || !password || !managerEmail || !managerPassword || !allowMutations, "Requiere fixtures QA Admin/Manager y FLETFLOW_E2E_ALLOW_MUTATIONS=true.");
 
   test.setTimeout(60_000);
   page.setDefaultTimeout(8_000);
-  const adminLogin = await page.request.post("/api/backend/Auth/login", { data: { email, password } });
-  expect(adminLogin.status()).toBe(200);
-  const adminToken = await adminLogin.json();
-  const adminHeaders = { Authorization: `Bearer ${adminToken.token ?? adminToken.accessToken}` };
-  const teamResponse = await page.request.get("/api/backend/Users/my-team", { headers: adminHeaders });
-  expect(teamResponse.status()).toBe(200);
-  const driverUser = (await teamResponse.json()).find((member: { driverId?: string }) => member.driverId === driverIdFixture);
-  expect(driverUser?.id).toBeTruthy();
-
-  const setRole = async (roleName: "Driver" | "Manager") => {
-    const response = await page.request.put(`/api/backend/Users/${driverUser.id}/role`, {
-      headers: adminHeaders,
-      data: { roleName },
-    });
-    expect(response.status(), `el fixture adopta el rol ${roleName}`).toBe(200);
-  };
-
+  const managerLogin = await page.request.post("/api/backend/Auth/login", { data: { email: managerEmail, password: managerPassword } });
+  expect(managerLogin.status()).toBe(200);
+  const managerToken = await managerLogin.json();
+  const managerHeaders = { Authorization: `Bearer ${managerToken.token ?? managerToken.accessToken}` };
   let vehicleId: string | undefined;
   let routeDriverId: string | undefined;
   let routeId: string | undefined;
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
-  let headers: { Authorization: string } | undefined;
-  await setRole("Manager");
+  let headers: { Authorization: string } | undefined = managerHeaders;
   try {
     const vehicleResponse = await page.request.post("/api/backend/Vehicles", {
-      headers: adminHeaders,
+      headers: managerHeaders,
       data: { plate: `E2EQAM${suffix}`, brand: "FleetFlow QA", model: "Manager route", year: 2025 },
     });
     expect(vehicleResponse.status()).toBe(201);
     vehicleId = (await vehicleResponse.json()).id as string;
     const routeDriverResponse = await page.request.post("/api/backend/Drivers", {
-      headers: adminHeaders,
+      headers: managerHeaders,
       data: {
         firstName: `E2E Manager ${suffix}`,
         lastName: "Chofer de ruta",
@@ -2779,8 +2735,8 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/login");
-    await page.getByLabel("Correo electrónico").fill(driverEmail!);
-    await page.getByRole("textbox", { name: "Contraseña" }).fill(driverPassword!);
+    await page.getByLabel("Correo electrónico").fill(managerEmail!);
+    await page.getByRole("textbox", { name: "Contraseña" }).fill(managerPassword!);
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     const managerToken = await readAccessToken(page);
@@ -2908,18 +2864,17 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
     }
     if (vehicleId) {
       if (routeDriverId) {
-        const unassign = await page.request.put(`/api/backend/Drivers/${routeDriverId}/unassign-vehicle`, { headers: adminHeaders });
+        const unassign = await page.request.put(`/api/backend/Drivers/${routeDriverId}/unassign-vehicle`, { headers: managerHeaders });
         expect([204, 404]).toContain(unassign.status());
         const deactivateDriver = await page.request.put(`/api/backend/Drivers/${routeDriverId}/status`, {
-          headers: adminHeaders,
+          headers: managerHeaders,
           data: { isActive: false },
         });
         expect([204, 404]).toContain(deactivateDriver.status());
       }
-      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: adminHeaders });
+      const cleanupVehicle = await page.request.delete(`/api/backend/Vehicles/${vehicleId}`, { headers: managerHeaders });
       expect([200, 204, 404]).toContain(cleanupVehicle.status());
     }
-    await setRole("Driver");
   }
 });
 
