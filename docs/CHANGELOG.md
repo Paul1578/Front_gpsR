@@ -1,7 +1,13 @@
+## 2026-11-23 — Preflight read-only de cuentas Admin raíz
+
+- Se contrastó con la DB local la regla heredada `OwnerUserId IS NULL`: 5 usuarios; ambos owners nulos tienen rol Admin; 0 Admins tienen propietario asignado. No se exponen identidades y no se hicieron mutaciones.
+- El resultado concuerda con las dos cuentas raíz confirmadas; no permite inferir otros ambientes ni procedencia histórica. Detalle en `Back_GPS/docs/SECURITY.md`.
+
 ## 2026-11-23 — Estado vigente de seguridad documentado
 
 - `SECURITY.md` ahora apunta a la validación integrada más reciente de autenticación/transporte y elimina la afirmación histórica de que faltaba E2E.
 - Action `45266610856` validó 69/69 E2E, controles de sesión, axe, responsive, API/MySQL y Backend xUnit 165/165.
+- La revisión documental `79020a8` pasó también la Action integrada [`45268671219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45268671219), con el mismo código funcional.
 
 ## 2026-11-23 — Perfil accesible y pruebas móviles extendidas
 

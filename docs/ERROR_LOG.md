@@ -5,6 +5,12 @@
 - Prevención: los placeholders/nombres con prefijos solapados requieren selector exacto; cuando exista label visible, priorizar rol + nombre exacto.
 - El resto de 68 E2E pasó, incluidos checks reales de API/MySQL. Action integrada [`45266610856`](https://github.com/Paul1578/Front_gpsR/actions/runs/45266610856) validó el locator exacto: **69/69 E2E**, responsive 1/1, axe 2/2, build/lint/audit, Backend xUnit 165/165, API/MySQL y cleanup.
 
+## 2026-11-23 — `gh run view` recibió opciones de log incompatibles — RESUELTO
+
+- La consulta de verificación combinó `--log` y `--log-failed`; GitHub CLI rechaza ambas opciones juntas. No alteró la Action ni el repositorio.
+- Solución: usar sólo `--log-failed` para fallos o `--log` para la salida completa; el estado de Action se verificó con `--json`.
+- Prevención: no combinar las dos opciones excluyentes de `gh run view`.
+
 ## 2026-11-23 — axe en Mi Perfil encontró botón sin nombre/contraste bajo; rerun usó build obsoleto — CORREGIDO LOCALMENTE
 
 - Al extender axe a Perfil aparecieron dos fallos WCAG reales: el botón iconográfico «Volver» carecía de nombre accesible y el botón de revocar sesiones tenía contraste 4.36:1 (mínimo 4.5:1). Se añadió `aria-label="Volver"` y se cambió el texto de rojo 600 a rojo 700.
