@@ -1617,3 +1617,15 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Action `45119404897` confirmó las llamadas API reales (403 al crear/promover Admin y persistencia del miembro), pero falló al buscar `Abrir menú` con viewport 1280 px; ese control sólo existe debajo del breakpoint móvil.
 - Corrección: fijar el viewport a 390×844 antes del login para que la navegación E2E coincida con el menú que está interactuando.
 - Prevención: mantener viewport E2E explícito y usar selectores del modo de navegación activo. Repetir Action completa; el cambio no se considera validado hasta que pase el flujo API/MySQL y cleanup.
+
+## 2026-11-23 — E2E OSRM inspeccionaba la primera ruta y retry reutilizaba placa — CORREGIDO LOCALMENTE
+
+- Action `45119664116` (49/51): el selector tomó el primer `path` del overlay, perteneciente a otra ruta y con geometría de dos puntos; la respuesta OSRM controlada no se estaba comprobando sobre la ruta recién creada. Además, el retry reutilizó una placa cuya unicidad permanece tras DELETE/soft-delete y recibió 409.
+- Corrección: la polilínea seleccionada expone clase estable `fleet-route-selected`, el test selecciona su ruta antes de comprobar los dos segmentos de la geometría OSRM y cada intento usa placa/nombre con sufijo temporal único.
+- Prevención: localizar overlays por identidad de entidad, no por orden del DOM; para retries, respetar claves únicas que sobreviven a bajas lógicas. Acción integrada del SHA actual pendiente.
+
+## 2026-11-23 — Tipo local de Polyline no admitió className en pathOptions — CORREGIDO
+
+- Primer build tras intentar añadir clase CSS al Polyline falló TypeScript (`className` no pertenece al tipo local de `pathOptions`).
+- Se quitó esa extensión de producción y el E2E identifica la ruta seleccionada usando el atributo SVG `stroke-width="6"`, que ya representa el estado seleccionado existente.
+- Prevención: aprovechar atributos visuales ya definidos cuando sólo se necesita identificar el estado en E2E; no ampliar tipos de dependencia con campos no soportados. Build repetido pendiente.

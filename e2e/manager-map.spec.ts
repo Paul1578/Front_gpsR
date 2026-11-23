@@ -5,8 +5,6 @@ const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
 const routeDriverId = process.env.FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID;
 const fixtureSuffix = process.env.FLETFLOW_E2E_MAP_FIXTURE_SUFFIX?.toUpperCase();
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
-const routeName = `E2E QA ruta mapa Manager ${fixtureSuffix ?? "fixture-ausente"}`;
-const vehiclePlate = `E2EQA${fixtureSuffix ?? "MISSING"}`;
 
 type AuthTokens = { accessToken: string };
 type RouteRecord = { id: string; name: string; vehicleId: string; isActive: boolean };
@@ -21,6 +19,11 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
 
   test.setTimeout(90_000);
   page.setDefaultTimeout(8_000);
+  // DELETE conserva la unicidad histórica de placas desactivadas; cada retry
+  // necesita su propia placa para no chocar con el fixture del intento previo.
+  const attemptSuffix = `${fixtureSuffix ?? "MISSING"}${Date.now().toString().slice(-4)}`;
+  const routeName = `E2E QA ruta mapa Manager ${attemptSuffix}`;
+  const vehiclePlate = `E2EQA${attemptSuffix}`;
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(managerEmail!);
@@ -144,15 +147,15 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
     const map = page.locator(".leaflet-container");
     await expect(map).toBeVisible();
     await expect.poll(() => osrmRequests).toBeGreaterThan(0);
-    const routeLine = map.locator(".leaflet-overlay-pane path").first();
-    await expect.poll(async () => {
-      const path = await routeLine.getAttribute("d");
-      return path?.match(/L/g)?.length ?? 0;
-    }).toBeGreaterThanOrEqual(2);
     const routeList = page.locator("aside").filter({ hasText: "Rutas planificadas" });
     const routeButton = routeList.getByRole("button").filter({ hasText: routeName });
     await expect(routeButton).toBeVisible();
     await routeButton.click();
+    const routeLine = map.locator('.leaflet-overlay-pane path[stroke-width="6"]');
+    await expect.poll(async () => {
+      const path = await routeLine.getAttribute("d");
+      return path?.match(/L/g)?.length ?? 0;
+    }).toBeGreaterThanOrEqual(2);
     const selectedSummary = page.getByText("Ruta seleccionada", { exact: true }).locator("..");
     await expect(selectedSummary).toContainText(routeName);
     await expect(selectedSummary).toContainText(`Vehículo: ${vehicleId!.slice(0, 8)}…`);

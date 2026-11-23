@@ -647,3 +647,7 @@
 ## 2026-11-23 — Alineación de viewport en E2E Admin delegado
 
 - Tras Action `45119404897` (50/51), el spec ahora usa viewport móvil para abrir el menú móvil; documentación del error y prevención en `ERROR_LOG.md`. Validación integrada pendiente.
+
+## 2026-11-23 — Selectores y fixtures resilientes en E2E de mapa
+
+- E2E identifica la polilínea seleccionada por `stroke-width="6"` y valida OSRM sobre esa ruta y genera fixture único por intento para prevenir 409 por placa conservada tras baja lógica. Action `45119664116` registró ambos errores; nueva validación integrada pendiente.

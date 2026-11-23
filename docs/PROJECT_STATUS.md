@@ -669,3 +669,8 @@ Fecha de actualización: 2026-11-22.
 
 - Action Front `45119404897`: backend, audit, lint/build y responsive pasaron; Playwright **50/51**. El único fallo fue el locator `Abrir menú` en viewport desktop, después de que la API real ya confirmara 403 a creación/promoción Admin.
 - Corregido el test para usar explícitamente 390×844, donde se muestra ese botón. Esperar Action del nuevo SHA para confirmar Admin delegado y limpieza.
+
+## E2E del mapa: ajustes tras Action 45119664116
+
+- Action `45119664116`: **49/51**. El test delegado aún usaba menú móvil en desktop (fix publicado después); el mapa inspeccionaba la primera ruta del overlay y su retry reutilizaba placa única tras baja lógica.
+- Corregido localmente con selector de ruta seleccionada, comprobación de geometría OSRM sobre esa entidad y fixture único por intento. Nuevo SHA `3c7d738` está en Action; cambios adicionales de selector/retry requieren su propia Action.

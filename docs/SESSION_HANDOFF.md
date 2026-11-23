@@ -979,3 +979,8 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Action `45119404897` falló sólo en `company-admin.spec.ts`: el E2E de Admin delegado buscaba `Abrir menú` a 1280 px, donde la navegación es la barra lateral desktop. API 403, persistencia de rol y 50 pruebas adicionales pasaron.
 - Fix local en `company-admin.spec.ts`: viewport 390×844 antes del login para habilitar el menú móvil. Causa/solución/previsión en `ERROR_LOG.md`. Ejecutar lint/build/discovery, publicar y comprobar Action completa + cleanup.
 - Action Front `45119664116` para el E2E OSRM está en progreso; recoger el resultado antes de terminar.
+
+## Ajustes OSRM/retry pendientes de Action
+
+- Action `45119664116`: 49/51; Admin delegado falló por menú en desktop (corregido en `3c7d738`), y el caso de mapa apuntó al primer SVG del overlay (otra ruta), además de chocar con placa persistida tras delete en retry.
+- Cambios locales sin publicar aún: E2E selecciona la ruta real y localiza su polilínea por `stroke-width="6"` antes de exigir segmentos OSRM y genera placa/nombre únicos por intento. Ejecutar lint/build, diff-check, publicar y validar que la Action cubra E2E Admin, mapa, persistencia y cleanup.
