@@ -1,5 +1,11 @@
 # Handoff vigente — 2026-11-23
 
+## Siguiente cobertura — username largo en tarjeta Equipo
+
+- Auditoría responsive detectó riesgo estático: `@usuario` acepta hasta 100 caracteres sin espacios y carecía de wrapping. No estaba reproducido como defecto.
+- `TeamManagement` ahora permite partir la línea y el E2E integrado crea/edita username de 93/95 caracteres, verifica contenido/overflow a 320 y 768 px y persistencia por API.
+- Validación local lint/build, discovery 51 y diff-check pasan. CI API/MySQL pendiente. No marcar como defecto reproducido ni cobertura completa hasta ejecutar el browser E2E.
+
 ## Cambio de rol persistido desde Gestión de Equipo — validado
 
 - Auditoría QA encontró que Admin creaba Manager/Logistics con navegador+API, pero el cambio de rol estaba cubierto sólo con API; la UI tenía confirmación/cancelación probada mediante mocks.

@@ -20,6 +20,10 @@
 - Preflight encontró y corrigió un último locator sin tilde en el ciclo Driver/User; las Actions de `f46b489` se cancelaron antes del step E2E.
 - Validación local del cambio `6486865`: lint/build, discovery 51, diff-check y el test Playwright enfocado **1/1** pasan; validado en Actions `45138088658` y `45138084594`.
 
+# 2026-11-23 — Username largo en tarjeta responsive de Equipo
+
+- Se permite que la línea `@usuario` parta usernames largos y el E2E real crea/edita valores sin espacios, verificando overflow a 320/768 px y persistencia. Riesgo estático; CI pendiente.
+
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
 - `npm audit`: 0 vulnerabilidades.

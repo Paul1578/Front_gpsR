@@ -4039,9 +4039,11 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Crear Usuario" }).click();
   const userDialog = page.getByRole("dialog");
+  const longUsername = `user${suffix}${"x".repeat(80)}`;
+  const editedLongUsername = `edited${suffix}${"y".repeat(80)}`;
   await userDialog.getByPlaceholder("Juan").fill(`Usuario QA ${suffix}`);
   await userDialog.getByPlaceholder("Pérez").fill("Sin flota");
-  await userDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`user${suffix}`);
+  await userDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(longUsername);
   const regularUserEmail = `fletflow.e2e.user.ui.${suffix}@example.test`;
   await userDialog.getByPlaceholder("jperez@empresa.com").fill(regularUserEmail);
   await userDialog.getByRole("button", { name: /^Usuario Consulta/ }).click();
@@ -4061,14 +4063,21 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 
   const regularUserCard = page
     .getByTestId(`team-user-${createdRegularUser.id}`);
+  for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth &&
+      (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+    )).toBe(true);
+    await expect(regularUserCard.getByText(`@${longUsername}`, { exact: true })).toBeVisible();
+  }
   await page.setViewportSize({ width: 320, height: 844 });
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await regularUserCard.getByRole("button", { name: `Editar usuario user${suffix}` }).click();
+  await regularUserCard.getByRole("button", { name: `Editar usuario ${longUsername}` }).click();
   const editUserDialog = page.getByRole("dialog");
   expect(await editUserDialog.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(320);
   await editUserDialog.getByLabel("Nombres").fill("Nombre actualizado QA");
   await editUserDialog.getByLabel("Apellidos").fill("Apellido actualizado");
-  await editUserDialog.getByLabel("Usuario").fill(`useredit${suffix}`);
+  await editUserDialog.getByLabel("Usuario").fill(editedLongUsername);
   const updateProfilePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdRegularUser.id}/profile`) &&
     response.request().method() === "PUT",
@@ -4079,7 +4088,7 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
   expect(persistedEditedUserResponse.status()).toBe(200);
   const persistedEditedUser = (await persistedEditedUserResponse.json()).find((member: { id: string }) => member.id === createdRegularUser.id);
   expect(persistedEditedUser).toMatchObject({
-    username: `useredit${suffix}`,
+    username: editedLongUsername,
     firstName: "Nombre actualizado QA",
     lastName: "Apellido actualizado",
     email: regularUserEmail,
@@ -4087,6 +4096,15 @@ test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", as
 
   const editedRegularUserCard = page
     .getByTestId(`team-user-${createdRegularUser.id}`);
+  for (const [width, height] of [[320, 844], [768, 1024]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth &&
+      (document.querySelector("main")?.scrollWidth ?? 0) <= (document.querySelector("main")?.clientWidth ?? 0),
+    )).toBe(true);
+    await expect(editedRegularUserCard.getByText(`@${editedLongUsername}`, { exact: true })).toBeVisible();
+  }
+  await page.setViewportSize({ width: 320, height: 844 });
   const deactivateRegularUserPromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Users/${createdRegularUser.id}/status`) &&
     response.request().method() === "PUT",

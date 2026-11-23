@@ -723,7 +723,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
                         <h3 className="text-base text-gray-900">
                           {user.nombres} {user.apellidos}
                         </h3>
-                        <p className="text-xs text-gray-500">@{user.usuario}</p>
+                        <p className="break-words text-xs text-gray-500">@{user.usuario}</p>
                         {user.identificacion && (
                           <p className="text-xs text-gray-400 mt-0.5">ID: {user.identificacion}</p>
                         )}
