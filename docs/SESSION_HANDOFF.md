@@ -8,6 +8,12 @@
 - Validación local: lint, build y Playwright discovery **51 tests** pasan; Action integrado pendiente.
 - Siguiente paso: publicar en `refactor/route-builder`, ejecutar el workflow con MySQL desechable y registrar resultado; documentar cualquier fallo y su prevención en `ERROR_LOG.md`.
 
+## Cobertura siguiente — edición de rutas por Manager
+
+- La revisión QA encontró que el E2E Manager creaba la ruta y abría el editor a 320 px, pero cancelaba; backend ya cubría el permiso de actualización.
+- Se amplió localmente el escenario para cambiar nombre/descripción, guardar, esperar el PUT y comprobar por GET que persisten recursos, parada Delivery y traslado intactos. El fixture conserva `finally` para restaurar rol y limpiar flota/ruta.
+- Validación local de este cambio: lint/build, discovery (**51**) y `git diff --check` pasan. No es aún CI-validado ni está publicado; se integrará tras cerrar la Action de Logistics en curso.
+
 ## Sincronización más reciente
 
 - Front `refactor/route-builder` HEAD documental `2cc3ee5`; código probado `f0acce7`; Actions `45123444413` y `45124271067` success con Playwright **51/51**, responsive **1/1**, audit/lint/build y cleanup.

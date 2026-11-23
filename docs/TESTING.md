@@ -4,6 +4,11 @@
 - Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
 - Local: lint/build correctos; discovery enumera 51 pruebas. Pendiente ejecutar con API y MySQL descartables; no cuenta como verificado hasta pasar sin skip.
 
+## E2E Manager edita una ruta — validación local, CI pendiente — 2026-11-23
+
+- El caso Manager ahora modifica nombre y descripción desde la UI a 320 px, verifica HTTP 200 del `PUT /Routes/{id}` y consulta API para comprobar persistencia de recursos y puntos.
+- Lint/build/discovery 51 y diff-check pasan localmente. Requiere Action integrada API/MySQL; `finally` mantiene restauración de rol y cleanup si el guardado falla.
+
 # Administración de empresa — errores y reintento — validación local 2026-11-22
 
 ## Auditoría actual de dependencias — 2026-11-23

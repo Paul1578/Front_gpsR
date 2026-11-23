@@ -2488,7 +2488,36 @@ test("Manager usa el constructor de rutas desde móvil y dashboard responsive", 
     const managerRouteCard = managerRouteHeading.locator("xpath=../../../..");
     await managerRouteCard.getByRole("button", { name: "Editar ruta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Editar ruta" })).toBeVisible();
-    await page.getByRole("button", { name: "Cancelar edición" }).click();
+    const updatedRouteName = `${routeName} editada`;
+    const updatedRouteDescription = "Instrucciones actualizadas por Manager desde UI";
+    await page.getByPlaceholder("Ej. Entregas zona norte").fill(updatedRouteName);
+    await page.getByPlaceholder("Productos, cantidad o instrucciones para el conductor").fill(updatedRouteDescription);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Construye el recorrido" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Asigna los recursos" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("heading", { name: "Revisa y crea" })).toBeVisible();
+    const updateRoutePromise = page.waitForResponse((response) =>
+      response.url().includes(`/api/backend/Routes/${routeId}`) && response.request().method() === "PUT",
+    );
+    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+    expect((await updateRoutePromise).status()).toBe(200);
+    const updatedRouteResponse = await page.request.get(`/api/backend/Routes/${routeId}`, { headers });
+    expect(updatedRouteResponse.status()).toBe(200);
+    expect(await updatedRouteResponse.json()).toMatchObject({
+      name: updatedRouteName,
+      cargoDescription: updatedRouteDescription,
+      vehicleId,
+      driverId: routeDriverId,
+      status: 0,
+      points: [
+        expect.objectContaining({ name: "Origen Manager QA", operation: 0 }),
+        expect.objectContaining({ name: "Entrega Manager QA", operation: 2 }),
+        expect.objectContaining({ name: "Destino Manager QA", operation: 0 }),
+      ],
+    });
+    await expect(page.getByRole("heading", { name: updatedRouteName, exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Rutas", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 768, height: 1024 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

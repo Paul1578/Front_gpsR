@@ -4,6 +4,11 @@
 - Validación local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) y `git diff --check` pasan.
 - Pendiente: ejecución integrada con API/MySQL efímeros. No contar como cubierto hasta Action verde sin skip del escenario.
 
+## Manager edita rutas desde UI — validación local, CI pendiente — 2026-11-23
+
+- La auditoría detectó que el E2E Manager cancelaba la edición tras abrir el editor. Ahora modifica nombre/descripción, guarda y comprueba por GET persistencia de ruta, asignación y parada.
+- Lint/build, discovery **51 tests** y diff-check pasan localmente. Action integrada pendiente; el fixture conserva restauración del rol y cleanup en `finally`.
+
 ## Estado actual — 2026-11-23
 
 - Front `refactor/route-builder`, código `44946d4`, pasó Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup. El caso añadido completa un traslado desde Mi Ruta como Driver y confirma API `Completed` + vehículo `Available`.

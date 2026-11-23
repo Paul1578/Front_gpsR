@@ -3,6 +3,11 @@
 - El E2E de Logistics ahora modifica nombre y descripción desde el constructor, verifica el PUT real y confirma persistencia con GET antes de cancelar y consultar historial.
 - Lint, build, discovery de 51 E2E y `git diff --check` pasan localmente. CI integrado API/MySQL pendiente.
 
+# 2026-11-23 — Cobertura de edición de rutas para Manager
+
+- El E2E Manager sustituye la cancelación del editor por un cambio guardado y una verificación GET de persistencia, conservando sus aserciones de parada, asignación y restauración del fixture.
+- Lint/build/discovery de 51 pruebas pasan localmente; Action integrada pendiente.
+
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
 - `npm audit`: 0 vulnerabilidades.
