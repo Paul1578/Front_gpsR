@@ -7,9 +7,10 @@
 - La prueba de Administración ahora promueve por UI a un Driver temporal a Admin desde la cuenta raíz, valida HTTP/body y `GET /Users/my-team`, y restaura Driver. Se agregó testid estable a la fila de usuario.
 - Revisión adicional encontró que el selector de Administración aplicaba roles sin confirmación. Ahora usa diálogo para confirmar/cancelar; el E2E de raíz comprueba cancelar sin PUT, confirmar promoción y restaurar el rol. También mide la lista/select a 320 y 768 px.
 - El flujo de ruta de mapa consulta el ID después de DELETE y exige `isActive=false`.
-- Validación local del primer lote `bd38edd`: lint, build Next 16/TS, discovery **51 tests**, `git diff --check` pasan. Action [`45151010627`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151010627) sigue en curso con checkout/MySQL descartable. El diálogo/responsive del follow-up aún requiere su propia Action.
+- Validación local del primer lote `bd38edd`: lint, build Next 16/TS, discovery **51 tests**, `git diff --check` pasan. Action [`45151010627`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151010627) pasó **51/51 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup con API/MySQL descartables.
+- El follow-up `d358166` pasó lint/build/discovery; Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) validó **51/51 E2E**, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup. La cuenta raíz pudo cancelar sin PUT, confirmar Admin, comprobar persistencia y restaurar Driver; lista probada a 320/768 px.
 - Incidentes de la iteración (contexto de parche no coincidente y paths de controlador equivocados) quedan registrados en `ERROR_LOG.md` del checkout propietario.
-- Commit `bd38edd` está publicado; el follow-up de confirmación requiere commit y otra validación integrada después de que compile localmente.
+- Commits Front `bd38edd` y `d358166` están publicados; ambos HEAD funcionales pasaron en sus Actions. Próxima fase abierta: incorporar y validar nuevos asserts en smoke Backend.
 
 ## E2E de correo duplicado en Equipo
 

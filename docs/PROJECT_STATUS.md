@@ -4,7 +4,8 @@
 - Administración raíz promueve temporalmente un Driver a Admin por la UI, verifica `PUT` y persistencia en equipo, y restaura su rol. La fila tiene un `data-testid` asociado al ID.
 - El selector de rol de Administración ahora pide confirmación explícita; el E2E prueba cancelación sin mutación, confirmación, restauración y responsive a 320/768 px.
 - Tras eliminar ruta desde el mapa, el E2E consulta el recurso y verifica `isActive=false` persistido.
-- Primer lote `bd38edd`: lint/build, discovery **51 tests** y diff-check pasaron local; Action [`45151010627`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151010627) está en curso con API/MySQL descartables. Follow-up de confirmación/responsive aún no integrado.
+- Primer lote `bd38edd`: Action [`45151010627`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151010627) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit y cleanup API/MySQL.
+- Código final `d358166`: Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) pasó **51/51 E2E**, responsive **1/1**, Backend Release/xUnit, audit/lint/build y cleanup. Incluye cancelar promoción sin PUT, promoción Admin raíz persistida, restauración a Driver, 320/768 px y los tres ataques cross-tenant a Users.
 
 ## Correo duplicado en Gestión de Equipo — validado por Action — 2026-11-23
 

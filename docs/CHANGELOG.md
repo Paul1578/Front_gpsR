@@ -718,4 +718,4 @@
 # 2026-11-23 — Confirmación de cambios de rol en Administración
 
 - La lista de usuarios en `SuperAdminView` pide confirmación accesible antes de persistir un rol; cancelar no modifica estado. Se añade nombre accesible al selector.
-- E2E raíz cubre cancelar/confirmar Admin, lectura persistida y restauración a Driver; viewport 320/768. Lint/build/discovery local pasan; Action pendiente.
+- E2E raíz cubre cancelar/confirmar Admin, lectura persistida y restauración a Driver; viewport 320/768. Action [`45151685501`](https://github.com/Paul1578/Front_gpsR/actions/runs/45151685501) pasó **51/51 E2E**, responsive 1/1, Backend Release/xUnit y cleanup.
