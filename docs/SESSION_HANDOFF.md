@@ -31,6 +31,10 @@
 
 - Actualización: Front `44946d4` pasó Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815), **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit/lint/build y cleanup. Cubre sesión Driver, inicio/completado UI, estado/timestamps por API y vehículo Available. Dos aserciones incorrectas/ambiguas quedaron corregidas y registradas en `ERROR_LOG.md`.
 
+## Cobertura operativa Driver de varias paradas — confirmada
+
+- El E2E `Driver sólo ve su operación, persiste evidencia fotográfica...` ya cubre recorrido real de dos paradas secuenciales, evidencia nota/foto, bloqueo de completado sin evidencia, cierre de ruta e Historial. Action `45131410815` pasó **51/51**; no hace falta crear otro test para esa brecha.
+
 - Front `a510021` añade E2E integrado de Admin delegado con API/MySQL: login real, `/Auth/me` root=false, 403 para crear/promover Admin, GET confirma que el miembro sigue User, y la UI oculta opciones Admin. Backend `c32febe` prepara el fixture temporal. Lint/build y discovery 51 pasan; Actions integrado aún pendiente de push.
 - Front `refactor/route-builder` HEAD `d0a9342`; Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569) pasó audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL **50/50**, cleanup y teardown. El cambio funcional del horario fue validado previamente en `23e964e` por Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930).
 - Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.

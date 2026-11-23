@@ -3,6 +3,7 @@
 - Añadida cobertura E2E autenticada para editar desde el constructor una ruta de Logistics, validar `PUT /Routes/{id}` y consultar el GET persistido; luego el flujo verifica cancelación e historial.
 - Validación local: `npm run lint`, `npm run build`, `npx playwright test --list` (**51 tests**) y `git diff --check` pasan.
 - Validado por Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752): **51/51 E2E** en cada corrida, backend Release/xUnit, audit/lint/build, responsive y limpieza de API/MySQL efímeros.
+- El E2E Driver existente además cubre dos paradas operativas en orden, evidencia nota/foto, rechazo sin evidencia, cierre y lectura desde Historial; Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815) pasó **51/51** contra API/MySQL descartables.
 
 ## Manager edita rutas desde UI — validado por Actions — 2026-11-23
 

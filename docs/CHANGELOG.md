@@ -8,6 +8,10 @@
 - El E2E Manager sustituye la cancelación del editor por un cambio guardado y una verificación GET de persistencia, conservando sus aserciones de parada, asignación y restauración del fixture.
 - Lint/build/discovery de 51 pruebas pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) validaron **51/51 E2E**, API/MySQL, responsive, Release/xUnit y cleanup.
 
+# 2026-11-23 — Auditoría de ciclo Driver multi-parada
+
+- Confirmado que el E2E ya cubre dos paradas en secuencia, evidencia de nota/foto, rechazo sin evidencia, cierre e Historial; Action `45131410815` pasó 51/51. Sin cambio funcional.
+
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
 - `npm audit`: 0 vulnerabilidades.
