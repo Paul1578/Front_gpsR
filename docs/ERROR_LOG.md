@@ -1,3 +1,9 @@
+## 2026-11-23 — E2E conservaron selectores/expectativas anteriores a etiquetas humanas — CORREGIDO LOCALMENTE
+
+- Front Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) pasó build, lint y responsive, pero E2E terminó **51/53**. La tarjeta del Driver se buscó por texto y `../..`, resolviendo tres elementos; el test del mapa todavía esperaba el ID truncado aunque la interfaz ya mostraba placa/marca/modelo.
+- Solución: tarjeta por `data-testid=team-driver-{id}` y expectativa de vehículo usando placa y marca/modelo del fixture. Se documentará resultado al repetirse CI.
+- Prevención: después de cambiar el contrato visual, actualizar los asserts E2E que dependían de IDs técnicos; preferir test IDs estables para componentes de tarjeta.
+
 # 2026-11-23 — Exploración de carpetas usó casing/rutas de otro checkout — RESUELTO
 
 - Dos búsquedas iniciales apuntaron a `src/components`/`src/context` aunque el frontend usa `src/Components`/`src/Context`. Otras lecturas combinaron una ruta Backend con `workdir` Front y viceversa; `rg`/`sed` devolvieron archivo inexistente, sin tocar datos ni código.

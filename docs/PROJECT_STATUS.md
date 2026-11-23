@@ -1,3 +1,9 @@
+## Mapa y flujo Driver — fixes E2E esperando Action
+
+- Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) terminó con **51/53 E2E**. Los fallos fueron aserciones desactualizadas: locator ambiguo del perfil Driver tras cambiar rol y expectativa del mapa que aún pedía IDs truncados después de pasar a placa/marca/modelo.
+- Corregido usando `data-testid=team-driver-{id}` para la tarjeta y etiquetas humanas para el vehículo. `22bb081` incluye mapa con reintento, identificación de ruta humana y estados claros de opciones de asignación.
+- Local tras los fixes: `npm run lint`, `npm run build`, discovery **53 tests** y `git diff --check` pasan. Nueva Action integrada con backend pendiente.
+
 ## Paginación server-side en Equipo y Conductores — validación en curso
 
 - Backend paginado ya está validado: Release/xUnit **151/151**, HTTP/MySQL y aislamiento entre empresas; Actions Backend [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623) pasaron.

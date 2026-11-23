@@ -1,3 +1,8 @@
+## 2026-11-23 — Fix de aserciones integradas del mapa y gestión Driver
+
+- Action integrada encontró una tarjeta Driver con locator ambiguo y expectativas de mapa aún acopladas al ID del vehículo.
+- Los E2E ahora localizan la tarjeta por ID estable y comprueban placa/marca/modelo que ve el usuario. Action previa fue 51/53; lint/build/discovery local pasan y la nueva Action está pendiente.
+
 # 2026-11-23 — Listas paginadas de Equipo y Conductores
 
 - Vistas migradas a endpoints server-side nuevos conservando APIs array heredadas; búsqueda con debounce, filtro rol/estado y controles responsive.

@@ -1,3 +1,10 @@
+## Action `45183402334` — dos aserciones E2E corregidas localmente
+
+- Front/backend build, lint, auditoría de dependencias y responsive pasaron. La suite autenticada ejecutó **51/53**.
+- `fleet-admin.spec.ts`: el nombre coincidía con tres nodos y el locator `../..` era ambiguo; se usa el test ID de la tarjeta Driver.
+- `manager-map.spec.ts`: el producto presenta placa/marca/modelo y la prueba aún exigía el ID truncado; se actualizó al vehículo QA real.
+- Después del fix, `npm run lint`, `npm run build`, discovery (**53 tests**) y `git diff --check` pasan local. Nueva Action pendiente; no cerrar hasta 53/53 y cleanup correcto.
+
 ## Paginación de Equipo/Conductores — validación Front en curso
 
 - Backend Release/xUnit **151/151** y smoke API/MySQL paginado/tenant pasaron en Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623).

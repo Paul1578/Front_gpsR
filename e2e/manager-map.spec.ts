@@ -7,7 +7,7 @@ const fixtureSuffix = process.env.FLETFLOW_E2E_MAP_FIXTURE_SUFFIX?.toUpperCase()
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
 
 type AuthTokens = { accessToken: string };
-type RouteRecord = { id: string; name: string; vehicleId: string; isActive: boolean };
+type RouteRecord = { id: string; name: string; vehicleId: string; vehiclePlate?: string; vehicleBrand?: string; vehicleModel?: string; isActive: boolean };
 type VehicleRecord = { id: string; plate: string };
 type DriverRecord = { id: string; vehicleId: string | null };
 
@@ -154,9 +154,9 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
     await expect(page.getByText("Trayecto por carretera calculado.", { exact: true })).toBeVisible();
     const selectedSummary = page.getByText("Ruta seleccionada", { exact: true }).locator("..");
     await expect(selectedSummary).toContainText(routeName);
-    await expect(selectedSummary).toContainText(`Vehículo: ${vehicleId!.slice(0, 8)}…`);
+    await expect(selectedSummary).toContainText(`Vehículo: ${vehiclePlate} · FleetFlow QA Mapa Manager`);
     await expect.poll(() => map.locator(".leaflet-marker-icon").count()).toBeGreaterThanOrEqual(4);
-    await expect(routeButton).toContainText(`Vehículo: ${vehicleId!.slice(0, 8)}…`);
+    await expect(routeButton).toContainText(`Vehículo: ${vehiclePlate} · FleetFlow QA Mapa Manager`);
 
     for (const viewport of [
       { name: "desktop", width: 1365, height: 900 },
@@ -166,7 +166,7 @@ test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvi
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await expect(map).toBeVisible();
       await expect(selectedSummary).toContainText(routeName);
-      await expect(selectedSummary).toContainText(`Vehículo: ${vehicleId!.slice(0, 8)}…`);
+      await expect(selectedSummary).toContainText(`Vehículo: ${vehiclePlate} · FleetFlow QA Mapa Manager`);
       await expect(routeButton).toBeVisible();
       const dimensions = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,

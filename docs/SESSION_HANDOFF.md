@@ -1,3 +1,10 @@
+## Handoff vigente — aserciones E2E tras mejora de mapa
+
+- Front `refactor/route-builder`, `main` intacta. Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) construyó backend/frontend y pasó lint/build/responsive; E2E terminó **51/53**.
+- Fallo 1: locator de texto de tarjeta Driver resolvía formulario, tarjeta y texto interno; se cambió a `data-testid=team-driver-{id}`. Fallo 2: `manager-map.spec.ts` esperaba ID de vehículo truncado y ahora la UI muestra placa/marca/modelo; expectativa actualizada con datos del fixture.
+- Siguiente: volver a revisar el diff, commit de tests/docs, push y esperar Action integrada hasta success. Lint/build/discovery 53 y diff-check ya pasan localmente.
+- Backend tiene cambios locales de guarda tenant y JSON de puntos bajo validación; mantener sincronía entre repositorios sólo después de publicar el backend validado.
+
 ## Handoff vigente — paginación del equipo y conductores
 
 - Feature unlink está integrada y validada: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) pasó smoke MySQL.

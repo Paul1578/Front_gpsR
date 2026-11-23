@@ -4207,7 +4207,7 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
   const linkedUserAfterDriverEdit = (await usersAfterDriverEdit.json()).find((member: { id: string }) => member.id === createdUser.id);
   expect(linkedUserAfterDriverEdit).toMatchObject({ firstName: `${firstName} editado`, lastName });
 
-  const updatedDriverCard = page.getByText(`${firstName} editado ${lastName}`, { exact: true }).locator("xpath=../..");
+  const updatedDriverCard = page.getByTestId(`team-driver-${driverId}`);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const deactivatePromise = page.waitForResponse((response) =>
     response.url().includes(`/api/backend/Drivers/${driverId}/status`) &&
@@ -4216,7 +4216,7 @@ test("Admin crea, edita, desvincula y gestiona Drivers con y sin usuario desde E
   await updatedDriverCard.getByRole("button", { name: "Dar de baja" }).click();
   expect((await deactivatePromise).status()).toBe(204);
   await page.getByRole("button", { name: "Mostrar bajas" }).click();
-  const inactiveDriverCard = page.getByText(`${firstName} editado ${lastName}`).locator("xpath=../..");
+  const inactiveDriverCard = page.getByTestId(`team-driver-${driverId}`);
   await expect(inactiveDriverCard).toContainText("Inactivo");
   await expect(createdUnlinkedDriverCard).toContainText("Sin usuario vinculado");
 
