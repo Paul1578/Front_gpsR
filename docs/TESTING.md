@@ -1,14 +1,15 @@
-## Action `45183402334` — dos aserciones E2E corregidas localmente
+## Historial de Action `45183402334` — aserciones corregidas y revalidadas
 
 - Front/backend build, lint, auditoría de dependencias y responsive pasaron. La suite autenticada ejecutó **51/53**.
 - `fleet-admin.spec.ts`: el nombre coincidía con tres nodos y el locator `../..` era ambiguo; se usa el test ID de la tarjeta Driver.
 - `manager-map.spec.ts`: el producto presenta placa/marca/modelo y la prueba aún exigía el ID truncado; se actualizó al vehículo QA real.
-- Después del fix, `npm run lint`, `npm run build`, discovery (**53 tests**) y `git diff --check` pasan local. Nueva Action pendiente; no cerrar hasta 53/53 y cleanup correcto.
+- Después del fix, `npm run lint`, `npm run build`, discovery (**53 tests**) y focales mapa/carga (**14/14**) pasan local. Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive **1/1**, Backend Release/xUnit, API/MySQL y cleanup.
 
-## Paginación de Equipo/Conductores — validación Front en curso
+## Paginación de Equipo/Conductores — validada
 
 - Backend Release/xUnit **151/151** y smoke API/MySQL paginado/tenant pasaron en Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623).
 - Front Action [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) ejecutó 52 casos: **45 pasaron y 7 fallaron** por simulaciones que aún interceptaban las rutas antiguas, caché global Driver desactualizada después de asignar/desasignar y comparación literal de URL codificada. Ver solución y prevención en `ERROR_LOG.md`.
+- La integración actual [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) confirmó el suite completo: **53/53 E2E**, responsive, lint/build y backend Release/xUnit.
 - Tras corregirlo, Playwright local de carga/equipo/conductores: **13/13 passed**; ambos E2E de `team-search.spec.ts` quedan omitidos por falta de credenciales QA locales. La compilación pasó antes de los últimos ajustes; lint/build, suite completa de Actions y responsive deben volver a ejecutarse.
 - El E2E de paginación usa 26 fixtures y valida anterior/siguiente con sesión Admin, por lo que se verifica en CI con sus credenciales temporales.
 - Iteración UX adicional: E2E `map-retry.spec.ts` valida recuperación tras 503 y nombres de placa/conductor; junto con `team-management-load-errors.spec.ts`, Playwright focal pasó **14/14**. Lint/build pasan luego de conectar los estados a `RouteBuilder`.

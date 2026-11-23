@@ -1,12 +1,12 @@
 ## 2026-11-23 — Eliminación de controles de cuenta ficticios
 
 - Se retiraron componentes sin uso que afirmaban eliminar la cuenta pero sólo cerraban sesión, ofrecían cambio de contraseña simulado y mostraban notificaciones vacías.
-- La edición de contraseña real permanece en Mi Perfil. `npm run lint` y `npm run build` pasan; Action pendiente.
+- La edición de contraseña real permanece en Mi Perfil. `npm run lint` y `npm run build` pasan; Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) pasó **53/53 E2E** y cleanup.
 
 ## 2026-11-23 — Fix de aserciones integradas del mapa y gestión Driver
 
 - Action integrada encontró una tarjeta Driver con locator ambiguo y expectativas de mapa aún acopladas al ID del vehículo.
-- Los E2E ahora localizan la tarjeta por ID estable y comprueban placa/marca/modelo que ve el usuario. Action previa fue 51/53; lint/build/discovery local pasan y la nueva Action está pendiente.
+- Los E2E ahora localizan la tarjeta por ID estable y comprueban placa/marca/modelo que ve el usuario. Action previa fue 51/53; [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) pasó **53/53 E2E**.
 
 # 2026-11-23 — Listas paginadas de Equipo y Conductores
 

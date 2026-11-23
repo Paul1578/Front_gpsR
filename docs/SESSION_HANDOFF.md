@@ -2,16 +2,15 @@
 
 - Retirados `SettingsModal.tsx` y `NotificationsPanel.tsx`, ambos sin referencias. El modal presentaba eliminación que sólo cerraba sesión y cambio de contraseña simulado; el panel de notificaciones era un placeholder vacío.
 - La contraseña real se gestiona desde Mi Perfil. `rg` no encontró referencias tras eliminar ambos componentes.
-- Tras la eliminación, lint y build pasan. Pendiente publicar y validar este HEAD; la Action `45185761490` para `8dc1a2a` debe revisarse por separado.
+- Tras la eliminación, lint/build y focales mapa/carga **14/14** pasan. Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) pasó **53/53 E2E**, responsive 1/1, audit, lint/build, Backend Release/xUnit, API/MySQL y cleanup en `dff947f`.
 
-## Handoff vigente — aserciones E2E tras mejora de mapa
+## Cierre anterior — aserciones E2E tras mejora de mapa
 
 - Front `refactor/route-builder`, `main` intacta. Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) construyó backend/frontend y pasó lint/build/responsive; E2E terminó **51/53**.
 - Fallo 1: locator de texto de tarjeta Driver resolvía formulario, tarjeta y texto interno; se cambió a `data-testid=team-driver-{id}`. Fallo 2: `manager-map.spec.ts` esperaba ID de vehículo truncado y ahora la UI muestra placa/marca/modelo; expectativa actualizada con datos del fixture.
-- Siguiente: volver a revisar el diff, commit de tests/docs, push y esperar Action integrada hasta success. Lint/build/discovery 53 y diff-check ya pasan localmente.
-- Backend tiene cambios locales de guarda tenant y JSON de puntos bajo validación; mantener sincronía entre repositorios sólo después de publicar el backend validado.
+- El suite completo confirmó locators estables y placa/marca/modelo en mapa. Backend `492f8f9` pasó Action `45185698388`; continúa la misión global con topes de evidencia y revisión de rendimiento.
 
-## Handoff vigente — paginación del equipo y conductores
+## Historial — paginación del equipo y conductores
 
 - Feature unlink está integrada y validada: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) pasó smoke MySQL.
 - Backend paginado está publicado y validado (Release/xUnit **151/151**, smoke HTTP/MySQL tenant): Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623) success.

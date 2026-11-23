@@ -2,13 +2,13 @@
 
 - `SettingsModal.tsx` no estaba importado y ofrecía “Eliminar cuenta” implementado como logout, además de “Cambiar contraseña” que sólo mostraba un toast de próximamente. `NotificationsPanel.tsx` tampoco tenía referencias y siempre mostraba una lista vacía.
 - Solución: eliminados los dos componentes huérfanos; el cambio de clave real se ofrece en Mi Perfil. `rg` confirmó cero referencias restantes.
-- Validación: lint y build pasan localmente; Action con el nuevo HEAD pendiente.
+- Validación: lint/build/focales 14/14 locales; Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) pasó **53/53 E2E**, responsive, audit y cleanup.
 - Prevención: comprobar el handler real y el grafo de imports al auditar affordances; no dejar pantallas demo en componentes de producto.
 
 ## 2026-11-23 — E2E conservaron selectores/expectativas anteriores a etiquetas humanas — CORREGIDO LOCALMENTE
 
 - Front Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) pasó build, lint y responsive, pero E2E terminó **51/53**. La tarjeta del Driver se buscó por texto y `../..`, resolviendo tres elementos; el test del mapa todavía esperaba el ID truncado aunque la interfaz ya mostraba placa/marca/modelo.
-- Solución: tarjeta por `data-testid=team-driver-{id}` y expectativa de vehículo usando placa y marca/modelo del fixture. Se documentará resultado al repetirse CI.
+- Solución: tarjeta por `data-testid=team-driver-{id}` y expectativa de vehículo usando placa y marca/modelo del fixture. Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) pasó **53/53 E2E**, responsive, backend Release/xUnit, API/MySQL y cleanup.
 - Prevención: después de cambiar el contrato visual, actualizar los asserts E2E que dependían de IDs técnicos; preferir test IDs estables para componentes de tarjeta.
 
 # 2026-11-23 — Exploración de carpetas usó casing/rutas de otro checkout — RESUELTO

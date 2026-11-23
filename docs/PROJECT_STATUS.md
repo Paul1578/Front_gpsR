@@ -1,22 +1,22 @@
-## Limpieza de componentes obsoletos — validación local
+## Mapa, asignaciones y limpieza de componentes obsoletos — CI aprobado
 
 - Eliminados `SettingsModal` y `NotificationsPanel`: no tenían referencias en la aplicación; el primero afirmaba eliminar cuentas mientras sólo cerraba la sesión y ofrecía un cambio de contraseña ficticio; el segundo mostraba un panel vacío permanente.
 - El cambio de contraseña real está disponible en Mi Perfil. `rg` confirmó que no queda ningún import/referencia a esos componentes.
-- Tras la eliminación, `npm run lint` y `npm run build` pasan; Action con el nuevo HEAD pendiente.
+- Tras la eliminación, `npm run lint`, `npm run build`, discovery **53** y pruebas focales **14/14** pasan. Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) en `dff947f` validó **53/53 E2E**, responsive **1/1**, audit, lint/build, Backend Release/xUnit, API/MySQL y cleanup.
 
-## Mapa y flujo Driver — fixes E2E esperando Action
+## Corrección de las aserciones E2E de mapa y Driver — cerrada
 
 - Action [`45183402334`](https://github.com/Paul1578/Front_gpsR/actions/runs/45183402334) terminó con **51/53 E2E**. Los fallos fueron aserciones desactualizadas: locator ambiguo del perfil Driver tras cambiar rol y expectativa del mapa que aún pedía IDs truncados después de pasar a placa/marca/modelo.
 - Corregido usando `data-testid=team-driver-{id}` para la tarjeta y etiquetas humanas para el vehículo. `22bb081` incluye mapa con reintento, identificación de ruta humana y estados claros de opciones de asignación.
-- Local tras los fixes: `npm run lint`, `npm run build`, discovery **53 tests** y `git diff --check` pasan. Nueva Action integrada con backend pendiente.
+- Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) también confirmó ambas aserciones corregidas y la ejecución limpia del suite autenticado.
 
-## Paginación server-side en Equipo y Conductores — validación en curso
+## Paginación server-side en Equipo y Conductores — validada por Action
 
 - Backend paginado ya está validado: Release/xUnit **151/151**, HTTP/MySQL y aislamiento entre empresas; Actions Backend [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623) pasaron.
 - Front cambió búsquedas, filtros y navegación a los endpoints paginados, conservando endpoints de arrays para consumidores existentes. La primera Action Front [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) detectó 7 fallos E2E (45/52): mocks antiguos, selector de vehículos sin refrescar caché y matcher de query sensible a la codificación.
 - Correcciones locales: mocks paginados y reintento que sincroniza página/caché completa. `team-management-load-errors.spec.ts` pasó **13/13**; ambos E2E autenticados de `team-search.spec.ts` se omiten localmente por falta de credenciales Admin. `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan; Action integrada del fix pendiente.
 - Action del fix `45180756427`: **51/52**, con un fallo heredado en la aserción del perfil Driver inactivo (la tarjeta de bajas aún muestra el nombre). La expectativa se ajustó a la tarjeta y su estado. En paralelo se implementan reintento del mapa, etiquetas de vehículo/conductor y carga explícita de opciones en el paso de asignación; siguiente Action pendiente.
-- Mejoras UX añadidas localmente: mapa con reintento y etiquetas humanas; constructor diferencia carga, error y ausencia de recursos, y deshabilita selectores hasta disponer de datos. `map-retry.spec.ts` y `team-management-load-errors.spec.ts`: **14/14**; lint/build pasan. Aún sin commit/Action de esta tanda.
+- Mejoras UX añadidas: mapa con reintento y etiquetas humanas; constructor diferencia carga, error y ausencia de recursos, y deshabilita selectores hasta disponer de datos. `map-retry.spec.ts` y `team-management-load-errors.spec.ts`: **14/14**; lint/build pasan; Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) validó **53/53** integrado.
 - Unlink cuenta Driver ya aprobado: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) pasó **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) validó API/MySQL, conflicto Pending y cleanup.
 
 ## Desvinculación User–Driver — fix E2E esperando Action
