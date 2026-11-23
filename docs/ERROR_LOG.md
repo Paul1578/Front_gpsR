@@ -5,6 +5,12 @@
 - Prevención: conservar tipos explícitos en callbacks extraídos de eventos Playwright y validar build TypeScript además de lint/discovery.
 - Revalidación local tras el arreglo: `npm run lint`, `npm run build` (TypeScript y 11 páginas) y discovery Playwright (**51**) pasaron; `git diff --check` limpio. Action integrada del caso sigue pendiente.
 
+## 2026-11-23 — Búsqueda del controller y rol en rutas de otro repositorio — RESUELTO
+
+- La búsqueda inicial usó `e2e/` y `src/components/` en Front, y un path de entidad que no existe en Backend; Front usa `src/Components/` y Backend confirmó el contrato directamente en `UserController.cs`. Fueron búsquedas de solo lectura, sin efectos de prueba.
+- Solución: localizar los archivos desde la raíz correcta (`rg --files`) y usar la ruta real; el backend devuelve `409` con `El correo ya fue registrado.`.
+- Prevención: comprobar primero qué checkout está activo y derivar rutas con `rg --files` antes de abrir una ruta supuesta.
+
 ## 2026-11-23 — E2E de cambio de rol no encontraba botón por tilde inconsistente — CORREGIDO LOCALMENTE; CI PENDIENTE
 
 - Action Front `45135338276` terminó **50/51**. El E2E esperaba `Logística`, pero las opciones de rol de la tarjeta y el alta renderizaban `Logistica` sin tilde, a diferencia del badge/confirmación. El click agotó timeout; no hubo fallo de API ni de persistencia y el teardown descartable se ejecutó.

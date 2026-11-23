@@ -1,3 +1,9 @@
+## Correo duplicado en Gestión de Equipo — pendiente de Action integrada — 2026-11-23
+
+- El E2E crea Manager/Logistics por UI y vuelve a enviar desde el formulario el mismo correo con username distinto, sin interceptar la API. Comprueba HTTP 409, mensaje, modal abierto y una sola cuenta persistida en `/Users/my-team`.
+- `npm run lint`, `npm run build`, discovery Playwright (**51 tests**) y `git diff --check` pasaron localmente. Action con API/MySQL descartables pendiente para este escenario.
+- La Action anterior [`45140542275`](https://github.com/Paul1578/Front_gpsR/actions/runs/45140542275) pasó **51/51 E2E** y responsive **1/1** en el commit previo `e3e5e0e`; no incluye este cambio.
+
 ## Estado actual — 2026-11-23 (edición Logistics validada)
 
 - Añadida cobertura E2E autenticada para editar desde el constructor una ruta de Logistics, validar `PUT /Routes/{id}` y consultar el GET persistido; luego el flujo verifica cancelación e historial.

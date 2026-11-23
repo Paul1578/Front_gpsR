@@ -1,5 +1,11 @@
 # Handoff vigente — 2026-11-23
 
+## E2E de correo duplicado en Equipo
+
+- Añadida validación real de crear Manager/Logistics y volver a enviar su correo con username nuevo; espera HTTP 409 y verifica que el GET de equipo conserva una sola cuenta. El escenario no intercepta la petición.
+- Lint/build/discovery 51/diff-check pasan localmente. Action previa `45140542275` obtuvo 51/51 y responsive 1/1 antes de esta edición; ejecutar Action integrada con el nuevo spec.
+- Un primer `rg` usó rutas equivocadas entre los checkouts Front/Backend; `ERROR_LOG.md` registra cómo resolverlo con `rg --files` y confirmar la raíz correcta.
+
 ## Username largo en tarjeta Equipo — validado
 
 - Auditoría responsive detectó riesgo estático: `@usuario` acepta hasta 100 caracteres sin espacios y carecía de wrapping. No estaba reproducido como defecto.

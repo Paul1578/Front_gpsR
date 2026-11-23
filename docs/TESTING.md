@@ -1,3 +1,8 @@
+# Correo duplicado desde Gestión de Equipo — Action pendiente — 2026-11-23
+
+- El escenario autenticado crea miembros y vuelve a enviar un correo ya usado por UI; la API real debe responder `409 El correo ya fue registrado.`, conservar el diálogo y dejar una sola cuenta visible en `/Users/my-team`.
+- Lint, build, discovery de **51 tests** y diff-check pasan localmente. Action previa `45140542275` cubrió el SHA anterior con 51/51; falta ejecutar la nueva versión.
+
 # E2E Logistics edita una ruta — validado por Actions — 2026-11-23
 
 - El escenario autenticado crea un traslado desde la UI, cambia nombre y descripción en “Editar ruta”, espera `PUT /Routes/{id}` HTTP 200 y confirma por GET la persistencia junto al conductor/vehículo originales y estado Pending.

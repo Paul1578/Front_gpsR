@@ -3718,6 +3718,34 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   }
+
+  const duplicatedEmail = `fletflow.e2e.user.manager.${suffix}@example.test`;
+  await page.getByRole("button", { name: "Crear Usuario" }).click();
+  const duplicateEmailDialog = page.getByRole("dialog");
+  await duplicateEmailDialog.getByPlaceholder("Juan").fill("E2E Correo duplicado");
+  await duplicateEmailDialog.getByPlaceholder("Pérez").fill("Cuenta de prueba");
+  await duplicateEmailDialog.getByRole("textbox", { name: "jperez", exact: true }).fill(`duplicate${suffix}`);
+  await duplicateEmailDialog.getByPlaceholder("jperez@empresa.com").fill(duplicatedEmail);
+  await duplicateEmailDialog.getByRole("button", { name: /^Usuario/ }).click();
+
+  const duplicateEmailResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith("/api/backend/Users") &&
+    response.request().method() === "POST",
+  );
+  await duplicateEmailDialog.getByRole("button", { name: "Crear Usuario", exact: true }).click();
+  const duplicateEmailResponse = await duplicateEmailResponsePromise;
+  expect(duplicateEmailResponse.status()).toBe(409);
+  const duplicateEmailError = await duplicateEmailResponse.json();
+  expect(duplicateEmailError.message).toBe("El correo ya fue registrado.");
+  await expect(page.getByText(duplicateEmailError.message)).toBeVisible();
+  await expect(duplicateEmailDialog).toBeVisible();
+
+  const teamAfterDuplicateEmail = await page.request.get("/api/backend/Users/my-team", { headers });
+  expect(teamAfterDuplicateEmail.status()).toBe(200);
+  const duplicateEmailMembers = (await teamAfterDuplicateEmail.json() as Array<{ email: string }>).filter(
+    (member) => member.email.toLowerCase() === duplicatedEmail.toLowerCase(),
+  );
+  expect(duplicateEmailMembers).toHaveLength(1);
 });
 
 test("Admin crea Drivers con y sin usuario desde Equipo y gestiona su ciclo", async ({ page }) => {

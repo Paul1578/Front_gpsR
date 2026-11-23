@@ -1,3 +1,8 @@
+# 2026-11-23 — Correo duplicado en Gestión de Equipo
+
+- El E2E integrado intenta crear un segundo miembro con el mismo email por la UI; espera 409 real, mensaje de API, diálogo visible y una única cuenta persistida.
+- Lint, build, 51 tests descubiertos y diff-check pasan localmente; CI de API/MySQL pendiente.
+
 # 2026-11-23 — Cobertura de edición de rutas para Logistics
 
 - El E2E de Logistics ahora modifica nombre y descripción desde el constructor, verifica el PUT real y confirma persistencia con GET antes de cancelar y consultar historial.
