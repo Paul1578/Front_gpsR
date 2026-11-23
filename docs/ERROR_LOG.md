@@ -1573,3 +1573,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El cambio de puerto de Playwright y la prueba de Dashboard se publicaron en Front `f71ae7d`.
 - Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423) completó audit, lint, build, responsive **1/1** y **46/46** pruebas API/MySQL autenticadas; cleanup y teardown correctos.
 - Prevención confirmada: `PLAYWRIGHT_BASE_URL` y el puerto `webServer` quedan sincronizados, y el E2E espera la respuesta inicial de rutas antes de afirmar el estado vacío real.
+
+## 2026-11-23 — Copy de token confundía el mínimo de contraseña — CORREGIDO; RESPONSIVE E2E EN CURSO
+
+- Reset/activación decían que el token tenía 12 caracteres. El backend genera tokens criptográficos de un solo uso; 12 es el mínimo de contraseña. Recuperación también prometía contraseña temporal y llamaba OTP a un enlace.
+- Se corrigió a enlace seguro/temporal de un solo uso y copy de recuperación que describe instrucciones de nueva contraseña sin prometer envío exitoso.
+- El primer E2E responsive falló por una expectativa de test incorrecta: panel lateral usa `hidden lg:block`, por lo que no debe ser visible en 320/768 px. Luego un selector asumió un H1 distinto al texto real de activación. Se validan overflow y contenido principal en móvil/tablet, y panel/copys en escritorio.
+- Playwright focal `auth-recovery-responsive.spec.ts`: **1/1** tras las correcciones. Lint/build final y Action integrada todavía pendientes.

@@ -116,15 +116,15 @@ export default function ActivateAccountPage() {
                   Activa tu cuenta con tu propia contraseña
                 </h2>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  El enlace de activación usa un token de 12 caracteres.
+                  El enlace de activación es seguro y de un solo uso.
                   Configura tu contraseña para empezar a usar la plataforma de
                   inmediato.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
-                  <p className="text-sm text-white/80">Tokens válidos</p>
-                  <p className="text-2xl font-semibold">12 caracteres</p>
+                  <p className="text-sm text-white/80">Enlace de activación</p>
+                  <p className="text-2xl font-semibold">Seguro y temporal</p>
                 </div>
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
                   <p className="text-sm text-white/80">Estado</p>

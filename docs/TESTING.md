@@ -539,7 +539,12 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - E2E completo API/MySQL: Action `45107030228`, **45/45**, responsive browser **1/1**, backend Release/xUnit, audit/lint/build y cleanup correctos. Incluye mapa y Admin delegado; no hubo skips.
 - API local `localhost:5048` detenida y faltan credenciales QA; el flujo real de mapa se validó en Action. Un test aislado de carga de Dashboard se retiró porque el gate de requests no manejaba los abort/replays del bootstrap; la Action completa pasó, pero falta aserción directa de esa carga inicial.
 
-## Exportación de datos de empresa — test local; CI pendiente
+## Exportación de datos de empresa — VALIDADO EN CI
 
 - `company-admin.spec.ts` descarga el JSON desde la UI y lo analiza; comprueba nombre de archivo, usuario QA creado, arrays de rutas/vehículos, fecha válida y mensaje de éxito.
-- Discovery del spec, `npm run lint` y `npm run build` pasan localmente. Integración real API/MySQL en nueva Action pendiente.
+- Front commit `f1e1ea7`; Action [`45110885218`](https://github.com/Paul1578/Front_gpsR/actions/runs/45110885218): API/MySQL **46/46**, responsive **1/1**, audit/lint/build y cleanup completos.
+
+## Recuperación y activación responsive — validación local pendiente de CI
+
+- `auth-recovery-responsive.spec.ts` comprueba Recovery/Reset/Activate en 320×844 y 768×1024 sin overflow; con token fixture revisa estado listo y copy corregido. En 1280×900 valida los paneles laterales.
+- Playwright focal pasa **1/1** local sobre build de producción en `127.0.0.1:3010`. Falta lint/build final tras los últimos ajustes y Action integrada.

@@ -1,6 +1,6 @@
 ## Estado actual — 2026-11-23
 
-- Front `refactor/route-builder` HEAD `7e48f07` pasó Action [`45109985362`](https://github.com/Paul1578/Front_gpsR/actions/runs/45109985362): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **46/46**, cleanup y teardown exitosos.
+- Front `refactor/route-builder` HEAD `f1e1ea7` pasó Action [`45110885218`](https://github.com/Paul1578/Front_gpsR/actions/runs/45110885218): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **46/46**, cleanup y teardown exitosos; incluye descarga y análisis del JSON exportado por la UI.
 - La tanda arregla Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones mientras Vehicles tiene error y distingue carga inicial de vacío en dashboard. El nuevo test confirma que el Dashboard no presenta cifras cero/actividad vacía antes de completar la lectura. Lint sin warnings, build, discovery 46 y focal **4/4** también pasan localmente.
 - `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 46 escenarios pasaron.
 - El primer intento reutilizó un proceso Next anterior en `:3000`; al usar `:3010`, el webServer seguía arrancando fijo en `:3000`. Configuración corregida y E2E repetido con servidor de producción limpio.
@@ -11,8 +11,8 @@
 - Backend limita recuperación a 5 solicitudes/10 min/IP; tokens 256 bits, TTL 60 min por defecto (1–1440), URLs Production HTTPS. Login: 10 solicitudes/min/IP. Sin bloqueo por cuenta.
 - Pendientes externos/de producción: SMTP con credenciales vigentes; límites distribuidos e IP confiable detrás de proxy; persistencia del key ring Data Protection.
 - Misión global sigue abierta para completar y reevaluar cobertura funcional/roles/responsive más allá de la matriz E2E existente; no presentar esta fase como cierre de toda la plataforma.
-- Auditoría independiente: la UI no tiene aún pruebas end-to-end para recuperación/restablecimiento/activación, descarga real de exportación ni persistencia del tema; tampoco responsive de esas vistas. Son escenarios sin evidencia, no bugs confirmados. La política root-only sí está verificada por el smoke HTTP/MySQL del backend; el test Front de UI delegado es simulado.
-- Lote local no publicado: `company-admin.spec.ts` descarga y analiza el JSON de exportación, confirma que incluye el miembro recién creado y valida arrays/fecha/nombre. `npm run lint`, build Next y discovery del spec pasan; falta ejecución API/MySQL integrada.
+- Auditoría independiente: aún falta probar en UI el ciclo real de recuperación/reset/activación y persistencia del tema. La descarga de exportación ya pasó API/MySQL E2E. Root-only está cubierto por smoke HTTP/MySQL backend; el test Front de opciones Admin delegado es simulado.
+- Lote local no publicado: corregida información falsa sobre longitud del token (los 12 caracteres son mínimo de contraseña) y mensajes que prometían contraseña temporal/OTP. E2E de responsive en 320/768 y contenido en 1280 pasa localmente 1/1; falta lint/build final y Action integrada.
 
 ## Historial de estado — 2026-11-22
 

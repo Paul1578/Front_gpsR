@@ -116,15 +116,15 @@ export default function ResetPasswordPage() {
                   Restablece tu acceso con confianza
                 </h2>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  Protegemos tu cuenta con enlaces de un solo uso y tokens de 12
-                  caracteres. Completa el formulario para activar tu nueva
+                  Protegemos tu cuenta con un enlace seguro de un solo uso.
+                  Completa el formulario para activar tu nueva
                   contraseña.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
-                  <p className="text-sm text-white/80">Tokens válidos</p>
-                  <p className="text-2xl font-semibold">12 caracteres</p>
+                  <p className="text-sm text-white/80">Enlace de un solo uso</p>
+                  <p className="text-2xl font-semibold">Seguro y temporal</p>
                 </div>
                 <div className="rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur">
                   <p className="text-sm text-white/80">Respuesta</p>

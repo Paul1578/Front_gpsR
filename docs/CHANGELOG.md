@@ -602,6 +602,11 @@
 
 - El E2E de Administración descarga y analiza el JSON real; verifica que incluya el miembro de QA, listas de rutas/vehículos, fecha y confirmación UI.
 - Lint/build y discovery pasan local; Action integrada pendiente.
+
+## 2026-11-23 — Corrección de copy de recuperación y activación
+
+- Se eliminó la afirmación incorrecta de token de “12 caracteres” y el copy de contraseña temporal/OTP. Ahora se describe un enlace seguro de un solo uso; el mínimo de 12 se mantiene asociado a la nueva contraseña.
+- Añadido E2E responsive para Recovery/Reset/Activate en 320/768 px y visibilidad del panel en escritorio. Focal local 1/1; CI pendiente.
 ## Seguimiento 2026-11-23 — carga inicial del Dashboard — Action pendiente
 
 - E2E retiene GET `/Routes`, exige “Cargando…” y prohíbe presentar actividad vacía antes de recibir respuesta. Con `200 []` comprueba el vacío y métrica 0.

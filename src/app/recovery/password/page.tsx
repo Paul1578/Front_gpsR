@@ -22,7 +22,7 @@ export default function RecoverPasswordPage() {
             <p className="text-sm uppercase tracking-[0.2em] text-white/80">Soporte</p>
             <h2 className="text-3xl font-semibold leading-tight">Recupera el acceso en pocos pasos</h2>
             <p className="text-white/80 text-sm leading-relaxed">
-              Te guiamos para que vuelvas a entrar con una contraseña temporal segura.
+              Te enviaremos instrucciones para crear una nueva contraseña.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -32,7 +32,7 @@ export default function RecoverPasswordPage() {
             </div>
             <div className="rounded-2xl bg-white/15 p-4 border border-white/20">
               <p className="text-sm text-white/80">Seguridad</p>
-              <p className="text-2xl font-semibold">OTP</p>
+              <p className="text-2xl font-semibold">Enlace seguro</p>
             </div>
           </div>
         </div>
