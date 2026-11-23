@@ -7,10 +7,16 @@
 - Validación local: lint, build y discovery Playwright **49 tests** correctos. El ciclo no se reporta como ejecutado localmente: sus fixtures reales los prepara el runner API/MySQL de CI.
 - Backend Action `45112158616` pasó con runner actualizado. Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49** en 3.2 min; responsive **1/1**, audit/lint/build, Release/xUnit backend, cleanup y teardown correctos. Ambos flujos usaron API/MySQL efímeros sin SMTP.
 
-## 2026-11-23 — Persistencia del tema — Action pendiente
+## 2026-11-23 — Persistencia del tema — validado en CI
 
 - `theme-preference.spec.ts` inicia sesión con Admin descartable, cambia el switch en Mi Perfil, recarga y verifica clase del documento y `localStorage`; luego cambia a claro y comprueba lo mismo.
-- El switch ahora tiene el nombre accesible “Modo oscuro”. Lint/build locales correctos y discovery **50 tests**; falta E2E integrado.
+- El switch ahora tiene el nombre accesible “Modo oscuro”. Action [`45113527889`](https://github.com/Paul1578/Front_gpsR/actions/runs/45113527889) pasó **50/50**, responsive **1/1**, audit/lint/build y cleanup. Verificó persistencia oscuro/claro en navegador real con API/MySQL desechables.
+
+## 2026-11-23 — Horario planificado al editar rutas — Action pendiente
+
+- La auditoría encontró que edición enviaba `fechaInicio/fechaFin: undefined`; el adaptador los transformaba en `plannedStart/plannedEnd: null`, y backend persistía la pérdida.
+- Se quitaron esas claves del payload de edición. El E2E de edición existente ahora verifica vía GET que las fechas originales permanecen tanto tras editar en tablet como en móvil.
+- Lint/build y discovery **50 tests** pasan localmente; falta validar la regresión contra API/MySQL en Action.
 
 ## Seguimiento 2026-11-23 — estados iniciales en servidor de producción aislado
 

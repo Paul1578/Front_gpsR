@@ -1581,8 +1581,14 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El primer E2E responsive falló por una expectativa de test incorrecta: panel lateral usa `hidden lg:block`, por lo que no debe ser visible en 320/768 px. Luego un selector asumió un H1 distinto al texto real de activación. Se validan overflow y contenido principal en móvil/tablet, y panel/copys en escritorio.
 - Playwright focal `auth-recovery-responsive.spec.ts`: **1/1** tras las correcciones. Lint/build final y Action integrada todavía pendientes.
 
-## 2026-11-23 — Preferencia de tema sin nombre accesible y fixture de reload — CORREGIDO; CI PENDIENTE
+## 2026-11-23 — Preferencia de tema sin nombre accesible y fixture de reload — CORREGIDO Y VALIDADO
 
 - El switch “Modo oscuro” no exponía nombre accesible, así que no se podía identificar por su propósito con lector de pantalla ni selector accesible. Se añadió `aria-label` y un E2E lo localiza por ese nombre.
 - La primera versión del setup del test reescribía `light` en cada navegación; al recargar habría borrado la preferencia que se quería comprobar. El setup ahora crea el valor inicial sólo si no existe.
-- Prevención: fixtures de estado inicial deben ser idempotentes y no sobrescribir el estado persistido entre navegaciones. Falta que Action API/MySQL confirme el escenario completo.
+- Prevención: fixtures de estado inicial deben ser idempotentes y no sobrescribir el estado persistido entre navegaciones. Front Action `45113527889` pasó **50/50**, incluyendo el ciclo tema oscuro/claro después de recarga.
+
+## 2026-11-23 — Edición de ruta borraba fechas planificadas — CORREGIDO; E2E PENDIENTE
+
+- `RoutesManagement` enviaba `fechaInicio` y `fechaFin` como `undefined`; `updateRoute` combinaba ese patch sobre la ruta y `FleetContext` serializaba `plannedStart/plannedEnd` como `null`. El backend aceptaba y persistía la pérdida.
+- La edición ahora omite esos campos para preservar fechas cargadas. El E2E de edición consulta de nuevo la ruta tras los cambios tablet/móvil y compara ambas fechas con el horario original.
+- Prevención: no incluir claves opcionales con valor `undefined` en updates parciales; comprobar persistencia de todos los campos fuera del formulario. Lint/build locales pasan; Action API/MySQL pendiente.

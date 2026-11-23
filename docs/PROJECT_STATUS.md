@@ -1,18 +1,19 @@
 ## Estado actual — 2026-11-23
 
-- Front `refactor/route-builder` HEAD `07c930b` pasó Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **49/49**, cleanup y teardown. Incluye reset y activación reales desde UI con tokens de un solo uso.
-- La tanda corrige Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones cuando Vehicles falla y distingue carga inicial de vacío en Dashboard. Lint/build locales correctos; la Action ejecutó los 49 E2E en 3.2 minutos sin fallos.
-- `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 47 escenarios pasaron.
+- Front `refactor/route-builder` HEAD `f859b19` pasó Action [`45113527889`](https://github.com/Paul1578/Front_gpsR/actions/runs/45113527889): backend Release/xUnit, audit, lint, build, responsive **1/1**, API/MySQL E2E **50/50**, cleanup y teardown. Incluye reset/activación y persistencia del tema.
+- La tanda corrige Admin delegado en la vista heredada, identifica tracking GPS vacío, bloquea asignaciones cuando Vehicles falla y distingue carga inicial de vacío en Dashboard. La Action ejecutó los 50 E2E en 3.5 minutos sin fallos; lint/build locales correctos.
+- `playwright.config.ts` deriva el puerto del `PLAYWRIGHT_BASE_URL`; el E2E integrado corrió con API/MySQL descartables. El test de trazas se omitió correctamente porque los 50 escenarios pasaron.
 - El primer intento reutilizó un proceso Next anterior en `:3000`; al usar `:3010`, el webServer seguía arrancando fijo en `:3000`. Configuración corregida y E2E repetido con servidor de producción limpio.
-- Backend activo `chore/stabilize-fleet-platform` HEAD `96b50cc`, Action [`45112158616`](https://github.com/Paul1578/Back_GPS/actions/runs/45112158616) success; main intacta. Decisiones confirmadas: rutas de traslado permitidas; paradas pickup/delivery/both; sólo raíz otorga Admin; móvil nativo pospuesto.
+- Backend activo `chore/stabilize-fleet-platform` HEAD `6f48f06`, Action [`45113700212`](https://github.com/Paul1578/Back_GPS/actions/runs/45113700212) success; main intacta. Decisiones confirmadas: rutas de traslado permitidas; paradas pickup/delivery/both; sólo raíz otorga Admin; móvil nativo pospuesto.
 - Decisiones confirmadas por el usuario: rutas pueden ser traslados sin operaciones; paradas admiten recogida, entrega o ambas; sólo la cuenta raíz puede otorgar/promover Admin; móvil nativo queda para una fase posterior.
 - Front Action [`45104448741`](https://github.com/Paul1578/Front_gpsR/actions/runs/45104448741) pasó: audit/lint/build, responsive **1/1**, E2E API/MySQL **43/43** y cleanup. Incluye traslado, mapa, disponibilidad de conductores y confirmaciones de cambios de equipo.
 - Backend Action [`45104450114`](https://github.com/Paul1578/Back_GPS/actions/runs/45104450114) pasó; Backend `45103732510` también pasó la corrección de cleanup. Release xUnit **133/133**; smoke tenant HTTP/MySQL y concurrencia.
 - Backend limita recuperación a 5 solicitudes/10 min/IP; tokens 256 bits, TTL 60 min por defecto (1–1440), URLs Production HTTPS. Login: 10 solicitudes/min/IP. Sin bloqueo por cuenta.
 - Pendientes externos/de producción: SMTP con credenciales vigentes; límites distribuidos e IP confiable detrás de proxy; persistencia del key ring Data Protection.
 - Misión global sigue abierta para completar y reevaluar cobertura funcional/roles/responsive más allá de la matriz E2E existente; no presentar esta fase como cierre de toda la plataforma.
-- Auditoría independiente: exportación y ciclo reset/activación pasan API/MySQL E2E. Root-only está cubierto por smoke HTTP/MySQL backend; el test Front de opciones Admin delegado es simulado. Sigue pendiente persistencia del tema.
-- Cambio local posterior a `07c930b`: switch de modo oscuro recibe nombre accesible y un E2E verifica almacenamiento en `localStorage` tras recarga. Lint/build y discovery **50 tests** pasan localmente; requiere Action integrada.
+- Auditoría independiente: exportación, ciclo reset/activación y persistencia del tema pasan API/MySQL E2E. Root-only está cubierto por smoke HTTP/MySQL backend; el test Front de opciones Admin delegado es simulado.
+- El switch de modo oscuro tiene nombre accesible. E2E verifica oscuro/claro en `localStorage` y después de recargar. Action `45113527889` pasó **50/50**; discovery local 50, lint/build correctos.
+- Auditoría detectó que editar ruta enviaba fechas `undefined`, que se convertían en `null` y borraban el horario planificado. La UI ya omite esas claves y el E2E comprueba fechas de inicio/fin en tablet y móvil; lint/build pasan. Falta Action de este fix.
 
 ## Historial de estado — 2026-11-22
 

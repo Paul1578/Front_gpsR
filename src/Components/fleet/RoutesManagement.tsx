@@ -297,8 +297,6 @@ export function RoutesManagement({ onBack }: RoutesManagementProps = {}) {
       destino: formData.destination,
       puntos: formData.stops,
       estado: formData.status,
-      fechaInicio: undefined,
-      fechaFin: undefined,
       teamId: undefined,
     };
     savingRef.current = true;

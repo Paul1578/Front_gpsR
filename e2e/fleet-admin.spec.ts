@@ -853,6 +853,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(tabletPersistedResponse.status()).toBe(200);
     const tabletPersistedRoute = await tabletPersistedResponse.json();
     expect(tabletPersistedRoute.name).toBe(updatedName);
+    expect(Date.parse(tabletPersistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
+    expect(Date.parse(tabletPersistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
     const tabletPersistedPoints = tabletPersistedRoute.points as Array<{ operation: number | string }>;
     expect(tabletPersistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
 
@@ -881,6 +883,8 @@ test("Admin edita una ruta móvil, conserva su operación y la consulta en Histo
     expect(persistedResponse.status()).toBe(200);
     const persistedRoute = await persistedResponse.json();
     expect(persistedRoute.name).toBe(mobileUpdatedName);
+    expect(Date.parse(persistedRoute.plannedStart)).toBe(Date.parse("2038-07-21T10:00:00Z"));
+    expect(Date.parse(persistedRoute.plannedEnd)).toBe(Date.parse("2038-07-21T12:00:00Z"));
     const persistedPoints = persistedRoute.points as Array<{ operation: number | string }>;
     expect(persistedPoints.some((point) => point.operation === 3 || point.operation === "PickupAndDelivery")).toBe(true);
 
