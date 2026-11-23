@@ -674,3 +674,5 @@ Fecha de actualización: 2026-11-22.
 
 - Action `45119664116`: **49/51**. El test delegado aún usaba menú móvil en desktop (fix publicado después); el mapa inspeccionaba la primera ruta del overlay y su retry reutilizaba placa única tras baja lógica.
 - Corregido localmente con selector de ruta seleccionada, comprobación de geometría OSRM sobre esa entidad y fixture único por intento. Nuevo SHA `3c7d738` está en Action; cambios adicionales de selector/retry requieren su propia Action.
+
+- Corrección documental/proceso: el cambio anterior había aplicado móvil al E2E simulado equivocado; ahora se fija desktop en el simulado y móvil en el autenticado. Ver `ERROR_LOG.md`; pendiente validar nueva Action.

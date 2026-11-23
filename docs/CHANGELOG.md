@@ -651,3 +651,5 @@
 ## 2026-11-23 — Selectores y fixtures resilientes en E2E de mapa
 
 - E2E identifica la polilínea seleccionada por `stroke-width="6"` y valida OSRM sobre esa ruta y genera fixture único por intento para prevenir 409 por placa conservada tras baja lógica. Action `45119664116` registró ambos errores; nueva validación integrada pendiente.
+
+- Ajuste de viewport corregido tras Action: test simulado usa sidebar desktop (1280×800), flujo Admin autenticado usa el menú móvil (390×844).

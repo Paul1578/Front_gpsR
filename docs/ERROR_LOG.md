@@ -1629,3 +1629,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Primer build tras intentar añadir clase CSS al Polyline falló TypeScript (`className` no pertenece al tipo local de `pathOptions`).
 - Se quitó esa extensión de producción y el E2E identifica la ruta seleccionada usando el atributo SVG `stroke-width="6"`, que ya representa el estado seleccionado existente.
 - Prevención: aprovechar atributos visuales ya definidos cuando sólo se necesita identificar el estado en E2E; no ampliar tipos de dependencia con campos no soportados. Build repetido pendiente.
+
+## 2026-11-23 — Primer parche de viewport cambió el E2E simulado equivocado — CORREGIDO
+
+- La edición posterior a `45119404897` aplicó el viewport móvil a la prueba simulada de Administración que usa la barra lateral directamente; esa prueba dejó de abrir la vista porque en móvil requiere abrir el menú. El E2E autenticado real permaneció en 1280 px y siguió fallando en `Abrir menú`.
+- Corrección actual: el test simulado fija 1280×800 para usar la barra lateral; el test autenticado real fija 390×844 para abrir el menú móvil.
+- Prevención: validar el contexto de cada ocurrencia antes de reemplazar selectores repetidos; comprobar el bloque de prueba exacto afectado. Action nueva pendiente.

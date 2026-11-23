@@ -124,9 +124,8 @@ test("Admin ve datos de su empresa y no acciones globales simuladas", async ({ p
 });
 
 test("Admin delegado no puede crear ni promover usuarios al rol Admin en Administración heredada", async ({ page }) => {
-  // Usa el menú de navegación móvil de forma explícita; el botón "Abrir menú"
-  // no existe en escritorio, donde la barra lateral permanece visible.
-  await page.setViewportSize({ width: 390, height: 844 });
+  // La prueba abre el contenido directamente desde la barra lateral desktop.
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -260,7 +259,8 @@ test("Admin delegado real no ve ni puede crear/promover otro Admin", async ({ pa
   expect(persistedMember?.roles).toEqual(["User"]);
   expect(persistedUsers.some((user) => user.email === deniedAdminEmail)).toBe(false);
 
-  await page.setViewportSize({ width: 1280, height: 800 });
+  // Usa el menú móvil explícitamente; "Abrir menú" sólo existe bajo el breakpoint.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(delegatedAdminEmail!);
   await page.getByRole("textbox", { name: "Contraseña" }).fill(delegatedAdminPassword!);
