@@ -1567,3 +1567,9 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - El test inicial de carga del Dashboard reutilizó por `reuseExistingServer` un proceso Next previo en `:3000`, distinto al build actual. Al configurar `PLAYWRIGHT_BASE_URL=:3010`, el `webServer.command` aún iniciaba en `:3000` y Playwright expiró esperando el puerto configurado.
 - Playwright deriva ahora el puerto del `PLAYWRIGHT_BASE_URL`; el test vuelve a correr contra un servidor de producción limpio en `:3010` y verifica carga, ausencia de vacío prematuro y respuesta exitosa `200 []`. Pasa localmente.
 - Prevención: aislar el servidor al validar código local y mantener sincronizados `baseURL` y `webServer.command`; no reutilizar un proceso cuya versión no se verificó.
+
+## 2026-11-23 — E2E Dashboard carga inicial — VALIDADO EN CI
+
+- El cambio de puerto de Playwright y la prueba de Dashboard se publicaron en Front `f71ae7d`.
+- Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423) completó audit, lint, build, responsive **1/1** y **46/46** pruebas API/MySQL autenticadas; cleanup y teardown correctos.
+- Prevención confirmada: `PLAYWRIGHT_BASE_URL` y el puerto `webServer` quedan sincronizados, y el E2E espera la respuesta inicial de rutas antes de afirmar el estado vacío real.

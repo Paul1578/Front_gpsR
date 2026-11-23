@@ -1,13 +1,18 @@
 # Handoff vigente — 2026-11-23
 
-- Front `refactor/route-builder` HEAD `a90e212` está publicado y pasó Action [`45107030228`](https://github.com/Paul1578/Front_gpsR/actions/runs/45107030228): Release/xUnit, audit/lint/build, responsive 1/1, API/MySQL **45/45**, no skips y cleanup.
-- Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; KPI/contexto distinguen carga inicial de datos vacíos. E2E de carga Dashboard nuevo pasa con servidor limpio; focal **4/4**, discovery 46, lint/build limpios.
-- `playwright.config.ts` ahora obtiene el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; antes reutilizó Next viejo en `:3000` y al pasar a `:3010` inició por error en puerto fijo. Código/test de esta corrección local pendiente de commit/push y Action integrada.
+- Front `refactor/route-builder` HEAD `f71ae7d` pasó Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423): Release/xUnit, audit/lint/build, responsive 1/1, API/MySQL **46/46**, limpieza y teardown exitosos.
+- Cambios validados: Admin sólo raíz en vista heredada; mapa comunica GPS vacío/ruta planificada; Gestión de Equipo muestra/reintenta fallo Vehicle y bloquea asignar; Dashboard distingue carga inicial de datos vacíos. El nuevo E2E confirmó que no aparecen cifras cero ni actividad vacía mientras cargan rutas.
+- `playwright.config.ts` deriva el puerto del webServer desde `PLAYWRIGHT_BASE_URL`; se corrigió la colisión con Next anterior en `:3000` ejecutando en servidor limpio `:3010`. La Action confirmó el test nuevo dentro de los 46 escenarios.
 - Backend rama `chore/stabilize-fleet-platform` HEAD `3db7f03`; `main` sigue intacta. SMTP real, proxies/rate limit distribuido y persistencia Data Protection dependen del entorno productivo.
 - Implementado en el lote: rutas de traslado sin paradas; paradas pickup/delivery/both; disponibilidad y bloqueo de conductor ocupado; confirmación rol/estado; recuperación con limitación por IP, token de 256 bits/TTL, HTTPS de enlaces productivos; cleanup de fixtures por relación FK Driver QA.
 - Decisiones de usuario: raíz solamente otorga Admin; móvil nativo pospuesto; las cuentas pueden ser rutas de traslado.
 - Pendiente global: revisar criterios de cobertura restantes en `PROJECT_STATUS.md`; configuración SMTP, Data Protection persistente, proxy/IP confiable y rate limiter distribuido requieren entorno/secretos de despliegue. No afirmar misión integral completa.
 - Las notas anteriores que siguen son historial de trabajo y pueden describir estados/decisiones ya superados; usar este bloque y el inicio de `PROJECT_STATUS.md` como fuente actual.
+
+## Cierre de validación Front — 2026-11-23
+
+- Action `45108539423`: audit, lint, build, responsive 1/1, API/MySQL autenticado **46/46** y limpieza de contenedores correctos. El paso de conservar trazas se omitió porque no hubo fallos.
+- Error de test local por reusar servidor Next obsoleto y desalinear puerto de `baseURL`/`webServer` quedó corregido y registrado en `ERROR_LOG.md`; se probó localmente con servidor de producción limpio y también en CI integrado.
 
 ---
 
