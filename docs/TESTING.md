@@ -11,7 +11,7 @@ Las secciones históricas que siguen pueden describir pendientes ya cerrados al 
 
 - QA confirmó que la prueba entre dos empresas ya verificaba GET/PUT/DELETE de vehículos y GET/PUT/status de conductores, pero no los endpoints de estado/reactivación de vehículos ni asignar/desasignar vehículo a Driver por ID ajeno.
 - El escenario ahora intenta `PUT /Vehicles/{id}/status`, `POST /Vehicles/{id}/reactivate`, `PUT /Drivers/{id}/assign-vehicle` y `unassign-vehicle` con Admin de otra empresa; espera 404 y comprueba desde el propietario que estado y asignación siguen iguales. Reactivación prueba un vehículo inactivo real y el `finally` restaura/elimina el fixture.
-- Lint, build, discovery **51 tests** y diff-check pasan localmente. Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive 1/1, API/MySQL descartables, Backend Release/xUnit 139/139 y cleanup. Los cuatro endpoints respondieron 404 y los GET con token propietario confirmaron que vehículo y asignación Driver conservaron sus valores.
+- Lint, build, discovery **51 tests** y diff-check pasan localmente. Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive 1/1, API/MySQL descartables, Backend Release/xUnit 139/139 y cleanup. El HEAD documental posterior `433b430` repitió el flujo completo en Action [`45147509399`](https://github.com/Paul1578/Front_gpsR/actions/runs/45147509399), también verde. Los cuatro endpoints respondieron 404 y los GET propietario confirmaron que vehículo/asignación conservaron valores.
 
 # E2E Logistics edita una ruta — validado por Actions — 2026-11-23
 

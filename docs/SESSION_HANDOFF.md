@@ -37,7 +37,8 @@
 ## HEAD y verificación integrados más recientes
 
 - Front `refactor/route-builder`: código/E2E `53b7674`; Action [`45146071543`](https://github.com/Paul1578/Front_gpsR/actions/runs/45146071543) pasó **51/51 E2E**, responsive **1/1**, audit/lint/build, Backend Release/xUnit 139/139 y cleanup. Incluye cuatro endpoints IDOR probados contra dos tenants y persistencia sin cambios.
-- Backend `chore/stabilize-fleet-platform`: código `ca1a278`, docs `93b1901`; Action [`45146246165`](https://github.com/Paul1578/Back_GPS/actions/runs/45146246165) pasó **139/139 xUnit**, Release, smokes tenant/concurrencia/login rate limit/proxy y cleanup.
+- Front docs HEAD `433b430`; Action [`45147509399`](https://github.com/Paul1578/Front_gpsR/actions/runs/45147509399) pasó 51/51, responsive 1/1, Backend Release/xUnit 139/139, audit/lint/build y cleanup.
+- Backend `chore/stabilize-fleet-platform`: código `ca1a278`, docs HEAD `c84e9dc`; Action [`45147903362`](https://github.com/Paul1578/Back_GPS/actions/runs/45147903362) pasó **139/139 xUnit**, Release, smokes tenant/concurrencia/login rate limit/proxy y cleanup.
 - Ambas ramas están limpias y separadas de `main`. Los HEAD funcionales apuntan a sus branches; los commits posteriores sólo actualizan evidencia/documentación.
 - Dependencias: `npm audit` reportó 0 vulnerabilidades y NuGet no encontró paquetes vulnerables en Backend/tests. Revisión de seguridad independiente fue estática y no encontró bypass tenant/roles/JWT ni XSS explotable en lo inspeccionado.
 - Decisiones confirmadas: traslados permitidos; paradas pickup/delivery/both; sólo raíz otorga Admin; app nativa móvil pospuesta. SMTP, rate limiter distribuido, IP confiable del ingress, key ring persistente y despliegue productivo requieren configuración externa.

@@ -1706,8 +1706,8 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 
 ## 2026-11-23 — Contexto de parches documentales no coincidía — RESUELTO
 
-- Dos intentos de actualización por bloque fallaron porque el texto esperado no coincidía exactamente con el documento vigente; `apply_patch` abortó sin modificar archivos.
-- Solución: releer las líneas actuales y aplicar cambios pequeños sobre frases exactas. Prevención: comprobar el contexto antes de preparar un parche amplio y revisar `git diff` después de ediciones documentales.
+- Varios intentos de actualización por bloque fallaron porque se usaron SHAs/documentos previos o se apuntó a la sección de otro archivo; `apply_patch` abortó sin modificar archivos.
+- Solución: releer las secciones del archivo correcto y aplicar cada cambio en un parche pequeño. Prevención: comprobar texto y propietario de archivo antes del parche; revisar `git diff` después de ediciones documentales.
 
 ## 2026-11-23 — Búsqueda de smoke backend ejecutada desde el checkout Front — RESUELTO
 
@@ -1735,3 +1735,5 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Una consulta `gh run view` usó el checkout Front para leer un Action de Backend y recibió 404. No se afectó ninguna ejecución ni archivo de producto.
 - Solución: consultar el Action desde `/home/leonardo/Back_GPS`.
 - Prevención: validar el repositorio dueño del identificador de Action antes de invocar `gh`.
+
+- Reincidencia en esta sesión: una consulta `gh run list` para la rama Backend volvió a ejecutarse desde Front y devolvió una lista vacía. Se repitió correctamente desde `/home/leonardo/Back_GPS`; no afectó datos ni Actions. Para prevenirlo, revisar `pwd`/`workdir` junto con el repositorio del branch antes de consultar.
