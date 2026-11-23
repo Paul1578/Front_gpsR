@@ -76,8 +76,8 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
       toast.error("Completa todos los campos de contrasena");
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error("La nueva contrasena debe tener al menos 8 caracteres");
+    if (newPassword.length < 12) {
+      toast.error("La nueva contraseña debe tener al menos 12 caracteres");
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -224,6 +224,7 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={12}
                   placeholder="Nueva contraseña"
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
                 />
@@ -231,9 +232,11 @@ export function ProfileView({ onBack }: ProfileViewProps = {}) {
                   type="password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  minLength={12}
                   placeholder="Confirmar nueva contraseña"
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3271a4]"
                 />
+                <p className="-mt-2 text-xs text-gray-500">Usa al menos 12 caracteres.</p>
                 <div className="md:col-span-3 flex flex-wrap gap-2">
                   <button
                     type="submit"

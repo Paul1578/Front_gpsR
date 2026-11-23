@@ -28,8 +28,8 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres");
+    if (password.length < 12) {
+      toast.error("La contraseña debe tener al menos 12 caracteres");
       return;
     }
 
@@ -73,8 +73,9 @@ export function RegisterForm({ className, onSwitchToLogin, onBack }: RegisterFor
         <InputField label="Nombres" value={nombres} onChange={setNombres} />
         <InputField label="Apellidos" value={apellidos} onChange={setApellidos} />
         <InputField label="Correo electrónico" value={usuario} onChange={setUsuario} type="email" />
-        <InputField label="Contraseña" value={password} onChange={setPassword} type="password" />
-        <InputField label="Confirmar contraseña" value={confirmPassword} onChange={setConfirmPassword} type="password" />
+        <InputField label="Contraseña" value={password} onChange={setPassword} type="password" minLength={12} />
+        <p className="-mt-3 text-xs text-gray-500">Usa al menos 12 caracteres.</p>
+        <InputField label="Confirmar contraseña" value={confirmPassword} onChange={setConfirmPassword} type="password" minLength={12} />
 
         <button
           type="submit"
@@ -101,9 +102,10 @@ interface InputFieldProps {
   value: string;
   onChange: (val: string) => void;
   type?: string;
+  minLength?: number;
 }
 
-function InputField({ label, value, onChange, type = "text" }: InputFieldProps) {
+function InputField({ label, value, onChange, type = "text", minLength }: InputFieldProps) {
   const [isVisible, setIsVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && isVisible ? "text" : type;
@@ -114,6 +116,7 @@ function InputField({ label, value, onChange, type = "text" }: InputFieldProps) 
       <div className="relative">
         <input
           type={inputType}
+          minLength={minLength}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={`w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] ${isPassword ? "pr-12" : ""}`}

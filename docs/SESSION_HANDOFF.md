@@ -880,3 +880,15 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Backend `e678e6c` tiene Action `45093565790` success: Release, 113/113, tenant HTTP/MySQL, concurrencia y cleanup. Smoke multi-parada detallado pasó localmente; el workflow publicado no ejercita esa ruta Logistics extendida, revisar si se requiere incluirla en Action.
 - Auditoría read-only añadió hallazgos de seguridad: contraseña mínima 6 caracteres y límite global de 60/min por IP sin política específica de login. Endurecer de forma coherente y añadir pruebas; no afirmar resuelto.
 - Decisión pendiente del usuario: permitir rutas de traslado sin operaciones. Admin sólo por cuenta raíz está confirmado. Web responsive sí, nativo móvil después. No cerrar misión global.
+
+## Continuación — decisión de claves y fix del test de foco
+
+- `/Routes/assignment-options` debe responder con vehicles/drivers vacíos en la prueba de foco. Sin mock, la llamada llegó al API real con token sintético, devolvió 401, intentó refresh 401 y AuthContext navegó a Login; locator hamburger acabó esperando un botón que desapareció. Fix local añade mock y E2E Historial vuelve a pasar 2/2. La causa y prevención están en ERROR_LOG.
+- Mínimo nuevo de contraseña subió a 12 en todos los formularios; no afecta login de cuentas existentes. No perder esta política al cambiar frontend/API.
+
+## Estado vigente — política de traslado y contraseñas
+
+- Confirmado por el usuario: permitir rutas sólo de traslado; contraseñas nuevas de mínimo 12 caracteres; limitación de login por IP sin bloqueo de cuentas.
+- Front refleja 12 caracteres en registro, cambio de perfil, activación y restablecimiento. E2E comprueba `minlength` en registro.
+- Validación local actual: `npm run lint`, `npm run build`, Historial enfocado **2/2**, Playwright discovery **41 tests**, `git diff --check` correcto.
+- Front Action `45094647703` quedó 40/41 por no simular `/Routes/assignment-options`; mock corregido y Historial 2/2 pasó. Publicar Front y Backend y verificar Actions integradas.

@@ -114,6 +114,8 @@ test("el registro público crea el tenant Gerente aislado y permite administrar 
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
   const emailAddress = `fletflow.e2e.admin.register.${suffix}@example.test`;
   const password = `RegisterQA-${randomUUID()}aA1!`;
+  await expect(page.locator('input[type="password"]').nth(0)).toHaveAttribute("minlength", "12");
+  await expect(page.locator('input[type="password"]').nth(1)).toHaveAttribute("minlength", "12");
 
   await page.getByLabel("Nombres").fill("E2E QA Empresa");
   await page.getByLabel("Apellidos").fill("Propietaria");

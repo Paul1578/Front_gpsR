@@ -483,3 +483,12 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 
 - `npx playwright test e2e/team-management-load-errors.spec.ts --grep "Historial"`: **2/2**. Se valida que carga inicial no muestre vacío, error/reintento, etiquetas y estados de recogida/entrega/ambas, y que focus durante una consulta activa no dispare otra solicitud.
 - `npm run lint`, `npm run build` y `git diff --check` pasan para los cambios locales del Historial. Action integrada pendiente.
+
+- Seguridad UI local: build/lint pasan con el mínimo de 12 en Registro, Perfil, activación y recuperación. El E2E autenticado de perfil requiere fixtures QA y queda incluido en Action integrada; nueva Action pendiente.
+- Action `45094647703` tuvo 40 E2E aprobados y falló el test de foco por un endpoint de Dashboard sin mock; fix local en fixture y repetición enfocada Historial 2/2.
+
+## Contraseña nueva y prueba estable de Historial — validación local
+
+- `npm run lint` y `npm run build` correctos con Next.js 16.4.6; la interfaz exige 12 caracteres en registro, cambio, activación y recuperación.
+- E2E Historial enfocado **2/2**; Playwright descubre **41 tests**; `git diff --check` correcto.
+- Falta publicar cambios Front/Backend y verificar CI integrado contra API/MySQL.

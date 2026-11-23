@@ -1484,3 +1484,17 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - `rg app` falló porque el App Router real está en `src/app`; `rg e2e` se lanzó desde Backend, donde no existe esa carpeta; `/home/leonardo/Back_gps` usó casing incorrecto; se intentaron `BackEnd_Gps/Api` y `BackEnd_Gps/Application` aunque las carpetas reales son `fletflow/Api` y `fletflow/Aplication`.
 - Se corrigió cada consulta ubicando primero repo/estructura real con `rg --files`/`find`; no se modificaron datos o código por esos errores.
 - Prevención: confirmar cwd y `rg --files` antes de buscar rutas inferidas; el backend preserva la carpeta `Aplication` con esa grafía.
+
+# 2026-11-23 — Action del Historial cerró sesión en E2E por endpoint de dashboard sin simular — CORREGIDO LOCALMENTE
+
+- **Síntoma:** Front Action `45094647703` terminó 40/41; test “Historial evita consultas duplicadas…” agotó 30 s en click de “Abrir menú”, que se desmontaba del DOM. Trace snapshot mostraba pantalla de Login.
+- **Causa:** el fixture mockeaba `/Auth/me` y `/Routes`, pero omitía `/Routes/assignment-options`. Dashboard llamó el API real con el token sintético de Playwright; recibió 401, refresh también 401 y AuthContext cerró la sesión durante el click.
+- **Solución:** interceptar assignment-options y responder lista vacía para vehículos y conductores.
+- **Verificación:** los dos E2E de Historial pasan localmente 2/2; nueva Action integrada pendiente.
+- **Prevención:** en pruebas de pantalla con respuestas auth simuladas, interceptar todas las solicitudes que dispara el Dashboard además del recurso propio del componente; revisar trace/red antes de culpar un locator.
+
+# 2026-11-23 — Resumen auxiliar falló por sintaxis en comando Node — CORREGIDO
+
+- **Síntoma:** un comando `node -e` para extraer un resumen de estado terminó con error de sintaxis antes de leer los resultados.
+- **Causa:** comillas anidadas en el código inline chocaron con el quoting del shell.
+- **Solución/previsión:** para procesar JSON de CI, usar un script temporal o un heredoc con delimitadores claros; validar primero el comando con una entrada pequeña. No afecta archivos del repositorio ni resultados de pruebas.

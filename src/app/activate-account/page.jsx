@@ -47,8 +47,8 @@ export default function ActivateAccountPage() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("La nueva contraseña debe tener al menos 8 caracteres.");
+    if (newPassword.length < 12) {
+      setError("La nueva contraseña debe tener al menos 12 caracteres.");
       return;
     }
 
@@ -178,7 +178,7 @@ export default function ActivateAccountPage() {
                   <input
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
-                    minLength={8}
+                    minLength={12}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Ingresa una nueva contraseña"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] disabled:opacity-60 pr-12"
@@ -209,7 +209,7 @@ export default function ActivateAccountPage() {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmNewPassword}
-                    minLength={8}
+                    minLength={12}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     placeholder="Repite tu nueva contraseña"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3271a4]/30 focus:border-[#3271a4] disabled:opacity-60 pr-12"
@@ -241,7 +241,7 @@ export default function ActivateAccountPage() {
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Mínimo 8 caracteres. No compartas este formulario.</span>
+                <span>Mínimo 12 caracteres. No compartas este formulario.</span>
                 {token ? (
                   <span className="inline-flex items-center gap-1 text-emerald-600">
                     <CheckCircle2 className="w-3 h-3" />

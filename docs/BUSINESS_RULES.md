@@ -13,3 +13,7 @@
 - Un vehículo en mantenimiento no puede asignarse a una ruta nueva.
 - Un vehículo o conductor no debe estar en dos rutas activas incompatibles.
 - Los cambios de estado de ruta deben mantener consistencia con el estado del vehículo.
+
+## Política confirmada de rutas de traslado
+
+- También se permiten rutas sólo entre origen y destino, sin paradas de recogida/entrega. Las rutas con operaciones siguen admitiendo múltiples paradas y cada una puede ser recogida, entrega o ambas.

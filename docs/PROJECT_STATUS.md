@@ -1,11 +1,14 @@
 ## Estado actual — 2026-11-23
 
+- Decisiones vigentes: rutas de traslado sin paradas operativas permitidas; contraseñas nuevas requieren 12 caracteres. Backend aplica 10 inicios de sesión por minuto/IP sin bloquear cuentas.
+- Front alinea registro, cambio, activación y restablecimiento de contraseña; E2E nuevo comprueba minlength en registro. Cambios de esta fase y Action integrada pendientes de publicación.
+
 - Política confirmada: sólo la cuenta raíz puede crear o promover a otra cuenta al rol Admin. Backend `be84496` incluye `isRootAccount` en `/Auth/me`; Action backend `45090274537` pasó build, 113/113 xUnit, smoke HTTP/MySQL y concurrencia con limpieza.
 - Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.
 - Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. El selector corregido y assert explícito de `/Auth/me` raíz quedaron validados en la Action siguiente.
 - Front `9d84562` pasó Action [`45091340306`](https://github.com/Paul1578/Front_gpsR/actions/runs/45091340306): backend Release/xUnit, audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **40/40** y cleanup. El E2E ahora verifica `/Auth/me.isRootAccount=true` y localiza el botón con su descripción accesible.
 - Front `992053d` pasó Action [`45092540906`](https://github.com/Paul1578/Front_gpsR/actions/runs/45092540906): backend Release/xUnit, audit, lint/build, responsive **1/1** y E2E API/MySQL **40/40**. Incluye revisión ordenada con operaciones, búsqueda Nominatim vacía/error/tardía, conservación de formulario ante POST 503 y retry persistido.
-- Auditoría independiente encontró un caso de negocio por definir: si se permiten rutas de traslado sin recogida/entrega. Se consultó al usuario; no cambiar la regla backend hasta recibir respuesta. También queda ampliar evidencia E2E del ciclo de varias paradas hasta finalización.
+- Auditoría independiente encontró un caso de negocio por definir: si se permiten rutas de traslado sin recogida/entrega. El usuario confirmó que sí; Backend cubre el ciclo de ruta de traslado. También queda ampliar evidencia E2E del ciclo de varias paradas hasta finalización.
 - Móvil nativo aplazado por decisión del usuario. Misión integral sigue abierta; no se declara terminada.
 
 ## Historial de estado — 2026-11-22
@@ -613,3 +616,6 @@ Fecha de actualización: 2026-11-22.
 - El polling y el refresco al volver al foco comparten una sola solicitud en vuelo; una respuesta lenta ya no puede reemplazar una más nueva.
 - E2E enfocado pasa 2/2: carga demorada sin falso estado vacío, error/reintento, estados/operaciones multi-parada y guard de solicitudes concurrentes. Lint/build pasan. CI integrada nueva pendiente.
 - Auditoría de seguridad identificó contraseñas nuevas con mínimo de seis caracteres y rate limit de login general por IP (60/min). Requiere decisión/plan de endurecimiento; aún no se cambió el contrato de contraseña ni el límite.
+
+- Se implementa mínimo de 12 caracteres en claves nuevas de registro, cambio, activación y recuperación; los formularios indican la política. Las claves existentes no se invalidan.
+- La nueva Action `45094647703` falló sólo en el E2E nuevo de foco: el fixture no simulaba `/Routes/assignment-options`, se llamó al API real con token ficticio y AuthContext volvió al Login. Añadí el mock; targeted Historial pasa 2/2 local. Ver ERROR_LOG; nueva Action pendiente.
