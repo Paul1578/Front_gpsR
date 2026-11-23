@@ -468,7 +468,13 @@ Para repetir la matriz completa: usar sólo una base local/QA descartable, inici
 - Front Action `45091340306` aprobó el fix integrado: backend Release/xUnit, audit, lint/build, responsive **1/1**, E2E **40/40** y cleanup.
 - Local antes del ajuste al constructor: `npm run lint`, `npm run build`, discovery **40** y `npx playwright test e2e/team-management-load-errors.spec.ts` **10/10**.
 
-## Constructor de rutas — revisión/search retry — en curso
+## Constructor de rutas — revisión/search retry — validado
 
 - E2E existente de creación mapa mantiene puntos reales y operaciones. Se amplía el test tablet para probar búsqueda de dirección, estado sin resultados, fallo de servicio, respuesta tardía al cambiar objetivo, orden/operación en revisión y primer POST 503 seguido de retry.
-- Validación final del cambio de `RoutesManagement.tsx` y specs pendiente: correr lint/build, luego suite integrada con API/MySQL; no contar los cambios locales como aprobados hasta CI.
+- Local tras el refactor: lint/build correctos, discovery 40 y diff-check limpio.
+- Action Front `45092540906` para `992053d`: **40/40 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup correctos. El caso tablet valida Nominatim con resultado, vacío, error y respuesta tardía tras cambiar objetivo; valida revisión ordenada/tipos y 503 seguido de creación/persistencia exitosa al reintentar.
+
+## Constructor de rutas — validado
+
+- Action Front `45092540906` para `992053d`: E2E autenticado API/MySQL **40/40**, responsive **1/1**, build/audit/lint y cleanup exitosos. Casos: Nominatim con resultado, vacío, error y respuesta tardía tras cambio de destino; orden/tipos en revisión; creación que responde 503 seguida de retry persistido.
+- Backend smoke local actualizado: ruta con origen, pickup, delivery, parada pickup+delivery y destino; evidencia individual, cambios de estado en secuencia, GPS y finalización con vehículo disponible. API + MySQL descartables, resultado exit 0 y cleanup completo. La Action backend debe ejecutarse tras publicar este cambio.

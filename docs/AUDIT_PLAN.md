@@ -5,7 +5,7 @@ Estado: en curso; funcionalidades principales implementadas y verificadas con ta
 ## Corte vigente — 2026-11-23
 
 - El usuario confirmó que sólo la cuenta raíz puede crear/promover al rol Admin. Backend `be84496` expone `isRootAccount` en `/Auth/me`; Action `45090274537` pasó pruebas Release 113/113 y smoke HTTP/MySQL.
-- Front `e262180` aplica la visibilidad de “Gerente” con ese campo. Action `45090273209` falló **39/40** sólo por locator E2E exacto: la traza muestra la opción visible con nombre accesible compuesto. Selector corregido para aceptar descripción y assert de identidad raíz añadido; nueva suite integrada pendiente.
+- Front `e262180` aplica la visibilidad de “Gerente” con ese campo. Action `45090273209` falló **39/40** sólo por locator E2E exacto: la traza muestra la opción visible con nombre accesible compuesto. Selector corregido para aceptar descripción y assert de identidad raíz añadido; integración aprobada en `45091340306` (40/40).
 - Front `9d84562` pasó Action `45091340306` con **40/40 E2E**, checks responsive, audit, lint/build y backend Release/xUnit. El selector root-only y `/Auth/me` se validaron en navegador real.
 - La aplicación móvil nativa queda para después; esta fase requiere web responsive. SMTP real depende de credenciales externas actualizadas.
 - La auditoría y los criterios funcionales siguen abiertos. Este corte reemplaza las notas antiguas que indicaban que la política Admin delegado esperaba decisión.
@@ -81,3 +81,9 @@ El texto completo quedó disponible el 2026-11-21. Incluye arquitectura, segurid
 - Completar casos visuales menos frecuentes de rutas, historial y permisos; los CRUD Vehicle/Driver y roles User/Logistics ya tienen E2E representativo.
 - SMTP real, credenciales y configuración HTTPS de producción; antes de escalar, cookies HttpOnly, rate limiting distribuido y object storage.
 - App nativa pospuesta por solicitud del usuario; responsive web permanece en alcance.
+
+## Validación siguiente — 2026-11-23
+
+- El constructor de rutas y búsqueda geográfica está validado en Action `45092540906` (Front, 40/40 E2E).
+- Se amplió el smoke HTTP/MySQL del backend para completar recogida, entrega y operación combinada con evidencia por parada; ejecución local en entorno desechable pasó. Falta Action para el nuevo SHA.
+- La decisión de permitir rutas sin recogidas/entregas sigue pendiente de respuesta. Mantener la validación actual sin cambios hasta recibirla.

@@ -552,3 +552,9 @@
 - Gestión de Equipo oculta “Gerente” en los controles de alta y cambio de rol cuando `owner_id` firmado no coincide con el ID autenticado.
 - El endpoint backend continúa aplicando autorización; la lógica cliente sólo reduce opciones inválidas.
 - Añadida aserción E2E para comprobar que la cuenta raíz conserva la opción.
+
+## 2026-11-23 — Revisión de ruta y geocodificación
+
+- La confirmación de ruta expone origen, todas las paradas ordenadas con recogida/entrega/ambas, coordenadas y destino.
+- Búsquedas Nominatim cancelan o descartan resultados al cambiar el punto objetivo.
+- Front Action `45092540906`: 40/40 E2E y responsive 1/1. Smoke backend local actualizado para el ciclo multi-parada con evidencia; Action pendiente.

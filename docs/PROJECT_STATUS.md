@@ -4,7 +4,7 @@
 - Front `e262180` consume el indicador backend y filtra el rol “Gerente” en creación/promoción. Lint/build y E2E `team-management-load-errors` 10/10 pasaron localmente.
 - Action Front `45090273209` terminó con **39/40 E2E** (responsive 1/1, audit/lint/build aprobados). La traza confirma que el botón “Gerente” sí estaba visible con nombre accesible completo “Gerente Administra equipos y rutas”; falló sólo el locator `exact: true`. El selector corregido y assert explícito de `/Auth/me` raíz quedaron validados en la Action siguiente.
 - Front `9d84562` pasó Action [`45091340306`](https://github.com/Paul1578/Front_gpsR/actions/runs/45091340306): backend Release/xUnit, audit, lint, build, responsive browser **1/1**, Playwright API/MySQL **40/40** y cleanup. El E2E ahora verifica `/Auth/me.isRootAccount=true` y localiza el botón con su descripción accesible.
-- En progreso en el árbol local: revisión final de la ruta con todas las paradas/operaciones/coords, cancelación de búsqueda geográfica obsoleta, E2E de Nominatim (respuesta vacía/error/tardía) y reintento al guardar. Lint/build previos al último ajuste de pruebas pasan; validación final y Action del nuevo SHA pendientes.
+- Front `992053d` pasó Action [`45092540906`](https://github.com/Paul1578/Front_gpsR/actions/runs/45092540906): backend Release/xUnit, audit, lint/build, responsive **1/1** y E2E API/MySQL **40/40**. Incluye revisión ordenada con operaciones, búsqueda Nominatim vacía/error/tardía, conservación de formulario ante POST 503 y retry persistido.
 - Auditoría independiente encontró un caso de negocio por definir: si se permiten rutas de traslado sin recogida/entrega. Se consultó al usuario; no cambiar la regla backend hasta recibir respuesta. También queda ampliar evidencia E2E del ciclo de varias paradas hasta finalización.
 - Móvil nativo aplazado por decisión del usuario. Misión integral sigue abierta; no se declara terminada.
 
@@ -599,3 +599,10 @@ Fecha de actualización: 2026-11-22.
 - Validación local del cambio completo: `npm run lint`, `npm run build`, discovery de 40 E2E y spec `team-management-load-errors.spec.ts` 10/10 pasan. La Action `45088879212` corresponde al commit previo `5784b36` (sin el nuevo E2E negativo) y sigue corriendo; el SHA actual necesita Action propia.
 - Action `45088879212` terminó **38/39**: Admin raíz autenticado no vio “Gerente”. `/Auth/me` ahora expone `isRootAccount` backend-derived y AuthContext lo prioriza; validar integración en la Action del SHA posterior.
 - Backend local tras agregar el campo: xUnit Release 113/113, build 0 warnings/0 errors, `bash -n` y diff-check pasan. Front local lint/build/discovery 40 y `team-management-load-errors` 10/10 pasan. CI integrada nueva pendiente.
+
+## Validación del constructor de rutas — 2026-11-23
+
+- Front `992053d` pasó Action `45092540906`: lint/build/audit, responsive 1/1, backend Release/xUnit y E2E API/MySQL 40/40 con cleanup.
+- La revisión muestra origen, paradas en orden y destino con operación y coordenadas. La búsqueda descarta resultados obsoletos al cambiar el objetivo. E2E cubre Nominatim vacío/error/tardío y retry tras HTTP 503.
+- Backend amplía el smoke para recoger, entregar y completar una parada combinada, cada una con evidencia y persistencia. Smoke local API + MySQL efímero pasó y limpió fixtures; publicar el cambio y confirmar Action.
+- Política de ruta sin operaciones sigue consultada al usuario. Misión integral abierta.

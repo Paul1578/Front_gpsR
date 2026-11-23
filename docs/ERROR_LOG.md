@@ -1463,3 +1463,10 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - **Solución:** la revisión lista origen, paradas en orden y destino con operación por parada y coordenadas; cada búsqueda captura el destino, usa AbortController/secuencia y descarta resultados tras cambiar de objetivo. El E2E tablet cubre resultado real simulado, vacío, fallo, respuesta tardía y primer POST 503 con retry/persistencia posterior.
 - **Prevención:** revisión final debe exponer la secuencia logística completa antes de confirmar; las búsquedas asincrónicas deben cancelarse o invalidarse al cambiar su entidad destino; cubrir estados de error y reintento además del éxito.
 - **Verificación:** lint/build y discovery previos a la última ampliación pasaron; discovery continúa en 40 pruebas. Ejecutar lint/build, validar el E2E autenticado nuevo en CI API/MySQL y corregir cualquier fallo antes de cerrar.
+
+# 2026-11-23 — Búsqueda de dirección podía cruzar destinos — CORREGIDO Y VALIDADO
+
+- **Síntoma:** el resumen final no mostraba el orden ni el tipo de cada parada; una respuesta Nominatim tardía podía aparecer tras cambiar el punto seleccionado.
+- **Solución:** resumen ordenado con origen, operaciones y destino; cancelación/invalidez por destino y secuencia.
+- **Verificación:** Action `45092540906`, 40/40 E2E, responsive 1/1, lint/build/audit y cleanup. El E2E cubre respuesta, vacío, error, carrera y retry HTTP 503 con persistencia.
+- **Prevención:** incluir estado, orden y operación en confirmación de logística; invalidar solicitudes asíncronas cuando cambia el objeto al que pertenecen.

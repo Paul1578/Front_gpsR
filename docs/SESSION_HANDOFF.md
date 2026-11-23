@@ -862,3 +862,12 @@ Codec Python `utf-utf-8-sig` inválido corregido a `utf-8-sig`; placa de test ex
 - Pendiente: último lint/build, revisar selector y aserciones Playwright, ejecutar prueba con API/MySQL (CI al publicar), corregir errores y repetir Action. Actualizar error/status/testing con resultado.
 - Auditoría Backend read-only: Admin raíz y aislamiento tenant están cubiertos (Action `45090274537`, 113/113 xUnit + smoke). Decisión de producto pendiente para permitir o prohibir rutas sin operación logística; usuario ya consultado, no modificar backend hasta respuesta. Añadir cobertura de ciclo con múltiples paradas hasta cierre y verificar continuidad de Data Protection para despliegue.
 - No declarar misión completa; continuar con seguridad/CRUD/responsive restantes y mantener `main` intacta.
+
+## Estado al 2026-11-23 — constructor validado, smoke multi-parada preparado
+
+- Ramas activas: Front `refactor/route-builder`, Backend `chore/stabilize-fleet-platform`; no modificar `main`.
+- Front commit `992053d` y Action `45092540906` pasaron: E2E 40/40, responsive 1/1, backend Release/xUnit, audit/lint/build y cleanup. Commit docs-only pendiente en el árbol.
+- Backend `scripts/smoke-tenant-http.sh` ahora prueba cinco puntos (origen, recogida, entrega, recogida+entrega, destino), evidencia/estado para cada operación, GPS y cierre. API Release build local pasó; smoke HTTP/MySQL desechables exit 0 y fixtures limpiados. xUnit Release local en ejecución; luego documentar evidencia y publicar.
+- Incidencias de ejecución: el `dotnet` del PATH falla porque `/usr/lib64/dotnet/host/fxr` no contiene SDK; usar `/home/leonardo/.dotnet/dotnet`. Iniciar API como sesión foreground persistente: `nohup` dentro de un shell efímero murió antes del smoke. Documentado en `ERROR_LOG.md`.
+- Luego revisar/pushear Front docs y Backend smoke/docs, consultar Actions nuevos y reparar fallos. Política de ruta sin operación logística sigue pendiente de respuesta; no alterar backend hasta entonces.
+- Decisión confirmada: sólo la cuenta raíz crea/promueve Admin. La app nativa queda aplazada; web responsive sigue en alcance. SMTP real y Data Protection/infra productiva siguen limitaciones externas. Misión global abierta.
