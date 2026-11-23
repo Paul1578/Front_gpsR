@@ -1,10 +1,13 @@
 ## Estado actual — 2026-11-22
 
+- Front `d652652` pasó Action `45085920993`: audit/lint/build, responsive browser **1/1** y **39/39 E2E** sin skips. Backend `1ce4d45` pasó Action `45085910280` con Release/xUnit, aislamiento tenant HTTP/MySQL y concurrencia. La corrección posterior para que el sufijo sobreviva reinicios de worker está en local y requiere repetir Action.
+- Backend runner `1ce4d45` pasó Action `45085910280`: Release build/xUnit, aislamiento tenant HTTP/MySQL y concurrencia. Front Action `45085920993` pasó audit/lint/build y chequeo responsive; suite E2E autenticada en curso.
 - El fix Backend `f8edbcd` pasó xUnit **113/113** y Action `45084368819`; frontend `45084368342` y `45084699175` pasaron **38/39 E2E**: CRUD Driver/asignación, alta de administración de empresa y búsqueda responsive pasaron. El único fallo fue Manager mapa: navegación móvil usada en desktop y fixture Driver compartido; se corrigió localmente con fixtures dedicados/idempotencia.
 - `45083215716` confirmó además dos errores de aserción E2E: documento ausente del DTO User y locator que eligió un nodo responsive oculto. UI omite ID vacío, el test usa username y tarjetas Driver por ID. Nueva validación integrada pendiente.
 - E2E nuevo Manager mapa (`manager-map.spec.ts`) cubre ruta/vehículo reales y viewports desktop/tablet/móvil web; localmente el test omitió por falta de API/credenciales. El run integrado debe confirmar ejecución real.
 - Al revisar el runner se detectó y corrigió que faltaba exportar `FLETFLOW_E2E_DRIVER_USER_ID`; verifica que el Action no marque Manager mapa skipped.
 - Estado de ramas: Front `refactor/route-builder` (`baa0288` remoto + fix Manager local); Backend `chore/stabilize-fleet-platform` (`44d224a` remoto + fixtures Manager locales); `main` intacta. Front lint/build/discovery **39** pasan. Falta publicar el aislamiento Manager y ejecutar una Action Front con `manager-map` verde.
+- Auditoría Front detectó que reiniciar el worker regeneraría el UUID y escaparía al cleanup. El runner exporta ahora `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX`, consumido por el spec; validación integrada sigue en curso.
 
 - Auditoría detectó que `SuperAdminView` sólo probaba el formulario de alta sin enviarlo. Commit `f07d37d` añade E2E de creación Driver, lecturas persistidas User/Driver y UI/SMTP; lint/build/discovery 38 pasan, Action `45083215716` pendiente.
 

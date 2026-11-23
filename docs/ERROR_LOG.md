@@ -19,6 +19,12 @@
 - Se añadió limpieza SQL de la cuenta `fletflow.e2e.manager.map.*`; Driver/Vehicle/Ruta usan los prefijos QA ya cubiertos. `bash -n`, lint/build/discovery 39 y diff-check pasan local; requiere Action autenticada nueva.
 - Prevención: no operar el hamburger mobile-only en desktop; no mutar fixtures de rol compartidos entre tests; timeout nunca debe dejar estado que invalide un retry.
 
+## 2026-11-22 — Sufijo aleatorio del mapa podía cambiar al reiniciar worker — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- La revisión independiente detectó que un retry tras reiniciar el worker podía regenerar `randomUUID()` y dejar sin limpiar la ruta/vehículo del primer intento.
+- El runner exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` desde el identificador de la ejecución y el spec lo reutiliza para nombrar fixtures; el test se omite si falta esta variable.
+- Prevención: identificadores para cleanup E2E deben sobrevivir los retries del worker, no crearse sólo al cargar el módulo.
+
 ## 2026-11-22 — Runner E2E no suministraba UserId a Manager mapa — CORREGIDO EN RUNNER
 
 - Al auditar la nueva prueba se detectó que esperaba `FLETFLOW_E2E_DRIVER_USER_ID`, pero `run-e2e-local.sh` sólo exportaba DriverId. Eso habría omitido el test de Manager aunque el suite terminara verde.

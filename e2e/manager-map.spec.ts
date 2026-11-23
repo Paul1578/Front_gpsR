@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { randomUUID } from "node:crypto";
 
 const managerEmail = process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL;
 const managerPassword = process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD;
 const routeDriverId = process.env.FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID;
+const fixtureSuffix = process.env.FLETFLOW_E2E_MAP_FIXTURE_SUFFIX?.toUpperCase();
 const allowMutations = process.env.FLETFLOW_E2E_ALLOW_MUTATIONS === "true";
-const fixtureSuffix = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
-const routeName = `E2E QA ruta mapa Manager ${fixtureSuffix}`;
-const vehiclePlate = `E2EQA${fixtureSuffix}`;
+const routeName = `E2E QA ruta mapa Manager ${fixtureSuffix ?? "fixture-ausente"}`;
+const vehiclePlate = `E2EQA${fixtureSuffix ?? "MISSING"}`;
 
 type AuthTokens = { accessToken: string };
 type RouteRecord = { id: string; name: string; vehicleId: string; isActive: boolean };
@@ -16,7 +15,7 @@ type DriverRecord = { id: string; vehicleId: string | null };
 
 test("Manager selecciona ruta y vehículo reales en mapa desktop, tablet y móvil web", async ({ page, request }) => {
   test.skip(
-    !managerEmail || !managerPassword || !routeDriverId || !allowMutations,
+    !managerEmail || !managerPassword || !routeDriverId || !fixtureSuffix || !allowMutations,
     "Requiere fixture dedicado Manager/Driver QA y API/MySQL descartables con FLETFLOW_E2E_ALLOW_MUTATIONS=true.",
   );
 
