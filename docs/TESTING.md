@@ -4,6 +4,11 @@
 - Continúa con cancelación e historial usando el nombre actualizado. Conserva cobertura responsive 320/768 px y restricciones del rol.
 - CI: Actions [`45132992521`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132992521) y [`45132956752`](https://github.com/Paul1578/Front_gpsR/actions/runs/45132956752) pasaron **51/51 E2E** cada una con API/MySQL descartables; backend Release/xUnit, audit/lint/build, responsive y cleanup también pasaron.
 
+## E2E de cambio de rol Manager→Logistics desde Equipo — validación pendiente
+
+- El escenario autenticado crea Manager en 320 px, cancela la primera confirmación y comprueba que no salió PUT; confirma el cambio después, verifica HTTP/body y `/Users/my-team`, recarga en 768 px y comprueba el rol renderizado.
+- `npm run lint` y discovery 51 pasaron en el intento inicial; build detectó TS7006 y quedó corregido. Repetir build y luego ejecución integrada con API/MySQL.
+
 ## Driver completa una ruta de varias paradas — validado por Actions
 
 - El caso `Driver sólo ve su operación...` en `e2e/fleet-admin.spec.ts` inicia la ruta, comprueba el orden de dos paradas, exige evidencia, guarda nota y foto, completa ambas y cierra la ruta; luego consulta API/Historial y confirma persistencia.

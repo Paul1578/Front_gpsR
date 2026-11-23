@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Request } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
@@ -3668,6 +3668,55 @@ test("Admin crea cuentas Manager y Logistics desde Equipo", async ({ page }) => 
     const persistedAccount = (await teamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
     expect(persistedAccount).toMatchObject({ email: accountEmail, username, roles: [account.roleName] });
     await expect(page.getByTestId(`team-user-${createdAccount.id}`)).toBeVisible();
+
+    if (account.roleName === "Manager") {
+      let rolePutRequests = 0;
+      const countRolePut = (request: Request) => {
+        if (request.method() === "PUT" && new URL(request.url()).pathname.endsWith(`/Users/${createdAccount.id}/role`)) {
+          rolePutRequests += 1;
+        }
+      };
+      page.on("request", countRolePut);
+      const memberCard = page.getByTestId(`team-user-${createdAccount.id}`);
+      await memberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const roleDialog = page.getByRole("alertdialog");
+      await expect(roleDialog).toContainText("cambiará de Gestor de flota a Logística");
+      const roleDialogBounds = await roleDialog.boundingBox();
+      expect(roleDialogBounds).not.toBeNull();
+      expect(roleDialogBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(roleDialogBounds!.x + roleDialogBounds!.width).toBeLessThanOrEqual(account.viewport);
+      await roleDialog.getByRole("button", { name: "Cancelar" }).click();
+      expect(rolePutRequests).toBe(0);
+      await expect(memberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toBeDisabled();
+
+      await memberCard.getByRole("button", { name: "Logística", exact: true }).click();
+      const changeRoleResponsePromise = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith(`/api/backend/Users/${createdAccount.id}/role`) &&
+        response.request().method() === "PUT",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar cambio" }).click();
+      const changeRoleResponse = await changeRoleResponsePromise;
+      expect(changeRoleResponse.status()).toBe(200);
+      expect((await changeRoleResponse.request().postDataJSON()).roleName).toBe("Logistics");
+      expect(rolePutRequests).toBe(1);
+      page.off("request", countRolePut);
+
+      const changedTeamResponse = await page.request.get("/api/backend/Users/my-team", { headers });
+      expect(changedTeamResponse.status()).toBe(200);
+      const changedMember = (await changedTeamResponse.json()).find((member: { id: string }) => member.id === createdAccount.id);
+      expect(changedMember).toMatchObject({ id: createdAccount.id, roles: ["Logistics"] });
+      await expect(memberCard).toContainText("Logística");
+      await expect(memberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toHaveCount(0);
+
+      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.reload();
+      await page.getByRole("button", { name: "Abrir menú" }).click();
+      await page.getByRole("button", { name: "Gestión de Equipo", exact: true }).click();
+      const reloadedMemberCard = page.getByTestId(`team-user-${createdAccount.id}`);
+      await expect(reloadedMemberCard).toContainText("Logística");
+      await expect(reloadedMemberCard.getByRole("button", { name: "Gestor de flota", exact: true })).toHaveCount(0);
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
   }
 });
 

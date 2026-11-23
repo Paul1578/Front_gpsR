@@ -12,6 +12,10 @@
 
 - Confirmado que el E2E ya cubre dos paradas en secuencia, evidencia de nota/foto, rechazo sin evidencia, cierre e Historial; Action `45131410815` pasó 51/51. Sin cambio funcional.
 
+# 2026-11-23 — E2E de cambio de rol en Gestión de Equipo
+
+- El caso de creación de miembros ahora verifica cancelación sin PUT y cambio Manager→Logistics confirmado desde UI, persistencia API tras reload y responsive de diálogo/lista. Validación pendiente.
+
 # 2026-11-23 — Auditoría actual de dependencias y sincronización de estado
 
 - `npm audit`: 0 vulnerabilidades.

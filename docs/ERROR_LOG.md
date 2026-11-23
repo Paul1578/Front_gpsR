@@ -1,3 +1,16 @@
+# 2026-11-23 — Build rechazó callback request sin tipo explícito — CORREGIDO LOCALMENTE
+
+- `npm run build` detectó TS7006 (`request` implícitamente `any`) en el observador E2E de PUT de rol. Lint y discovery no detectaban el problema.
+- Solución: importar el tipo `Request` desde `@playwright/test` y tipar el callback del listener.
+- Prevención: conservar tipos explícitos en callbacks extraídos de eventos Playwright y validar build TypeScript además de lint/discovery.
+- Revalidación local tras el arreglo: pendiente.
+
+## 2026-11-23 — Búsqueda del script E2E en el checkout Front — RESUELTO
+
+- `rg` buscó `scripts/run-e2e-local.sh` y `scripts/cleanup-e2e.sql` dentro de Front, donde no existen; devolvió paths faltantes sin alterar archivos ni datos.
+- Solución: localizar y leer esos scripts en `/home/leonardo/Back_GPS`, que es el repositorio dueño del runner/cleanup.
+- Prevención: comprobar con `rg --files` qué checkout contiene un script antes de agrupar comandos por `workdir`.
+
 ## 2026-11-22 — Edición concurrente podía borrar la asignación de vehículo — CORREGIDO LOCALMENTE; CI PENDIENTE
 
 - Action `45082924174` con un worker y Action `45083215716` reprodujeron que `PUT /Drivers/{id}/assign-vehicle` terminaba con `Drivers.VehicleId=NULL`, aunque la UI recibiera éxito; el retry también podía pasar, así que se conservó la aserción SQL.

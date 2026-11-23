@@ -1,5 +1,11 @@
 # Handoff vigente — 2026-11-23
 
+## Siguiente cobertura — cambio de rol persistido desde Gestión de Equipo
+
+- Auditoría QA encontró que Admin creaba Manager/Logistics con navegador+API, pero el cambio de rol estaba cubierto sólo con API; la UI tenía confirmación/cancelación probada mediante mocks.
+- Se amplió el caso integrado para abrir/cancelar la confirmación sin PUT, cambiar Manager→Logistics desde UI, comprobar respuesta/body y `GET /Users/my-team`, recargar y verificar el rol persistido. Incluye ancho de confirmación a 320 px y lista responsive a 768 px.
+- Lint/build/discovery y CI integrada pendientes; el fixture de cuenta se limpia por prefijo en el teardown efímero.
+
 ## Edición de rutas por Logistics — validada
 
 - El test `Logistics ve rutas pero no vehículos ni administración de equipo` ya cubría alta en constructor, cancelación, historial y denegación de flota, pero no edición desde UI.

@@ -10,6 +10,11 @@
 - La auditoría detectó que el E2E Manager cancelaba la edición tras abrir el editor. Ahora modifica nombre/descripción, guarda y comprueba por GET persistencia de ruta, asignación y parada.
 - Lint/build, discovery **51 tests** y diff-check pasan localmente. Actions [`45133416432`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133416432) y [`45133412567`](https://github.com/Paul1578/Front_gpsR/actions/runs/45133412567) pasaron **51/51 E2E** cada una con API/MySQL descartables, Release/xUnit, audit/lint/build, responsive y cleanup. El fixture conserva restauración del rol y limpieza en `finally`.
 
+## Cambio de rol desde Equipo — validación local pendiente de CI — 2026-11-23
+
+- Se extiende el E2E real de creación de miembros: cancelación de Manager→Logistics sin mutación, confirmación del PUT, lectura `/Users/my-team` y persistencia visual tras recargar.
+- El modal se mide en 320 px y la lista tras recarga a 768 px. Primera build encontró TS7006 en el callback de observación; corregido importando `Request`. Revalidación local y Action integrada pendientes; no contar como cubierto hasta Action verde.
+
 ## Estado actual — 2026-11-23
 
 - Front `refactor/route-builder`, código `44946d4`, pasó Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815): **51/51 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup. El caso añadido completa un traslado desde Mi Ruta como Driver y confirma API `Completed` + vehículo `Available`.
