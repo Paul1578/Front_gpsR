@@ -811,3 +811,9 @@
 ## 2026-11-23 — Error visible al cambiar rol validado
 
 - Action [45168102987](https://github.com/Paul1578/Front_gpsR/actions/runs/45168102987) pasó con 51/51 E2E y cleanup; UI conservó el rol ante HTTP 500 y persistió el reintento exitoso.
+
+# 2026-11-23 — Correcciones a paginación y sincronización de Equipo/Conductores
+
+- Actualizados los mocks E2E para usar las respuestas paginadas reales y el matcher de búsquedas ahora lee `URL.searchParams`.
+- Asignar/desasignar un vehículo y reintentar la carga sincronizan tanto la página visible como la caché global Driver usada para evitar asignaciones duplicadas.
+- Playwright de carga/Equipo/Conductores pasó **13/13**; `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan. Dos pruebas que requieren Admin QA se omiten localmente. Action `45177437589` registró 45/52 antes de los fixes; validar la revisión en una Action nueva.

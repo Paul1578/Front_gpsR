@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+const pagedResult = (items: unknown[], page = 1) => ({
+  items,
+  page,
+  pageSize: 25,
+  totalCount: items.length,
+  totalPages: Math.ceil(items.length / 25),
+});
+
+const collectionBody = (pathname: string, items: unknown[] = []) =>
+  JSON.stringify(pathname.endsWith("/page") ? pagedResult(items) : items);
+
 test("Gestión de Equipo explica el fallo de vehículos y bloquea la asignación hasta reintentar", async ({ page }) => {
   let failVehicleRequests = true;
   await page.setViewportSize({ width: 390, height: 844 });
@@ -25,6 +36,11 @@ test("Gestión de Equipo explica el fallo de vehículos y bloquea la asignación
       return;
     }
 
+    if (request.method() === "GET" && url.pathname.endsWith("/Drivers/page")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(pagedResult([{ id: "driver-team-load-1", userId: null, firstName: "Chofer", lastName: "QA", documentNumber: "TEAM-QA-01", phoneNumber: "0990000000", vehicleId: null, isActive: true }])) });
+      return;
+    }
+
     if (request.method() === "GET" && url.pathname.endsWith("/Drivers")) {
       await route.fulfill({
         status: 200,
@@ -40,7 +56,12 @@ test("Gestión de Equipo explica el fallo de vehículos y bloquea la asignación
     }
 
     if (request.method() === "GET" && ["/Users/my-team", "/Routes"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
+      return;
+    }
+
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team/page")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(pagedResult([])) });
       return;
     }
 
@@ -128,11 +149,11 @@ test("Dashboard de Logistics muestra error de opciones de flota y recupera al re
     }
 
     if (request.method() === "GET" && url.pathname.endsWith("/Routes")) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
-    if (["/Users/my-team", "/Drivers"].some((path) => url.pathname.endsWith(path))) {
+    if (["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page"].some((path) => url.pathname.endsWith(path))) {
       await route.fulfill({ status: 403, contentType: "application/json", body: "{}" });
       return;
     }
@@ -248,9 +269,9 @@ test("Gestión de Vehículos no confunde fallo de carga con flota vacía y permi
 
     if (
       request.method() === "GET" &&
-      ["/Users/my-team", "/Drivers", "/Routes"].some((path) => url.pathname.endsWith(path))
+      ["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page", "/Routes"].some((path) => url.pathname.endsWith(path))
     ) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -358,8 +379,8 @@ test("Gestión de Rutas muestra carga antes de error/vacío y recupera rutas al 
       return;
     }
 
-    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Drivers/page", "/Users/my-team", "/Users/my-team/page"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -446,8 +467,8 @@ test("Gestión de Rutas distingue asignaciones no cargadas y permite recuperar e
       return;
     }
 
-    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Vehicles", "/Drivers", "/Drivers/page", "/Users/my-team", "/Users/my-team/page"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
     await route.continue();
@@ -582,8 +603,8 @@ test("FleetContext descarta una respuesta pendiente de una cuenta anterior", asy
       return;
     }
 
-    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Drivers/page", "/Users/my-team", "/Users/my-team/page"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -734,8 +755,8 @@ test("un refresh tardío de la cuenta anterior no reemplaza ni cierra la sesión
       return;
     }
 
-    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Users/my-team"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Routes", "/Drivers", "/Drivers/page", "/Users/my-team", "/Users/my-team/page"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -812,7 +833,7 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
       return;
     }
 
-    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team") && teamRequestFails) {
+    if (request.method() === "GET" && (url.pathname.endsWith("/Users/my-team") || url.pathname.endsWith("/Users/my-team/page")) && teamRequestFails) {
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -821,7 +842,7 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
       return;
     }
 
-    if (request.method() === "GET" && url.pathname.endsWith("/Drivers") && driversRequestFails) {
+    if (request.method() === "GET" && (url.pathname.endsWith("/Drivers") || url.pathname.endsWith("/Drivers/page")) && driversRequestFails) {
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -832,9 +853,9 @@ test("Gestión de Equipo muestra y permite reintentar fallos de equipo y chofere
 
     if (
       request.method() === "GET" &&
-      ["/Users/my-team", "/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
+      ["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
     ) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -908,6 +929,19 @@ test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ 
       return;
     }
 
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team/page")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(pagedResult([{
+        id: "member-user-1",
+        email: "member@example.test",
+        username: "member",
+        firstName: "Miembro",
+        lastName: "Equipo",
+        roles: ["User"],
+        isActive: true,
+      }])) });
+      return;
+    }
+
     if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team")) {
       await route.fulfill({
         status: 200,
@@ -925,8 +959,8 @@ test("Admin delegado no recibe opciones de crear ni promover a Admin", async ({ 
       return;
     }
 
-    if (request.method() === "GET" && ["/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Drivers", "/Drivers/page", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -1000,6 +1034,11 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
       return;
     }
 
+    if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team/page")) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(pagedResult([persistedMember])) });
+      return;
+    }
+
     if (request.method() === "GET" && url.pathname.endsWith("/Users/my-team")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([persistedMember]) });
       return;
@@ -1029,8 +1068,8 @@ test("Gestión de Equipo pide confirmar cambios de rol y estado, y persiste sól
       return;
     }
 
-    if (request.method() === "GET" && ["/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (request.method() === "GET" && ["/Drivers", "/Drivers/page", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -1204,9 +1243,9 @@ test("Historial distingue error de lista vacía y permite reintentar", async ({ 
 
     if (
       request.method() === "GET" &&
-      ["/Users/my-team", "/Drivers", "/Vehicles"].some((path) => url.pathname.endsWith(path))
+      ["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page", "/Vehicles"].some((path) => url.pathname.endsWith(path))
     ) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -1337,7 +1376,7 @@ test("Historial evita consultas duplicadas si vuelve el foco durante una carga",
         notifyRouteRequest();
         await routeResponseGate;
       }
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -1350,8 +1389,8 @@ test("Historial evita consultas duplicadas si vuelve el foco durante una carga",
       return;
     }
 
-    if (["/Users/my-team", "/Drivers", "/Vehicles"].some((path) => url.pathname.endsWith(path))) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page", "/Vehicles"].some((path) => url.pathname.endsWith(path))) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
 
@@ -1455,19 +1494,19 @@ test("Gestión de Conductores informa y permite recuperar errores de Drivers y V
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([testVehicle]) });
       return;
     }
-    if (request.method() === "GET" && url.pathname.endsWith("/Drivers")) {
+    if (request.method() === "GET" && (url.pathname.endsWith("/Drivers") || url.pathname.endsWith("/Drivers/page"))) {
       if (failDrivers) {
         await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Unavailable" }) });
         return;
       }
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([testDriver]) });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname, [testDriver]) });
       return;
     }
     if (
       request.method() === "GET" &&
-      ["/Users/my-team", "/Drivers", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
+      ["/Users/my-team", "/Users/my-team/page", "/Drivers", "/Drivers/page", "/Vehicles", "/Routes"].some((path) => url.pathname.endsWith(path))
     ) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      await route.fulfill({ status: 200, contentType: "application/json", body: collectionBody(url.pathname) });
       return;
     }
     if (request.method() === "GET" && url.pathname.endsWith("/Routes/assignment-options")) {

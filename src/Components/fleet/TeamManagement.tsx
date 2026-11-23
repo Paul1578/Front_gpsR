@@ -49,6 +49,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     loadErrors,
     vehiclesLoading,
     retryFleetData,
+    refreshDrivers,
     getDriversPage,
     addDriver,
     updateDriver,
@@ -144,6 +145,13 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
       if (requestSequence === driverRequestSequence.current) setIsLoadingDrivers(false);
     }
   }, [debouncedDriverSearch, driverPage, getDriversPage, showInactiveDrivers]);
+
+  const retryDrivers = async () => {
+    await Promise.allSettled([
+      loadDrivers(!showInactiveDrivers),
+      refreshDrivers(),
+    ]);
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedTeamSearch(teamSearch.trim()), 300);
@@ -376,7 +384,13 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const result = await assignVehicleToDriver(driverId, vehicleId);
     if (result.ok) {
       toast.success(result.message ?? "Vehículo asignado");
-      await loadDrivers(!showInactiveDrivers);
+      const refreshed = await Promise.allSettled([
+        loadDrivers(!showInactiveDrivers),
+        refreshDrivers(),
+      ]);
+      if (refreshed.some((request) => request.status === "rejected")) {
+        toast.warning("La asignación se guardó, pero no se pudo sincronizar la disponibilidad de vehículos.");
+      }
     } else {
       toast.error(result.message ?? "No se pudo asignar el vehículo");
     }
@@ -386,7 +400,13 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
     const result = await unassignVehicleFromDriver(driverId);
     if (result.ok) {
       toast.success(result.message ?? "Vehículo desasignado");
-      await loadDrivers(!showInactiveDrivers);
+      const refreshed = await Promise.allSettled([
+        loadDrivers(!showInactiveDrivers),
+        refreshDrivers(),
+      ]);
+      if (refreshed.some((request) => request.status === "rejected")) {
+        toast.warning("La desasignación se guardó, pero no se pudo sincronizar la disponibilidad de vehículos.");
+      }
     } else {
       toast.error(result.message ?? "No se pudo desasignar el vehículo");
     }
@@ -616,7 +636,7 @@ export function TeamManagement({ onBack }: TeamManagementProps = {}) {
               {hasDriverLoadError ? (
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                   <span>No se pudieron cargar los choferes. Comprueba tu conexión e inténtalo de nuevo.</span>
-                  <button type="button" onClick={() => void loadDrivers(!showInactiveDrivers)} disabled={isLoadingDrivers} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
+                  <button type="button" onClick={() => void retryDrivers()} disabled={isLoadingDrivers} className="rounded-md bg-white px-3 py-1.5 font-semibold disabled:opacity-50">
                     {isLoadingDrivers ? "Reintentando…" : "Reintentar"}
                   </button>
                 </div>

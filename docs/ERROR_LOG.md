@@ -1790,3 +1790,11 @@ No se debe marcar una tarea como terminada si falla el build, si el endpoint pri
 - Solución: reutilizar la tarjeta `team-driver-{id}` ya visible y afirmar que aparece, sin volver a alternar la sección.
 - Prevención: después de una operación UI que mantiene estado abierto, comprobar el estado actual antes de volver a pulsar su toggle.
 - Una consulta del Action Backend `45173035947` se hizo desde el checkout Front y respondió 404; repetida desde `/home/leonardo/Back_GPS`, donde la Action concluyó success.
+
+# 2026-11-23 — Paginación rompió mocks E2E y dejó disponibilidad de vehículos obsoleta — CORREGIDO LOCALMENTE
+
+- Action `45177437589` ejecutó 52 casos: 45 pasaron y 7 fallaron después de cambiar Equipo/Conductores a endpoints paginados. Los mocks de error y permisos seguían interceptando `/Users/my-team` y `/Drivers` (arrays) y dejaban pasar `/page`; esto causó timeouts, alertas ausentes y tarjetas de miembros no renderizadas. La prueba de búsqueda además buscaba texto URL con `%20`, aunque `URLSearchParams` codifica espacios como `+`.
+- El mismo Action encontró que, tras asignar un vehículo, el selector de otros conductores consultaba la caché completa `drivers`, que no se refrescaba con la respuesta paginada. Por eso seguía mostrando un vehículo ya ocupado.
+- Solución: adaptar los mocks para reconocer los endpoints paginados y responder `{items,page,pageSize,totalCount,totalPages}`; al asignar/desasignar actualizar tanto la página visible como la caché global; el botón de reintento sincroniza ambas fuentes. Las esperas E2E comparan `URL.searchParams`.
+- Verificación local final: `team-management-load-errors.spec.ts` **13/13** pasa; los 2 casos autenticados de `team-search.spec.ts` se omiten por falta de credenciales Admin locales. `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan; queda Action integrada pendiente.
+- Incidente secundario: ESLint concurrente con Playwright falló al leer `test-results` mientras Playwright lo creaba/limpiaba (`ENOENT`). Prevención: ejecutar lint/build después de terminar Playwright, no en paralelo con el runner.

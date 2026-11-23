@@ -1,9 +1,10 @@
 ## Handoff vigente — paginación del equipo y conductores
 
-- Feature unlink está integrada y validada: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) **51/51**; backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) success con smoke MySQL.
-- Trabajo local sin commit: `TeamManagement.tsx`, `DriversManagement.tsx`, Auth/Fleet contexts, `ServerPagination.tsx` y `e2e/team-search.spec.ts`. Búsqueda debounced, filtros de equipo y estado de conductor, navegación anterior/siguiente. Lint/build/discovery **52**/diff-check pasan. Dos pruebas Playwright auth se omitieron localmente por no haber credenciales; pipeline CI sí tiene fixture.
-- Backend nuevo disponible en el working tree del repositorio relacionado: endpoints paginados compatibles, suite Release **151/151**, smoke extendido HTTP/MySQL con aislamiento cross-tenant. Ambos repos requieren commit/push después de revisar diffs/docs y Actions finales.
-- Continúa misión global tras la fase: revisar dashboard/CRUD y otras brechas; SMTP, key ring/rate-limit distribuidos y despliegue son dependencias externas documentadas.
+- Feature unlink está integrada y validada: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) pasó smoke MySQL.
+- Backend paginado está publicado y validado (Release/xUnit **151/151**, smoke HTTP/MySQL tenant): Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623) success.
+- Front `2e50fef` recibió Action [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589): **45/52**, 7 fallos por mocks viejos, caché Driver sin refrescar y matcher URL literal. Correcciones locales actuales cubren mocks paginados, refresco de caché al asignar/desasignar y reintento de caché completa. Playwright de carga/permisos: **13/13**; `npm run lint`, `npm run build`, discovery **52** y diff-check pasan.
+- `team-search.spec.ts` (2 casos autenticados, incluida paginación de 26 elementos) se omite localmente por falta de cuenta QA Admin; CI integrado debe validarlos. Documentación ya actualizada. Próximos pasos: revisión final del diff, commit/push Front y esperar Actions verdes; no declarar paginación Front terminada si Action vuelve a fallar.
+- Misión global continúa después de la fase: revisar dashboard/CRUD y brechas restantes; SMTP, key ring/rate-limit distribuidos y despliegue productivo siguen siendo dependencias externas documentadas.
 
 ## Handoff vigente — E2E de desvinculación User/Driver
 

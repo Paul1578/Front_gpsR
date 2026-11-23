@@ -44,7 +44,12 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
     await page.getByRole("button", { name: "Página anterior" }).click();
   }
   const teamSearch = page.getByRole("searchbox", { name: "Buscar miembros del equipo" });
-  const teamSearchResponsePromise = page.waitForResponse((response) => response.url().includes("/Users/my-team/page") && response.url().includes(encodeURIComponent(teamUsers[0].username)) && response.status() === 200);
+  const teamSearchResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.includes("/Users/my-team/page") &&
+      url.searchParams.get("search") === teamUsers[0].username &&
+      response.status() === 200;
+  });
   await teamSearch.fill(teamUsers[0].username);
   const teamSearchResponse = await teamSearchResponsePromise;
   const searchedTeamPage = await teamSearchResponse.json() as { items: Array<{ id: string }>; totalCount: number };
@@ -75,7 +80,12 @@ test("Admin busca miembros y conductores usando datos reales del equipo", async 
   }
   const driverSearch = page.getByRole("searchbox", { name: "Buscar choferes" });
   const driverCard = page.getByTestId(`team-driver-${drivers[0].id}`);
-  const driverSearchResponsePromise = page.waitForResponse((response) => response.url().includes("/Drivers/page") && response.url().includes(encodeURIComponent(drivers[0].documentNumber)) && response.status() === 200);
+  const driverSearchResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.includes("/Drivers/page") &&
+      url.searchParams.get("search") === drivers[0].documentNumber &&
+      response.status() === 200;
+  });
   await driverSearch.fill(drivers[0].documentNumber);
   const searchedDriverPage = await (await driverSearchResponsePromise).json() as { items: Array<{ id: string }>; totalCount: number };
   expect(searchedDriverPage.items.some((driver) => driver.id === drivers[0].id)).toBeTruthy();

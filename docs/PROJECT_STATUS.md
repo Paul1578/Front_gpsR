@@ -1,7 +1,8 @@
-## Paginación server-side en Equipo y Conductores — CI pendiente
+## Paginación server-side en Equipo y Conductores — validación en curso
 
-- Los endpoints nuevos devuelven páginas acotadas y las vistas consultan búsqueda/rol/estado al servidor; búsqueda con debounce y controles responsive. Rutas array heredadas conservadas.
-- `npm run lint`, `npm run build`, discovery **52 tests** y diff-check pasan localmente. El E2E de navegación prueba 26 filas controladas; las 2 pruebas autenticadas quedaron skipped localmente por falta de credenciales QA. Action integrada de paginación pendiente.
+- Backend paginado ya está validado: Release/xUnit **151/151**, HTTP/MySQL y aislamiento entre empresas; Actions Backend [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623) pasaron.
+- Front cambió búsquedas, filtros y navegación a los endpoints paginados, conservando endpoints de arrays para consumidores existentes. La primera Action Front [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) detectó 7 fallos E2E (45/52): mocks antiguos, selector de vehículos sin refrescar caché y matcher de query sensible a la codificación.
+- Correcciones locales: mocks paginados y reintento que sincroniza página/caché completa. `team-management-load-errors.spec.ts` pasó **13/13**; ambos E2E autenticados de `team-search.spec.ts` se omiten localmente por falta de credenciales Admin. `npm run lint`, `npm run build`, discovery **52 tests** y `git diff --check` pasan; Action integrada del fix pendiente.
 - Unlink cuenta Driver ya aprobado: Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) pasó **51/51**; Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) validó API/MySQL, conflicto Pending y cleanup.
 
 ## Desvinculación User–Driver — fix E2E esperando Action

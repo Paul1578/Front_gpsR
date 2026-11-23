@@ -1,8 +1,9 @@
-## Paginación de Equipo/Conductores — frontend local; integración pendiente
+## Paginación de Equipo/Conductores — validación Front en curso
 
-- `npm run lint`, `npm run build`, discovery Playwright **52 tests** y `git diff --check` pasan. E2E nuevo controla el endpoint paginado de usuarios con 26 fixtures de respuesta y valida avanzar/retroceder; el test requiere inicio Admin QA.
-- El E2E real de búsqueda/filter en Equipo verifica respuesta paginada API para Users/Drivers, criterios server-side y responsive, pero se omitió en el checkout local sin credenciales. Esperar la Action integrada antes de declarar el flujo probado.
-- Unlink anterior sí quedó validado en Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922): **51/51** y cleanup.
+- Backend Release/xUnit **151/151** y smoke API/MySQL paginado/tenant pasaron en Actions [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) y [`45178181623`](https://github.com/Paul1578/Back_GPS/actions/runs/45178181623).
+- Front Action [`45177437589`](https://github.com/Paul1578/Front_gpsR/actions/runs/45177437589) ejecutó 52 casos: **45 pasaron y 7 fallaron** por simulaciones que aún interceptaban las rutas antiguas, caché global Driver desactualizada después de asignar/desasignar y comparación literal de URL codificada. Ver solución y prevención en `ERROR_LOG.md`.
+- Tras corregirlo, Playwright local de carga/equipo/conductores: **13/13 passed**; ambos E2E de `team-search.spec.ts` quedan omitidos por falta de credenciales QA locales. La compilación pasó antes de los últimos ajustes; lint/build, suite completa de Actions y responsive deben volver a ejecutarse.
+- El E2E de paginación usa 26 fixtures y valida anterior/siguiente con sesión Admin, por lo que se verifica en CI con sus credenciales temporales.
 
 ## Unlink User–Driver — E2E corregido, CI pendiente
 
